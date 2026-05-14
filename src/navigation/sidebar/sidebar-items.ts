@@ -1,4 +1,5 @@
 import {
+  AppWindow,
   Banknote,
   Calendar,
   ChartBar,
@@ -7,6 +8,7 @@ import {
   Gauge,
   GraduationCap,
   Kanban,
+  Layers,
   LayoutDashboard,
   ListTodo,
   Lock,
@@ -45,6 +47,62 @@ export interface NavGroup {
 }
 
 export const sidebarItems: NavGroup[] = [
+  {
+    id: 0,
+    label: "DokanX",
+    items: [
+      {
+        title: "Dashboard",
+        url: "/dashboard/dokanx",
+        icon: LayoutDashboard,
+      },
+      {
+        title: "Categories",
+        url: "/dashboard/categories",
+        icon: Layers,
+        subItems: [
+          { title: "Add Category", url: "/dashboard/categories/add" },
+          { title: "All Categories", url: "/dashboard/categories" },
+        ],
+      },
+      {
+        title: "Products",
+        url: "/dashboard/products",
+        icon: ShoppingBag,
+        subItems: [
+          { title: "Add Product", url: "/dashboard/products/add" },
+          { title: "All Products", url: "/dashboard/products" },
+        ],
+      },
+      {
+        title: "Orders",
+        url: "/dashboard/orders",
+        icon: ReceiptText,
+        subItems: [
+          { title: "Create Order", url: "/dashboard/orders/create" },
+          { title: "Order Management", url: "/dashboard/orders" },
+        ],
+      },
+      {
+        title: "Landing Page",
+        url: "/dashboard/landing-pages",
+        icon: AppWindow,
+        subItems: [
+          { title: "Create Landing Page", url: "/dashboard/landing-pages/create" },
+          { title: "All Landing Pages", url: "/dashboard/landing-pages" },
+        ],
+      },
+      {
+        title: "Customers",
+        url: "/dashboard/customers",
+        icon: Users,
+        subItems: [
+          { title: "Add Customer", url: "/dashboard/customers/add" },
+          { title: "All Customers", url: "/dashboard/customers" },
+        ],
+      },
+    ],
+  },
   {
     id: 1,
     label: "Dashboards",
