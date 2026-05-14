@@ -49,11 +49,11 @@ export interface NavGroup {
 export const sidebarItems: NavGroup[] = [
   {
     id: 0,
-    label: "DokanX",
+    label: "Navigation",
     items: [
       {
         title: "Dashboard",
-        url: "/dashboard/dokanx",
+        url: "/dashboard/home",
         icon: LayoutDashboard,
       },
       {
