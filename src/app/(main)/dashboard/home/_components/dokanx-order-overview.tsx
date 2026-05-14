@@ -57,8 +57,8 @@ export function DokanxOrderOverview() {
           </Select>
         </CardAction>
       </CardHeader>
-      <CardContent className="flex items-center gap-6">
-        <ChartContainer config={orderConfig} className="mx-auto aspect-square max-h-48 flex-1">
+      <CardContent className="flex flex-col items-center gap-8 pb-6">
+        <ChartContainer config={orderConfig} className="mx-auto aspect-square max-h-56 w-full">
           <PieChart
             className="m-0"
             margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
@@ -68,9 +68,9 @@ export function DokanxOrderOverview() {
               cornerRadius={4}
               data={orderOverviewData}
               dataKey="value"
-              innerRadius={65}
+              innerRadius={70}
               nameKey="name"
-              outerRadius={90}
+              outerRadius={95}
               paddingAngle={2}
             >
               <Label
@@ -81,7 +81,7 @@ export function DokanxOrderOverview() {
                         <tspan
                           x={viewBox.cx}
                           y={viewBox.cy}
-                          className="fill-foreground font-bold text-3xl tabular-nums"
+                          className="fill-foreground font-bold text-4xl tabular-nums"
                         >
                           {totalOrders.toLocaleString()}
                         </tspan>
@@ -97,17 +97,17 @@ export function DokanxOrderOverview() {
           </PieChart>
         </ChartContainer>
 
-        <ul className="flex flex-col gap-3">
+        <ul className="grid grid-cols-2 gap-x-6 gap-y-3 w-full max-w-md mx-auto">
           {orderOverviewData.map((item) => (
-            <li key={item.name} className="flex w-36 items-center justify-between">
-              <span className="flex items-center gap-2 text-xs capitalize">
+            <li key={item.name} className="flex w-full items-center justify-between">
+              <span className="flex items-center gap-2 text-sm capitalize">
                 <span
-                  className="size-2.5 rounded-full"
+                  className="size-3 shrink-0 rounded-full"
                   style={{ background: item.fill }}
                 />
-                {item.name}
+                <span className="truncate">{item.name}</span>
               </span>
-              <span className="text-xs tabular-nums">{item.value}</span>
+              <span className="text-sm tabular-nums ml-2">{item.value}</span>
             </li>
           ))}
         </ul>

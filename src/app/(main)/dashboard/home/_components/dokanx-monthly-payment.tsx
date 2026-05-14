@@ -35,7 +35,7 @@ const chartConfig = {
 
 export function DokanxMonthlyPayment() {
   return (
-    <Card className="@container/card">
+    <Card className="@container/card flex flex-col h-full">
       <CardHeader>
         <CardTitle className="leading-none">Revenue vs Expense</CardTitle>
         <CardDescription>
@@ -63,8 +63,8 @@ export function DokanxMonthlyPayment() {
         </CardAction>
       </CardHeader>
 
-      <CardContent>
-        <ChartContainer config={chartConfig} className="aspect-auto h-80 w-full">
+      <CardContent className="flex flex-1 flex-col pb-4">
+        <ChartContainer config={chartConfig} className="aspect-auto h-full min-h-[320px] w-full flex-1">
           <ComposedChart data={monthlyPaymentData} margin={{ top: 0, left: -20, right: 0 }}>
             <defs>
               <linearGradient id="fillSales" x1="0" y1="0" x2="0" y2="1">

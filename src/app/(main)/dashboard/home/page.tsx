@@ -32,12 +32,14 @@ export default function DokanXDashboard() {
       {/* Row 2: Sales Trend (Bar) & Order Overview (Donut) */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         
-        <div className="xl:col-span-4">
-          <DokanxTopProducts />
-        </div>
+        
         
         <div className="xl:col-span-8">
           <DokanxSalesTrend />
+        </div>
+
+        <div className="xl:col-span-4">
+          <DokanxTopProducts />
         </div>
         
       </div>

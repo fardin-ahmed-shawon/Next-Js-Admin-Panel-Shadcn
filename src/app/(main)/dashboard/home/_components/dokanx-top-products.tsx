@@ -1,6 +1,6 @@
 import { Box } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const topSellingProducts = [
   { name: "iPhone 14 Pro Max", sold: "18 units", revenue: "৳2,850,984" },
@@ -15,12 +15,15 @@ export function DokanxTopProducts() {
     <Card className="flex flex-col h-full">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="leading-none">Top Selling Products</CardTitle>
+          <div className="flex flex-col gap-1.5">
+            <CardTitle className="leading-none">Top Selling Products</CardTitle>
+            <CardDescription>Top 5 products</CardDescription>
+          </div>
           <Button variant="outline" size="sm" className="h-auto px-2 py-1">Full Details</Button>
         </div>
       </CardHeader>
-      <CardContent className="flex-1">
-        <div className="space-y-6">
+      <CardContent className="flex-1 flex flex-col pb-6">
+        <div className="flex-1 flex flex-col justify-between">
           {topSellingProducts.map((product, i) => (
             <div key={i} className="flex items-center justify-between">
               <div className="flex items-center gap-3">
