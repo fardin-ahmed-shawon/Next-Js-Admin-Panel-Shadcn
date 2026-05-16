@@ -105,9 +105,9 @@ export function ProductDetails({ productId }: { productId: string }) {
             <Button variant="ghost" size="icon-sm" asChild>
               <Link href="/dashboard/products"><ArrowLeft className="size-4" /></Link>
             </Button>
-            <h1 className="text-3xl tracking-tight">{product.name}</h1>
+            <h1 className="text-2xl sm:text-3xl tracking-tight">{product.name}</h1>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <Badge variant={isActive ? "default" : "outline"}>{isActive ? "Active" : "Inactive"}</Badge>
             <span>•</span>
             <span>{product.variants.length} variants</span>
@@ -117,7 +117,7 @@ export function ProductDetails({ productId }: { productId: string }) {
             <span>{product.subCategory}</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2">
             <Switch checked={isActive} onCheckedChange={(v) => { setIsActive(v); toast.success(v ? "Product activated." : "Product deactivated."); }} />
             <span className="text-sm font-medium">{isActive ? "Active" : "Inactive"}</span>
@@ -254,7 +254,7 @@ export function ProductDetails({ productId }: { productId: string }) {
             {/* Right — Stats & Variants */}
             <div className="flex flex-col gap-6">
               {/* Stock stats */}
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                 <Card>
                   <CardHeader><CardDescription className="text-xs uppercase tracking-wider">Total Stock</CardDescription></CardHeader>
                   <CardContent>
@@ -293,7 +293,7 @@ export function ProductDetails({ productId }: { productId: string }) {
                     <div
                       key={v.id}
                       onClick={() => setSelectedImage(v.image)}
-                      className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                      className="flex cursor-pointer flex-col gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                     >
                       <div className="flex items-center gap-3">
                         <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
@@ -320,7 +320,7 @@ export function ProductDetails({ productId }: { productId: string }) {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-6 text-right">
+                      <div className="flex items-center gap-4 text-right sm:gap-6">
                         <div>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Purchase</p>
                           <p className="text-sm font-medium tabular-nums">৳{v.purchasePrice}</p>
@@ -353,7 +353,7 @@ export function ProductDetails({ productId }: { productId: string }) {
               <div className="flex flex-col gap-3">
                 {product.variants.map((v, idx) => (
                   <div key={v.id} className="rounded-lg border p-4">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
                           <img src={v.image} alt={v.name} className="size-full object-cover" />
@@ -370,7 +370,7 @@ export function ProductDetails({ productId }: { productId: string }) {
                         Stock: {v.stock}
                       </Badge>
                     </div>
-                    <div className="grid grid-cols-3 gap-4 text-sm sm:grid-cols-6">
+                    <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3 md:grid-cols-6">
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Color</p>
                         <p className="font-medium">{v.color || "—"}</p>
