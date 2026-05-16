@@ -93,8 +93,8 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/customers",
         icon: Users,
         subItems: [
-          { title: "Add Customer", url: "/dashboard/customers/add" },
           { title: "All Customers", url: "/dashboard/customers" },
+          { title: "Customer Report", url: "/dashboard/customers/report" },
         ],
       },
     ],
