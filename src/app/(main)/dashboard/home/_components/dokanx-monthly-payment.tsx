@@ -1,5 +1,7 @@
 "use client";
 
+import * as React from "react";
+
 import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";
 
 import { Button } from "@/components/ui/button";
@@ -34,26 +36,28 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function DokanxMonthlyPayment() {
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = React.useState(String(currentYear));
+  const years = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
+
   return (
     <Card className="@container/card flex flex-col h-full">
       <CardHeader>
         <CardTitle className="leading-none">Revenue vs Expense</CardTitle>
         <CardDescription>
-          <span className="@[540px]/card:block hidden">Revenue vs Operating Expenses for 2024</span>
-          <span className="@[540px]/card:hidden">2024 Financials</span>
+          <span className="@[540px]/card:block hidden">Revenue vs Operating Expenses for {selectedYear}</span>
+          <span className="@[540px]/card:hidden">{selectedYear} Financials</span>
         </CardDescription>
         <CardAction className="flex items-center gap-2">
-          <Select defaultValue="yearly">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
             <SelectTrigger size="sm" className="min-w-32">
-              <SelectValue placeholder="Select period" />
+              <SelectValue placeholder="Select year" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="yearly">Yearly</SelectItem>
-                <SelectItem value="all-time">All Time</SelectItem>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year}>{year}</SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>

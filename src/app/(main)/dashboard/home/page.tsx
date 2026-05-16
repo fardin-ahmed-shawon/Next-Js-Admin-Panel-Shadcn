@@ -4,7 +4,8 @@ import { DokanxSalesTrend } from "./_components/dokanx-sales-trend";
 import { DokanxOrderOverview } from "./_components/dokanx-order-overview";
 import { DokanxPaymentMethods } from "./_components/dokanx-payment-methods";
 import { DokanxTopProducts } from "./_components/dokanx-top-products";
-import { DokanxRecentOrders } from "./_components/dokanx-recent-orders";
+import { DokanxPendingOrders } from "./_components/dokanx-pending-orders";
+import { DokanxActiveOrders } from "./_components/dokanx-active-orders";
 
 export default function DokanXDashboard() {
   return (
@@ -23,8 +24,8 @@ export default function DokanXDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <DokanxRecentOrders title="Pending Orders" description="Orders awaiting acceptance" filterStatus="Pending" />
-        <DokanxRecentOrders title="Active Orders" description="Currently active orders" filterStatus="Active" />
+        <DokanxPendingOrders />
+        <DokanxActiveOrders />
       </div>
       
       <DokanxPaymentMethods />

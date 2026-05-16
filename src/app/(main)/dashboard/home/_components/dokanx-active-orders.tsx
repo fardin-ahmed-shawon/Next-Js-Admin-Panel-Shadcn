@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Download, UserRound, Search, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal, Eye, Edit, Trash, CheckCircle, XCircle, ShieldAlert, Package, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { Download, UserRound, Search, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal, Eye, Edit, Trash, Package } from "lucide-react";
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -14,7 +15,6 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-
 
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,122 +32,111 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const recentOrders = [
-  { phone: "017000000001", invoice: "ORD-1714614784", total: "৳0", date: "May 13, 2024", status: "Pending" },
+const activeOrders = [
   { phone: "017000000002", invoice: "ORD-1714614785", total: "৳1,000", date: "May 14, 2024", status: "Active" },
-  { phone: "017000000003", invoice: "ORD-1714614786", total: "৳1,000", date: "May 15, 2024", status: "Pending" },
   { phone: "017000000004", invoice: "ORD-1714614787", total: "৳0", date: "May 16, 2024", status: "Active" },
-  { phone: "017000000005", invoice: "ORD-1714614788", total: "৳500", date: "May 17, 2024", status: "Pending" },
   { phone: "017000000006", invoice: "ORD-1714614789", total: "৳2,500", date: "May 18, 2024", status: "Active" },
-  { phone: "017000000007", invoice: "ORD-1714614790", total: "৳3,000", date: "May 19, 2024", status: "Pending" },
   { phone: "017000000008", invoice: "ORD-1714614791", total: "৳1,200", date: "May 20, 2024", status: "Active" },
-  { phone: "017000000009", invoice: "ORD-1714614792", total: "৳800", date: "May 21, 2024", status: "Pending" },
   { phone: "017000000010", invoice: "ORD-1714614793", total: "৳4,500", date: "May 22, 2024", status: "Active" },
-  { phone: "017000000011", invoice: "ORD-1714614794", total: "৳600", date: "May 23, 2024", status: "Pending" },
   { phone: "017000000012", invoice: "ORD-1714614795", total: "৳9,000", date: "May 24, 2024", status: "Active" },
 ];
 
-type OrderRow = typeof recentOrders[0];
+type OrderRow = (typeof activeOrders)[0];
 
-function getColumns(filterStatus: string): ColumnDef<OrderRow>[] {
-  return [
-    {
-      id: "search",
-      accessorFn: (row) => `${row.phone} ${row.invoice}`,
-      filterFn: "includesString",
-      enableHiding: true,
-    },
-    {
-      accessorKey: "phone",
-      header: "CUSTOMER",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-muted">
-            <UserRound className="size-4 text-muted-foreground" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="grid min-w-0 gap-0.5">
-              <span className="truncate font-medium text-sm leading-none">{row.original.phone}</span>
-              <span className="truncate text-muted-foreground text-xs leading-none">{row.original.invoice}</span>
-            </div>
+const columns: ColumnDef<OrderRow>[] = [
+  {
+    id: "search",
+    accessorFn: (row) => `${row.phone} ${row.invoice}`,
+    filterFn: "includesString",
+    enableHiding: true,
+  },
+  {
+    accessorKey: "phone",
+    header: "CUSTOMER",
+    cell: ({ row }) => (
+      <div className="flex items-center gap-2">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-muted">
+          <UserRound className="size-4 text-muted-foreground" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="grid min-w-0 gap-0.5">
+            <span className="truncate font-medium text-sm leading-none">{row.original.phone}</span>
+            <span className="truncate text-muted-foreground text-xs leading-none">{row.original.invoice}</span>
           </div>
         </div>
-      ),
-    },
-    {
-      accessorKey: "date",
-      header: "DATE",
-      cell: ({ row }) => (
-        <div className="grid gap-0.5">
-          <span className="text-sm">{row.original.date}</span>
-          <span className="text-muted-foreground text-xs">at 10:24 AM</span>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "total",
-      header: "TOTAL",
-      cell: ({ row }) => (
-        <div className="font-medium tabular-nums">
-          {row.original.total}
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      header: () => <div className="text-right">ACTIONS</div>,
-      cell: () => (
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm">
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              {filterStatus === "Pending" && (
-                <>
-                  <DropdownMenuItem>
-                    <CheckCircle className="mr-2 size-4" />
-                    Approve
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive focus:text-destructive">
-                    <XCircle className="mr-2 size-4" />
-                    Reject
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <ShieldAlert className="mr-2 size-4" />
-                    Fraud Check
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <DropdownMenuItem>
-                <Eye className="mr-2 size-4" />
-                View
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Edit className="mr-2 size-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive focus:text-destructive">
-                <Trash className="mr-2 size-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ),
-    },
+      </div>
+    ),
+  },
+  {
+    accessorKey: "date",
+    header: "DATE",
+    cell: ({ row }) => (
+      <div className="grid gap-0.5">
+        <span className="text-sm">{row.original.date}</span>
+        <span className="text-muted-foreground text-xs">at 10:24 AM</span>
+      </div>
+    ),
+  },
+  {
+    accessorKey: "total",
+    header: "TOTAL",
+    cell: ({ row }) => (
+      <div className="font-medium tabular-nums">
+        {row.original.total}
+      </div>
+    ),
+  },
+  {
+    id: "actions",
+    header: () => <div className="text-right">ACTIONS</div>,
+    cell: () => (
+      <div className="flex justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm">
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem>
+              <Eye className="mr-2 size-4" />
+              View
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Edit className="mr-2 size-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive focus:text-destructive">
+              <Trash className="mr-2 size-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    ),
+  },
+];
+
+function exportToExcel(data: OrderRow[]) {
+  const headers = ["Phone", "Invoice", "Total", "Date", "Status"];
+  const csvRows = [
+    headers.join(","),
+    ...data.map((row) =>
+      [row.phone, row.invoice, `"${row.total}"`, `"${row.date}"`, row.status].join(",")
+    ),
   ];
+  const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "active_orders.csv";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
-export function DokanxRecentOrders({ title, description, filterStatus }: { title: string, description: string, filterStatus: string }) {
-  const columns = React.useMemo(() => getColumns(filterStatus), [filterStatus]);
-  const filteredData = React.useMemo(() => recentOrders.filter(o => o.status === filterStatus), [filterStatus]);
-
+export function DokanxActiveOrders() {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({
@@ -156,7 +145,7 @@ export function DokanxRecentOrders({ title, description, filterStatus }: { title
   });
 
   const table = useReactTable({
-    data: filteredData,
+    data: activeOrders,
     columns,
     state: {
       columnFilters,
@@ -185,15 +174,15 @@ export function DokanxRecentOrders({ title, description, filterStatus }: { title
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="leading-none">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+        <CardTitle className="leading-none">Active Orders</CardTitle>
+        <CardDescription>Currently active orders</CardDescription>
         <CardAction className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => exportToExcel(table.getFilteredRowModel().rows.map((r) => r.original))}>
             <Download className="mr-2 size-4" />
             Export
           </Button>
-          <Button variant="outline" size="sm">
-            See All
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/dashboard/orders/active">See All</Link>
           </Button>
         </CardAction>
       </CardHeader>
@@ -244,7 +233,6 @@ export function DokanxRecentOrders({ title, description, filterStatus }: { title
                         : value === "newest"
                           ? [{ id: "date", desc: true }]
                           : [];
-
                     table.setSorting(nextSorting);
                     table.setPageIndex(0);
                   }}
@@ -294,7 +282,7 @@ export function DokanxRecentOrders({ title, description, filterStatus }: { title
                         <p className="text-xs text-muted-foreground">
                           {searchQuery
                             ? "Try adjusting your search to find what you're looking for."
-                            : `There are no ${filterStatus.toLowerCase()} orders at the moment.`}
+                            : "There are no active orders at the moment."}
                         </p>
                       </div>
                     </div>
@@ -315,43 +303,19 @@ export function DokanxRecentOrders({ title, description, filterStatus }: { title
               Page {table.getState().pagination.pageIndex + 1} of {Math.max(1, table.getPageCount())}
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                className="hidden size-8 lg:flex"
-                size="icon"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-              >
+              <Button variant="outline" className="hidden size-8 lg:flex" size="icon" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
                 <span className="sr-only">Go to first page</span>
                 <ChevronsLeft className="size-4" />
               </Button>
-              <Button
-                variant="outline"
-                className="size-8"
-                size="icon"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
+              <Button variant="outline" className="size-8" size="icon" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
                 <span className="sr-only">Go to previous page</span>
                 <ChevronLeft className="size-4" />
               </Button>
-              <Button
-                variant="outline"
-                className="size-8"
-                size="icon"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
+              <Button variant="outline" className="size-8" size="icon" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
                 <span className="sr-only">Go to next page</span>
                 <ChevronRight className="size-4" />
               </Button>
-              <Button
-                variant="outline"
-                className="hidden size-8 lg:flex"
-                size="icon"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-              >
+              <Button variant="outline" className="hidden size-8 lg:flex" size="icon" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
                 <span className="sr-only">Go to last page</span>
                 <ChevronsRight className="size-4" />
               </Button>
