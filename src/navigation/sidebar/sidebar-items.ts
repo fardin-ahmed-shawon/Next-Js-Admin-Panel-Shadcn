@@ -60,10 +60,6 @@ export const sidebarItems: NavGroup[] = [
         title: "Categories",
         url: "/dashboard/categories",
         icon: Layers,
-        subItems: [
-          { title: "Add Category", url: "/dashboard/categories/add" },
-          { title: "All Categories", url: "/dashboard/categories" },
-        ],
       },
       {
         title: "Products",
