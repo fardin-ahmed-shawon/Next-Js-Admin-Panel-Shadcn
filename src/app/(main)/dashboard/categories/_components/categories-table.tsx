@@ -9,6 +9,7 @@ import {
   ChevronsRight,
   Download,
   Edit,
+  FolderOpen,
   MoreHorizontal,
   Search,
   Trash,
@@ -518,9 +519,23 @@ export function CategoriesTable() {
                   </TableRow>
                 ))
               ) : (
-                <TableRow>
-                  <TableCell colSpan={table.getVisibleLeafColumns().length} className="h-24 text-center">
-                    No categories found.
+              <TableRow>
+                  <TableCell colSpan={table.getVisibleLeafColumns().length} className="h-auto p-0">
+                    <div className="flex flex-col items-center justify-center gap-3 py-16">
+                      <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+                        <FolderOpen className="size-6 text-muted-foreground" />
+                      </div>
+                      <div className="space-y-1 text-center">
+                        <p className="text-sm font-medium">No categories found</p>
+                        <p className="text-xs text-muted-foreground">
+                          {searchQuery
+                            ? "Try adjusting your search to find what you're looking for."
+                            : activeFilter !== "All"
+                              ? `There are no ${activeFilter.toLowerCase()} categories yet.`
+                              : "Start by creating your first category."}
+                        </p>
+                      </div>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
