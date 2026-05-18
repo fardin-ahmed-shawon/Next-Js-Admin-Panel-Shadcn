@@ -1,0 +1,31 @@
+export const divisions = [
+  "Dhaka", "Chittagong", "Rajshahi", "Khulna", "Barishal", "Sylhet", "Rangpur", "Mymensingh",
+];
+
+export const districts: Record<string, string[]> = {
+  Dhaka: ["Dhaka", "Gazipur", "Narayanganj", "Tangail", "Kishoreganj", "Manikganj", "Munshiganj", "Narsingdi", "Faridpur", "Gopalganj", "Madaripur", "Rajbari", "Shariatpur"],
+  Chittagong: ["Chittagong", "Cox's Bazar", "Comilla", "Brahmanbaria", "Chandpur", "Feni", "Lakshmipur", "Noakhali", "Rangamati", "Khagrachhari", "Bandarban"],
+  Rajshahi: ["Rajshahi", "Bogra", "Pabna", "Sirajganj", "Natore", "Naogaon", "Chapainawabganj", "Joypurhat"],
+  Khulna: ["Khulna", "Jessore", "Satkhira", "Bagerhat", "Narail", "Kushtia", "Meherpur", "Chuadanga", "Jhenaidah", "Magura"],
+  Barishal: ["Barishal", "Bhola", "Patuakhali", "Pirojpur", "Jhalokathi", "Barguna"],
+  Sylhet: ["Sylhet", "Moulvibazar", "Habiganj", "Sunamganj"],
+  Rangpur: ["Rangpur", "Dinajpur", "Kurigram", "Lalmonirhat", "Nilphamari", "Gaibandha", "Thakurgaon", "Panchagarh"],
+  Mymensingh: ["Mymensingh", "Jamalpur", "Netrokona", "Sherpur"],
+};
+
+export const thanas: Record<string, string[]> = {
+  Dhaka: ["Mirpur", "Dhanmondi", "Gulshan", "Banani", "Uttara", "Mohammadpur", "Tejgaon", "Motijheel", "Jatrabari", "Demra", "Badda", "Khilgaon", "Pallabi", "Kafrul", "Cantonment", "Ramna", "Shahbagh", "Lalbagh", "Keraniganj", "Savar", "Tongi"],
+  Gazipur: ["Gazipur Sadar", "Kaliakair", "Kaliganj", "Kapasia", "Sreepur"],
+  Narayanganj: ["Narayanganj Sadar", "Araihazar", "Bandar", "Rupganj", "Sonargaon"],
+  Chittagong: ["Kotwali", "Pahartali", "Panchlaish", "Bakalia", "Double Mooring", "Halishahar", "Patenga", "Bayezid", "Chandgaon"],
+  "Cox's Bazar": ["Cox's Bazar Sadar", "Teknaf", "Ukhiya", "Ramu", "Maheshkhali"],
+  Comilla: ["Comilla Sadar", "Debidwar", "Brahmanpara", "Chandina", "Daudkandi"],
+  Rajshahi: ["Rajshahi Sadar", "Boalia", "Motihar", "Shah Makhdum", "Rajpara"],
+  Bogra: ["Bogra Sadar", "Shibganj", "Sherpur", "Adamdighi", "Gabtali"],
+  Khulna: ["Khulna Sadar", "Sonadanga", "Khalishpur", "Daulatpur", "Dumuria"],
+  Jessore: ["Jessore Sadar", "Benapole", "Manirampur", "Abhaynagar", "Bagherpara"],
+  Sylhet: ["Sylhet Sadar", "South Surma", "Bishwanath", "Jaintiapur", "Golapganj"],
+  Rangpur: ["Rangpur Sadar", "Gangachara", "Kaunia", "Pirganj", "Badarganj"],
+  Mymensingh: ["Mymensingh Sadar", "Trishal", "Bhaluka", "Fulbaria", "Gafargaon"],
+  Barishal: ["Barishal Sadar", "Bakerganj", "Babuganj", "Banaripara", "Gournadi"],
+};

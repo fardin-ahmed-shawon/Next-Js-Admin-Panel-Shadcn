@@ -3,6 +3,7 @@ import {
   Banknote,
   Calendar,
   ChartBar,
+  ClipboardList,
   Fingerprint,
   Forklift,
   Gauge,
@@ -15,11 +16,15 @@ import {
   type LucideIcon,
   Mail,
   MessageSquare,
+  Package,
+  Package2,
   ReceiptText,
   ShoppingBag,
+  ShoppingCart,
   SquareArrowUpRight,
   Users,
 } from "lucide-react";
+import { Carter_One } from "next/font/google";
 
 export interface NavSubItem {
   title: string;
@@ -64,7 +69,7 @@ export const sidebarItems: NavGroup[] = [
       {
         title: "Products",
         url: "/dashboard/products",
-        icon: ShoppingBag,
+        icon: Package,
         subItems: [
           { title: "Add Product", url: "/dashboard/products/add" },
           { title: "All Products", url: "/dashboard/products" },
@@ -73,7 +78,7 @@ export const sidebarItems: NavGroup[] = [
       {
         title: "Orders",
         url: "/dashboard/orders",
-        icon: ReceiptText,
+        icon: ShoppingCart,
         subItems: [
           { title: "Create Order", url: "/dashboard/orders/create" },
           { title: "Order Management", url: "/dashboard/orders" },
