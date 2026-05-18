@@ -20,6 +20,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { UpdatePaymentModal } from "./update-payment-modal";
 
 /* ---- Data ---- */
 
@@ -66,6 +67,50 @@ function paymentBadge(s: string): "default" | "secondary" | "outline" | "destruc
 }
 
 /* ---- Columns ---- */
+
+function PaymentStatusCell({ row }: { row: any }) {
+  const [status, setStatus] = React.useState(row.original.paymentStatus);
+  const [modalOpen, setModalOpen] = React.useState(false);
+
+  return (
+    <>
+      <Select
+        value={status}
+        onValueChange={(val) => {
+          setStatus(val);
+          if (val !== "Partially Paid") {
+            toast.success(`Order ${row.original.id} payment → ${val}`);
+          }
+        }}
+      >
+        <SelectTrigger className="h-7 w-[130px] text-xs border-border/60 rounded-md px-2 gap-1">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {paymentStatuses.filter(s => s !== "All").map((s) => (
+            <SelectItem 
+              key={s} 
+              value={s} 
+              className="text-xs"
+              onPointerUp={() => {
+                if (s === "Partially Paid") {
+                  setModalOpen(true);
+                }
+              }}
+            >
+              {s}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <UpdatePaymentModal 
+         order={{...row.original, paymentStatus: status}} 
+         open={modalOpen} 
+         onOpenChange={setModalOpen} 
+      />
+    </>
+  );
+}
 
 const columns: ColumnDef<OrderRow>[] = [
   { id: "select",
@@ -177,21 +222,7 @@ const columns: ColumnDef<OrderRow>[] = [
 
   // Payment Status column
   { id: "pStatus", header: "Payment Status",
-    cell: ({ row }) => (
-      <Select
-        defaultValue={row.original.paymentStatus}
-        onValueChange={(val) => toast.success(`Order ${row.original.id} payment → ${val}`)}
-      >
-        <SelectTrigger className="h-7 w-[130px] text-xs border-border/60 rounded-md px-2 gap-1">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {paymentStatuses.filter(s => s !== "All").map(status => (
-            <SelectItem key={status} value={status} className="text-xs">{status}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    ),
+    cell: ({ row }) => <PaymentStatusCell row={row} />,
   },
 
   // Send Courier column

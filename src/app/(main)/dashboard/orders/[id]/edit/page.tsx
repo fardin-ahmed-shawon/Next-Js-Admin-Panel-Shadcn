@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import {
-  CreditCard, Minus, Package, Plus, RefreshCw, Search, Send,
-  ShoppingCart, Truck, User, X,
+  ArrowLeft, CreditCard, Minus, Package, Plus, RefreshCw, Search, Send,
+  ShoppingCart, Truck, User, X, Save
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,7 +21,11 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { divisions, districts, thanas } from "./bd-locations";
+
+// Re-using locations from create order
+import { divisions, districts, thanas } from "../../create/_components/bd-locations";
+// Re-using mock data from orders page
+import { allOrders } from "../../page";
 import { PartialPaymentForm } from "../../_components/partial-payment-form";
 
 /* ---- catalogue ---- */
@@ -50,13 +55,15 @@ interface CartItem {
   size: string;
 }
 
-/* ---- component ---- */
+export default function EditOrderPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
 
-export function CreateOrderForm() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchFocused, setSearchFocused] = React.useState(false);
+  
+  // States
   const [cart, setCart] = React.useState<CartItem[]>([]);
-
   const [customerName, setCustomerName] = React.useState("");
   const [customerEmail, setCustomerEmail] = React.useState("");
   const [customerPhone, setCustomerPhone] = React.useState("");
@@ -78,7 +85,35 @@ export function CreateOrderForm() {
   const [orderStatus, setOrderStatus] = React.useState("pending");
 
   const searchRef = React.useRef<HTMLDivElement>(null);
-  const router = useRouter();
+
+  React.useEffect(() => {
+    // Populate form with mock data if order exists
+    const order = allOrders.find((o) => o.id === id);
+    if (order) {
+      setCustomerName(order.customer);
+      setCustomerPhone(order.phone);
+      setShippingAddress("123 Dhanmondi, Dhaka-1205"); // Mock address
+      setDivision("Dhaka");
+      setDistrict("Dhaka");
+      setThana("Dhanmondi");
+      
+      const methodMap: Record<string, string> = {
+        "bKash": "bkash", "Nagad": "nagad", "COD": "cod", "Bank": "bank"
+      };
+      setPaymentMethod(methodMap[order.paymentMethod] || "cod");
+      
+      const statusMap: Record<string, string> = {
+        "Full Paid": "full-paid", "Unpaid": "unpaid", "Partially Paid": "partially-paid", "Refund": "refund"
+      };
+      setPaymentStatus(statusMap[order.paymentStatus] || "unpaid");
+      setPaidAmount(order.paid > 0 ? order.paid : "");
+      setOrderStatus(order.orderStatus.toLowerCase().replace(" ", "-"));
+      
+      // Add a mock product to cart based on the order
+      const mockProduct = productCatalogue.find(p => p.category === order.category) || productCatalogue[0];
+      setCart([{ product: mockProduct, quantity: order.items, color: "Black", size: "M" }]);
+    }
+  }, [id]);
 
   const filteredProducts = React.useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -125,16 +160,16 @@ export function CreateOrderForm() {
     setShippingAddress(""); setDivision(""); setDistrict(""); setThana(""); setShippingMethod("inside-dhaka");
     setPaymentMethod("cod"); setPaymentStatus("unpaid"); setTransactionId(""); setPaidAmount("");
     setDiscountType("fixed"); setDiscountValue(""); setOrderNote(""); setOrderStatus("pending");
-    toast.info("Form has been reset.");
+    toast.info("Form has been cleared.");
   }
 
-  function handleCreateOrder() {
+  function handleSaveOrder() {
     if (cart.length === 0) { toast.error("Please add at least one product."); return; }
     if (!customerName.trim()) { toast.error("Customer name is required."); return; }
     if (!customerPhone.trim()) { toast.error("Customer phone is required."); return; }
     if (!shippingAddress.trim()) { toast.error("Shipping address is required."); return; }
-    toast.success(`Order created successfully! Total: ৳${total.toLocaleString()}`);
-    router.push("/dashboard/orders/success");
+    toast.success(`Order ${id} updated successfully! Total: ৳${total.toLocaleString()}`);
+    router.push(`/dashboard/orders/${id}`);
   }
 
   React.useEffect(() => {
@@ -145,17 +180,31 @@ export function CreateOrderForm() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  if (!allOrders.find((o) => o.id === id)) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-24">
+        <p className="text-lg font-medium">Order not found</p>
+        <Button asChild><Link href="/dashboard/orders"><ArrowLeft className="mr-2 size-4" />Back to Orders</Link></Button>
+      </div>
+    );
+  }
+
   return (
-    <>
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl tracking-tight">Create Order</h1>
-          <p className="text-sm text-muted-foreground">Build a new order by searching products, entering customer details, and selecting payment.</p>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="size-8" asChild>
+              <Link href={`/dashboard/orders/${id}`}><ArrowLeft className="size-4" /></Link>
+            </Button>
+            <h1 className="text-3xl tracking-tight">Edit Order {id}</h1>
+          </div>
+          <p className="text-sm text-muted-foreground ml-11">Update products, customer details, and shipping for this order.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={resetForm}><RefreshCw className="mr-2 size-4" />Reset</Button>
-          <Button size="sm" onClick={handleCreateOrder}><Send className="mr-2 size-4" />Create Order</Button>
+          <Button variant="outline" size="sm" onClick={resetForm}><RefreshCw className="mr-2 size-4" />Clear Form</Button>
+          <Button size="sm" onClick={handleSaveOrder}><Save className="mr-2 size-4" />Save Changes</Button>
         </div>
       </div>
 
@@ -167,7 +216,7 @@ export function CreateOrderForm() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base"><Package className="size-5" />Products</CardTitle>
-              <CardDescription>Search and add products to this order.</CardDescription>
+              <CardDescription>Search and update products for this order.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div ref={searchRef} className="relative">
@@ -193,22 +242,13 @@ export function CreateOrderForm() {
                     })}
                   </div>
                 )}
-                {searchFocused && searchQuery.trim() && filteredProducts.length === 0 && (
-                  <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-popover p-6 shadow-lg">
-                    <div className="flex flex-col items-center gap-2 text-center">
-                      <Package className="size-8 text-muted-foreground" />
-                      <p className="text-sm font-medium">No products found</p>
-                      <p className="text-xs text-muted-foreground">Try a different search term.</p>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {cart.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-12">
                   <div className="flex size-14 items-center justify-center rounded-full bg-muted"><ShoppingCart className="size-6 text-muted-foreground" /></div>
-                  <p className="text-sm font-medium">No products added yet</p>
-                  <p className="text-xs text-muted-foreground">Search above to find and add products to this order.</p>
+                  <p className="text-sm font-medium">No products</p>
+                  <p className="text-xs text-muted-foreground">Search above to find and add products.</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -254,7 +294,6 @@ export function CreateOrderForm() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base"><User className="size-5" />Customer Details</CardTitle>
-              <CardDescription>Enter the customer information for this order.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -278,7 +317,6 @@ export function CreateOrderForm() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base"><Truck className="size-5" />Shipping Information</CardTitle>
-              <CardDescription>Where should this order be delivered?</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
               <div className="space-y-2">
@@ -331,7 +369,6 @@ export function CreateOrderForm() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base text-primary"><CreditCard className="size-5" />Payment</CardTitle>
-              <CardDescription>Select payment method and status.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
               <div className="space-y-2">
@@ -368,7 +405,6 @@ export function CreateOrderForm() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base text-primary">Discount</CardTitle>
-              <CardDescription>Apply a discount to this order.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="grid gap-3 grid-cols-2">
@@ -395,7 +431,6 @@ export function CreateOrderForm() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base text-primary">Order Status</CardTitle>
-              <CardDescription>Set the initial status for this order.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <Select value={orderStatus} onValueChange={setOrderStatus}>
@@ -447,11 +482,11 @@ export function CreateOrderForm() {
                 <span className="font-semibold">Total</span>
                 <span className="font-bold tabular-nums text-primary">৳{total.toLocaleString()}</span>
               </div>
-              <Button className="w-full mt-2" onClick={handleCreateOrder}><Send className="mr-2 size-4" />Create Order</Button>
+              <Button className="w-full mt-2" onClick={handleSaveOrder}><Save className="mr-2 size-4" />Save Changes</Button>
             </CardContent>
           </Card>
         </div>
       </div>
-    </>
+    </div>
   );
 }
