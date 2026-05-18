@@ -479,15 +479,15 @@ export function AddProductForm() {
                         <p className="text-xs font-medium text-muted-foreground">Variant Pricing <span>(optional)</span></p>
                         <div className="grid gap-3 sm:grid-cols-3">
                           <div className="space-y-1.5">
-                            <Label className="text-xs">Purchase Price</Label>
+                            <Label className="text-xs">Purchase Price (৳)</Label>
                             <Input placeholder="0.00" value={v.purchasePrice} onChange={(e) => updateVariant(v.id, "purchasePrice", e.target.value)} />
                           </div>
                           <div className="space-y-1.5">
-                            <Label className="text-xs">Regular Price</Label>
+                            <Label className="text-xs">Regular Price (৳)</Label>
                             <Input placeholder="0.00" value={v.regularPrice} onChange={(e) => updateVariant(v.id, "regularPrice", e.target.value)} />
                           </div>
                           <div className="space-y-1.5">
-                            <Label className="text-xs">Selling Price</Label>
+                            <Label className="text-xs">Selling Price  (৳)</Label>
                             <Input placeholder="0.00" value={v.sellingPrice} onChange={(e) => updateVariant(v.id, "sellingPrice", e.target.value)} />
                           </div>
                         </div>
@@ -513,15 +513,15 @@ export function AddProductForm() {
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
               <div className="space-y-2">
-                <Label htmlFor="purchase-price" className="text-primary font-medium">Purchase Price</Label>
+                <Label htmlFor="purchase-price" className="text-primary font-medium">Purchase Price (৳)</Label>
                 <Input id="purchase-price" placeholder="0.00" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="regular-price" className="text-primary font-medium">Regular Price</Label>
+                <Label htmlFor="regular-price" className="text-primary font-medium">Regular Price (৳)</Label>
                 <Input id="regular-price" placeholder="0.00" value={regularPrice} onChange={(e) => setRegularPrice(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="selling-price" className="text-primary font-medium">Selling Price</Label>
+                <Label htmlFor="selling-price" className="text-primary font-medium">Selling Price (৳)</Label>
                 <Input id="selling-price" placeholder="0.00" value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} />
               </div>
             </CardContent>
