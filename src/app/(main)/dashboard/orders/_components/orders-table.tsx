@@ -328,55 +328,10 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
           {selectedCount > 0 ? `${selectedCount} of ${totalCount} selected` : `${totalCount} orders`}
         </CardDescription>
         <CardAction>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="Table actions"><Ellipsis /></Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {/* Bulk Status */}
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Bulk Update</DropdownMenuLabel>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger><ChevronDown className="mr-2 size-4" />Order Status</DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-44">
-                    {orderStatuses.filter(s => s !== "All").map(s => (
-                      <DropdownMenuItem key={s} onClick={() => toast.success(`Bulk order status → ${s}`)}>  {s}</DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger><ChevronDown className="mr-2 size-4" />Payment Status</DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-44">
-                    {paymentStatuses.filter(s => s !== "All").map(s => (
-                      <DropdownMenuItem key={s} onClick={() => toast.success(`Bulk payment status → ${s}`)}>  {s}</DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              {/* Bulk Print */}
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Bulk Print</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => toast.success("Printing all A4 invoices…")}>
-                  <FileText className="mr-2 size-4" />Print A4 Invoice
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => toast.success("Printing all parcel invoices…")}>
-                  <Printer className="mr-2 size-4" />Print Parcel Invoice
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              {/* Bulk Actions */}
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => exportOrders(table.getFilteredRowModel().rows.map((r) => r.original))}>
-                  <FileDown className="mr-2 size-4" />Export Filtered
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => toast.success("Refreshing…")}>
-                  <RefreshCw className="mr-2 size-4" />Refresh
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Export button — always visible */}
+          <Button variant="outline" size="sm" onClick={() => exportOrders(table.getFilteredRowModel().rows.map((r) => r.original))}>
+            <Download className="mr-2 size-4" />Export
+          </Button>
         </CardAction>
       </CardHeader>
 
@@ -452,18 +407,69 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
           </div>
         </div>
 
-        {/* Bulk actions */}
+        {/* Bulk action row — appears below pay filter when rows selected */}
         {selectedCount > 0 && (
-          <div className="mx-4 flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-2">
-            <span className="text-sm font-medium">{selectedCount} order(s) selected</span>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="ghost" onClick={() => setRowSelection({})}>Clear</Button>
-              <Button size="sm" variant="destructive" onClick={() => { toast.success(`${selectedCount} order(s) deleted.`); setRowSelection({}); }}><Trash2 className="mr-2 size-4" />Delete</Button>
-            </div>
+          <div className="flex items-center gap-2 px-4 animate-in fade-in slide-in-from-top-1 duration-200">
+            <span className="text-xs font-medium text-muted-foreground shrink-0">{selectedCount} selected:</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default" size="sm" className="h-7 gap-1.5 text-xs relative">
+                  <Ellipsis className="size-3.5" />
+                  Bulk Actions
+                  <span className="ml-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">
+                    {selectedCount > 9 ? "9+" : selectedCount}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    {selectedCount} order{selectedCount > 1 ? "s" : ""} selected
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setRowSelection({})}>
+                    <Ban className="mr-2 size-4" />Clear Selection
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => { toast.success(`${selectedCount} order(s) deleted.`); setRowSelection({}); }}
+                  >
+                    <Trash2 className="mr-2 size-4" />Delete Selected
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Bulk Update</DropdownMenuLabel>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger><ChevronDown className="mr-2 size-4" />Order Status</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="w-44">
+                      {orderStatuses.filter(s => s !== "All").map(s => (
+                        <DropdownMenuItem key={s} onClick={() => toast.success(`Bulk order status → ${s}`)}>{s}</DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger><ChevronDown className="mr-2 size-4" />Payment Status</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="w-44">
+                      {paymentStatuses.filter(s => s !== "All").map(s => (
+                        <DropdownMenuItem key={s} onClick={() => toast.success(`Bulk payment status → ${s}`)}>{s}</DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Bulk Print</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => toast.success("Printing all A4 invoices…")}>
+                    <FileText className="mr-2 size-4" />Print A4 Invoice
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => toast.success("Printing all parcel invoices…")}>
+                    <Printer className="mr-2 size-4" />Print Parcel Invoice
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
-
-        {/* Table */}
         <div className="w-full overflow-x-auto">
           <Table className="min-w-[1200px]">
             <TableHeader className="bg-muted/50">
