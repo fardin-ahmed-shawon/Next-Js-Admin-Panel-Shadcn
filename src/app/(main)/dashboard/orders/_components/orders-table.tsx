@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UpdatePaymentModal } from "./update-payment-modal";
+import { ProductsModal } from "./products-modal";
 
 /* ---- Data ---- */
 
@@ -112,6 +113,36 @@ function PaymentStatusCell({ row }: { row: any }) {
   );
 }
 
+function ProductsCell({ row }: { row: any }) {
+  const [modalOpen, setModalOpen] = React.useState(false);
+  return (
+    <>
+      <div className="flex flex-col items-start gap-1.5">
+        <div className="flex -space-x-2">
+          {row.original.productImages.slice(0, 3).map((img: string, i: number) => (
+            <div key={i} className="size-8 shrink-0 overflow-hidden rounded-full border-2 border-background bg-muted">
+              <img src={img} alt="" className="size-full object-cover" />
+            </div>
+          ))}
+          {row.original.productImages.length > 3 && (
+            <div className="flex size-8 items-center justify-center rounded-full border-2 border-background bg-muted text-[10px] font-medium">
+              +{row.original.productImages.length - 3}
+            </div>
+          )}
+        </div>
+        <button className="text-[11px] text-primary hover:underline font-medium" onClick={() => setModalOpen(true)}>
+          See all
+        </button>
+      </div>
+      <ProductsModal
+        order={row.original}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+      />
+    </>
+  );
+}
+
 const columns: ColumnDef<OrderRow>[] = [
   { id: "select",
     header: ({ table }) => <Checkbox aria-label="Select all" checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")} onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)} />,
@@ -168,25 +199,7 @@ const columns: ColumnDef<OrderRow>[] = [
 
   // Products column
   { id: "products", header: "Products",
-    cell: ({ row }) => (
-      <div className="flex flex-col items-start gap-1.5">
-        <div className="flex -space-x-2">
-          {row.original.productImages.slice(0, 3).map((img, i) => (
-            <div key={i} className="size-8 shrink-0 overflow-hidden rounded-full border-2 border-background bg-muted">
-              <img src={img} alt="" className="size-full object-cover" />
-            </div>
-          ))}
-          {row.original.productImages.length > 3 && (
-            <div className="flex size-8 items-center justify-center rounded-full border-2 border-background bg-muted text-[10px] font-medium">
-              +{row.original.productImages.length - 3}
-            </div>
-          )}
-        </div>
-        <button className="text-[11px] text-primary hover:underline font-medium" onClick={() => toast.info("Product details modal coming soon.")}>
-          See all
-        </button>
-      </div>
-    ),
+    cell: ({ row }) => <ProductsCell row={row} />,
   },
 
   // Parcel History column
@@ -229,8 +242,8 @@ const columns: ColumnDef<OrderRow>[] = [
   { id: "sendCourier", header: "Send Courier",
     cell: ({ row }) => (
       <div className="flex flex-col gap-1.5 w-[100px]">
-        <Button size="sm" className="h-7 bg-[#00b074] hover:bg-[#00b074]/90 text-white text-[11px] px-2 justify-start font-medium" onClick={() => toast.success("Sent to Steadfast")}><Truck className="mr-1.5 size-3.5" /> Steadfast</Button>
-        <Button size="sm" className="h-7 bg-[#ef4444] hover:bg-[#ef4444]/90 text-white text-[11px] px-2 justify-start font-medium" onClick={() => toast.success("Sent to Pathao")}><Truck className="mr-1.5 size-3.5" /> Pathao</Button>
+        <Button size="sm" className="h-7 bg-[#00b074] hover:bg-[#00b074]/90 text-white text-[11px] px-2 justify-start font-medium" onClick={() => toast.success(`Order ${row.original.id} sent to Steadfast`)}><Truck className="mr-1.5 size-3.5" /> Steadfast</Button>
+        <Button size="sm" className="h-7 bg-[#ef4444] hover:bg-[#ef4444]/90 text-white text-[11px] px-2 justify-start font-medium" onClick={() => toast.success(`Order ${row.original.id} sent to Pathao`)}><Truck className="mr-1.5 size-3.5" /> Pathao</Button>
       </div>
     ),
   },
@@ -239,9 +252,9 @@ const columns: ColumnDef<OrderRow>[] = [
   { id: "printInvoice", header: "Print Invoice",
     cell: ({ row }) => (
       <div className="flex items-center gap-1">
-        <Button variant="outline" size="icon-sm" className="h-8 w-8 border-muted-foreground/30 text-muted-foreground" onClick={() => toast.success("Regular A4 Invoice generated.")} title="Regular A4"><FileText className="size-4" /></Button>
-        <Button variant="outline" size="icon-sm" className="h-8 w-8 border-muted-foreground/30 text-muted-foreground" onClick={() => toast.success("POS Invoice generated.")} title="POS Receipt"><Printer className="size-4" /></Button>
-        <Button variant="outline" size="icon-sm" className="h-8 w-8 bg-blue-600 hover:bg-blue-700 text-white border-blue-600" onClick={() => toast.success("Parcel Invoice generated.")} title="Parcel Invoice"><Truck className="size-4" /></Button>
+        <Button variant="outline" size="icon-sm" className="h-8 w-8 border-muted-foreground/30 text-muted-foreground" onClick={() => toast.success(`A4 Invoice generated for ${row.original.id}`)} title="Regular A4"><FileText className="size-4" /></Button>
+        <Button variant="outline" size="icon-sm" className="h-8 w-8 border-muted-foreground/30 text-muted-foreground" onClick={() => toast.success(`POS Invoice generated for ${row.original.id}`)} title="POS Receipt"><Printer className="size-4" /></Button>
+        <Button variant="outline" size="icon-sm" className="h-8 w-8 bg-blue-600 hover:bg-blue-700 text-white border-blue-600" onClick={() => toast.success(`Parcel Invoice generated for ${row.original.id}`)} title="Parcel Invoice"><Truck className="size-4" /></Button>
       </div>
     ),
   },
@@ -254,7 +267,7 @@ const columns: ColumnDef<OrderRow>[] = [
           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm"><MoreHorizontal /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem asChild><Link href={`/dashboard/orders/${row.original.id}`}><Eye className="mr-2 size-4" />View</Link></DropdownMenuItem>
-            <DropdownMenuItem onClick={() => toast.info("Edit modal coming soon.")}><Edit className="mr-2 size-4" />Edit</DropdownMenuItem>
+            <DropdownMenuItem asChild><Link href={`/dashboard/orders/${row.original.id}/edit`}><Edit className="mr-2 size-4" />Edit</Link></DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => toast.warning(`Customer ${row.original.customer} blocked.`)}><Ban className="mr-2 size-4" />Block</DropdownMenuItem>
             <DropdownMenuItem className="text-destructive" onClick={() => toast.success(`Order ${row.original.id} deleted.`)}><Trash2 className="mr-2 size-4" />Delete</DropdownMenuItem>
