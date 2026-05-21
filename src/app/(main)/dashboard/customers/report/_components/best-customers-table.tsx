@@ -13,6 +13,7 @@ import {
   useReactTable,
   flexRender,
 } from "@tanstack/react-table";
+import Link from "next/link";
 import {
   ArrowUpDown,
   ChevronLeft,
@@ -116,7 +117,9 @@ const columns: ColumnDef<BestCustomerRow>[] = [
           <img src={row.original.avatar} alt={row.original.name} className="size-full object-cover" />
         </div>
         <div className="flex flex-col gap-0.5">
-          <div className="font-medium leading-none text-sm">{row.original.name}</div>
+          <Link href={`/dashboard/customers/CUST-00${row.original.rank}`} className="font-medium leading-none text-sm hover:underline text-primary">
+            {row.original.name}
+          </Link>
           <div className="text-muted-foreground text-xs">{row.original.email}</div>
         </div>
       </div>

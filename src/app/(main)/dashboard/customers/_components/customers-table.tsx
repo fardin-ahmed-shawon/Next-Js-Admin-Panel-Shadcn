@@ -146,7 +146,9 @@ const columns: ColumnDef<CustomerRow>[] = [
           <img src={row.original.avatar} alt={row.original.name} className="size-full object-cover" />
         </div>
         <div className="flex flex-col gap-0.5">
-          <div className="font-medium leading-none">{row.original.name}</div>
+          <Link href={`/dashboard/customers/${row.original.id}`} className="font-medium leading-none hover:underline text-primary">
+            {row.original.name}
+          </Link>
           <div className="text-muted-foreground text-xs">{row.original.email}</div>
         </div>
       </div>

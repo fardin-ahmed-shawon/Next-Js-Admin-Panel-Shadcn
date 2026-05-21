@@ -44,6 +44,13 @@ const productCatalogue = [
   { id: "PRD-008", name: "Smart Fitness Watch", sku: "SKU-008", price: 4500, stock: 29, image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=FW", category: "Electronics" },
   { id: "PRD-009", name: "Classic Polo Shirt", sku: "SKU-009", price: 950, stock: 88, image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=PS", category: "Clothing" },
   { id: "PRD-010", name: "Minimalist Desk Lamp", sku: "SKU-010", price: 1200, stock: 45, image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=DL", category: "Home" },
+  { id: "PRD-010", name: "Minimalist Desk Lamp", sku: "SKU-010", price: 1200, stock: 45, image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=DL", category: "Home" },
+];
+
+const mockCustomers = [
+  { id: "CUST-001", name: "Arham Khan", phone: "+880 1711-234567", email: "arham@example.com", address: "House 12, Road 5, Banani", division: "Dhaka", district: "Dhaka", thana: "Banani" },
+  { id: "CUST-002", name: "Nusrat Jahan", phone: "+880 1614-567890", email: "nusrat@example.com", address: "Flat 4B, Green Tower, Dhanmondi", division: "Dhaka", district: "Dhaka", thana: "Dhanmondi" },
+  { id: "CUST-003", name: "Maliha Sultana", phone: "+880 1918-901234", email: "maliha@example.com", address: "24/A, South Surma", division: "Sylhet", district: "Sylhet", thana: "South Surma" },
 ];
 
 type CatalogueProduct = (typeof productCatalogue)[0];
@@ -62,6 +69,9 @@ export default function EditOrderPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchFocused, setSearchFocused] = React.useState(false);
   
+  const [customerSearchQuery, setCustomerSearchQuery] = React.useState("");
+  const [customerSearchFocused, setCustomerSearchFocused] = React.useState(false);
+
   // States
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const [customerName, setCustomerName] = React.useState("");
@@ -85,6 +95,7 @@ export default function EditOrderPage() {
   const [orderStatus, setOrderStatus] = React.useState("pending");
 
   const searchRef = React.useRef<HTMLDivElement>(null);
+  const customerSearchRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     // Populate form with mock data if order exists
@@ -123,6 +134,14 @@ export default function EditOrderPage() {
     );
   }, [searchQuery]);
 
+  const filteredCustomers = React.useMemo(() => {
+    if (!customerSearchQuery.trim()) return [];
+    const q = customerSearchQuery.toLowerCase();
+    return mockCustomers.filter(
+      (c) => c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.email.toLowerCase().includes(q)
+    );
+  }, [customerSearchQuery]);
+
   const availableDistricts = division ? districts[division] || [] : [];
   const availableThanas = district ? thanas[district] || [] : [];
 
@@ -147,6 +166,19 @@ export default function EditOrderPage() {
 
   function updateCartItem(productId: string, field: "color" | "size", value: string) {
     setCart((prev) => prev.map((i) => i.product.id === productId ? { ...i, [field]: value } : i));
+  }
+
+  function selectCustomer(customer: typeof mockCustomers[0]) {
+    setCustomerName(customer.name);
+    setCustomerEmail(customer.email);
+    setCustomerPhone(customer.phone);
+    setShippingAddress(customer.address);
+    setDivision(customer.division);
+    setDistrict(customer.district);
+    setThana(customer.thana);
+    setCustomerSearchQuery("");
+    setCustomerSearchFocused(false);
+    toast.success("Customer details loaded.");
   }
 
   const subtotal = cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
@@ -175,6 +207,7 @@ export default function EditOrderPage() {
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchFocused(false);
+      if (customerSearchRef.current && !customerSearchRef.current.contains(e.target as Node)) setCustomerSearchFocused(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -296,6 +329,26 @@ export default function EditOrderPage() {
               <CardTitle className="flex items-center gap-2 text-base"><User className="size-5" />Customer Details</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
+              <div ref={customerSearchRef} className="relative z-40">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input className="pl-9 bg-muted/50 border-dashed" placeholder="Search registered customer by name, phone, or email..." value={customerSearchQuery} onChange={(e) => setCustomerSearchQuery(e.target.value)} onFocus={() => setCustomerSearchFocused(true)} />
+                {customerSearchFocused && filteredCustomers.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-lg">
+                    {filteredCustomers.map((c) => (
+                      <button key={c.id} type="button" className="flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-muted/50" onClick={() => selectCustomer(c)}>
+                        <p className="text-sm font-semibold">{c.name}</p>
+                        <p className="text-xs text-muted-foreground">{c.phone} · {c.email}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {customerSearchFocused && customerSearchQuery.trim() && filteredCustomers.length === 0 && (
+                  <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-popover p-4 shadow-lg text-center">
+                    <p className="text-sm font-medium">No registered customers found</p>
+                  </div>
+                )}
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="customer-name">Full Name <span className="text-destructive">*</span></Label>
