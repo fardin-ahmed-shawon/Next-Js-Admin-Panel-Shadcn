@@ -154,10 +154,6 @@ export const sidebarItems: NavGroup[] = [
         title: "Blogs",
         url: "/dashboard/blogs",
         icon: BookOpenText,
-        subItems: [
-          { title: "Add Blog", url: "/dashboard/blogs/add" },
-          { title: "All Blogs", url: "/dashboard/blogs" },
-        ],
       },
       { title: "Sales Reports", url: "/dashboard/sales-reports", icon: TrendingUp },
       { title: "Brands", url: "/dashboard/brands", icon: Award },

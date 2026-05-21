@@ -18,7 +18,21 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const PERMISSION_GROUPS = [
+type PermissionItem = {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  alwaysOn?: boolean;
+};
+
+type PermissionGroupType = {
+  id: string;
+  title: string;
+  icon: React.ElementType;
+  items: PermissionItem[];
+};
+
+const PERMISSION_GROUPS: PermissionGroupType[] = [
   {
     id: "core",
     title: "Core",
