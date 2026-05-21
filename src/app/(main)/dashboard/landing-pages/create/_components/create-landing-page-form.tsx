@@ -503,16 +503,35 @@ export function CreateLandingPageForm() {
         )}
       </SectionCard>
 
+      {/* ── Home & Feature Images ── */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <SectionCard title="" icon={ImageIcon} description="Home Image">
+          <ImageUploadBox
+            id="home-image"
+            label=""
+            file={homeImageFile}
+            preview={homeImagePreview}
+            onChange={(f, p) => { setHomeImageFile(f); setHomeImagePreview(p); }}
+          />
+        </SectionCard>
+        <SectionCard title="" icon={ImageIcon} description="Feature Image">
+          <ImageUploadBox
+            id="feature-image"
+            label=""
+            file={featureImageFile}
+            preview={featureImagePreview}
+            onChange={(f, p) => { setFeatureImageFile(f); setFeatureImagePreview(p); }}
+          />
+        </SectionCard>
+      </div>
+
       {/* ── Landing Page Info ── */}
       <SectionCard
         icon={Info}
         title="Landing Page Info"
         description="Core content sections of the landing page."
       >
-        <div className="flex flex-col gap-6">
-
-          {/* Top: text fields */}
-          <div className="grid gap-3 sm:grid-cols-2 content-start">
+        <div className="grid gap-3 sm:grid-cols-2 content-start">
 
             {/* Home Title */}
             <div className="space-y-1.5">
@@ -606,25 +625,6 @@ export function CreateLandingPageForm() {
                 onChange={(e) => setYoutubeVideoUrl(e.target.value)}
               />
             </div>
-          </div>
-
-          {/* Bottom: images in a row — smaller aspect */}
-          <div className="grid gap-4 grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-            <ImageUploadBox
-              id="home-image"
-              label="Home Image"
-              file={homeImageFile}
-              preview={homeImagePreview}
-              onChange={(f, p) => { setHomeImageFile(f); setHomeImagePreview(p); }}
-            />
-            <ImageUploadBox
-              id="feature-image"
-              label="Feature Image"
-              file={featureImageFile}
-              preview={featureImagePreview}
-              onChange={(f, p) => { setFeatureImageFile(f); setFeatureImagePreview(p); }}
-            />
-          </div>
         </div>
       </SectionCard>
 
@@ -711,8 +711,11 @@ export function CreateLandingPageForm() {
 
       </div>
 
-      {/* ── Reviews ── */}
-      <SectionCard
+      {/* ── Reviews + Gallery (side by side) ── */}
+      <div className="grid gap-4 md:grid-cols-2">
+
+        {/* Reviews */}
+        <SectionCard
         icon={Quote}
         title="Reviews"
         description="Add customer review screenshot images."
@@ -756,6 +759,8 @@ export function CreateLandingPageForm() {
           <AddRowButton label="Add Gallery Image" onClick={addGallery} />
         </div>
       </SectionCard>
+
+      </div>
 
       {/* ── Fixed bottom publish bar ── */}
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/80 backdrop-blur-md">
