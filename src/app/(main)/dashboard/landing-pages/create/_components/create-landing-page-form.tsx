@@ -503,28 +503,6 @@ export function CreateLandingPageForm() {
         )}
       </SectionCard>
 
-      {/* ── Home & Feature Images ── */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <SectionCard title="" icon={ImageIcon} description="Home Image">
-          <ImageUploadBox
-            id="home-image"
-            label=""
-            file={homeImageFile}
-            preview={homeImagePreview}
-            onChange={(f, p) => { setHomeImageFile(f); setHomeImagePreview(p); }}
-          />
-        </SectionCard>
-        <SectionCard title="" icon={ImageIcon} description="Feature Image">
-          <ImageUploadBox
-            id="feature-image"
-            label=""
-            file={featureImageFile}
-            preview={featureImagePreview}
-            onChange={(f, p) => { setFeatureImageFile(f); setFeatureImagePreview(p); }}
-          />
-        </SectionCard>
-      </div>
-
       {/* ── Landing Page Info ── */}
       <SectionCard
         icon={Info}
@@ -627,6 +605,28 @@ export function CreateLandingPageForm() {
             </div>
         </div>
       </SectionCard>
+
+      {/* ── Home & Feature Images ── */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <SectionCard title="" icon={ImageIcon} description="Home Image">
+          <ImageUploadBox
+            id="home-image"
+            label=""
+            file={homeImageFile}
+            preview={homeImagePreview}
+            onChange={(f, p) => { setHomeImageFile(f); setHomeImagePreview(p); }}
+          />
+        </SectionCard>
+        <SectionCard title="" icon={ImageIcon} description="Feature Image">
+          <ImageUploadBox
+            id="feature-image"
+            label=""
+            file={featureImageFile}
+            preview={featureImagePreview}
+            onChange={(f, p) => { setFeatureImageFile(f); setFeatureImagePreview(p); }}
+          />
+        </SectionCard>
+      </div>
 
       {/* ── Features + Why Choose (side by side) ── */}
       <div className="grid gap-4 md:grid-cols-2">
