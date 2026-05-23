@@ -132,7 +132,7 @@ export const sidebarItems: NavGroup[] = [
         icon: ChartBar,
         subItems: [
           { title: "Dashboard", url: "/dashboard/accounts" },
-          { title: "All Collections", url: "/dashboard/accounts/collections" },
+          { title: "Revenue", url: "/dashboard/accounts/revenue" },
           { title: "Expense Category", url: "/dashboard/accounts/expense-category" },
           { title: "Add Expense", url: "/dashboard/accounts/add-expense" },
           { title: "All Expenses", url: "/dashboard/accounts/expenses" },
