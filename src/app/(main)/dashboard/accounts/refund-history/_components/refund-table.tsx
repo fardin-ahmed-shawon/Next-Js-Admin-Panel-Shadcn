@@ -15,16 +15,17 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
-  ArrowDownRight,
-  ArrowUpRight,
+  ArrowUpDown,
   Archive,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Download,
+  MoreHorizontal,
   Search,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -43,130 +45,136 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 /* ---- Demo Data ---- */
 
-type StatementItem = {
+type RefundItem = {
   id: string;
+  orderId: string;
+  customerName: string;
+  customerPhone: string;
+  originalAmount: number;
+  refundAmount: number;
+  refundMethod: string;
   date: string;
-  time: string;
-  transactionId: string;
-  type: "Revenue" | "Expense" | "COGS";
-  details: string;
-  amountIn: number;
-  amountOut: number;
-  balance: number;
+  status: "Completed" | "Pending";
 };
 
-// Start Balance: 2,450,000
-const mockData: StatementItem[] = ([
-  { id: "ST-01", date: "05/18/2026", time: "09:00 AM", transactionId: "TRX-101", type: "Revenue" as const, details: "Order Payment - Nusrat Jahan", amountIn: 4100, amountOut: 0, balance: 2454100 },
-  { id: "ST-02", date: "05/18/2026", time: "10:15 AM", transactionId: "TRX-102", type: "Revenue" as const, details: "Order Payment - Maliha Sultana", amountIn: 1450, amountOut: 0, balance: 2455550 },
-  { id: "ST-03", date: "05/18/2026", time: "11:30 AM", transactionId: "EXP-501", type: "Expense" as const, details: "Office Supplies - Stationery", amountIn: 0, amountOut: 1200, balance: 2454350 },
-  { id: "ST-04", date: "05/18/2026", time: "01:00 PM", transactionId: "CGS-901", type: "COGS" as const, details: "Supplier Payment - Electronics", amountIn: 0, amountOut: 15000, balance: 2439350 },
-  { id: "ST-05", date: "05/19/2026", time: "10:25 AM", transactionId: "TRX-103", type: "Revenue" as const, details: "Order Payment - Arham Khan", amountIn: 2300, amountOut: 0, balance: 2441650 },
-  { id: "ST-06", date: "05/19/2026", time: "02:20 PM", transactionId: "EXP-502", type: "Expense" as const, details: "Utility Bill - Internet", amountIn: 0, amountOut: 3500, balance: 2438150 },
-  { id: "ST-07", date: "05/20/2026", time: "09:15 AM", transactionId: "TRX-104", type: "Revenue" as const, details: "Order Payment - Karim Uddin", amountIn: 3200, amountOut: 0, balance: 2441350 },
-  { id: "ST-08", date: "05/20/2026", time: "11:00 AM", transactionId: "TRX-105", type: "Revenue" as const, details: "Order Payment - Samira Ahmed", amountIn: 8500, amountOut: 0, balance: 2449850 },
-  { id: "ST-09", date: "05/21/2026", time: "10:00 AM", transactionId: "CGS-902", type: "COGS" as const, details: "Supplier Payment - Clothing", amountIn: 0, amountOut: 25000, balance: 2424850 },
-  { id: "ST-10", date: "05/21/2026", time: "03:45 PM", transactionId: "EXP-503", type: "Expense" as const, details: "Marketing - Facebook Ads", amountIn: 0, amountOut: 10000, balance: 2414850 },
-  { id: "ST-11", date: "05/22/2026", time: "11:10 AM", transactionId: "TRX-106", type: "Revenue" as const, details: "Order Payment - Arham Khan", amountIn: 450, amountOut: 0, balance: 2415300 },
-  { id: "ST-12", date: "05/23/2026", time: "10:05 AM", transactionId: "TRX-107", type: "Revenue" as const, details: "Order Payment - Rafiq Islam", amountIn: 5400, amountOut: 0, balance: 2420700 },
-] as StatementItem[]).reverse(); // Reverse so newest is at the top like a typical ledger
+const mockData: RefundItem[] = [
+  { id: "REF-01", orderId: "ORD-2605", customerName: "Fatima Akter", customerPhone: "+880 1812-345678", originalAmount: 850, refundAmount: 850, refundMethod: "COD", date: "2026-05-16", status: "Completed" },
+  { id: "REF-02", orderId: "ORD-2610", customerName: "Priya Das", customerPhone: "+880 1822-345678", originalAmount: 650, refundAmount: 650, refundMethod: "Nagad", date: "2026-05-14", status: "Completed" },
+  { id: "REF-03", orderId: "ORD-2616", customerName: "Raju Ahmed", customerPhone: "+880 1614-567890", originalAmount: 950, refundAmount: 950, refundMethod: "bKash", date: "2026-02-10", status: "Pending" },
+];
 
-type StatementFilter = "All" | "Revenue" | "Expense" | "COGS";
-const filters: StatementFilter[] = ["All", "Revenue", "Expense", "COGS"];
+type RefundFilter = "All" | "Completed" | "Pending";
+const filters: RefundFilter[] = ["All", "Completed", "Pending"];
 
 /* ---- Columns ---- */
 
-const columns: ColumnDef<StatementItem>[] = [
+const columns: ColumnDef<RefundItem>[] = [
   {
     id: "search",
-    accessorFn: (row) => `${row.transactionId} ${row.details}`,
+    accessorFn: (row) => `${row.orderId} ${row.customerName} ${row.customerPhone}`,
     filterFn: "includesString",
     enableHiding: true,
   },
   {
-    accessorKey: "type",
+    accessorKey: "status",
     filterFn: "equals",
     enableHiding: true,
   },
   {
+    accessorKey: "orderId",
+    header: "Order ID",
+    cell: ({ row }) => <span className="font-medium text-muted-foreground">{row.original.orderId}</span>,
+  },
+  {
     accessorKey: "date",
-    header: "Date & Time",
+    header: "Refund Date",
+    cell: ({ row }) => <span className="text-muted-foreground">{row.original.date}</span>,
+  },
+  {
+    accessorKey: "customerName",
+    header: "Customer",
     cell: ({ row }) => (
       <div className="flex flex-col">
-        <span className="font-medium">{row.original.date}</span>
-        <span className="text-xs text-muted-foreground">{row.original.time}</span>
+        <span className="font-medium">{row.original.customerName}</span>
+        <span className="text-xs text-muted-foreground">{row.original.customerPhone}</span>
       </div>
     ),
   },
   {
-    accessorKey: "transactionId",
-    header: "Transaction ID",
-    cell: ({ row }) => <span className="text-muted-foreground">{row.original.transactionId}</span>,
+    accessorKey: "refundMethod",
+    header: "Method",
+    cell: ({ row }) => <span className="text-muted-foreground">{row.original.refundMethod}</span>,
   },
   {
-    accessorKey: "details",
-    header: "Details",
-    cell: ({ row }) => <span className="font-medium max-w-[200px] truncate block" title={row.original.details}>{row.original.details}</span>,
+    accessorKey: "originalAmount",
+    header: "Original Amt",
+    cell: ({ row }) => <span className="tabular-nums">৳{row.original.originalAmount.toLocaleString()}</span>,
   },
   {
-    accessorKey: "type",
-    header: "Type",
+    accessorKey: "refundAmount",
+    header: "Refund Amount",
+    cell: ({ row }) => <span className="tabular-nums font-bold text-amber-600 dark:text-amber-500">৳{row.original.refundAmount.toLocaleString()}</span>,
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
     cell: ({ row }) => {
-      const type = row.original.type;
+      const s = row.original.status;
       return (
-        <Badge variant={type === "Revenue" ? "default" : type === "COGS" ? "outline" : "secondary"} className={type === "COGS" ? "border-amber-500/50 text-amber-600 dark:text-amber-500" : ""}>
-          {type}
+        <Badge variant={s === "Completed" ? "default" : "secondary"}>
+          {s}
         </Badge>
       );
     },
   },
   {
-    accessorKey: "amountIn",
-    header: () => <div className="text-right flex items-center justify-end"><ArrowDownRight className="mr-1 size-3 text-emerald-500"/> In (Credit)</div>,
+    id: "actions",
+    header: () => <div className="text-right">Actions</div>,
     cell: ({ row }) => {
-      const val = row.original.amountIn;
       return (
-        <div className="text-right tabular-nums font-medium text-emerald-600 dark:text-emerald-500">
-          {val > 0 ? `৳${val.toLocaleString()}` : "-"}
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon-sm" variant="ghost">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => toast.success(`View details for ${row.original.orderId}`)}>
+                View Details
+              </DropdownMenuItem>
+              {row.original.status === "Pending" && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => toast.success(`Refund marked as completed for ${row.original.orderId}`)}>
+                    Mark as Completed
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       );
     },
-  },
-  {
-    accessorKey: "amountOut",
-    header: () => <div className="text-right flex items-center justify-end"><ArrowUpRight className="mr-1 size-3 text-destructive"/> Out (Debit)</div>,
-    cell: ({ row }) => {
-      const val = row.original.amountOut;
-      return (
-        <div className="text-right tabular-nums font-medium text-destructive">
-          {val > 0 ? `৳${val.toLocaleString()}` : "-"}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "balance",
-    header: () => <div className="text-right font-bold">Balance</div>,
-    cell: ({ row }) => <div className="text-right tabular-nums font-bold">৳{row.original.balance.toLocaleString()}</div>,
   },
 ];
 
 /* ---- CSV Export ---- */
 
-function exportToExcel(data: StatementItem[]) {
-  const headers = ["Date", "Time", "Transaction ID", "Type", "Details", "Amount In", "Amount Out", "Balance"];
+function exportToExcel(data: RefundItem[]) {
+  const headers = ["Order ID", "Date", "Customer Name", "Customer Phone", "Method", "Original Amount", "Refund Amount", "Status"];
   const csvRows = [
     headers.join(","),
     ...data.map((row) =>
       [
+        row.orderId,
         row.date,
-        row.time,
-        row.transactionId,
-        row.type,
-        `"${row.details}"`,
-        row.amountIn,
-        row.amountOut,
-        row.balance,
+        `"${row.customerName}"`,
+        row.customerPhone,
+        row.refundMethod,
+        row.originalAmount,
+        row.refundAmount,
+        row.status,
       ].join(","),
     ),
   ];
@@ -174,15 +182,15 @@ function exportToExcel(data: StatementItem[]) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "account_statement.csv";
+  link.download = "refund_history.csv";
   link.click();
   URL.revokeObjectURL(url);
 }
 
 /* ---- Main Table Component ---- */
 
-export function StatementTable() {
-  const [activeFilter, setActiveFilter] = React.useState<StatementFilter>("All");
+export function RefundTable() {
+  const [activeFilter, setActiveFilter] = React.useState<RefundFilter>("All");
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
@@ -193,7 +201,7 @@ export function StatementTable() {
     state: {
       columnFilters,
       sorting,
-      columnVisibility: { search: false, type: false },
+      columnVisibility: { search: false, status: false },
       pagination,
     },
     getRowId: (row) => row.id,
@@ -209,7 +217,7 @@ export function StatementTable() {
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
   const totalCount = table.getFilteredRowModel().rows.length;
 
-  const filterLabel = activeFilter === "All" ? "All Transactions" : `${activeFilter} Transactions`;
+  const filterLabel = activeFilter === "All" ? "All Refunds" : `${activeFilter} Refunds`;
   const countDescription = `${totalCount} records`;
 
   return (
@@ -226,7 +234,7 @@ export function StatementTable() {
             onClick={() => exportToExcel(table.getFilteredRowModel().rows.map((r) => r.original))}
           >
             <Download className="mr-2 size-4" />
-            Export CSV
+            Export
           </Button>
         </CardAction>
       </CardHeader>
@@ -238,7 +246,7 @@ export function StatementTable() {
               <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="h-8 w-64 rounded-[min(var(--radius-md),12px)] pl-8"
-                placeholder="Search description or TRX ID..."
+                placeholder="Search order ID or customer..."
                 value={searchQuery}
                 onChange={(event) => {
                   table.getColumn("search")?.setFilterValue(event.target.value || undefined);
@@ -251,9 +259,9 @@ export function StatementTable() {
               className="bg-muted p-0.75 text-muted-foreground **:data-[slot=toggle-group-item]:rounded-md **:data-[slot=toggle-group-item]:border **:data-[slot=toggle-group-item]:border-transparent **:data-[slot=toggle-group-item]:text-foreground/60 **:data-[slot=toggle-group-item]:hover:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:bg-background [&_[data-slot=toggle-group-item][data-state=on]]:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:shadow-sm dark:[&_[data-slot=toggle-group-item][data-state=on]]:border-input dark:[&_[data-slot=toggle-group-item][data-state=on]]:bg-input/30"
               onValueChange={(value) => {
                 if (!value) return;
-                const filter = value as StatementFilter;
+                const filter = value as RefundFilter;
                 setActiveFilter(filter);
-                table.getColumn("type")?.setFilterValue(filter === "All" ? undefined : filter);
+                table.getColumn("status")?.setFilterValue(filter === "All" ? undefined : filter);
                 table.setPageIndex(0);
               }}
               size="sm"
