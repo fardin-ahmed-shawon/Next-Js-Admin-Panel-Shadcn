@@ -133,9 +133,8 @@ export const sidebarItems: NavGroup[] = [
         subItems: [
           { title: "Dashboard", url: "/dashboard/accounts" },
           { title: "Revenue", url: "/dashboard/accounts/revenue" },
-          { title: "Expense Category", url: "/dashboard/accounts/expense-category" },
-          { title: "Add Expense", url: "/dashboard/accounts/add-expense" },
-          { title: "All Expenses", url: "/dashboard/accounts/expenses" },
+          { title: "Expense Categories", url: "/dashboard/accounts/expense-category" },
+          { title: "Expenses", url: "/dashboard/accounts/expenses" },
           { title: "Profit & Loss", url: "/dashboard/accounts/profit-loss" },
           { title: "Statements", url: "/dashboard/accounts/statements" },
           { title: "Due", url: "/dashboard/accounts/due" },

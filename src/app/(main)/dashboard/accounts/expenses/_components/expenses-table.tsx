@@ -22,7 +22,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Download,
-  Eye,
+  Edit,
   MoreHorizontal,
   Search,
   Trash,
@@ -46,6 +46,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -54,79 +55,66 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
+import { ExpenseDialog, ExpenseData } from "./expense-dialog";
+
 /* ---- Demo Data ---- */
 
-type RevenueItem = {
+type ExpenseItem = {
   id: string;
-  transactionId: string;
-  orderId: string;
-  accountNo: string;
-  customer: string;
-  method: string;
-  amount: number;
   date: string;
-  paymentStatus: "Full Paid" | "Partially Paid" | "Refund";
+  category: string;
+  title: string;
+  amount: number;
+  status: "Paid" | "Pending";
 };
 
-const mockData: RevenueItem[] = [
+const mockData: ExpenseItem[] = [
   {
-    id: "REV-001",
-    transactionId: "TRX-A892B1",
-    orderId: "ORD-2026-100",
-    accountNo: "ACC-5912",
-    customer: "Nusrat Jahan",
-    method: "bKash",
-    amount: 15500,
+    id: "EXP-001",
     date: "10/24/2026",
-    paymentStatus: "Full Paid",
+    category: "Office Rent",
+    title: "November Headquarters Rent",
+    amount: 150000,
+    status: "Paid",
   },
   {
-    id: "REV-002",
-    transactionId: "TRX-C349D8",
-    orderId: "ORD-2026-101",
-    accountNo: "ACC-8374",
-    customer: "Arham Khan",
-    method: "Nagad",
-    amount: 500,
+    id: "EXP-002",
     date: "10/23/2026",
-    paymentStatus: "Partially Paid",
+    category: "Utilities",
+    title: "Electricity Bill",
+    amount: 15000,
+    status: "Paid",
   },
   {
-    id: "REV-003",
-    transactionId: "TRX-E102F5",
-    orderId: "ORD-2026-102",
-    accountNo: "ACC-1093",
-    customer: "Maliha Sultana",
-    method: "Bank Transfer",
-    amount: 100000,
+    id: "EXP-003",
     date: "10/22/2026",
-    paymentStatus: "Full Paid",
+    category: "Marketing",
+    title: "Facebook Ad Campaign",
+    amount: 50000,
+    status: "Pending",
   },
   {
-    id: "REV-004",
-    transactionId: "TRX-G771H9",
-    orderId: "ORD-2026-103",
-    accountNo: "ACC-2941",
-    customer: "Imran Haque",
-    method: "Cash",
-    amount: 2500,
+    id: "EXP-004",
     date: "10/21/2026",
-    paymentStatus: "Refund",
+    category: "Equipment",
+    title: "New Office Laptops",
+    amount: 120000,
+    status: "Paid",
   },
 ];
 
-type RevenueFilter = "All" | "Full Paid" | "Partially Paid" | "Refund";
-const revenueFilters: RevenueFilter[] = ["All", "Full Paid", "Partially Paid", "Refund"];
+type ExpenseFilter = "All" | "Paid" | "Pending";
+const expenseFilters: ExpenseFilter[] = ["All", "Paid", "Pending"];
 
 /* ---- Columns ---- */
 
-const columns: ColumnDef<RevenueItem>[] = [
+const columns: ColumnDef<ExpenseItem>[] = [
   {
     id: "select",
     header: ({ table }) => (
       <div className="w-10">
         <Checkbox
-          aria-label="Select all revenue"
+          aria-label="Select all expenses"
           checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         />
@@ -135,7 +123,7 @@ const columns: ColumnDef<RevenueItem>[] = [
     cell: ({ row }) => (
       <div className="w-10">
         <Checkbox
-          aria-label={`Select revenue ${row.original.id}`}
+          aria-label={`Select expense ${row.original.id}`}
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
         />
@@ -146,46 +134,24 @@ const columns: ColumnDef<RevenueItem>[] = [
   },
   {
     id: "search",
-    accessorFn: (row) => `${row.orderId} ${row.transactionId} ${row.customer} ${row.accountNo}`,
+    accessorFn: (row) => `${row.title} ${row.category} ${row.id}`,
     filterFn: "includesString",
     enableHiding: true,
   },
   {
-    accessorKey: "paymentStatus",
+    accessorKey: "status",
     filterFn: "equals",
     enableHiding: true,
   },
   {
-    accessorKey: "method",
+    accessorKey: "category",
     filterFn: "equals",
     enableHiding: true,
   },
   {
-    accessorKey: "transactionId",
-    header: "Transaction ID",
-    cell: ({ row }) => <span className="font-medium text-muted-foreground">{row.original.transactionId}</span>,
-  },
-  {
-    accessorKey: "orderId",
-    header: "Order ID",
-    cell: ({ row }) => <span className="font-medium">{row.original.orderId}</span>,
-  },
-  {
-    accessorKey: "accountNo",
-    header: "Acc No",
-  },
-  {
-    accessorKey: "customer",
-    header: "Customer",
-  },
-  {
-    accessorKey: "method",
-    header: "Method",
-  },
-  {
-    accessorKey: "amount",
-    header: "Amount",
-    cell: ({ row }) => <span className="tabular-nums font-medium text-emerald-600 dark:text-emerald-500">৳{row.original.amount.toLocaleString()}</span>,
+    accessorKey: "id",
+    header: "Expense ID",
+    cell: ({ row }) => <span className="font-medium text-muted-foreground">{row.original.id}</span>,
   },
   {
     accessorKey: "date",
@@ -193,12 +159,27 @@ const columns: ColumnDef<RevenueItem>[] = [
     cell: ({ row }) => <span className="text-muted-foreground tabular-nums">{row.original.date}</span>,
   },
   {
-    accessorKey: "paymentStatus",
+    accessorKey: "category",
+    header: "Category",
+    cell: ({ row }) => <span className="font-medium">{row.original.category}</span>,
+  },
+  {
+    accessorKey: "title",
+    header: "Title / Description",
+    cell: ({ row }) => <span>{row.original.title}</span>,
+  },
+  {
+    accessorKey: "amount",
+    header: "Amount",
+    cell: ({ row }) => <span className="tabular-nums font-medium text-destructive">৳{row.original.amount.toLocaleString()}</span>,
+  },
+  {
+    accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const s = row.original.paymentStatus;
+      const s = row.original.status;
       return (
-        <Badge variant={s === "Full Paid" ? "default" : s === "Partially Paid" ? "secondary" : "destructive"}>
+        <Badge variant={s === "Paid" ? "default" : "secondary"}>
           {s}
         </Badge>
       );
@@ -207,58 +188,56 @@ const columns: ColumnDef<RevenueItem>[] = [
   {
     id: "actions",
     header: () => <div className="flex w-full justify-end">Actions</div>,
-    cell: ({ row }) => <RowActions row={row.original} />,
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as any;
+      return (
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="flex w-full justify-end">
+                <Button aria-label="Open actions" size="icon-sm" variant="ghost">
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => meta?.onEdit(row.original)}>
+                <Edit className="mr-2 size-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => toast.success(`Expense ${row.original.id} deleted.`)}
+              >
+                <Trash className="mr-2 size-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      );
+    },
     enableHiding: false,
     enableSorting: false,
   },
 ];
 
-/* ---- Row Actions ---- */
-
-function RowActions({ row }: { row: RevenueItem }) {
-  return (
-    <div className="flex justify-end">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm">
-            <MoreHorizontal className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem onClick={() => toast.info(`Viewing details for ${row.transactionId}`)}>
-            <Eye className="mr-2 size-4" />
-            View
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
-            onClick={() => toast.success(`Revenue record ${row.transactionId} deleted.`)}
-          >
-            <Trash className="mr-2 size-4" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-}
-
 /* ---- CSV Export ---- */
 
-function exportToExcel(data: RevenueItem[]) {
-  const headers = ["Transaction ID", "Order ID", "Account No", "Customer", "Method", "Amount", "Date", "Payment Status"];
+function exportToExcel(data: ExpenseItem[]) {
+  const headers = ["Expense ID", "Date", "Category", "Title", "Amount", "Status"];
   const csvRows = [
     headers.join(","),
     ...data.map((row) =>
       [
-        row.transactionId,
-        row.orderId,
-        row.accountNo,
-        `"${row.customer}"`,
-        row.method,
-        row.amount,
+        row.id,
         row.date,
-        row.paymentStatus,
+        `"${row.category}"`,
+        `"${row.title}"`,
+        row.amount,
+        row.status,
       ].join(","),
     ),
   ];
@@ -266,20 +245,35 @@ function exportToExcel(data: RevenueItem[]) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "revenue.csv";
+  link.download = "expenses.csv";
   link.click();
   URL.revokeObjectURL(url);
 }
 
 /* ---- Main Table Component ---- */
 
-export function RevenueTable() {
-  const [activeFilter, setActiveFilter] = React.useState<RevenueFilter>("All");
+export function ExpensesTable() {
+  const [activeFilter, setActiveFilter] = React.useState<ExpenseFilter>("All");
   const [rowSelection, setRowSelection] = React.useState({});
   const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+
+  const [editData, setEditData] = React.useState<ExpenseData | null>(null);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+
+  const handleEdit = (expense: ExpenseItem) => {
+    setEditData({
+      id: expense.id,
+      title: expense.title,
+      category: expense.category,
+      amount: expense.amount,
+      date: expense.date,
+      status: expense.status,
+    });
+    setDialogOpen(true);
+  };
 
   const table = useReactTable({
     data: mockData,
@@ -288,7 +282,7 @@ export function RevenueTable() {
       rowSelection,
       columnFilters,
       sorting,
-      columnVisibility: { search: false, paymentStatus: false, method: false },
+      columnVisibility: { search: false, status: false, category: false },
       pagination,
     },
     getRowId: (row) => row.id,
@@ -301,13 +295,16 @@ export function RevenueTable() {
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    meta: {
+      onEdit: handleEdit,
+    },
   });
 
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
   const selectedCount = table.getSelectedRowModel().rows.length;
   const totalCount = table.getFilteredRowModel().rows.length;
 
-  const filterLabel = activeFilter === "All" ? "All Revenue" : `${activeFilter} Revenue`;
+  const filterLabel = activeFilter === "All" ? "All Expenses" : `${activeFilter} Expenses`;
   const countDescription = selectedCount > 0 ? `${selectedCount} of ${totalCount} selected` : `${totalCount} records`;
 
   return (
@@ -349,9 +346,9 @@ export function RevenueTable() {
               className="bg-muted p-0.75 text-muted-foreground **:data-[slot=toggle-group-item]:rounded-md **:data-[slot=toggle-group-item]:border **:data-[slot=toggle-group-item]:border-transparent **:data-[slot=toggle-group-item]:text-foreground/60 **:data-[slot=toggle-group-item]:hover:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:bg-background [&_[data-slot=toggle-group-item][data-state=on]]:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:shadow-sm dark:[&_[data-slot=toggle-group-item][data-state=on]]:border-input dark:[&_[data-slot=toggle-group-item][data-state=on]]:bg-input/30"
               onValueChange={(value) => {
                 if (!value) return;
-                const filter = value as RevenueFilter;
+                const filter = value as ExpenseFilter;
                 setActiveFilter(filter);
-                table.getColumn("paymentStatus")?.setFilterValue(filter === "All" ? undefined : filter);
+                table.getColumn("status")?.setFilterValue(filter === "All" ? undefined : filter);
                 table.setPageIndex(0);
                 setRowSelection({});
               }}
@@ -360,7 +357,7 @@ export function RevenueTable() {
               type="single"
               value={activeFilter}
             >
-              {revenueFilters.map((filter) => (
+              {expenseFilters.map((filter) => (
                 <ToggleGroupItem key={filter} value={filter}>
                   {filter}
                 </ToggleGroupItem>
@@ -372,7 +369,7 @@ export function RevenueTable() {
             <Button
               size="icon-sm"
               variant="outline"
-              onClick={() => table.getColumn("transactionId")?.toggleSorting(table.getColumn("transactionId")?.getIsSorted() === "asc")}
+              onClick={() => table.getColumn("id")?.toggleSorting(table.getColumn("id")?.getIsSorted() === "asc")}
             >
               <ArrowUpDown className="size-4" />
             </Button>
@@ -419,7 +416,7 @@ export function RevenueTable() {
                 <DialogContent>
                   <DialogTitle>Delete {selectedCount} record(s)?</DialogTitle>
                   <DialogDescription>
-                    This action cannot be undone. The selected revenue records will be permanently removed.
+                    This action cannot be undone. The selected expenses will be permanently removed.
                   </DialogDescription>
                   <DialogFooter>
                     <DialogClose asChild>
@@ -470,7 +467,7 @@ export function RevenueTable() {
                   <TableCell colSpan={columns.length} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-3 py-8">
                       <Archive className="size-6 text-muted-foreground" />
-                      <p className="text-sm font-medium text-muted-foreground">No revenue records found</p>
+                      <p className="text-sm font-medium text-muted-foreground">No expenses found</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -546,6 +543,13 @@ export function RevenueTable() {
           </div>
         </div>
       </CardContent>
+
+      <ExpenseDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        initialData={editData}
+        mode="edit"
+      />
     </Card>
   );
 }
