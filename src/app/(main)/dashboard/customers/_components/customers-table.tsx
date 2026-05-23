@@ -149,7 +149,7 @@ const columns: ColumnDef<CustomerRow>[] = [
           <Link href={`/dashboard/customers/${row.original.id}`} className="font-medium leading-none hover:underline text-primary">
             {row.original.name}
           </Link>
-          <div className="text-muted-foreground text-xs">{row.original.email}</div>
+          <div className="text-muted-foreground text-xs">{row.original.phone}</div>
         </div>
       </div>
     ),

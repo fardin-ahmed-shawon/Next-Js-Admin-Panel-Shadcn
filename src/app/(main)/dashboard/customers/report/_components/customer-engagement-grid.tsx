@@ -43,7 +43,7 @@ type EngagementStatus = "Active" | "Inactive" | "Banned";
 
 interface EngagementCustomer {
   name: string;
-  email: string;
+  phone: string;
   avatar: string;
   orders: number;
   spent: number;
@@ -55,25 +55,25 @@ interface EngagementCustomer {
 
 const allCustomers: EngagementCustomer[] = [
   // Active
-  { name: "Nusrat Jahan", email: "nusrat@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NJ", orders: 42, spent: 28750, status: "Active", meta: "2 hours ago" },
-  { name: "Arham Khan", email: "arham@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AK", orders: 24, spent: 12450, status: "Active", meta: "1 day ago" },
-  { name: "Maliha Sultana", email: "maliha@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=MS", orders: 31, spent: 18500, status: "Active", meta: "2 days ago" },
-  { name: "Fatima Akter", email: "fatima@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=FA", orders: 18, spent: 8920, status: "Active", meta: "3 days ago" },
-  { name: "Ayesha Siddiqua", email: "ayesha@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AS", orders: 28, spent: 15200, status: "Active", meta: "4 days ago" },
-  { name: "Imran Haque", email: "imran@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=IH", orders: 15, spent: 9820, status: "Active", meta: "5 days ago" },
-  { name: "Kamal Hossain", email: "kamal@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=KH", orders: 9, spent: 5430, status: "Active", meta: "1 week ago" },
-  { name: "Tanvir Hossain", email: "tanvir@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=TH", orders: 7, spent: 3680, status: "Active", meta: "2 weeks ago" },
+  { name: "Nusrat Jahan", phone: "+880 1614-567890", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NJ", orders: 42, spent: 28750, status: "Active", meta: "2 hours ago" },
+  { name: "Arham Khan", phone: "+880 1711-234567", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AK", orders: 24, spent: 12450, status: "Active", meta: "1 day ago" },
+  { name: "Maliha Sultana", phone: "+880 1918-901234", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=MS", orders: 31, spent: 18500, status: "Active", meta: "2 days ago" },
+  { name: "Fatima Akter", phone: "+880 1812-345678", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=FA", orders: 18, spent: 8920, status: "Active", meta: "3 days ago" },
+  { name: "Ayesha Siddiqua", phone: "+880 1520-123456", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AS", orders: 28, spent: 15200, status: "Active", meta: "4 days ago" },
+  { name: "Imran Haque", phone: "+880 1817-890123", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=IH", orders: 15, spent: 9820, status: "Active", meta: "5 days ago" },
+  { name: "Kamal Hossain", phone: "+880 1721-234567", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=KH", orders: 9, spent: 5430, status: "Active", meta: "1 week ago" },
+  { name: "Tanvir Hossain", phone: "+880 1515-678901", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=TH", orders: 7, spent: 3680, status: "Active", meta: "2 weeks ago" },
   // Inactive
-  { name: "Rahim Uddin", email: "rahim@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RU", orders: 3, spent: 1250, status: "Inactive", meta: "120 days inactive" },
-  { name: "Sadia Rahman", email: "sadia@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SR", orders: 1, spent: 580, status: "Inactive", meta: "150 days inactive" },
-  { name: "Rafiq Islam", email: "rafiq@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RI", orders: 1, spent: 450, status: "Inactive", meta: "90 days inactive" },
-  { name: "Priya Das", email: "priya@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=PD", orders: 2, spent: 1200, status: "Inactive", meta: "180 days inactive" },
-  { name: "Habibur Rahman", email: "habib@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=HR", orders: 5, spent: 3200, status: "Inactive", meta: "240 days inactive" },
-  { name: "Monir Hossain", email: "monir@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=MH", orders: 2, spent: 890, status: "Inactive", meta: "210 days inactive" },
+  { name: "Rahim Uddin", phone: "+880 1913-456789", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RU", orders: 3, spent: 1250, status: "Inactive", meta: "120 days inactive" },
+  { name: "Sadia Rahman", phone: "+880 1716-789012", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SR", orders: 1, spent: 580, status: "Inactive", meta: "150 days inactive" },
+  { name: "Rafiq Islam", phone: "+880 1619-012345", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RI", orders: 1, spent: 450, status: "Inactive", meta: "90 days inactive" },
+  { name: "Priya Das", phone: "+880 1822-345678", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=PD", orders: 2, spent: 1200, status: "Inactive", meta: "180 days inactive" },
+  { name: "Habibur Rahman", phone: "+880 1511-987654", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=HR", orders: 5, spent: 3200, status: "Inactive", meta: "240 days inactive" },
+  { name: "Monir Hossain", phone: "+880 1611-987654", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=MH", orders: 2, spent: 890, status: "Inactive", meta: "210 days inactive" },
   // Banned
-  { name: "Shahid Mia", email: "shahid@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SM", orders: 6, spent: 0, status: "Banned", meta: "Multiple fraudulent chargebacks", metaSub: "Banned on 2025-12-10" },
-  { name: "Raju Ahmed", email: "raju@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RA", orders: 12, spent: 4500, status: "Banned", meta: "Repeated abusive behaviour towards delivery staff", metaSub: "Banned on 2026-01-22" },
-  { name: "Nasir Uddin", email: "nasir@example.com", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NU", orders: 3, spent: 980, status: "Banned", meta: "Violation of terms of service", metaSub: "Banned on 2026-03-05" },
+  { name: "Shahid Mia", phone: "+880 1813-765432", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SM", orders: 6, spent: 0, status: "Banned", meta: "Multiple fraudulent chargebacks", metaSub: "Banned on 2025-12-10" },
+  { name: "Raju Ahmed", phone: "+880 1913-765432", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RA", orders: 12, spent: 4500, status: "Banned", meta: "Repeated abusive behaviour towards delivery staff", metaSub: "Banned on 2026-01-22" },
+  { name: "Nasir Uddin", phone: "+880 1712-876543", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NU", orders: 3, spent: 980, status: "Banned", meta: "Violation of terms of service", metaSub: "Banned on 2026-03-05" },
 ];
 
 type StatusFilter = "All" | "Active" | "Inactive" | "Banned";
@@ -92,11 +92,11 @@ const statusConfig: Record<EngagementStatus, { color: string; border: string; bg
 };
 
 function exportCustomers(data: EngagementCustomer[]) {
-  const headers = ["Name", "Email", "Status", "Orders", "Total Spent", "Details"];
+  const headers = ["Name", "Phone", "Status", "Orders", "Total Spent", "Details"];
   const csvRows = [
     headers.join(","),
     ...data.map((r) =>
-      [`"${r.name}"`, `"${r.email}"`, r.status, r.orders, r.spent, `"${r.meta}"`].join(",")
+      [`"${r.name}"`, `"${r.phone}"`, r.status, r.orders, r.spent, `"${r.meta}"`].join(",")
     ),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -126,7 +126,7 @@ export function CustomerEngagementGrid() {
     if (filter !== "All") result = result.filter((c) => c.status === filter);
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter((c) => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q));
+      result = result.filter((c) => c.name.toLowerCase().includes(q) || c.phone.toLowerCase().includes(q));
     }
     return result;
   }, [filter, search]);
@@ -244,7 +244,7 @@ export function CustomerEngagementGrid() {
               const cfg = statusConfig[c.status];
               return (
                 <div
-                  key={`${c.email}-${i}`}
+                  key={`${c.phone}-${i}`}
                   className={`rounded-lg border p-4 transition-colors ${cfg.border} ${cfg.bg} flex flex-col gap-3`}
                 >
                   {/* Avatar + Identity */}
@@ -259,7 +259,7 @@ export function CustomerEngagementGrid() {
                           {c.status}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">{c.email}</p>
+                      <p className="text-xs text-muted-foreground truncate">{c.phone}</p>
                     </div>
                   </div>
 
