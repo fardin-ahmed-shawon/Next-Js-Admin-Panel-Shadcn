@@ -66,16 +66,20 @@ import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const ordersData = [
-  { id: "ORD-5001", customer: { name: "John Doe", email: "john@example.com", phone: "+8801700000001" }, amount: "৳150.00", paymentMethod: "Card", paymentStatus: "Paid", date: "15 Mar 2024", time: "10:30 AM", orderStatus: "Processing", parcelStatus: "Not Added", courier: "Steadfast" },
-  { id: "ORD-5002", customer: { name: "Jane Smith", email: "jane@example.com", phone: "+8801700000002" }, amount: "৳85.50", paymentMethod: "COD", paymentStatus: "Pending", date: "15 Mar 2024", time: "02:15 PM", orderStatus: "Shipped", parcelStatus: "Added", courier: "Pathao" },
-  { id: "ORD-5003", customer: { name: "Alice Johnson", email: "alice@example.com", phone: "+8801700000003" }, amount: "৳210.00", paymentMethod: "Bkash", paymentStatus: "Paid", date: "14 Mar 2024", time: "11:45 AM", orderStatus: "Delivered", parcelStatus: "Returned", courier: "Steadfast" },
-  { id: "ORD-5004", customer: { name: "Bob Brown", email: "bob@example.com", phone: "+8801700000004" }, amount: "৳45.00", paymentMethod: "Card", paymentStatus: "Paid", date: "14 Mar 2024", time: "04:20 PM", orderStatus: "Processing", parcelStatus: "Not Added", courier: "Steadfast" },
-  { id: "ORD-5005", customer: { name: "Charlie Davis", email: "charlie@example.com", phone: "+8801700000005" }, amount: "৳320.00", paymentMethod: "Bank Transfer", paymentStatus: "Paid", date: "13 Mar 2024", time: "09:00 AM", orderStatus: "Shipped", parcelStatus: "Added", courier: "Pathao" },
-  { id: "ORD-5006", customer: { name: "Diana Evans", email: "diana@example.com", phone: "+8801700000006" }, amount: "৳90.00", paymentMethod: "COD", paymentStatus: "Pending", date: "12 Mar 2024", time: "01:30 PM", orderStatus: "Returned", parcelStatus: "Returned", courier: "Steadfast" },
-];
+import { format } from "date-fns";
 
-type OrderRow = (typeof ordersData)[0];
+export type OrderRow = {
+  id: string;
+  customer: { name: string; email: string; phone: string };
+  amount: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  date: string;
+  time: string;
+  orderStatus: string;
+  parcelStatus: string;
+  courier: string;
+};
 
 const columns: ColumnDef<OrderRow>[] = [
   {
@@ -137,12 +141,16 @@ const columns: ColumnDef<OrderRow>[] = [
   {
     accessorKey: "date",
     header: "Date & Time",
-    cell: ({ row }) => (
-      <div className="flex flex-col gap-0.5">
-        <span className="font-medium text-sm">{row.original.date}</span>
-        <span className="text-muted-foreground text-xs">{row.original.time}</span>
-      </div>
-    ),
+    cell: ({ row }) => {
+      // Format from ISO (e.g. 2024-03-15) to localized date like "15 Mar 2024"
+      const dateStr = format(new Date(row.original.date), "dd MMM yyyy");
+      return (
+        <div className="flex flex-col gap-0.5">
+          <span className="font-medium text-sm">{dateStr}</span>
+          <span className="text-muted-foreground text-xs">{row.original.time}</span>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "orderStatus",
@@ -223,14 +231,14 @@ function RowActions({ row }: { row: OrderRow }) {
   );
 }
 
-export function ParcelReportsTable() {
+export function ParcelReportsTable({ data }: { data: OrderRow[] }) {
   const [activeFilter, setActiveFilter] = React.useState("All");
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   const table = useReactTable({
-    data: ordersData,
+    data,
     columns,
     state: {
       columnFilters,
