@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
-import { Download, UserRound, Search, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal, Eye, Edit, Trash, CheckCircle, XCircle, ShieldAlert, Package } from "lucide-react";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -15,12 +16,27 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import {
+  ArrowUpDown,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Download,
+  Edit,
+  Eye,
+  MoreHorizontal,
+  Package,
+  Search,
+  ShieldAlert,
+  Trash,
+  UserRound,
+  XCircle,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +47,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const pendingOrders = [
   { phone: "017000000001", invoice: "ORD-1714614784", total: "৳0", date: "May 13, 2024", status: "Pending" },
@@ -80,11 +99,7 @@ const columns: ColumnDef<OrderRow>[] = [
   {
     accessorKey: "total",
     header: "TOTAL",
-    cell: ({ row }) => (
-      <div className="font-medium tabular-nums">
-        {row.original.total}
-      </div>
-    ),
+    cell: ({ row }) => <div className="font-medium tabular-nums">{row.original.total}</div>,
   },
   {
     id: "actions",
@@ -136,9 +151,7 @@ function exportToExcel(data: OrderRow[]) {
   const headers = ["Phone", "Invoice", "Total", "Date", "Status"];
   const csvRows = [
     headers.join(","),
-    ...data.map((row) =>
-      [row.phone, row.invoice, `"${row.total}"`, `"${row.date}"`, row.status].join(",")
-    ),
+    ...data.map((row) => [row.phone, row.invoice, `"${row.total}"`, `"${row.date}"`, row.status].join(",")),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -190,7 +203,11 @@ export function DokanxPendingOrders() {
         <CardTitle className="leading-none">Pending Orders</CardTitle>
         <CardDescription>Orders awaiting acceptance</CardDescription>
         <CardAction className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => exportToExcel(table.getFilteredRowModel().rows.map((r) => r.original))}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportToExcel(table.getFilteredRowModel().rows.map((r) => r.original))}
+          >
             <Download className="mr-2 size-4" />
             Export
           </Button>
@@ -316,19 +333,43 @@ export function DokanxPendingOrders() {
               Page {table.getState().pagination.pageIndex + 1} of {Math.max(1, table.getPageCount())}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" className="hidden size-8 lg:flex" size="icon" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+              <Button
+                variant="outline"
+                className="hidden size-8 lg:flex"
+                size="icon"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+              >
                 <span className="sr-only">Go to first page</span>
                 <ChevronsLeft className="size-4" />
               </Button>
-              <Button variant="outline" className="size-8" size="icon" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+              <Button
+                variant="outline"
+                className="size-8"
+                size="icon"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
                 <span className="sr-only">Go to previous page</span>
                 <ChevronLeft className="size-4" />
               </Button>
-              <Button variant="outline" className="size-8" size="icon" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+              <Button
+                variant="outline"
+                className="size-8"
+                size="icon"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
                 <span className="sr-only">Go to next page</span>
                 <ChevronRight className="size-4" />
               </Button>
-              <Button variant="outline" className="hidden size-8 lg:flex" size="icon" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+              <Button
+                variant="outline"
+                className="hidden size-8 lg:flex"
+                size="icon"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage()}
+              >
                 <span className="sr-only">Go to last page</span>
                 <ChevronsRight className="size-4" />
               </Button>

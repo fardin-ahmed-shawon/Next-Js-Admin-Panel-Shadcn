@@ -31,7 +31,7 @@ export function ChangeLogoTab() {
           <Input type="file" className="cursor-pointer file:cursor-pointer" accept="image/*" />
         </div>
       </div>
-      
+
       <div className="flex justify-end pt-4 pb-8">
         <Button>Save Logo</Button>
       </div>

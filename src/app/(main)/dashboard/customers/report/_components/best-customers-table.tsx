@@ -1,21 +1,24 @@
 "use client";
 
 import * as React from "react";
+
+import Link from "next/link";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
-  type PaginationState,
-  type SortingState,
+  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type PaginationState,
+  type SortingState,
   useReactTable,
-  flexRender,
 } from "@tanstack/react-table";
-import Link from "next/link";
 import {
   ArrowUpDown,
+  Award,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -23,7 +26,6 @@ import {
   Crown,
   Download,
   Medal,
-  Award,
   Search,
   Trophy,
   UserX,
@@ -31,50 +33,165 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 /* ---- Demo Data ---- */
 
 const allBestCustomers = [
-  { rank: 1, name: "Nusrat Jahan", email: "nusrat@example.com", phone: "+880 1614-567890", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NJ", orders: 127, spent: 84500, period: "all" as const },
-  { rank: 2, name: "Maliha Sultana", email: "maliha@example.com", phone: "+880 1918-901234", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=MS", orders: 98, spent: 62300, period: "all" as const },
-  { rank: 3, name: "Ayesha Siddiqua", email: "ayesha@example.com", phone: "+880 1520-123456", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AS", orders: 85, spent: 51200, period: "all" as const },
-  { rank: 4, name: "Arham Khan", email: "arham@example.com", phone: "+880 1711-234567", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AK", orders: 72, spent: 43800, period: "all" as const },
-  { rank: 5, name: "Imran Haque", email: "imran@example.com", phone: "+880 1817-890123", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=IH", orders: 64, spent: 38900, period: "all" as const },
-  { rank: 6, name: "Fatima Akter", email: "fatima@example.com", phone: "+880 1812-345678", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=FA", orders: 58, spent: 32100, period: "all" as const },
-  { rank: 7, name: "Kamal Hossain", email: "kamal@example.com", phone: "+880 1721-234567", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=KH", orders: 45, spent: 27600, period: "all" as const },
-  { rank: 8, name: "Tanvir Hossain", email: "tanvir@example.com", phone: "+880 1515-678901", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=TH", orders: 39, spent: 21400, period: "all" as const },
-  { rank: 9, name: "Priya Das", email: "priya@example.com", phone: "+880 1822-345678", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=PD", orders: 31, spent: 18900, period: "all" as const },
-  { rank: 10, name: "Rahim Uddin", email: "rahim@example.com", phone: "+880 1913-456789", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RU", orders: 22, spent: 12500, period: "all" as const },
-  { rank: 11, name: "Sadia Rahman", email: "sadia@example.com", phone: "+880 1716-789012", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SR", orders: 19, spent: 10200, period: "all" as const },
-  { rank: 12, name: "Rafiq Islam", email: "rafiq@example.com", phone: "+880 1619-012345", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RI", orders: 14, spent: 8750, period: "all" as const },
-  { rank: 13, name: "Habibur Rahman", email: "habib@example.com", phone: "+880 1511-987654", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=HR", orders: 11, spent: 6400, period: "all" as const },
-  { rank: 14, name: "Nasir Uddin", email: "nasir@example.com", phone: "+880 1712-876543", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NU", orders: 8, spent: 4200, period: "all" as const },
-  { rank: 15, name: "Shahid Mia", email: "shahid@example.com", phone: "+880 1813-765432", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SM", orders: 5, spent: 2800, period: "all" as const },
+  {
+    rank: 1,
+    name: "Nusrat Jahan",
+    email: "nusrat@example.com",
+    phone: "+880 1614-567890",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NJ",
+    orders: 127,
+    spent: 84500,
+    period: "all" as const,
+  },
+  {
+    rank: 2,
+    name: "Maliha Sultana",
+    email: "maliha@example.com",
+    phone: "+880 1918-901234",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=MS",
+    orders: 98,
+    spent: 62300,
+    period: "all" as const,
+  },
+  {
+    rank: 3,
+    name: "Ayesha Siddiqua",
+    email: "ayesha@example.com",
+    phone: "+880 1520-123456",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AS",
+    orders: 85,
+    spent: 51200,
+    period: "all" as const,
+  },
+  {
+    rank: 4,
+    name: "Arham Khan",
+    email: "arham@example.com",
+    phone: "+880 1711-234567",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AK",
+    orders: 72,
+    spent: 43800,
+    period: "all" as const,
+  },
+  {
+    rank: 5,
+    name: "Imran Haque",
+    email: "imran@example.com",
+    phone: "+880 1817-890123",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=IH",
+    orders: 64,
+    spent: 38900,
+    period: "all" as const,
+  },
+  {
+    rank: 6,
+    name: "Fatima Akter",
+    email: "fatima@example.com",
+    phone: "+880 1812-345678",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=FA",
+    orders: 58,
+    spent: 32100,
+    period: "all" as const,
+  },
+  {
+    rank: 7,
+    name: "Kamal Hossain",
+    email: "kamal@example.com",
+    phone: "+880 1721-234567",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=KH",
+    orders: 45,
+    spent: 27600,
+    period: "all" as const,
+  },
+  {
+    rank: 8,
+    name: "Tanvir Hossain",
+    email: "tanvir@example.com",
+    phone: "+880 1515-678901",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=TH",
+    orders: 39,
+    spent: 21400,
+    period: "all" as const,
+  },
+  {
+    rank: 9,
+    name: "Priya Das",
+    email: "priya@example.com",
+    phone: "+880 1822-345678",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=PD",
+    orders: 31,
+    spent: 18900,
+    period: "all" as const,
+  },
+  {
+    rank: 10,
+    name: "Rahim Uddin",
+    email: "rahim@example.com",
+    phone: "+880 1913-456789",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RU",
+    orders: 22,
+    spent: 12500,
+    period: "all" as const,
+  },
+  {
+    rank: 11,
+    name: "Sadia Rahman",
+    email: "sadia@example.com",
+    phone: "+880 1716-789012",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SR",
+    orders: 19,
+    spent: 10200,
+    period: "all" as const,
+  },
+  {
+    rank: 12,
+    name: "Rafiq Islam",
+    email: "rafiq@example.com",
+    phone: "+880 1619-012345",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RI",
+    orders: 14,
+    spent: 8750,
+    period: "all" as const,
+  },
+  {
+    rank: 13,
+    name: "Habibur Rahman",
+    email: "habib@example.com",
+    phone: "+880 1511-987654",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=HR",
+    orders: 11,
+    spent: 6400,
+    period: "all" as const,
+  },
+  {
+    rank: 14,
+    name: "Nasir Uddin",
+    email: "nasir@example.com",
+    phone: "+880 1712-876543",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NU",
+    orders: 8,
+    spent: 4200,
+    period: "all" as const,
+  },
+  {
+    rank: 15,
+    name: "Shahid Mia",
+    email: "shahid@example.com",
+    phone: "+880 1813-765432",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SM",
+    orders: 5,
+    spent: 2800,
+    period: "all" as const,
+  },
 ];
 
 type BestCustomerRow = (typeof allBestCustomers)[0];
@@ -117,7 +234,10 @@ const columns: ColumnDef<BestCustomerRow>[] = [
           <img src={row.original.avatar} alt={row.original.name} className="size-full object-cover" />
         </div>
         <div className="flex flex-col gap-0.5">
-          <Link href={`/dashboard/customers/CUST-00${row.original.rank}`} className="font-medium leading-none text-sm hover:underline text-primary">
+          <Link
+            href={`/dashboard/customers/CUST-00${row.original.rank}`}
+            className="font-medium leading-none text-sm hover:underline text-primary"
+          >
             {row.original.name}
           </Link>
           <div className="text-muted-foreground text-xs">{row.original.phone}</div>
@@ -128,9 +248,7 @@ const columns: ColumnDef<BestCustomerRow>[] = [
   {
     accessorKey: "orders",
     header: "Orders",
-    cell: ({ row }) => (
-      <span className="tabular-nums font-medium">{row.original.orders}</span>
-    ),
+    cell: ({ row }) => <span className="tabular-nums font-medium">{row.original.orders}</span>,
   },
   {
     accessorKey: "spent",
@@ -158,9 +276,7 @@ function exportBestCustomers(data: BestCustomerRow[]) {
   const headers = ["Rank", "Name", "Email", "Orders", "Total Spent"];
   const csvRows = [
     headers.join(","),
-    ...data.map((row) =>
-      [row.rank, `"${row.name}"`, `"${row.email}"`, row.orders, row.spent].join(",")
-    ),
+    ...data.map((row) => [row.rank, `"${row.name}"`, `"${row.email}"`, row.orders, row.spent].join(",")),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -207,9 +323,7 @@ export function BestCustomersTable() {
           <Trophy className="size-5 text-amber-500" />
           Best Customers
         </CardTitle>
-        <CardDescription>
-          Top customers ranked by total spent &middot; {totalCount} customers
-        </CardDescription>
+        <CardDescription>Top customers ranked by total spent &middot; {totalCount} customers</CardDescription>
         <CardAction>
           <Button
             variant="outline"
@@ -311,11 +425,18 @@ export function BestCustomersTable() {
         <div className="flex items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows per page</span>
-            <Select value={`${pagination.pageSize}`} onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}>
-              <SelectTrigger className="h-8 w-16"><SelectValue /></SelectTrigger>
+            <Select
+              value={`${pagination.pageSize}`}
+              onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}
+            >
+              <SelectTrigger className="h-8 w-16">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {[5, 10, 20, 50].map((size) => (
-                  <SelectItem key={size} value={`${size}`}>{size}</SelectItem>
+                  <SelectItem key={size} value={`${size}`}>
+                    {size}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -324,16 +445,36 @@ export function BestCustomersTable() {
             <span className="text-sm text-muted-foreground">
               Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
             </span>
-            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronsLeft />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronLeft />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronRight />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronsRight />
             </Button>
           </div>

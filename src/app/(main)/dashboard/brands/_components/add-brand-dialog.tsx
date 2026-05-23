@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import { Plus, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,7 +25,7 @@ export function AddBrandDialog() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
@@ -44,17 +45,17 @@ export function AddBrandDialog() {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Brand</DialogTitle>
-          <DialogDescription>
-            Create a new brand to associate with your products.
-          </DialogDescription>
+          <DialogDescription>Create a new brand to associate with your products.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Brand Name <span className="text-destructive">*</span></Label>
+              <Label htmlFor="name">
+                Brand Name <span className="text-destructive">*</span>
+              </Label>
               <Input id="name" placeholder="e.g. Nike" required />
             </div>
-            
+
             <div className="grid gap-2">
               <Label>Brand Logo</Label>
               <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center gap-2 hover:bg-muted/50 transition-colors cursor-pointer">

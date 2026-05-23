@@ -1,16 +1,18 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
-import { ArrowLeft, Save, UploadCloud } from "lucide-react";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
+import { ArrowLeft, Save, UploadCloud } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function AddBrandPage() {
@@ -20,7 +22,7 @@ export default function AddBrandPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       toast.success("Brand created successfully");
@@ -33,11 +35,9 @@ export default function AddBrandPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl tracking-tight">Add Brand</h1>
-          <p className="text-muted-foreground text-sm">
-            Create a new brand to associate with products.
-          </p>
+          <p className="text-muted-foreground text-sm">Create a new brand to associate with products.</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <Link href="/dashboard/brands">
             <Button variant="outline" className="gap-2">
@@ -57,14 +57,16 @@ export default function AddBrandPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Brand Name <span className="text-destructive">*</span></Label>
+                <Label htmlFor="name">
+                  Brand Name <span className="text-destructive">*</span>
+                </Label>
                 <Input id="name" placeholder="e.g. Nike" required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea 
-                  id="description" 
-                  placeholder="Brief description about the brand..." 
+                <Textarea
+                  id="description"
+                  placeholder="Brief description about the brand..."
                   className="min-h-[120px]"
                 />
               </div>
@@ -81,9 +83,7 @@ export default function AddBrandPage() {
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
                   <Label className="text-base">Active Status</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Brand visible to customers
-                  </p>
+                  <p className="text-sm text-muted-foreground">Brand visible to customers</p>
                 </div>
                 <Switch defaultChecked />
               </div>

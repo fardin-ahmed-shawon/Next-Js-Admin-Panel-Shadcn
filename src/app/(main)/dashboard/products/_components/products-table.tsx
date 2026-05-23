@@ -1,8 +1,21 @@
 "use client";
 
+import * as React from "react";
+
 import Link from "next/link";
 
-import * as React from "react";
+import {
+  type ColumnDef,
+  type ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type PaginationState,
+  type SortingState,
+  useReactTable,
+} from "@tanstack/react-table";
 import {
   ArrowUpDown,
   ChevronLeft,
@@ -18,18 +31,7 @@ import {
   Search,
   Trash,
 } from "lucide-react";
-import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type PaginationState,
-  type SortingState,
-  useReactTable,
-} from "@tanstack/react-table";
+import { toast } from "sonner";
 
 import {
   AlertDialog,
@@ -55,39 +57,145 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { toast } from "sonner";
 
 /* ---- Demo Data ---- */
 
 const products = [
-  { id: "PRD-1001", name: "Classic Cotton T-Shirt", mainCategory: "Clothing", subCategory: "Men's Wear", regularPrice: 39.99, sellingPrice: 29.99, stock: 150, status: "Active", image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=T" },
-  { id: "PRD-1002", name: "Wireless Bluetooth Earbuds", mainCategory: "Electronics", subCategory: "Smartphones", regularPrice: 99.99, sellingPrice: 79.99, stock: 45, status: "Active", image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=E" },
-  { id: "PRD-1003", name: "Leather Crossbody Bag", mainCategory: "Clothing", subCategory: "Women's Wear", regularPrice: 179.00, sellingPrice: 149.00, stock: 0, status: "Inactive", image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=B" },
-  { id: "PRD-1004", name: "Vitamin C Serum 30ml", mainCategory: "Beauty & Health", subCategory: "Skincare", regularPrice: 32.00, sellingPrice: 24.50, stock: 200, status: "Active", image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=S" },
-  { id: "PRD-1005", name: "Running Shoes Pro", mainCategory: "Sports & Outdoors", subCategory: "Fitness", regularPrice: 150.00, sellingPrice: 120.00, stock: 35, status: "Active", image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=R" },
-  { id: "PRD-1006", name: "Smart Watch Series 5", mainCategory: "Electronics", subCategory: "Laptops", regularPrice: 349.99, sellingPrice: 299.99, stock: 12, status: "Inactive", image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=W" },
-  { id: "PRD-1007", name: "Organic Green Tea 100g", mainCategory: "Home & Garden", subCategory: "Decor", regularPrice: 15.99, sellingPrice: 12.99, stock: 500, status: "Active", image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=G" },
-  { id: "PRD-1008", name: "Denim Jacket - Slim Fit", mainCategory: "Clothing", subCategory: "Men's Wear", regularPrice: 110.00, sellingPrice: 89.00, stock: 28, status: "Draft", image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=D" },
-  { id: "PRD-1009", name: "Yoga Mat Premium 6mm", mainCategory: "Sports & Outdoors", subCategory: "Fitness", regularPrice: 55.00, sellingPrice: 45.00, stock: 75, status: "Active", image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=Y" },
-  { id: "PRD-1010", name: "Face Moisturizer SPF 30", mainCategory: "Beauty & Health", subCategory: "Skincare", regularPrice: 42.99, sellingPrice: 34.99, stock: 110, status: "Active", image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=M" },
-  { id: "PRD-1011", name: "Portable Bluetooth Speaker", mainCategory: "Electronics", subCategory: "Smartphones", regularPrice: 74.99, sellingPrice: 59.99, stock: 60, status: "Draft", image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=P" },
-  { id: "PRD-1012", name: "Stainless Steel Water Bottle", mainCategory: "Home & Garden", subCategory: "Furniture", regularPrice: 24.99, sellingPrice: 19.99, stock: 85, status: "Active", image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=B" },
+  {
+    id: "PRD-1001",
+    name: "Classic Cotton T-Shirt",
+    mainCategory: "Clothing",
+    subCategory: "Men's Wear",
+    regularPrice: 39.99,
+    sellingPrice: 29.99,
+    stock: 150,
+    status: "Active",
+    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=T",
+  },
+  {
+    id: "PRD-1002",
+    name: "Wireless Bluetooth Earbuds",
+    mainCategory: "Electronics",
+    subCategory: "Smartphones",
+    regularPrice: 99.99,
+    sellingPrice: 79.99,
+    stock: 45,
+    status: "Active",
+    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=E",
+  },
+  {
+    id: "PRD-1003",
+    name: "Leather Crossbody Bag",
+    mainCategory: "Clothing",
+    subCategory: "Women's Wear",
+    regularPrice: 179.0,
+    sellingPrice: 149.0,
+    stock: 0,
+    status: "Inactive",
+    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=B",
+  },
+  {
+    id: "PRD-1004",
+    name: "Vitamin C Serum 30ml",
+    mainCategory: "Beauty & Health",
+    subCategory: "Skincare",
+    regularPrice: 32.0,
+    sellingPrice: 24.5,
+    stock: 200,
+    status: "Active",
+    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=S",
+  },
+  {
+    id: "PRD-1005",
+    name: "Running Shoes Pro",
+    mainCategory: "Sports & Outdoors",
+    subCategory: "Fitness",
+    regularPrice: 150.0,
+    sellingPrice: 120.0,
+    stock: 35,
+    status: "Active",
+    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=R",
+  },
+  {
+    id: "PRD-1006",
+    name: "Smart Watch Series 5",
+    mainCategory: "Electronics",
+    subCategory: "Laptops",
+    regularPrice: 349.99,
+    sellingPrice: 299.99,
+    stock: 12,
+    status: "Inactive",
+    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=W",
+  },
+  {
+    id: "PRD-1007",
+    name: "Organic Green Tea 100g",
+    mainCategory: "Home & Garden",
+    subCategory: "Decor",
+    regularPrice: 15.99,
+    sellingPrice: 12.99,
+    stock: 500,
+    status: "Active",
+    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=G",
+  },
+  {
+    id: "PRD-1008",
+    name: "Denim Jacket - Slim Fit",
+    mainCategory: "Clothing",
+    subCategory: "Men's Wear",
+    regularPrice: 110.0,
+    sellingPrice: 89.0,
+    stock: 28,
+    status: "Draft",
+    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=D",
+  },
+  {
+    id: "PRD-1009",
+    name: "Yoga Mat Premium 6mm",
+    mainCategory: "Sports & Outdoors",
+    subCategory: "Fitness",
+    regularPrice: 55.0,
+    sellingPrice: 45.0,
+    stock: 75,
+    status: "Active",
+    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=Y",
+  },
+  {
+    id: "PRD-1010",
+    name: "Face Moisturizer SPF 30",
+    mainCategory: "Beauty & Health",
+    subCategory: "Skincare",
+    regularPrice: 42.99,
+    sellingPrice: 34.99,
+    stock: 110,
+    status: "Active",
+    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=M",
+  },
+  {
+    id: "PRD-1011",
+    name: "Portable Bluetooth Speaker",
+    mainCategory: "Electronics",
+    subCategory: "Smartphones",
+    regularPrice: 74.99,
+    sellingPrice: 59.99,
+    stock: 60,
+    status: "Draft",
+    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=P",
+  },
+  {
+    id: "PRD-1012",
+    name: "Stainless Steel Water Bottle",
+    mainCategory: "Home & Garden",
+    subCategory: "Furniture",
+    regularPrice: 24.99,
+    sellingPrice: 19.99,
+    stock: 85,
+    status: "Active",
+    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=B",
+  },
 ];
 
 type ProductRow = (typeof products)[0];
@@ -180,7 +288,9 @@ const columns: ColumnDef<ProductRow>[] = [
     cell: ({ row }) => (
       <div className="flex flex-col gap-0.5">
         <span className="tabular-nums font-medium">৳{row.original.sellingPrice.toFixed(2)}</span>
-        <span className="tabular-nums text-xs text-muted-foreground line-through">৳{row.original.regularPrice.toFixed(2)}</span>
+        <span className="tabular-nums text-xs text-muted-foreground line-through">
+          ৳{row.original.regularPrice.toFixed(2)}
+        </span>
       </div>
     ),
   },
@@ -188,9 +298,7 @@ const columns: ColumnDef<ProductRow>[] = [
     accessorKey: "stock",
     header: "Stock",
     cell: ({ row }) => (
-      <span className={`tabular-nums ${row.original.stock === 0 ? "text-destructive" : ""}`}>
-        {row.original.stock}
-      </span>
+      <span className={`tabular-nums ${row.original.stock === 0 ? "text-destructive" : ""}`}>{row.original.stock}</span>
     ),
   },
   {
@@ -198,11 +306,7 @@ const columns: ColumnDef<ProductRow>[] = [
     header: "Status",
     cell: ({ row }) => {
       const s = row.original.status;
-      return (
-        <Badge variant={s === "Active" ? "default" : s === "Draft" ? "secondary" : "outline"}>
-          {s}
-        </Badge>
-      );
+      return <Badge variant={s === "Active" ? "default" : s === "Draft" ? "secondary" : "outline"}>{s}</Badge>;
     },
   },
   {
@@ -286,7 +390,16 @@ function exportToExcel(data: ProductRow[]) {
   const csvRows = [
     headers.join(","),
     ...data.map((row) =>
-      [row.id, `"${row.name}"`, `"${row.mainCategory}"`, `"${row.subCategory}"`, row.regularPrice, row.sellingPrice, row.stock, row.status].join(",")
+      [
+        row.id,
+        `"${row.name}"`,
+        `"${row.mainCategory}"`,
+        `"${row.subCategory}"`,
+        row.regularPrice,
+        row.sellingPrice,
+        row.stock,
+        row.status,
+      ].join(","),
     ),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -335,9 +448,7 @@ export function ProductsTable() {
   const totalCount = table.getFilteredRowModel().rows.length;
 
   const filterLabel = activeFilter === "All" ? "All Products" : `${activeFilter} Products`;
-  const countDescription = selectedCount > 0
-    ? `${selectedCount} of ${totalCount} selected`
-    : `${totalCount} products`;
+  const countDescription = selectedCount > 0 ? `${selectedCount} of ${totalCount} selected` : `${totalCount} products`;
 
   return (
     <Card>
@@ -386,7 +497,9 @@ export function ProductsTable() {
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {allCategories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -403,7 +516,9 @@ export function ProductsTable() {
               <SelectContent>
                 <SelectItem value="all">All Sub Categories</SelectItem>
                 {allSubCategories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -466,7 +581,8 @@ export function ProductsTable() {
                   </AlertDialogMedia>
                   <AlertDialogTitle>Delete {selectedCount} products?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete the selected products and all associated data. This action cannot be undone.
+                    This will permanently delete the selected products and all associated data. This action cannot be
+                    undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -505,9 +621,7 @@ export function ProductsTable() {
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}
                   </TableRow>
                 ))
@@ -542,19 +656,43 @@ export function ProductsTable() {
             Viewing {table.getRowModel().rows.length} of {totalCount} products
           </p>
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="hidden size-8 lg:flex" size="icon" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+            <Button
+              variant="outline"
+              className="hidden size-8 lg:flex"
+              size="icon"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
               <span className="sr-only">Go to first page</span>
               <ChevronsLeft className="size-4" />
             </Button>
-            <Button variant="outline" className="size-8" size="icon" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+            <Button
+              variant="outline"
+              className="size-8"
+              size="icon"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
               <span className="sr-only">Go to previous page</span>
               <ChevronLeft className="size-4" />
             </Button>
-            <Button variant="outline" className="size-8" size="icon" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+            <Button
+              variant="outline"
+              className="size-8"
+              size="icon"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
               <span className="sr-only">Go to next page</span>
               <ChevronRight className="size-4" />
             </Button>
-            <Button variant="outline" className="hidden size-8 lg:flex" size="icon" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+            <Button
+              variant="outline"
+              className="hidden size-8 lg:flex"
+              size="icon"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
               <span className="sr-only">Go to last page</span>
               <ChevronsRight className="size-4" />
             </Button>

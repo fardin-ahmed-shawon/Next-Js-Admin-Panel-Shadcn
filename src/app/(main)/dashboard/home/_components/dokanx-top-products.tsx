@@ -1,4 +1,5 @@
 import { Box } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -19,7 +20,9 @@ export function DokanxTopProducts() {
             <CardTitle className="leading-none">Top Selling Products</CardTitle>
             <CardDescription>Top 5 products</CardDescription>
           </div>
-          <Button variant="outline" size="sm" className="h-auto px-2 py-1">Full Details</Button>
+          <Button variant="outline" size="sm" className="h-auto px-2 py-1">
+            Full Details
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col pb-6">

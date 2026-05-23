@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
-import { Download, Search, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal, Eye, Package } from "lucide-react";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -15,11 +16,21 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import {
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Download,
+  Eye,
+  MoreHorizontal,
+  Package,
+  Search,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,9 +41,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { allOrders } from "../../orders/page";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-type OrderRow = typeof allOrders[0];
+import type { allOrders } from "../../orders/page";
+
+type OrderRow = (typeof allOrders)[0];
 
 type ProductRow = {
   id: string;
@@ -62,7 +76,9 @@ const columns: ColumnDef<ProductRow>[] = [
           <Package className="size-4 text-muted-foreground" />
         </span>
         <div className="min-w-0 flex-1">
-          <span className="truncate font-medium text-sm leading-none block" title={row.original.name}>{row.original.name}</span>
+          <span className="truncate font-medium text-sm leading-none block" title={row.original.name}>
+            {row.original.name}
+          </span>
         </div>
       </div>
     ),
@@ -70,20 +86,12 @@ const columns: ColumnDef<ProductRow>[] = [
   {
     accessorKey: "sold",
     header: "TOTAL SOLD",
-    cell: ({ row }) => (
-      <div className="font-medium tabular-nums">
-        {row.original.sold}
-      </div>
-    ),
+    cell: ({ row }) => <div className="font-medium tabular-nums">{row.original.sold}</div>,
   },
   {
     accessorKey: "ordersCount",
     header: "TOTAL ORDER",
-    cell: ({ row }) => (
-      <div className="font-medium tabular-nums text-muted-foreground">
-        {row.original.ordersCount}
-      </div>
-    ),
+    cell: ({ row }) => <div className="font-medium tabular-nums text-muted-foreground">{row.original.ordersCount}</div>,
   },
   {
     id: "actions",
@@ -102,7 +110,7 @@ export function SalesReportsTopProducts({ data }: { data: OrderRow[] }) {
   // Aggregate sales by subCategory (treating subCategory as Product)
   const productSales = React.useMemo(() => {
     const acc: Record<string, ProductRow> = {};
-    data.forEach(order => {
+    data.forEach((order) => {
       if (order.orderStatus === "Delivered" || order.orderStatus === "Shipped" || order.orderStatus === "Confirmed") {
         if (!acc[order.subCategory]) {
           const newId = String(Object.keys(acc).length + 1);
@@ -261,18 +269,44 @@ export function SalesReportsTopProducts({ data }: { data: OrderRow[] }) {
 
         {/* Pagination Controls */}
         <div className="flex items-center justify-between pt-2">
-          <div className="text-sm text-muted-foreground">
-            Total {productSales.length} product(s).
-          </div>
+          <div className="text-sm text-muted-foreground">Total {productSales.length} product(s).</div>
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium">
               Page {table.getState().pagination.pageIndex + 1} of {Math.max(1, table.getPageCount())}
             </span>
             <div className="flex items-center gap-1">
-              <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}><ChevronsLeft className="size-4" /></Button>
-              <Button size="icon-sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}><ChevronLeft className="size-4" /></Button>
-              <Button size="icon-sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}><ChevronRight className="size-4" /></Button>
-              <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}><ChevronsRight className="size-4" /></Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <ChevronsLeft className="size-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                <ChevronsRight className="size-4" />
+              </Button>
             </div>
           </div>
         </div>

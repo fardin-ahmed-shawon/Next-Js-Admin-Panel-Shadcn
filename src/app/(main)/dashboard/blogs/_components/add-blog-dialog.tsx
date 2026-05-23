@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import { Plus, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,7 +26,7 @@ export function AddBlogDialog() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
@@ -45,27 +46,29 @@ export function AddBlogDialog() {
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add New Blog Post</DialogTitle>
-          <DialogDescription>
-            Create a new article for your content marketing.
-          </DialogDescription>
+          <DialogDescription>Create a new article for your content marketing.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
+              <Label htmlFor="title">
+                Title <span className="text-destructive">*</span>
+              </Label>
               <Input id="title" placeholder="e.g. 10 Tips for Modern Web Design" required />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">Description <span className="text-destructive">*</span></Label>
-              <Textarea 
-                id="description" 
-                placeholder="Write a short summary or excerpt..." 
-                className="min-h-[100px]" 
-                required 
+              <Label htmlFor="description">
+                Description <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="description"
+                placeholder="Write a short summary or excerpt..."
+                className="min-h-[100px]"
+                required
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label>Cover Image</Label>
               <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center gap-2 hover:bg-muted/50 transition-colors cursor-pointer">

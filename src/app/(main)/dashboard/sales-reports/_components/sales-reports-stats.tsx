@@ -1,8 +1,10 @@
-import { DollarSign, ShoppingCart, Percent, TrendingDown, Users, Package, Boxes, Receipt } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { allOrders } from "../../orders/page";
+import { Boxes, DollarSign, Package, Percent, Receipt, ShoppingCart, TrendingDown, Users } from "lucide-react";
 
-type OrderRow = typeof allOrders[0];
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import type { allOrders } from "../../orders/page";
+
+type OrderRow = (typeof allOrders)[0];
 
 export function SalesReportsStats({ data }: { data: OrderRow[] }) {
   const totalOrders = data.length;
@@ -10,9 +12,9 @@ export function SalesReportsStats({ data }: { data: OrderRow[] }) {
   const totalPaid = data.reduce((sum, order) => sum + order.paid, 0);
   const totalDue = data.reduce((sum, order) => sum + order.due, 0);
   const totalSoldUnits = data.reduce((sum, order) => sum + order.items, 0);
-  
-  const uniqueCustomers = new Set(data.map(order => order.phone)).size;
-  const uniqueProducts = new Set(data.map(order => order.subCategory)).size;
+
+  const uniqueCustomers = new Set(data.map((order) => order.phone)).size;
+  const uniqueProducts = new Set(data.map((order) => order.subCategory)).size;
 
   const averageOrderValue = totalOrders > 0 ? (totalOrderValue / totalOrders).toFixed(0) : "0";
 

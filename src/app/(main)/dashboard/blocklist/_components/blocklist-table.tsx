@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -12,7 +13,21 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Monitor, PhoneCall, Trash, Ban, ShieldCheck, RefreshCw, Search, Download, ArrowUpDown } from "lucide-react";
+import {
+  ArrowUpDown,
+  Ban,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Download,
+  Monitor,
+  PhoneCall,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  Trash,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -26,25 +41,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 type BlockEntry = {
@@ -119,7 +121,15 @@ function exportToExcel(data: BlockEntry[]) {
   const csvRows = [
     headers.join(","),
     ...data.map((row) =>
-      [row.id, row.type, `"${row.value}"`, `"${row.reason}"`, row.status, `"${row.blockedAt.replace(/\n/g, " ")}"`, row.expires].join(",")
+      [
+        row.id,
+        row.type,
+        `"${row.value}"`,
+        `"${row.reason}"`,
+        row.status,
+        `"${row.blockedAt.replace(/\n/g, " ")}"`,
+        row.expires,
+      ].join(","),
     ),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -145,10 +155,8 @@ export function BlocklistTable() {
   const toggleStatus = (id: string) => {
     setData((prev) =>
       prev.map((item) =>
-        item.id === id
-          ? { ...item, status: item.status === "Active" ? "Inactive" : "Active" }
-          : item
-      )
+        item.id === id ? { ...item, status: item.status === "Active" ? "Inactive" : "Active" } : item,
+      ),
     );
     toast.success("Status updated.");
   };
@@ -187,11 +195,7 @@ export function BlocklistTable() {
       header: "Status",
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
-        return (
-          <Badge variant={status === "Active" ? "default" : "outline"}>
-            {status}
-          </Badge>
-        );
+        return <Badge variant={status === "Active" ? "default" : "outline"}>{status}</Badge>;
       },
     },
     {
@@ -206,11 +210,7 @@ export function BlocklistTable() {
     {
       accessorKey: "expires",
       header: "Expires",
-      cell: ({ row }) => (
-        <Badge variant="outline">
-          {row.getValue("expires")}
-        </Badge>
-      ),
+      cell: ({ row }) => <Badge variant="outline">{row.getValue("expires")}</Badge>,
     },
     {
       id: "actions",
@@ -221,11 +221,7 @@ export function BlocklistTable() {
 
         return (
           <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => toggleStatus(entry.id)}
-            >
+            <Button variant="outline" size="sm" onClick={() => toggleStatus(entry.id)}>
               <RefreshCw className="mr-2 size-4" />
               {isActive ? "Unblock" : "Re-block"}
             </Button>
@@ -246,7 +242,7 @@ export function BlocklistTable() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
+                  <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => handleDelete(entry.id)}
                   >
@@ -338,7 +334,7 @@ export function BlocklistTable() {
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
-            
+
             <Select
               value={(table.getColumn("status")?.getFilterValue() as string) ?? "all"}
               onValueChange={(value) => {
@@ -377,12 +373,7 @@ export function BlocklistTable() {
                   {headerGroup.headers.map((header) => {
                     return (
                       <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
                     );
                   })}
@@ -392,17 +383,9 @@ export function BlocklistTable() {
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
+                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}
                   </TableRow>
                 ))
@@ -427,11 +410,18 @@ export function BlocklistTable() {
         <div className="flex items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows per page</span>
-            <Select value={`${table.getState().pagination.pageSize}`} onValueChange={(v) => table.setPageSize(Number(v))}>
-              <SelectTrigger className="h-8 w-16"><SelectValue /></SelectTrigger>
+            <Select
+              value={`${table.getState().pagination.pageSize}`}
+              onValueChange={(v) => table.setPageSize(Number(v))}
+            >
+              <SelectTrigger className="h-8 w-16">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {[5, 10, 20, 50].map((size) => (
-                  <SelectItem key={size} value={`${size}`}>{size}</SelectItem>
+                  <SelectItem key={size} value={`${size}`}>
+                    {size}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -440,16 +430,36 @@ export function BlocklistTable() {
             <span className="text-sm text-muted-foreground">
               Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </span>
-            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronsLeft />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronLeft />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronRight />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronsRight />
             </Button>
           </div>

@@ -1,4 +1,4 @@
-import { CheckCircle, Tag, XCircle, Star } from "lucide-react";
+import { CheckCircle, Star, Tag, XCircle } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 

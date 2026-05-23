@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
 
 import {
@@ -44,14 +45,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -62,21 +56,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 /* ---- Demo Data ---- */
@@ -322,21 +303,13 @@ const columns: ColumnDef<PageRow>[] = [
     header: "Status",
     cell: ({ row }) => {
       const s = row.original.status;
-      return (
-        <Badge
-          variant={s === "Published" ? "default" : "secondary"}
-        >
-          {s}
-        </Badge>
-      );
+      return <Badge variant={s === "Published" ? "default" : "secondary"}>{s}</Badge>;
     },
   },
   {
     accessorKey: "updatedAt",
     header: "Updated",
-    cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground tabular-nums">{row.original.updatedAt}</span>
-    ),
+    cell: ({ row }) => <span className="text-xs text-muted-foreground tabular-nums">{row.original.updatedAt}</span>,
   },
   {
     id: "actions",
@@ -386,10 +359,7 @@ function RowActions({ row }: { row: PageRow }) {
             Copy Link
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
-            onSelect={() => setDeleteOpen(true)}
-          >
+          <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeleteOpen(true)}>
             <Trash className="mr-2 h-4 w-4" />
             Delete
           </DropdownMenuItem>
@@ -430,16 +400,7 @@ function exportToCSV(data: PageRow[]) {
   const headers = ["ID", "Title", "Slug", "Category", "Status", "Updated"];
   const csvRows = [
     headers.join(","),
-    ...data.map((row) =>
-      [
-        row.id,
-        `"${row.title}"`,
-        row.slug,
-        row.category,
-        row.status,
-        row.updatedAt,
-      ].join(",")
-    ),
+    ...data.map((row) => [row.id, `"${row.title}"`, row.slug, row.category, row.status, row.updatedAt].join(",")),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -488,9 +449,7 @@ export function LandingPagesTable() {
 
   const filterLabel = activeFilter === "All" ? "All Pages" : `${activeFilter} Pages`;
   const countDescription =
-    selectedCount > 0
-      ? `${selectedCount} of ${totalCount} selected`
-      : `${totalCount} landing pages`;
+    selectedCount > 0 ? `${selectedCount} of ${totalCount} selected` : `${totalCount} landing pages`;
 
   return (
     <Card>
@@ -597,8 +556,8 @@ export function LandingPagesTable() {
                   </AlertDialogMedia>
                   <AlertDialogTitle>Delete {selectedCount} pages?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete the selected landing pages and all associated data.
-                    This action cannot be undone.
+                    This will permanently delete the selected landing pages and all associated data. This action cannot
+                    be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -637,9 +596,7 @@ export function LandingPagesTable() {
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}
                   </TableRow>
                 ))

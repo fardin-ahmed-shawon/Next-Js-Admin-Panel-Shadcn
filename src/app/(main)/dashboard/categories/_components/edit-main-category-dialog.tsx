@@ -45,11 +45,16 @@ export function EditMainCategoryDialog({ open, onOpenChange, category }: EditMai
               <Input id="edit-main-category-name" defaultValue={category.name} placeholder="Enter category name" />
             </FieldContent>
           </Field>
-          
+
           <Field>
             <FieldLabel htmlFor="edit-main-category-description">Description</FieldLabel>
             <FieldContent>
-              <Textarea id="edit-main-category-description" defaultValue={category.description} placeholder="Write a short description..." rows={3} />
+              <Textarea
+                id="edit-main-category-description"
+                defaultValue={category.description}
+                placeholder="Write a short description..."
+                rows={3}
+              />
             </FieldContent>
           </Field>
 
@@ -65,12 +70,7 @@ export function EditMainCategoryDialog({ open, onOpenChange, category }: EditMai
                   <p className="text-sm font-medium">Click to upload</p>
                   <p className="text-xs text-muted-foreground">PNG, JPG or WEBP (max. 2MB)</p>
                 </div>
-                <Input
-                  id="edit-main-category-image"
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                />
+                <Input id="edit-main-category-image" type="file" accept="image/*" className="sr-only" />
               </label>
             </FieldContent>
           </Field>
@@ -91,7 +91,15 @@ export function EditMainCategoryDialog({ open, onOpenChange, category }: EditMai
           </Field>
         </div>
         <div className="flex items-center gap-2 pt-2">
-          <Button type="submit" onClick={() => { onOpenChange(false); toast.success(`"${category.name}" has been updated successfully.`); }}>Save Changes</Button>
+          <Button
+            type="submit"
+            onClick={() => {
+              onOpenChange(false);
+              toast.success(`"${category.name}" has been updated successfully.`);
+            }}
+          >
+            Save Changes
+          </Button>
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>

@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -13,7 +15,18 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit, Trash, Search, ArrowUpDown, ShieldOff, Eye } from "lucide-react";
+import {
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Edit,
+  Eye,
+  Search,
+  ShieldOff,
+  Trash,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -27,25 +40,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type RoleEntry = {
   id: string;
@@ -91,11 +91,7 @@ export function RolesTable() {
       header: "Status",
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
-        return (
-          <Badge variant={status === "Active" ? "default" : "outline"}>
-            {status}
-          </Badge>
-        );
+        return <Badge variant={status === "Active" ? "default" : "outline"}>{status}</Badge>;
       },
     },
     {
@@ -103,7 +99,7 @@ export function RolesTable() {
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => {
         const role = row.original;
-        
+
         return (
           <div className="flex items-center justify-end gap-2">
             <Link href={`/dashboard/roles/${role.id}`}>
@@ -111,13 +107,13 @@ export function RolesTable() {
                 <Eye className="size-4" />
               </Button>
             </Link>
-            
+
             <Link href={`/dashboard/roles/add`}>
               <Button variant="outline" size="icon-sm">
                 <Edit className="size-4" />
               </Button>
             </Link>
-            
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="icon-sm" disabled={role.roleName === "Admin"}>
@@ -128,7 +124,8 @@ export function RolesTable() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Role</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete the <strong>{role.roleName}</strong> role? This action cannot be undone and will unassign this role from {role.users} users.
+                    Are you sure you want to delete the <strong>{role.roleName}</strong> role? This action cannot be
+                    undone and will unassign this role from {role.users} users.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -194,7 +191,9 @@ export function RolesTable() {
             <Button
               size="icon-sm"
               variant="outline"
-              onClick={() => table.getColumn("roleName")?.toggleSorting(table.getColumn("roleName")?.getIsSorted() === "asc")}
+              onClick={() =>
+                table.getColumn("roleName")?.toggleSorting(table.getColumn("roleName")?.getIsSorted() === "asc")
+              }
             >
               <ArrowUpDown />
             </Button>
@@ -209,12 +208,7 @@ export function RolesTable() {
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -223,17 +217,9 @@ export function RolesTable() {
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
+                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}
                   </TableRow>
                 ))
@@ -281,8 +267,7 @@ export function RolesTable() {
               </Select>
             </div>
             <div className="flex items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount() || 1}
+              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </div>
             <div className="flex items-center space-x-2">
               <Button

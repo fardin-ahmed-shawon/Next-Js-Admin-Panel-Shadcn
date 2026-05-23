@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+
 import { BotOff, MoveLeft } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
@@ -13,7 +15,7 @@ export default function NotFound() {
         <div className="text-[10rem] sm:text-[14rem] font-black leading-none text-muted/50 select-none tracking-tighter">
           404
         </div>
-        
+
         {/* Foreground Icon mimicking the illustration */}
         <div className="absolute flex flex-col items-center justify-center translate-y-4">
           <div className="rounded-full bg-background/50 p-6 backdrop-blur-sm shadow-xl ring-1 ring-border">
@@ -31,9 +33,13 @@ export default function NotFound() {
             Oops! Page not found. This section will be added in future updates.
           </p>
         </div>
-        
+
         <div className="flex items-center justify-center pt-4">
-          <Button asChild size="lg" className="rounded-full px-8 shadow-md transition-transform hover:scale-105 font-bold tracking-wide">
+          <Button
+            asChild
+            size="lg"
+            className="rounded-full px-8 shadow-md transition-transform hover:scale-105 font-bold tracking-wide"
+          >
             <Link href="/dashboard/default" prefetch={false} replace>
               <MoveLeft className="mr-2 size-5" />
               GO BACK HOME

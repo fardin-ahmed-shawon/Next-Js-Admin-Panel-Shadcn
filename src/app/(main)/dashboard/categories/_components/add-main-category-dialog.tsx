@@ -29,9 +29,7 @@ export function AddMainCategoryDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Add Main Category</DialogTitle>
-          <DialogDescription>
-            Create a new top-level category for your products.
-          </DialogDescription>
+          <DialogDescription>Create a new top-level category for your products.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Field>
@@ -40,7 +38,7 @@ export function AddMainCategoryDialog() {
               <Input id="main-category-name" placeholder="Enter category name" />
             </FieldContent>
           </Field>
-          
+
           <Field>
             <FieldLabel htmlFor="main-category-description">Description</FieldLabel>
             <FieldContent>
@@ -60,12 +58,7 @@ export function AddMainCategoryDialog() {
                   <p className="text-sm font-medium">Click to upload</p>
                   <p className="text-xs text-muted-foreground">PNG, JPG or WEBP (max. 2MB)</p>
                 </div>
-                <Input
-                  id="main-category-image"
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                />
+                <Input id="main-category-image" type="file" accept="image/*" className="sr-only" />
               </label>
             </FieldContent>
           </Field>

@@ -1,24 +1,13 @@
-import * as React from "react";
+import type * as React from "react";
+
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AddUserDialogProps {
   open: boolean;
@@ -40,43 +29,28 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
             <UserPlus className="h-5 w-5 text-primary" />
             Add New User
           </DialogTitle>
-          <DialogDescription>
-            Create a new system user and assign their role.
-          </DialogDescription>
+          <DialogDescription>Create a new system user and assign their role.</DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           <Field>
             <FieldLabel htmlFor="user-name">Full Name</FieldLabel>
             <FieldContent>
-              <Input 
-                id="user-name" 
-                placeholder="John Doe" 
-                required
-              />
+              <Input id="user-name" placeholder="John Doe" required />
             </FieldContent>
           </Field>
-          
+
           <Field>
             <FieldLabel htmlFor="user-email">Email Address</FieldLabel>
             <FieldContent>
-              <Input 
-                id="user-email" 
-                type="email"
-                placeholder="john@example.com" 
-                required
-              />
+              <Input id="user-email" type="email" placeholder="john@example.com" required />
             </FieldContent>
           </Field>
 
           <Field>
             <FieldLabel htmlFor="user-phone">Phone Number</FieldLabel>
             <FieldContent>
-              <Input 
-                id="user-phone" 
-                placeholder="01700000000" 
-                required
-              />
+              <Input id="user-phone" placeholder="01700000000" required />
             </FieldContent>
           </Field>
 
@@ -99,12 +73,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
           <Field>
             <FieldLabel htmlFor="user-password">Password</FieldLabel>
             <FieldContent>
-              <Input 
-                id="user-password" 
-                type="password"
-                placeholder="••••••••" 
-                required
-              />
+              <Input id="user-password" type="password" placeholder="••••••••" required />
             </FieldContent>
           </Field>
 
@@ -112,9 +81,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">
-              Create User
-            </Button>
+            <Button type="submit">Create User</Button>
           </div>
         </form>
       </DialogContent>

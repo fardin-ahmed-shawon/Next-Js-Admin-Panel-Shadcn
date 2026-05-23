@@ -7,7 +7,7 @@ export function WebsiteInfoTab() {
       <div>
         <h3 className="text-xl font-semibold text-foreground">Update Website Information</h3>
       </div>
-      
+
       <div className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">Website Name</label>
@@ -20,7 +20,9 @@ export function WebsiteInfoTab() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Inside Delivery Location (Your District Location)</label>
+          <label className="text-sm font-medium text-foreground">
+            Inside Delivery Location (Your District Location)
+          </label>
           <Input defaultValue="Dhaka" />
         </div>
 
@@ -30,7 +32,9 @@ export function WebsiteInfoTab() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Outside Delivery Charge (Outside Of Your District)</label>
+          <label className="text-sm font-medium text-foreground">
+            Outside Delivery Charge (Outside Of Your District)
+          </label>
           <Input defaultValue="150" />
         </div>
 
@@ -40,7 +44,9 @@ export function WebsiteInfoTab() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">WhatsApp API Number (Remove the first digit '0' from your whatsapp number)</label>
+          <label className="text-sm font-medium text-foreground">
+            WhatsApp API Number (Remove the first digit '0' from your whatsapp number)
+          </label>
           <Input defaultValue="1944667441" />
         </div>
 
@@ -89,7 +95,7 @@ export function WebsiteInfoTab() {
           <Input defaultValue="Get 25% off on your purchase! Use this coupon code RKKXSO50PQ on the Checkout Page" />
         </div>
       </div>
-      
+
       <div className="pt-4 pb-8">
         <Button>Save Changes</Button>
       </div>

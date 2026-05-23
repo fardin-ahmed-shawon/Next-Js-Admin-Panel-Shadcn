@@ -1,16 +1,92 @@
-import { Box, CheckCircle, Clock, LayoutGrid, Package, ShoppingCart, TrendingDown, TrendingUp, Users, Wallet } from "lucide-react";
+import {
+  Box,
+  CheckCircle,
+  Clock,
+  LayoutGrid,
+  Package,
+  ShoppingCart,
+  TrendingDown,
+  TrendingUp,
+  Users,
+  Wallet,
+} from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const topCards = [
-  { title: "Total Products", value: "20", icon: Package, subtitle: "Total available products", trend: "+2", trendIcon: TrendingUp, trendType: "default" },
-  { title: "Product Categories", value: "6", icon: LayoutGrid, subtitle: "Active categories", trend: "+1", trendIcon: TrendingUp, trendType: "default" },
-  { title: "Total Stock Unit", value: "986", icon: Box, subtitle: "Units currently in stock", trend: "-15", trendIcon: TrendingDown, trendType: "destructive" },
-  { title: "Customers", value: "7", icon: Users, subtitle: "Registered users", trend: "+3", trendIcon: TrendingUp, trendType: "default" },
-  { title: "Total Purchased Unit", value: "158", icon: ShoppingCart, subtitle: "Items sold this month", trend: "+24%", trendIcon: TrendingUp, trendType: "default" },
-  { title: "Total Collection", value: "৳ 3,499,320", icon: Wallet, subtitle: "Revenue this month", trend: "+12.5%", trendIcon: TrendingUp, trendType: "default" },
-  { title: "Pending Orders", value: "23", icon: Clock, subtitle: "Awaiting processing", trend: "-5%", trendIcon: TrendingDown, trendType: "destructive" },
-  { title: "Approved Orders", value: "64", icon: CheckCircle, subtitle: "Processed successfully", trend: "+8%", trendIcon: TrendingUp, trendType: "default" },
+  {
+    title: "Total Products",
+    value: "20",
+    icon: Package,
+    subtitle: "Total available products",
+    trend: "+2",
+    trendIcon: TrendingUp,
+    trendType: "default",
+  },
+  {
+    title: "Product Categories",
+    value: "6",
+    icon: LayoutGrid,
+    subtitle: "Active categories",
+    trend: "+1",
+    trendIcon: TrendingUp,
+    trendType: "default",
+  },
+  {
+    title: "Total Stock Unit",
+    value: "986",
+    icon: Box,
+    subtitle: "Units currently in stock",
+    trend: "-15",
+    trendIcon: TrendingDown,
+    trendType: "destructive",
+  },
+  {
+    title: "Customers",
+    value: "7",
+    icon: Users,
+    subtitle: "Registered users",
+    trend: "+3",
+    trendIcon: TrendingUp,
+    trendType: "default",
+  },
+  {
+    title: "Total Purchased Unit",
+    value: "158",
+    icon: ShoppingCart,
+    subtitle: "Items sold this month",
+    trend: "+24%",
+    trendIcon: TrendingUp,
+    trendType: "default",
+  },
+  {
+    title: "Total Collection",
+    value: "৳ 3,499,320",
+    icon: Wallet,
+    subtitle: "Revenue this month",
+    trend: "+12.5%",
+    trendIcon: TrendingUp,
+    trendType: "default",
+  },
+  {
+    title: "Pending Orders",
+    value: "23",
+    icon: Clock,
+    subtitle: "Awaiting processing",
+    trend: "-5%",
+    trendIcon: TrendingDown,
+    trendType: "destructive",
+  },
+  {
+    title: "Approved Orders",
+    value: "64",
+    icon: CheckCircle,
+    subtitle: "Processed successfully",
+    trend: "+8%",
+    trendIcon: TrendingUp,
+    trendType: "default",
+  },
 ];
 
 export function DokanxMetricCards() {

@@ -1,49 +1,35 @@
 "use client";
 
 import * as React from "react";
-import { format, parseISO } from "date-fns";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
-  type PaginationState,
-  type SortingState,
+  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type PaginationState,
+  type SortingState,
   useReactTable,
-  flexRender,
 } from "@tanstack/react-table";
+import { format, parseISO } from "date-fns";
 import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Search,
-  Package,
   Download,
   Eye,
+  Package,
+  Search,
 } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardAction,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,18 +39,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ProductsModal } from "../../orders/_components/products-modal";
-import { Badge } from "@/components/ui/badge";
-import { allOrders } from "../../orders/page";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-type OrderRow = typeof allOrders[0];
+import { ProductsModal } from "../../orders/_components/products-modal";
+import type { allOrders } from "../../orders/page";
+
+type OrderRow = (typeof allOrders)[0];
 
 function ProductsCell({ row }: { row: any }) {
   const [modalOpen, setModalOpen] = React.useState(false);
   return (
     <>
-      <div 
-        className="flex -space-x-2 cursor-pointer hover:opacity-80 transition-opacity w-fit" 
+      <div
+        className="flex -space-x-2 cursor-pointer hover:opacity-80 transition-opacity w-fit"
         onClick={() => setModalOpen(true)}
         title="View all products"
       >
@@ -79,11 +67,7 @@ function ProductsCell({ row }: { row: any }) {
           </div>
         )}
       </div>
-      <ProductsModal
-        order={row.original}
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-      />
+      <ProductsModal order={row.original} open={modalOpen} onOpenChange={setModalOpen} />
     </>
   );
 }
@@ -206,11 +190,13 @@ export function SalesReportsOrderHistory({ data }: { data: OrderRow[] }) {
               <DropdownMenuContent align="end" className="w-[150px]">
                 <DropdownMenuLabel>Sort by</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuRadioGroup 
+                <DropdownMenuRadioGroup
                   value={
-                    table.getState().sorting[0]?.id === "date" ? 
-                      (table.getState().sorting[0]?.desc ? "newest" : "oldest") : 
-                      "default"
+                    table.getState().sorting[0]?.id === "date"
+                      ? table.getState().sorting[0]?.desc
+                        ? "newest"
+                        : "oldest"
+                      : "default"
                   }
                   onValueChange={(val) => {
                     if (val === "newest") table.setSorting([{ id: "date", desc: true }]);
@@ -271,18 +257,44 @@ export function SalesReportsOrderHistory({ data }: { data: OrderRow[] }) {
 
         {/* Pagination */}
         <div className="flex items-center justify-between pt-2">
-          <div className="text-sm text-muted-foreground">
-            Total {data.length} order(s).
-          </div>
+          <div className="text-sm text-muted-foreground">Total {data.length} order(s).</div>
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium">
               Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
             </span>
             <div className="flex items-center gap-1">
-              <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}><ChevronsLeft className="size-4" /></Button>
-              <Button size="icon-sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}><ChevronLeft className="size-4" /></Button>
-              <Button size="icon-sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}><ChevronRight className="size-4" /></Button>
-              <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}><ChevronsRight className="size-4" /></Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <ChevronsLeft className="size-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                <ChevronsRight className="size-4" />
+              </Button>
             </div>
           </div>
         </div>

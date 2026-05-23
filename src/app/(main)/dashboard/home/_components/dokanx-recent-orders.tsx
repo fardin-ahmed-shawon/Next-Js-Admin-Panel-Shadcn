@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Download, UserRound, Search, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal, Eye, Edit, Trash, CheckCircle, XCircle, ShieldAlert, Package, ArrowRight } from "lucide-react";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -14,13 +14,28 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-
+import {
+  ArrowRight,
+  ArrowUpDown,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Download,
+  Edit,
+  Eye,
+  MoreHorizontal,
+  Package,
+  Search,
+  ShieldAlert,
+  Trash,
+  UserRound,
+  XCircle,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +46,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const recentOrders = [
   { phone: "017000000001", invoice: "ORD-1714614784", total: "৳0", date: "May 13, 2024", status: "Pending" },
@@ -47,7 +65,7 @@ const recentOrders = [
   { phone: "017000000012", invoice: "ORD-1714614795", total: "৳9,000", date: "May 24, 2024", status: "Active" },
 ];
 
-type OrderRow = typeof recentOrders[0];
+type OrderRow = (typeof recentOrders)[0];
 
 function getColumns(filterStatus: string): ColumnDef<OrderRow>[] {
   return [
@@ -87,11 +105,7 @@ function getColumns(filterStatus: string): ColumnDef<OrderRow>[] {
     {
       accessorKey: "total",
       header: "TOTAL",
-      cell: ({ row }) => (
-        <div className="font-medium tabular-nums">
-          {row.original.total}
-        </div>
-      ),
+      cell: ({ row }) => <div className="font-medium tabular-nums">{row.original.total}</div>,
     },
     {
       id: "actions",
@@ -144,9 +158,17 @@ function getColumns(filterStatus: string): ColumnDef<OrderRow>[] {
   ];
 }
 
-export function DokanxRecentOrders({ title, description, filterStatus }: { title: string, description: string, filterStatus: string }) {
+export function DokanxRecentOrders({
+  title,
+  description,
+  filterStatus,
+}: {
+  title: string;
+  description: string;
+  filterStatus: string;
+}) {
   const columns = React.useMemo(() => getColumns(filterStatus), [filterStatus]);
-  const filteredData = React.useMemo(() => recentOrders.filter(o => o.status === filterStatus), [filterStatus]);
+  const filteredData = React.useMemo(() => recentOrders.filter((o) => o.status === filterStatus), [filterStatus]);
 
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);

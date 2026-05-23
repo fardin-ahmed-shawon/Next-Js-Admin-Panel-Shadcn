@@ -1,19 +1,23 @@
-import { Package, TrendingUp, Banknote, RefreshCcw } from "lucide-react";
+import { Banknote, Package, RefreshCcw, TrendingUp } from "lucide-react";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { OrderRow } from "./parcel-reports-table";
+
+import type { OrderRow } from "./parcel-reports-table";
 
 export function ParcelReportsStats({ data }: { data: OrderRow[] }) {
   const totalParcels = data.length;
-  const deliveredParcels = data.filter(d => d.orderStatus === "Delivered" || d.parcelStatus === "Delivered" || d.orderStatus === "Shipped");
+  const deliveredParcels = data.filter(
+    (d) => d.orderStatus === "Delivered" || d.parcelStatus === "Delivered" || d.orderStatus === "Shipped",
+  );
   const successRate = totalParcels > 0 ? ((deliveredParcels.length / totalParcels) * 100).toFixed(1) + "%" : "0.0%";
-  
+
   const totalRevenue = deliveredParcels.reduce((sum, d) => {
-    const val = parseFloat(d.amount.replace(/[^0-9.-]+/g,""));
+    const val = parseFloat(d.amount.replace(/[^0-9.-]+/g, ""));
     return sum + (isNaN(val) ? 0 : val);
   }, 0);
   const formattedRevenue = `৳ ${totalRevenue.toLocaleString()}`;
 
-  const returnedParcels = data.filter(d => d.orderStatus === "Returned" || d.parcelStatus === "Returned").length;
+  const returnedParcels = data.filter((d) => d.orderStatus === "Returned" || d.parcelStatus === "Returned").length;
   const returnRate = totalParcels > 0 ? ((returnedParcels / totalParcels) * 100).toFixed(1) + "%" : "0.0%";
 
   const stats = [

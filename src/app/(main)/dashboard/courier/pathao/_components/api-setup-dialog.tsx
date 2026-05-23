@@ -1,7 +1,11 @@
 "use client";
 
 import * as React from "react";
+
 import { Settings } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,10 +15,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 
 export function ApiSetupDialog() {
   const [open, setOpen] = React.useState(false);
@@ -37,59 +39,32 @@ export function ApiSetupDialog() {
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Pathao API Setup</DialogTitle>
-            <DialogDescription>
-              Configure your Pathao courier API credentials here.
-            </DialogDescription>
+            <DialogDescription>Configure your Pathao courier API credentials here.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="clientId">Client ID</Label>
-              <Input
-                id="clientId"
-                placeholder="11223344"
-                required
-              />
+              <Input id="clientId" placeholder="11223344" required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="clientSecret">Client Secret</Label>
-              <Input
-                id="clientSecret"
-                type="password"
-                placeholder="HJ235YHUJD"
-                required
-              />
+              <Input id="clientSecret" type="password" placeholder="HJ235YHUJD" required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                placeholder="user56"
-                required
-              />
+              <Input id="username" placeholder="user56" required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                required
-              />
+              <Input id="password" type="password" placeholder="••••••••" required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="grantType">Grant Type</Label>
-              <Input
-                id="grantType"
-                defaultValue="password"
-                required
-              />
+              <Input id="grantType" defaultValue="password" required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="storeId">Store ID</Label>
-              <Input
-                id="storeId"
-                placeholder="Store ID"
-              />
+              <Input id="storeId" placeholder="Store ID" />
             </div>
           </div>
           <DialogFooter>

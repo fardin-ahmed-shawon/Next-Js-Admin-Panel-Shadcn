@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -32,7 +33,6 @@ export function PartialPaymentForm({
   onTransactionIdChange,
   paymentMethod,
 }: PartialPaymentFormProps) {
-  
   const paymentInput = typeof paidAmount === "number" ? paidAmount : 0;
   const projectedTotal = currentPaid + paymentInput;
   const remainingDue = Math.max(0, orderTotal - projectedTotal);
@@ -49,7 +49,7 @@ export function PartialPaymentForm({
 
   const handleAmountChange = (val: number | "") => {
     onPaidAmountChange(val);
-    
+
     const inputAmt = typeof val === "number" ? val : 0;
     const proj = currentPaid + inputAmt;
 
@@ -68,9 +68,9 @@ export function PartialPaymentForm({
         <Field>
           <FieldLabel htmlFor="account">Account / Mobile Number</FieldLabel>
           <FieldContent>
-            <Input 
-              id="account" 
-              placeholder="017XXXXXXXX" 
+            <Input
+              id="account"
+              placeholder="017XXXXXXXX"
               value={accountNumber}
               onChange={(e) => onAccountNumberChange(e.target.value)}
             />
@@ -82,9 +82,9 @@ export function PartialPaymentForm({
         <Field>
           <FieldLabel htmlFor="txnid">Transaction ID</FieldLabel>
           <FieldContent>
-            <Input 
-              id="txnid" 
-              placeholder="TXN123456" 
+            <Input
+              id="txnid"
+              placeholder="TXN123456"
               value={transactionId}
               onChange={(e) => onTransactionIdChange(e.target.value)}
             />
@@ -99,10 +99,10 @@ export function PartialPaymentForm({
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 border-r border-input pr-3 bg-muted/50 rounded-l-md text-muted-foreground text-sm">
               ৳
             </div>
-            <Input 
-              id="paidAmt" 
-              type="number" 
-              className="pl-12" 
+            <Input
+              id="paidAmt"
+              type="number"
+              className="pl-12"
               placeholder="0"
               value={paidAmount}
               onChange={(e) => {
@@ -117,16 +117,36 @@ export function PartialPaymentForm({
       <Field>
         <FieldLabel>Payment Status</FieldLabel>
         <FieldContent>
-          <ToggleGroup 
-            type="single" 
-            value={status} 
-            onValueChange={handleStatusChange} 
+          <ToggleGroup
+            type="single"
+            value={status}
+            onValueChange={handleStatusChange}
             className="justify-start gap-2 flex-wrap"
           >
-            <ToggleGroupItem value="Unpaid" className="border data-[state=on]:border-primary data-[state=on]:bg-primary/10">Unpaid</ToggleGroupItem>
-            <ToggleGroupItem value="Partially Paid" className="border data-[state=on]:border-primary data-[state=on]:bg-primary/10">Partially Paid</ToggleGroupItem>
-            <ToggleGroupItem value="Full Paid" className="border data-[state=on]:border-primary data-[state=on]:bg-primary/10">Full Paid</ToggleGroupItem>
-            <ToggleGroupItem value="Refund" className="border data-[state=on]:border-primary data-[state=on]:bg-primary/10">Refund</ToggleGroupItem>
+            <ToggleGroupItem
+              value="Unpaid"
+              className="border data-[state=on]:border-primary data-[state=on]:bg-primary/10"
+            >
+              Unpaid
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="Partially Paid"
+              className="border data-[state=on]:border-primary data-[state=on]:bg-primary/10"
+            >
+              Partially Paid
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="Full Paid"
+              className="border data-[state=on]:border-primary data-[state=on]:bg-primary/10"
+            >
+              Full Paid
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="Refund"
+              className="border data-[state=on]:border-primary data-[state=on]:bg-primary/10"
+            >
+              Refund
+            </ToggleGroupItem>
           </ToggleGroup>
         </FieldContent>
       </Field>

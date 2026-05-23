@@ -1,6 +1,19 @@
 "use client";
 
 import * as React from "react";
+
+import {
+  type ColumnDef,
+  type ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type PaginationState,
+  type SortingState,
+  useReactTable,
+} from "@tanstack/react-table";
 import {
   ArrowUpDown,
   ChevronLeft,
@@ -14,20 +27,8 @@ import {
   Search,
   Trash,
 } from "lucide-react";
-import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type PaginationState,
-  type SortingState,
-  useReactTable,
-} from "@tanstack/react-table";
+import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +40,7 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -53,16 +55,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { toast } from "sonner";
 
 import { EditMainCategoryDialog } from "./edit-main-category-dialog";
 import { EditSubCategoryDialog } from "./edit-sub-category-dialog";
@@ -221,17 +215,13 @@ const columns: ColumnDef<CategoryRow>[] = [
   {
     id: "parentCategory",
     header: "Parent",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.parent || "—"}</span>
-    ),
+    cell: ({ row }) => <span className="text-muted-foreground">{row.original.parent || "—"}</span>,
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
-      <Badge variant={row.original.status === "Active" ? "default" : "secondary"}>
-        {row.original.status}
-      </Badge>
+      <Badge variant={row.original.status === "Active" ? "default" : "secondary"}>{row.original.status}</Badge>
     ),
   },
   {
@@ -318,7 +308,7 @@ function exportToExcel(data: CategoryRow[]) {
   const csvRows = [
     headers.join(","),
     ...data.map((row) =>
-      [row.id, `"${row.name}"`, row.type, `"${row.description}"`, row.subcategories, row.status].join(",")
+      [row.id, `"${row.name}"`, row.type, `"${row.description}"`, row.subcategories, row.status].join(","),
     ),
   ];
   const csvContent = csvRows.join("\n");
@@ -369,16 +359,10 @@ export function CategoriesTable() {
   const totalCount = table.getFilteredRowModel().rows.length;
 
   const filterLabel =
-    activeFilter === "All"
-      ? "All Categories"
-      : activeFilter === "Main"
-        ? "Main Categories"
-        : "Sub Categories";
+    activeFilter === "All" ? "All Categories" : activeFilter === "Main" ? "Main Categories" : "Sub Categories";
 
   const countDescription =
-    selectedCount > 0
-      ? `${selectedCount} of ${totalCount} selected`
-      : `${totalCount} categories`;
+    selectedCount > 0 ? `${selectedCount} of ${totalCount} selected` : `${totalCount} categories`;
 
   return (
     <Card>
@@ -473,7 +457,8 @@ export function CategoriesTable() {
                   </AlertDialogMedia>
                   <AlertDialogTitle>Delete {selectedCount} categories?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete the selected categories and all associated data. This action cannot be undone.
+                    This will permanently delete the selected categories and all associated data. This action cannot be
+                    undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -512,14 +497,12 @@ export function CategoriesTable() {
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (
-              <TableRow>
+                <TableRow>
                   <TableCell colSpan={table.getVisibleLeafColumns().length} className="h-auto p-0">
                     <div className="flex flex-col items-center justify-center gap-3 py-16">
                       <div className="flex size-14 items-center justify-center rounded-full bg-muted">

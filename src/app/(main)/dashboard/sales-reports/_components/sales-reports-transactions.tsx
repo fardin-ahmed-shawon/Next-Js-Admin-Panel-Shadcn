@@ -1,50 +1,37 @@
 "use client";
 
 import * as React from "react";
-import { format, parseISO } from "date-fns";
+
+import Link from "next/link";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
-  type PaginationState,
-  type SortingState,
+  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type PaginationState,
+  type SortingState,
   useReactTable,
-  flexRender,
 } from "@tanstack/react-table";
+import { format, parseISO } from "date-fns";
 import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Search,
-  Receipt,
   Download,
   Eye,
+  Receipt,
+  Search,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardAction,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,10 +41,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { allOrders } from "../../orders/page";
-import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-type OrderRow = typeof allOrders[0];
+import type { allOrders } from "../../orders/page";
+
+type OrderRow = (typeof allOrders)[0];
 
 const columns: ColumnDef<OrderRow>[] = [
   {
@@ -177,11 +166,13 @@ export function SalesReportsTransactions({ data }: { data: OrderRow[] }) {
               <DropdownMenuContent align="end" className="w-[150px]">
                 <DropdownMenuLabel>Sort by</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuRadioGroup 
+                <DropdownMenuRadioGroup
                   value={
-                    table.getState().sorting[0]?.id === "total" ? 
-                      (table.getState().sorting[0]?.desc ? "total-desc" : "total-asc") : 
-                      "default"
+                    table.getState().sorting[0]?.id === "total"
+                      ? table.getState().sorting[0]?.desc
+                        ? "total-desc"
+                        : "total-asc"
+                      : "default"
                   }
                   onValueChange={(val) => {
                     if (val === "total-desc") table.setSorting([{ id: "total", desc: true }]);
@@ -243,18 +234,44 @@ export function SalesReportsTransactions({ data }: { data: OrderRow[] }) {
 
         {/* Pagination */}
         <div className="flex items-center justify-between pt-2 mt-auto">
-          <div className="text-sm text-muted-foreground">
-            Total {data.length} transaction(s).
-          </div>
+          <div className="text-sm text-muted-foreground">Total {data.length} transaction(s).</div>
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium">
               Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
             </span>
             <div className="flex items-center gap-1">
-              <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}><ChevronsLeft className="size-4" /></Button>
-              <Button size="icon-sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}><ChevronLeft className="size-4" /></Button>
-              <Button size="icon-sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}><ChevronRight className="size-4" /></Button>
-              <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}><ChevronsRight className="size-4" /></Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <ChevronsLeft className="size-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                <ChevronsRight className="size-4" />
+              </Button>
             </div>
           </div>
         </div>

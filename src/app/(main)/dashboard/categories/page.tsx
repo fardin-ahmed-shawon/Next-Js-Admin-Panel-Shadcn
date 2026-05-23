@@ -11,7 +11,7 @@ export default function CategoriesPage() {
           <h1 className="text-3xl tracking-tight">Categories</h1>
           <p className="text-muted-foreground text-sm">Manage your main and sub categories.</p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <AddSubCategoryDialog />
           <AddMainCategoryDialog />

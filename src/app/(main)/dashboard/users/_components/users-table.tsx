@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -12,7 +13,18 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit, Trash, Search, ArrowUpDown, UserX, UserCheck } from "lucide-react";
+import {
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Edit,
+  Search,
+  Trash,
+  UserCheck,
+  UserX,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -26,25 +38,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 type UserEntry = {
@@ -96,9 +95,7 @@ export function UsersTable() {
       cell: ({ row }) => {
         const role = row.getValue("role") as string;
         return (
-          <Badge variant={role === "Admin" ? "default" : role === "Manager" ? "secondary" : "outline"}>
-            {role}
-          </Badge>
+          <Badge variant={role === "Admin" ? "default" : role === "Manager" ? "secondary" : "outline"}>{role}</Badge>
         );
       },
     },
@@ -112,7 +109,7 @@ export function UsersTable() {
             <Button variant="outline" size="icon-sm">
               <Edit className="size-4" />
             </Button>
-            
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="icon-sm">
@@ -226,12 +223,7 @@ export function UsersTable() {
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -240,17 +232,9 @@ export function UsersTable() {
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
+                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}
                   </TableRow>
                 ))
@@ -262,7 +246,9 @@ export function UsersTable() {
                         <UserX className="size-6 text-muted-foreground" />
                       </div>
                       <p className="text-sm font-medium">No users found</p>
-                      <p className="text-xs text-muted-foreground">Try adjusting your search to find what you're looking for.</p>
+                      <p className="text-xs text-muted-foreground">
+                        Try adjusting your search to find what you're looking for.
+                      </p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -298,8 +284,7 @@ export function UsersTable() {
               </Select>
             </div>
             <div className="flex items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount() || 1}
+              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </div>
             <div className="flex items-center space-x-2">
               <Button

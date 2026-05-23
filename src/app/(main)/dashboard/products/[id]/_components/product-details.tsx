@@ -1,34 +1,18 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Box,
-  Calendar,
-  Copy,
-  Globe,
-  Package,
-  Pencil,
-  Search,
-  Tag,
-  Trash,
-  TrendingDown,
-} from "lucide-react";
+
+import { ArrowLeft, Box, Calendar, Copy, Globe, Package, Pencil, Search, Tag, Trash, TrendingDown } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
 
 /* ---- Demo product data (mirrors Add Product form fields) ---- */
 
@@ -59,12 +43,94 @@ const product = {
   sku: "SKU-SKIN-4006",
   availableStock: 120,
   variants: [
-    { id: "v1", name: "Ocean / 3-piece set", color: "Ocean", size: "", weight: "500g", sku: "SKU-SKIN-4006-OCN", stock: 48, purchasePrice: 150, retailPrice: 389, sellingPrice: 249, primary: true, image: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=O" },
-    { id: "v2", name: "Sand / 3-piece set", color: "Sand", size: "", weight: "500g", sku: "SKU-SKIN-4006-SND", stock: 22, purchasePrice: 150, retailPrice: 389, sellingPrice: 249, primary: false, image: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=S" },
-    { id: "v3", name: "Stone / Travel trio", color: "Gray", size: "S", weight: "250g", sku: "SKU-SKIN-4006-STN", stock: 18, purchasePrice: 80, retailPrice: 179, sellingPrice: 116, primary: false, image: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=St", lowStock: true },
-    { id: "v4", name: "Rose / Travel trio", color: "Pink", size: "S", weight: "250g", sku: "SKU-SKIN-4006-RSE", stock: 10, purchasePrice: 80, retailPrice: 179, sellingPrice: 116, primary: false, image: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=R", lowStock: true },
-    { id: "v5", name: "Slate / Duo set", color: "Gray", size: "M", weight: "350g", sku: "SKU-SKIN-4006-SLT", stock: 14, purchasePrice: 110, retailPrice: 259, sellingPrice: 168, primary: false, image: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=Sl", lowStock: true },
-    { id: "v6", name: "Cloud / Gift set", color: "White", size: "L", weight: "750g", sku: "SKU-SKIN-4006-CLD", stock: 8, purchasePrice: 200, retailPrice: 429, sellingPrice: 278, primary: false, image: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=C", lowStock: true },
+    {
+      id: "v1",
+      name: "Ocean / 3-piece set",
+      color: "Ocean",
+      size: "",
+      weight: "500g",
+      sku: "SKU-SKIN-4006-OCN",
+      stock: 48,
+      purchasePrice: 150,
+      retailPrice: 389,
+      sellingPrice: 249,
+      primary: true,
+      image: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=O",
+    },
+    {
+      id: "v2",
+      name: "Sand / 3-piece set",
+      color: "Sand",
+      size: "",
+      weight: "500g",
+      sku: "SKU-SKIN-4006-SND",
+      stock: 22,
+      purchasePrice: 150,
+      retailPrice: 389,
+      sellingPrice: 249,
+      primary: false,
+      image: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=S",
+    },
+    {
+      id: "v3",
+      name: "Stone / Travel trio",
+      color: "Gray",
+      size: "S",
+      weight: "250g",
+      sku: "SKU-SKIN-4006-STN",
+      stock: 18,
+      purchasePrice: 80,
+      retailPrice: 179,
+      sellingPrice: 116,
+      primary: false,
+      image: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=St",
+      lowStock: true,
+    },
+    {
+      id: "v4",
+      name: "Rose / Travel trio",
+      color: "Pink",
+      size: "S",
+      weight: "250g",
+      sku: "SKU-SKIN-4006-RSE",
+      stock: 10,
+      purchasePrice: 80,
+      retailPrice: 179,
+      sellingPrice: 116,
+      primary: false,
+      image: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=R",
+      lowStock: true,
+    },
+    {
+      id: "v5",
+      name: "Slate / Duo set",
+      color: "Gray",
+      size: "M",
+      weight: "350g",
+      sku: "SKU-SKIN-4006-SLT",
+      stock: 14,
+      purchasePrice: 110,
+      retailPrice: 259,
+      sellingPrice: 168,
+      primary: false,
+      image: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=Sl",
+      lowStock: true,
+    },
+    {
+      id: "v6",
+      name: "Cloud / Gift set",
+      color: "White",
+      size: "L",
+      weight: "750g",
+      sku: "SKU-SKIN-4006-CLD",
+      stock: 8,
+      purchasePrice: 200,
+      retailPrice: 429,
+      sellingPrice: 278,
+      primary: false,
+      image: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=C",
+      lowStock: true,
+    },
   ],
 
   // Pricing
@@ -103,7 +169,9 @@ export function ProductDetails({ productId }: { productId: string }) {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon-sm" asChild>
-              <Link href="/dashboard/products"><ArrowLeft className="size-4" /></Link>
+              <Link href="/dashboard/products">
+                <ArrowLeft className="size-4" />
+              </Link>
             </Button>
             <h1 className="text-2xl sm:text-3xl tracking-tight">{product.name}</h1>
           </div>
@@ -119,14 +187,29 @@ export function ProductDetails({ productId }: { productId: string }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2">
-            <Switch checked={isActive} onCheckedChange={(v) => { setIsActive(v); toast.success(v ? "Product activated." : "Product deactivated."); }} />
+            <Switch
+              checked={isActive}
+              onCheckedChange={(v) => {
+                setIsActive(v);
+                toast.success(v ? "Product activated." : "Product deactivated.");
+              }}
+            />
             <span className="text-sm font-medium">{isActive ? "Active" : "Inactive"}</span>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/dashboard/products/${productId}/edit`}><Pencil className="mr-2 size-4" />Edit</Link>
+            <Link href={`/dashboard/products/${productId}/edit`}>
+              <Pencil className="mr-2 size-4" />
+              Edit
+            </Link>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => toast.success("Product cloned.")}><Copy className="mr-2 size-4" />Clone</Button>
-          <Button variant="destructive" size="sm" onClick={() => toast.success("Product deleted.")}><Trash className="mr-2 size-4" />Delete</Button>
+          <Button variant="outline" size="sm" onClick={() => toast.success("Product cloned.")}>
+            <Copy className="mr-2 size-4" />
+            Clone
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => toast.success("Product deleted.")}>
+            <Trash className="mr-2 size-4" />
+            Delete
+          </Button>
         </div>
       </div>
 
@@ -148,11 +231,17 @@ export function ProductDetails({ productId }: { productId: string }) {
               <Card className="overflow-hidden p-0">
                 <div className="relative aspect-[3/4] bg-muted">
                   <img src={selectedImage} alt={product.name} className="size-full object-cover" />
-                  <Badge className="absolute top-3 left-3" variant="default">PRIMARY</Badge>
+                  <Badge className="absolute top-3 left-3" variant="default">
+                    PRIMARY
+                  </Badge>
                 </div>
                 <div className="flex gap-2 p-3">
                   {product.images.slice(1).map((img, i) => (
-                    <button key={i} onClick={() => setSelectedImage(img)} className={`size-14 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${selectedImage === img ? "border-primary" : "border-transparent"}`}>
+                    <button
+                      key={i}
+                      onClick={() => setSelectedImage(img)}
+                      className={`size-14 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${selectedImage === img ? "border-primary" : "border-transparent"}`}
+                    >
                       <img src={img} alt={`Angle ${i + 1}`} className="size-full object-cover" />
                     </button>
                   ))}
@@ -188,7 +277,6 @@ export function ProductDetails({ productId }: { productId: string }) {
                 </CardContent>
               </Card>
 
-
               {/* Pre-Order Card */}
               <Card>
                 <CardHeader>
@@ -221,20 +309,32 @@ export function ProductDetails({ productId }: { productId: string }) {
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4 text-sm">
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1"><Search className="size-3" />Meta Title</p>
-                    <p className="font-medium">{product.metaTitle || <span className="text-muted-foreground italic">Not set</span>}</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <Search className="size-3" />
+                      Meta Title
+                    </p>
+                    <p className="font-medium">
+                      {product.metaTitle || <span className="text-muted-foreground italic">Not set</span>}
+                    </p>
                   </div>
                   <Separator />
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Meta Description</p>
-                    <p className="text-muted-foreground">{product.metaDescription || <span className="italic">Not set</span>}</p>
+                    <p className="text-muted-foreground">
+                      {product.metaDescription || <span className="italic">Not set</span>}
+                    </p>
                   </div>
                   <Separator />
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1"><Tag className="size-3" />Keywords</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <Tag className="size-3" />
+                      Keywords
+                    </p>
                     <div className="flex flex-wrap gap-1.5">
                       {product.metaKeywords.split(",").map((kw, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">{kw.trim()}</Badge>
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {kw.trim()}
+                        </Badge>
                       ))}
                     </div>
                   </div>
@@ -242,7 +342,10 @@ export function ProductDetails({ productId }: { productId: string }) {
                     <>
                       <Separator />
                       <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1"><Globe className="size-3" />Canonical URL</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
+                          <Globe className="size-3" />
+                          Canonical URL
+                        </p>
                         <p className="text-xs text-primary break-all">{product.canonicalUrl}</p>
                       </div>
                     </>
@@ -256,31 +359,33 @@ export function ProductDetails({ productId }: { productId: string }) {
               {/* Stock stats */}
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                 <Card>
-                  <CardHeader><CardDescription className="text-xs uppercase tracking-wider">Total Stock</CardDescription></CardHeader>
+                  <CardHeader>
+                    <CardDescription className="text-xs uppercase tracking-wider">Total Stock</CardDescription>
+                  </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-medium tabular-nums">{product.availableStock}</div>
                     <p className="text-xs text-muted-foreground">Across {product.variants.length} active variants</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardHeader><CardDescription className="text-xs uppercase tracking-wider">Low Stock</CardDescription></CardHeader>
+                  <CardHeader>
+                    <CardDescription className="text-xs uppercase tracking-wider">Low Stock</CardDescription>
+                  </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-medium tabular-nums">{lowStockCount}</div>
                     <p className="text-xs text-muted-foreground">Variants below the 20-unit threshold</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardHeader><CardDescription className="text-xs uppercase tracking-wider">Average Stock</CardDescription></CardHeader>
+                  <CardHeader>
+                    <CardDescription className="text-xs uppercase tracking-wider">Average Stock</CardDescription>
+                  </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-medium tabular-nums">{avgStock}</div>
                     <p className="text-xs text-muted-foreground">Average units held per variant</p>
                   </CardContent>
                 </Card>
               </div>
-
-
-
-
 
               {/* Variant lineup */}
               <Card>
@@ -302,21 +407,41 @@ export function ProductDetails({ productId }: { productId: string }) {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">{v.name}</span>
-                            {v.primary && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Primary</Badge>}
+                            {v.primary && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                Primary
+                              </Badge>
+                            )}
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <span>{v.sku}</span>
                             <span>•</span>
                             {(v as any).lowStock ? (
                               <span className="text-destructive flex items-center gap-0.5">
-                                <TrendingDown className="size-3" />Stock: {v.stock} <span className="text-[10px]">low</span>
+                                <TrendingDown className="size-3" />
+                                Stock: {v.stock} <span className="text-[10px]">low</span>
                               </span>
                             ) : (
                               <span>Stock: {v.stock}</span>
                             )}
-                            {v.color && <><span>•</span><span>{v.color}</span></>}
-                            {v.size && <><span>•</span><span>{v.size}</span></>}
-                            {v.weight && <><span>•</span><span>{v.weight}</span></>}
+                            {v.color && (
+                              <>
+                                <span>•</span>
+                                <span>{v.color}</span>
+                              </>
+                            )}
+                            {v.size && (
+                              <>
+                                <span>•</span>
+                                <span>{v.size}</span>
+                              </>
+                            )}
+                            {v.weight && (
+                              <>
+                                <span>•</span>
+                                <span>{v.weight}</span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -327,7 +452,9 @@ export function ProductDetails({ productId }: { productId: string }) {
                         </div>
                         <div>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Regular</p>
-                          <p className="text-sm font-medium tabular-nums line-through text-muted-foreground">৳{v.retailPrice}</p>
+                          <p className="text-sm font-medium tabular-nums line-through text-muted-foreground">
+                            ৳{v.retailPrice}
+                          </p>
                         </div>
                         <div>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Selling</p>
@@ -361,14 +488,16 @@ export function ProductDetails({ productId }: { productId: string }) {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">{v.name}</span>
-                            {v.primary && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Primary</Badge>}
+                            {v.primary && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                Primary
+                              </Badge>
+                            )}
                           </div>
                           <span className="text-xs text-muted-foreground font-mono">{v.sku}</span>
                         </div>
                       </div>
-                      <Badge variant={(v as any).lowStock ? "destructive" : "default"}>
-                        Stock: {v.stock}
-                      </Badge>
+                      <Badge variant={(v as any).lowStock ? "destructive" : "default"}>Stock: {v.stock}</Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3 md:grid-cols-6">
                       <div>
@@ -412,7 +541,9 @@ export function ProductDetails({ productId }: { productId: string }) {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col items-center justify-center gap-3 py-10">
-                <div className="flex size-14 items-center justify-center rounded-full bg-muted"><Box className="size-6 text-muted-foreground" /></div>
+                <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+                  <Box className="size-6 text-muted-foreground" />
+                </div>
                 <p className="text-sm font-medium">Inventory tracking coming soon</p>
                 <p className="text-xs text-muted-foreground">Stock movement history will appear here.</p>
               </div>

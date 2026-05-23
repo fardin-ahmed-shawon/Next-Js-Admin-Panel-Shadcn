@@ -1,37 +1,54 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+
 import { ArrowLeft, Save, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter, useParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
 // Mock data to pre-fill the form
 const mockBrands = {
-  "BRD-001": { name: "Nike", description: "World's leading sportswear brand.", status: "Active", logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NK" },
-  "BRD-002": { name: "Adidas", description: "Impossible is nothing.", status: "Active", logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AD" },
-  "BRD-003": { name: "Puma", description: "Forever Faster.", status: "Inactive", logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=PM" },
+  "BRD-001": {
+    name: "Nike",
+    description: "World's leading sportswear brand.",
+    status: "Active",
+    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NK",
+  },
+  "BRD-002": {
+    name: "Adidas",
+    description: "Impossible is nothing.",
+    status: "Active",
+    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AD",
+  },
+  "BRD-003": {
+    name: "Puma",
+    description: "Forever Faster.",
+    status: "Inactive",
+    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=PM",
+  },
 };
 
 export default function EditBrandPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  
+
   // Find brand or use a generic fallback
   const brand = (mockBrands as any)[id] || { name: "Sample Brand", description: "A cool brand.", status: "Active" };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       toast.success("Brand updated successfully");
@@ -44,11 +61,9 @@ export default function EditBrandPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl tracking-tight">Edit Brand</h1>
-          <p className="text-muted-foreground text-sm">
-            Modify details for {brand.name}.
-          </p>
+          <p className="text-muted-foreground text-sm">Modify details for {brand.name}.</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <Link href="/dashboard/brands">
             <Button variant="outline" className="gap-2">
@@ -68,16 +83,14 @@ export default function EditBrandPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Brand Name <span className="text-destructive">*</span></Label>
+                <Label htmlFor="name">
+                  Brand Name <span className="text-destructive">*</span>
+                </Label>
                 <Input id="name" defaultValue={brand.name} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea 
-                  id="description" 
-                  defaultValue={brand.description}
-                  className="min-h-[120px]"
-                />
+                <Textarea id="description" defaultValue={brand.description} className="min-h-[120px]" />
               </div>
             </CardContent>
           </Card>
@@ -92,9 +105,7 @@ export default function EditBrandPage() {
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
                   <Label className="text-base">Active Status</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Brand visible to customers
-                  </p>
+                  <p className="text-sm text-muted-foreground">Brand visible to customers</p>
                 </div>
                 <Switch defaultChecked={brand.status === "Active"} />
               </div>
@@ -112,7 +123,9 @@ export default function EditBrandPage() {
                   <div className="size-32 rounded-lg border overflow-hidden bg-muted p-2">
                     <img src={brand.logo} alt={brand.name} className="size-full object-cover rounded-sm" />
                   </div>
-                  <Button variant="outline" size="sm" type="button">Change Logo</Button>
+                  <Button variant="outline" size="sm" type="button">
+                    Change Logo
+                  </Button>
                 </div>
               ) : (
                 <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center gap-2 hover:bg-muted/50 transition-colors cursor-pointer">

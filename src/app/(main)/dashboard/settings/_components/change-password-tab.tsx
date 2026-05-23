@@ -7,7 +7,9 @@ export function ChangePasswordTab() {
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full max-w-3xl">
       <div>
         <h3 className="text-lg font-medium text-foreground">Change Password</h3>
-        <p className="text-sm text-muted-foreground">Ensure your account is using a long, random password to stay secure.</p>
+        <p className="text-sm text-muted-foreground">
+          Ensure your account is using a long, random password to stay secure.
+        </p>
       </div>
       <Separator />
 
@@ -19,7 +21,7 @@ export function ChangePasswordTab() {
           <Input type="password" placeholder="••••••••" />
         </div>
       </div>
-      
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <p className="text-sm font-medium text-foreground">New Password</p>
@@ -28,7 +30,7 @@ export function ChangePasswordTab() {
           <Input type="password" placeholder="••••••••" />
         </div>
       </div>
-      
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <p className="text-sm font-medium text-foreground">Confirm Password</p>
@@ -37,7 +39,7 @@ export function ChangePasswordTab() {
           <Input type="password" placeholder="••••••••" />
         </div>
       </div>
-      
+
       <div className="flex justify-end pt-4 pb-8">
         <Button>Update Password</Button>
       </div>

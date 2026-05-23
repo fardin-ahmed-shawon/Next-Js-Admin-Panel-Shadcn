@@ -1,17 +1,18 @@
 "use client";
 
 import * as React from "react";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
-  type PaginationState,
-  type SortingState,
+  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type PaginationState,
+  type SortingState,
   useReactTable,
-  flexRender,
 } from "@tanstack/react-table";
 import {
   ChevronLeft,
@@ -19,44 +20,13 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Edit,
+  FileText,
   MoreHorizontal,
   Search,
-  FileText,
   Trash,
 } from "lucide-react";
+import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,18 +37,60 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { EditBlogDialog } from "./edit-blog-dialog";
-import { toast } from "sonner";
 
 /* ---- Demo Data ---- */
 
 const blogs = [
-  { id: "BLG-1001", title: "10 Tips for Modern Web Design", description: "Learn how to build stunning UI/UX with ShadCN and Next.js.", createdDate: "2024-03-12", image: "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Web+Design" },
-  { id: "BLG-1002", title: "Why React Server Components?", description: "An in-depth look at how RSCs change the game for performance.", createdDate: "2024-03-08", image: "https://placehold.co/600x400/1a1a2e/e0e0e0?text=React+Server" },
-  { id: "BLG-1003", title: "Mastering Tailwind CSS", description: "A comprehensive guide to building complex layouts easily.", createdDate: "2024-02-25", image: "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Tailwind+CSS" },
-  { id: "BLG-1004", title: "E-Commerce Best Practices", description: "Increase conversion rates with these proven checkout strategies.", createdDate: "2024-02-14", image: "https://placehold.co/600x400/1a1a2e/e0e0e0?text=E-Commerce" },
-  { id: "BLG-1005", title: "The Future of AI in SaaS", description: "How artificial intelligence is reshaping software as a service.", createdDate: "2024-01-30", image: "https://placehold.co/600x400/1a1a2e/e0e0e0?text=AI+in+SaaS" },
+  {
+    id: "BLG-1001",
+    title: "10 Tips for Modern Web Design",
+    description: "Learn how to build stunning UI/UX with ShadCN and Next.js.",
+    createdDate: "2024-03-12",
+    image: "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Web+Design",
+  },
+  {
+    id: "BLG-1002",
+    title: "Why React Server Components?",
+    description: "An in-depth look at how RSCs change the game for performance.",
+    createdDate: "2024-03-08",
+    image: "https://placehold.co/600x400/1a1a2e/e0e0e0?text=React+Server",
+  },
+  {
+    id: "BLG-1003",
+    title: "Mastering Tailwind CSS",
+    description: "A comprehensive guide to building complex layouts easily.",
+    createdDate: "2024-02-25",
+    image: "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Tailwind+CSS",
+  },
+  {
+    id: "BLG-1004",
+    title: "E-Commerce Best Practices",
+    description: "Increase conversion rates with these proven checkout strategies.",
+    createdDate: "2024-02-14",
+    image: "https://placehold.co/600x400/1a1a2e/e0e0e0?text=E-Commerce",
+  },
+  {
+    id: "BLG-1005",
+    title: "The Future of AI in SaaS",
+    description: "How artificial intelligence is reshaping software as a service.",
+    createdDate: "2024-01-30",
+    image: "https://placehold.co/600x400/1a1a2e/e0e0e0?text=AI+in+SaaS",
+  },
 ];
 
 type BlogRow = (typeof blogs)[0];
@@ -138,9 +150,7 @@ const columns: ColumnDef<BlogRow>[] = [
   {
     accessorKey: "createdDate",
     header: "Created Date",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.createdDate}</span>
-    ),
+    cell: ({ row }) => <span className="text-muted-foreground">{row.original.createdDate}</span>,
   },
   {
     id: "actions",
@@ -166,23 +176,25 @@ function RowActions({ row }: { row: BlogRow }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onSelect={(e) => {
               e.preventDefault();
               setEditOpen(true);
             }}
           >
-            <Edit className="mr-2 size-4" />Edit Blog
+            <Edit className="mr-2 size-4" />
+            Edit Blog
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            className="text-destructive focus:text-destructive" 
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
             onSelect={(e) => {
               e.preventDefault();
               setDeleteOpen(true);
             }}
           >
-            <Trash className="mr-2 size-4" />Delete
+            <Trash className="mr-2 size-4" />
+            Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -194,13 +206,12 @@ function RowActions({ row }: { row: BlogRow }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the blog post <strong>{row.title}</strong>.
-              This action cannot be undone.
+              This will permanently delete the blog post <strong>{row.title}</strong>. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 toast.success(`Blog post deleted successfully.`);
@@ -319,11 +330,18 @@ export function BlogsTable() {
         <div className="flex items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows per page</span>
-            <Select value={`${pagination.pageSize}`} onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}>
-              <SelectTrigger className="h-8 w-16"><SelectValue /></SelectTrigger>
+            <Select
+              value={`${pagination.pageSize}`}
+              onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}
+            >
+              <SelectTrigger className="h-8 w-16">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {[5, 10, 20, 50].map((size) => (
-                  <SelectItem key={size} value={`${size}`}>{size}</SelectItem>
+                  <SelectItem key={size} value={`${size}`}>
+                    {size}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -332,16 +350,36 @@ export function BlogsTable() {
             <span className="text-sm text-muted-foreground">
               Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </span>
-            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronsLeft className="size-4" />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronLeft className="size-4" />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronRight className="size-4" />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronsRight className="size-4" />
             </Button>
           </div>

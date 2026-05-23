@@ -1,21 +1,10 @@
 "use client";
 
 import * as React from "react";
-import {
-  Ban,
-  Trophy,
-  UserCheck,
-  UserMinus,
-  Users,
-} from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Ban, Trophy, UserCheck, UserMinus, Users } from "lucide-react";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { BestCustomersTable } from "./_components/best-customers-table";
 import { CustomerEngagementGrid } from "./_components/customer-engagement-grid";
@@ -25,7 +14,13 @@ import { CustomerEngagementGrid } from "./_components/customer-engagement-grid";
 /* ------------------------------------------------------------------ */
 
 const summaryStats = [
-  { title: "All Customers", value: "17", icon: Users, subtitle: "Total customers in the system", color: "text-foreground" },
+  {
+    title: "All Customers",
+    value: "17",
+    icon: Users,
+    subtitle: "Total customers in the system",
+    color: "text-foreground",
+  },
   { title: "Active", value: "8", icon: UserCheck, subtitle: "Ordered in last 30 days", color: "text-emerald-600" },
   { title: "Inactive", value: "6", icon: UserMinus, subtitle: "No orders in 90+ days", color: "text-amber-600" },
   { title: "Banned", value: "3", icon: Ban, subtitle: "Permanently restricted", color: "text-destructive" },
@@ -60,7 +55,9 @@ export default function CustomerReportPage() {
               <CardDescription>{stat.title}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-1">
-              <div className={`font-medium text-3xl tabular-nums leading-none tracking-tight ${stat.color}`}>{stat.value}</div>
+              <div className={`font-medium text-3xl tabular-nums leading-none tracking-tight ${stat.color}`}>
+                {stat.value}
+              </div>
               <p className="text-muted-foreground text-sm">{stat.subtitle}</p>
             </CardContent>
           </Card>

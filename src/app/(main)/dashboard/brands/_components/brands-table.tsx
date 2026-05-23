@@ -1,18 +1,20 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
-  type PaginationState,
-  type SortingState,
+  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type PaginationState,
+  type SortingState,
   useReactTable,
-  flexRender,
 } from "@tanstack/react-table";
 import {
   ArrowUpDown,
@@ -27,41 +29,8 @@ import {
   Tag,
   Trash,
 } from "lucide-react";
+import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,19 +42,76 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
 import { EditBrandDialog } from "./edit-brand-dialog";
-import { toast } from "sonner";
 
 /* ---- Demo Data ---- */
 
 const brands = [
-  { id: "BRD-001", name: "Nike", totalProducts: 145, logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NK", joinedDate: "2024-01-10" },
-  { id: "BRD-002", name: "Adidas", totalProducts: 120, logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AD", joinedDate: "2024-02-15" },
-  { id: "BRD-003", name: "Puma", totalProducts: 85, logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=PM", joinedDate: "2024-03-20" },
-  { id: "BRD-004", name: "Reebok", totalProducts: 60, logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=RB", joinedDate: "2024-04-12" },
-  { id: "BRD-005", name: "Under Armour", totalProducts: 95, logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=UA", joinedDate: "2024-05-08" },
-  { id: "BRD-006", name: "New Balance", totalProducts: 45, logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NB", joinedDate: "2024-06-14" },
-  { id: "BRD-007", name: "Asics", totalProducts: 55, logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AS", joinedDate: "2024-07-22" },
+  {
+    id: "BRD-001",
+    name: "Nike",
+    totalProducts: 145,
+    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NK",
+    joinedDate: "2024-01-10",
+  },
+  {
+    id: "BRD-002",
+    name: "Adidas",
+    totalProducts: 120,
+    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AD",
+    joinedDate: "2024-02-15",
+  },
+  {
+    id: "BRD-003",
+    name: "Puma",
+    totalProducts: 85,
+    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=PM",
+    joinedDate: "2024-03-20",
+  },
+  {
+    id: "BRD-004",
+    name: "Reebok",
+    totalProducts: 60,
+    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=RB",
+    joinedDate: "2024-04-12",
+  },
+  {
+    id: "BRD-005",
+    name: "Under Armour",
+    totalProducts: 95,
+    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=UA",
+    joinedDate: "2024-05-08",
+  },
+  {
+    id: "BRD-006",
+    name: "New Balance",
+    totalProducts: 45,
+    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NB",
+    joinedDate: "2024-06-14",
+  },
+  {
+    id: "BRD-007",
+    name: "Asics",
+    totalProducts: 55,
+    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AS",
+    joinedDate: "2024-07-22",
+  },
 ];
 
 type BrandRow = (typeof brands)[0];
@@ -150,9 +176,7 @@ const columns: ColumnDef<BrandRow>[] = [
   {
     accessorKey: "totalProducts",
     header: "Total Products",
-    cell: ({ row }) => (
-      <span className="tabular-nums font-medium px-4">{row.original.totalProducts}</span>
-    ),
+    cell: ({ row }) => <span className="tabular-nums font-medium px-4">{row.original.totalProducts}</span>,
   },
   {
     id: "actions",
@@ -178,23 +202,25 @@ function RowActions({ row }: { row: BrandRow }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onSelect={(e) => {
               e.preventDefault();
               setEditOpen(true);
             }}
           >
-            <Edit className="mr-2 size-4" />Edit Brand
+            <Edit className="mr-2 size-4" />
+            Edit Brand
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            className="text-destructive focus:text-destructive" 
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
             onSelect={(e) => {
               e.preventDefault();
               setDeleteOpen(true);
             }}
           >
-            <Trash className="mr-2 size-4" />Delete
+            <Trash className="mr-2 size-4" />
+            Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -206,13 +232,13 @@ function RowActions({ row }: { row: BrandRow }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the brand <strong>{row.name}</strong> and all associated products may be affected.
-              This action cannot be undone.
+              This will permanently delete the brand <strong>{row.name}</strong> and all associated products may be
+              affected. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 toast.success(`Brand ${row.name} deleted successfully.`);
@@ -331,11 +357,18 @@ export function BrandsTable() {
         <div className="flex items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows per page</span>
-            <Select value={`${pagination.pageSize}`} onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}>
-              <SelectTrigger className="h-8 w-16"><SelectValue /></SelectTrigger>
+            <Select
+              value={`${pagination.pageSize}`}
+              onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}
+            >
+              <SelectTrigger className="h-8 w-16">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {[5, 10, 20, 50].map((size) => (
-                  <SelectItem key={size} value={`${size}`}>{size}</SelectItem>
+                  <SelectItem key={size} value={`${size}`}>
+                    {size}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -344,16 +377,36 @@ export function BrandsTable() {
             <span className="text-sm text-muted-foreground">
               Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </span>
-            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronsLeft className="size-4" />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronLeft className="size-4" />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronRight className="size-4" />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronsRight className="size-4" />
             </Button>
           </div>

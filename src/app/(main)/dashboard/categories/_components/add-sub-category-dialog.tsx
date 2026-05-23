@@ -28,9 +28,7 @@ export function AddSubCategoryDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Add Sub Category</DialogTitle>
-          <DialogDescription>
-            Create a sub-category under an existing main category.
-          </DialogDescription>
+          <DialogDescription>Create a sub-category under an existing main category.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Field>

@@ -3,9 +3,17 @@ import { DollarSign, Package, Package2, Repeat2, ShoppingCart, UserPlus, Users }
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface OrderRow {
-  id: string; customer: string; phone: string; items: number; total: number;
-  orderStatus: string; paymentStatus: string; date: string; avatar: string;
-  category: string; subCategory: string;
+  id: string;
+  customer: string;
+  phone: string;
+  items: number;
+  total: number;
+  orderStatus: string;
+  paymentStatus: string;
+  date: string;
+  avatar: string;
+  category: string;
+  subCategory: string;
 }
 
 export function OrderStats({ data }: { data: OrderRow[] }) {
@@ -22,7 +30,7 @@ export function OrderStats({ data }: { data: OrderRow[] }) {
   const stats = [
     { title: "Total Orders", value: totalOrders.toLocaleString(), icon: ShoppingCart },
     { title: "Order Value", value: `৳${totalValue.toLocaleString()}`, icon: DollarSign },
-    { title: "Product Types", value: totalProducts.toLocaleString(), icon: Package},
+    { title: "Product Types", value: totalProducts.toLocaleString(), icon: Package },
     { title: "Purchased Units", value: totalUnits.toLocaleString(), icon: Package2 },
     { title: "New Customers", value: newCustomers.toLocaleString(), icon: UserPlus },
     { title: "Repeat Customers", value: repeatedCustomers.toLocaleString(), icon: Repeat2 },

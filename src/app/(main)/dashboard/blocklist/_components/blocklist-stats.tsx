@@ -1,5 +1,6 @@
-import { ListFilter, ShieldCheck, ShieldOff, PhoneCall, Monitor } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ListFilter, Monitor, PhoneCall, ShieldCheck, ShieldOff } from "lucide-react";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function BlocklistStats() {
   const stats = [

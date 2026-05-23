@@ -1,22 +1,44 @@
 "use client";
 
-import * as React from "react";
+import type * as React from "react";
+
 import Link from "next/link";
-import { 
-  ArrowLeft, LayoutDashboard, Settings, 
-  Box, Package, List, Tag, Archive, 
-  FileText, Image as ImageIcon, Layout, MessageSquare, Star,
-  ShoppingCart, CreditCard, Percent, Ticket, Truck,
-  PieChart, Briefcase, BarChart, History,
-  Shield, Users, MessageCircle, ShieldAlert,
-  Edit
+
+import {
+  Archive,
+  ArrowLeft,
+  BarChart,
+  Box,
+  Briefcase,
+  CreditCard,
+  Edit,
+  FileText,
+  History,
+  Image as ImageIcon,
+  Layout,
+  LayoutDashboard,
+  List,
+  MessageCircle,
+  MessageSquare,
+  Package,
+  Percent,
+  PieChart,
+  Settings,
+  Shield,
+  ShieldAlert,
+  ShoppingCart,
+  Star,
+  Tag,
+  Ticket,
+  Truck,
+  Users,
 } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 type PermissionItem = {
   id: string;
@@ -40,7 +62,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, alwaysOn: true },
       { id: "settings", label: "Settings", icon: Settings, alwaysOn: true },
-    ]
+    ],
   },
   {
     id: "products_inventory",
@@ -51,7 +73,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "categories", label: "Categories", icon: List },
       { id: "brands", label: "Brands", icon: Tag },
       { id: "inventory", label: "Inventory", icon: Archive },
-    ]
+    ],
   },
   {
     id: "content_marketing",
@@ -64,7 +86,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "landing_pages", label: "Landing Pages", icon: Layout },
       { id: "testimonials", label: "Testimonials", icon: MessageSquare },
       { id: "reviews", label: "Reviews", icon: Star },
-    ]
+    ],
   },
   {
     id: "sales_orders",
@@ -77,7 +99,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "coupons", label: "Coupons", icon: Ticket },
       { id: "courier", label: "Courier", icon: Truck },
       { id: "invoice", label: "Invoice", icon: FileText },
-    ]
+    ],
   },
   {
     id: "finance_reports",
@@ -87,7 +109,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "accounts", label: "Accounts", icon: Briefcase },
       { id: "sales_report", label: "Sales Report", icon: BarChart },
       { id: "purchase_history", label: "Purchase History", icon: History },
-    ]
+    ],
   },
   {
     id: "communication_security",
@@ -97,8 +119,8 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "customers", label: "Customers", icon: Users },
       { id: "customer_messages", label: "Customer Messages", icon: MessageCircle },
       { id: "fraud_checker", label: "Fraud Checker", icon: ShieldAlert },
-    ]
-  }
+    ],
+  },
 ];
 
 // Mock selected permissions for a "Manager" role
@@ -117,9 +139,9 @@ export default function ViewRolePage() {
 
   let totalSelectable = 0;
   let totalSelected = 0;
-  
-  PERMISSION_GROUPS.forEach(group => {
-    group.items.forEach(item => {
+
+  PERMISSION_GROUPS.forEach((group) => {
+    group.items.forEach((item) => {
       if (!item.alwaysOn) {
         totalSelectable++;
         if (selected[item.id]) totalSelected++;
@@ -133,11 +155,9 @@ export default function ViewRolePage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl tracking-tight">View Role</h1>
-          <p className="text-muted-foreground text-sm">
-            View details and permissions for this role.
-          </p>
+          <p className="text-muted-foreground text-sm">View details and permissions for this role.</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <Link href="/dashboard/roles">
             <Button variant="outline" className="gap-2">
@@ -160,13 +180,7 @@ export default function ViewRolePage() {
               <label htmlFor="roleName" className="text-sm font-medium text-foreground">
                 Role Name
               </label>
-              <Input 
-                id="roleName" 
-                className="mt-3 mb-1 font-semibold"
-                value="Manager" 
-                readOnly
-                disabled
-              />
+              <Input id="roleName" className="mt-3 mb-1 font-semibold" value="Manager" readOnly disabled />
             </div>
           </CardContent>
         </Card>
@@ -178,7 +192,7 @@ export default function ViewRolePage() {
               <h2 className="text-xl tracking-tight font-semibold">Permissions</h2>
               <p className="text-muted-foreground text-sm">Configured access control for this role.</p>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
               <Badge variant="secondary" className="text-sm px-3 py-1 font-medium text-muted-foreground">
                 <span className="text-foreground font-bold mr-1">{totalSelected}</span> / {totalSelectable} selected
@@ -196,18 +210,17 @@ export default function ViewRolePage() {
                     <CardTitle className="text-sm font-semibold truncate">{group.title}</CardTitle>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="flex flex-col p-2 space-y-1 flex-1">
                   {group.items.map((item) => {
                     const isOn = item.alwaysOn || !!selected[item.id];
                     return (
-                      <div 
-                        key={item.id} 
-                        className="flex items-center justify-between p-2 rounded-md"
-                      >
+                      <div key={item.id} className="flex items-center justify-between p-2 rounded-md">
                         <div className="flex items-center gap-3 min-w-0 overflow-hidden pr-2">
                           <item.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <span className={`text-sm font-medium truncate ${isOn ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          <span
+                            className={`text-sm font-medium truncate ${isOn ? "text-foreground" : "text-muted-foreground"}`}
+                          >
                             {item.label}
                           </span>
                           {item.alwaysOn && (
@@ -216,11 +229,7 @@ export default function ViewRolePage() {
                             </Badge>
                           )}
                         </div>
-                        <Switch 
-                          className="shrink-0"
-                          checked={isOn}
-                          disabled={true}
-                        />
+                        <Switch className="shrink-0" checked={isOn} disabled={true} />
                       </div>
                     );
                   })}

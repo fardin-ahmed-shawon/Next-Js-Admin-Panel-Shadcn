@@ -1,4 +1,5 @@
-import { Shield, Key, Grid, Users } from "lucide-react";
+import { Grid, Key, Shield, Users } from "lucide-react";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const stats = [

@@ -1,6 +1,6 @@
+import { AddBlogDialog } from "./_components/add-blog-dialog";
 import { BlogsStats } from "./_components/blogs-stats";
 import { BlogsTable } from "./_components/blogs-table";
-import { AddBlogDialog } from "./_components/add-blog-dialog";
 
 export default function BlogsPage() {
   return (
@@ -10,7 +10,7 @@ export default function BlogsPage() {
           <h1 className="text-3xl tracking-tight">Blogs</h1>
           <p className="text-muted-foreground text-sm">Manage your blog articles, marketing posts, and news.</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <AddBlogDialog />
         </div>

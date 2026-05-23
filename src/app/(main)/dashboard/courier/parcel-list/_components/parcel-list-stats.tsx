@@ -1,4 +1,4 @@
-import { Package, Truck, PackageMinus, RefreshCcw } from "lucide-react";
+import { Package, PackageMinus, RefreshCcw, Truck } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 

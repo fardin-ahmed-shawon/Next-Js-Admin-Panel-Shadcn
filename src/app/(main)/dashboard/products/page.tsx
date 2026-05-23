@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 
 import { ProductsStats } from "./_components/products-stats";
 import { ProductsTable } from "./_components/products-table";

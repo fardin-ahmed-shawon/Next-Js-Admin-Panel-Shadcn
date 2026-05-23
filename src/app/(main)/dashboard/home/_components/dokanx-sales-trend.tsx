@@ -1,10 +1,11 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const monthlySalesTrend = [
   { month: "Jan", revenue: 100 },
@@ -62,18 +63,9 @@ export function DokanxSalesTrend() {
               </pattern>
             </defs>
             <CartesianGrid vertical={false} strokeDasharray="0" />
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              tickMargin={10}
-              axisLine={false}
-            />
+            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
             <YAxis hide />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent hideIndicator />
-              }
-            />
+            <ChartTooltip content={<ChartTooltipContent hideIndicator />} />
             <Bar
               dataKey="revenue"
               fill="url(#dokanx-sales-pattern)"

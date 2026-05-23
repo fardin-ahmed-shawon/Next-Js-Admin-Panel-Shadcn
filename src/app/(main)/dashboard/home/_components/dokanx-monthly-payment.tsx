@@ -6,7 +6,14 @@ import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts
 
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const monthlyPaymentData = [
@@ -56,7 +63,9 @@ export function DokanxMonthlyPayment() {
             <SelectContent>
               <SelectGroup>
                 {years.map((year) => (
-                  <SelectItem key={year} value={year}>{year}</SelectItem>
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
                 ))}
               </SelectGroup>
             </SelectContent>
@@ -78,18 +87,8 @@ export function DokanxMonthlyPayment() {
             </defs>
             <CartesianGrid vertical={false} strokeOpacity={0.5} />
 
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-            />
-            <YAxis 
-              axisLine={false} 
-              tickLine={false} 
-              tickMargin={8} 
-              tickFormatter={(value) => `৳${value / 1000}k`} 
-            />
+            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+            <YAxis axisLine={false} tickLine={false} tickMargin={8} tickFormatter={(value) => `৳${value / 1000}k`} />
 
             <ChartTooltip cursor={false} content={<ChartTooltipContent className="w-50" indicator="line" />} />
             <ChartLegend verticalAlign="top" content={<ChartLegendContent className="mb-5 justify-end" />} />
@@ -103,13 +102,7 @@ export function DokanxMonthlyPayment() {
               dot={false}
               fillOpacity={1}
             />
-            <Line
-              dataKey="expense"
-              type="natural"
-              stroke="var(--color-expense)"
-              strokeWidth={1.4}
-              dot={false}
-            />
+            <Line dataKey="expense" type="natural" stroke="var(--color-expense)" strokeWidth={1.4} dot={false} />
           </ComposedChart>
         </ChartContainer>
       </CardContent>

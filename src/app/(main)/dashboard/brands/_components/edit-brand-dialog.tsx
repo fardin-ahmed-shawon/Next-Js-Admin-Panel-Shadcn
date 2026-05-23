@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import { UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,7 +33,7 @@ export function EditBrandDialog({ brand, open, onOpenChange }: EditBrandDialogPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
@@ -46,17 +47,17 @@ export function EditBrandDialog({ brand, open, onOpenChange }: EditBrandDialogPr
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit Brand</DialogTitle>
-          <DialogDescription>
-            Update details for {brand.name}.
-          </DialogDescription>
+          <DialogDescription>Update details for {brand.name}.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit-name">Brand Name <span className="text-destructive">*</span></Label>
+              <Label htmlFor="edit-name">
+                Brand Name <span className="text-destructive">*</span>
+              </Label>
               <Input id="edit-name" defaultValue={brand.name} required />
             </div>
-            
+
             <div className="grid gap-2">
               <Label>Brand Logo</Label>
               <div className="flex flex-col items-center gap-4 mb-2 mt-1">

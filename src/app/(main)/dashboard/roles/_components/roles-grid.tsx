@@ -1,13 +1,40 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
-import { Edit, Trash, Users, Key, ChevronDown, LayoutDashboard, Settings, Package, List, Tag, Archive, FileText, Image as ImageIcon, Layout, MessageSquare, Star, ShoppingCart, CreditCard, Percent, Ticket, Truck, PieChart, Briefcase, BarChart, History, ShieldAlert, MessageCircle } from "lucide-react";
+
+import {
+  Archive,
+  BarChart,
+  Briefcase,
+  ChevronDown,
+  CreditCard,
+  Edit,
+  FileText,
+  History,
+  Image as ImageIcon,
+  Key,
+  Layout,
+  LayoutDashboard,
+  List,
+  MessageCircle,
+  MessageSquare,
+  Package,
+  Percent,
+  PieChart,
+  Settings,
+  ShieldAlert,
+  ShoppingCart,
+  Star,
+  Tag,
+  Ticket,
+  Trash,
+  Truck,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +46,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 // Re-using the same icons mapping for the badges to make it realistic
@@ -63,7 +93,7 @@ const initialRoles: RoleData[] = [
     id: "1",
     name: "Admin",
     users: 1,
-    grantedPermissions: ALL_PERMISSIONS.map(p => p.id), // 24 granted
+    grantedPermissions: ALL_PERMISSIONS.map((p) => p.id), // 24 granted
   },
   {
     id: "2",
@@ -82,14 +112,14 @@ const initialRoles: RoleData[] = [
     name: "Operator",
     users: 0,
     grantedPermissions: [], // 0 granted
-  }
+  },
 ];
 
 export function RolesGrid() {
   const [roles, setRoles] = React.useState<RoleData[]>(initialRoles);
 
   const handleDelete = (id: string) => {
-    setRoles(prev => prev.filter(r => r.id !== id));
+    setRoles((prev) => prev.filter((r) => r.id !== id));
     toast.success("Role deleted successfully.");
   };
 
@@ -121,7 +151,7 @@ export function RolesGrid() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Link href={`/dashboard/roles/${role.id}`}>
                   <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2.5">
@@ -131,7 +161,12 @@ export function RolesGrid() {
                 </Link>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2.5 text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={role.name === "Admin"}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 px-2.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      disabled={role.name === "Admin"}
+                    >
                       <Trash className="h-3.5 w-3.5" />
                       <span className="sr-only sm:not-sr-only sm:inline-block">Delete</span>
                     </Button>
@@ -140,7 +175,8 @@ export function RolesGrid() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Role</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete the <strong>{role.name}</strong> role? This action cannot be undone.
+                        Are you sure you want to delete the <strong>{role.name}</strong> role? This action cannot be
+                        undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -156,9 +192,9 @@ export function RolesGrid() {
                 </AlertDialog>
               </div>
             </CardHeader>
-            
+
             <Separator />
-            
+
             <CardContent className="pt-4 flex-1 space-y-4">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="px-2 font-medium">
@@ -168,15 +204,15 @@ export function RolesGrid() {
                   <X className="mr-1 h-3 w-3" /> {deniedCount} Denied
                 </Badge>
               </div>
-              
+
               <div className="flex flex-wrap gap-2">
-                {ALL_PERMISSIONS.map(perm => {
+                {ALL_PERMISSIONS.map((perm) => {
                   const isGranted = role.grantedPermissions.includes(perm.id);
                   const Icon = perm.icon;
-                  
+
                   return (
-                    <Badge 
-                      key={perm.id} 
+                    <Badge
+                      key={perm.id}
                       variant={isGranted ? "secondary" : "outline"}
                       className={`gap-1 px-2 py-1 flex items-center ${!isGranted ? "text-muted-foreground/60 border-muted-foreground/20" : ""}`}
                     >
@@ -187,11 +223,14 @@ export function RolesGrid() {
                 })}
               </div>
             </CardContent>
-            
+
             <Separator />
-            
+
             <CardFooter className="p-0">
-              <Button variant="ghost" className="w-full rounded-t-none rounded-b-xl text-muted-foreground hover:text-foreground">
+              <Button
+                variant="ghost"
+                className="w-full rounded-t-none rounded-b-xl text-muted-foreground hover:text-foreground"
+              >
                 Show Details <ChevronDown className="ml-1 h-4 w-4" />
               </Button>
             </CardFooter>

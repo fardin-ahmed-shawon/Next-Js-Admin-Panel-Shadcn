@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import { UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,7 +35,7 @@ export function EditBlogDialog({ blog, open, onOpenChange }: EditBlogDialogProps
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
@@ -48,27 +49,24 @@ export function EditBlogDialog({ blog, open, onOpenChange }: EditBlogDialogProps
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Edit Blog Post</DialogTitle>
-          <DialogDescription>
-            Update details for your blog post.
-          </DialogDescription>
+          <DialogDescription>Update details for your blog post.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit-title">Title <span className="text-destructive">*</span></Label>
+              <Label htmlFor="edit-title">
+                Title <span className="text-destructive">*</span>
+              </Label>
               <Input id="edit-title" defaultValue={blog.title} required />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-description">Description <span className="text-destructive">*</span></Label>
-              <Textarea 
-                id="edit-description" 
-                defaultValue={blog.description}
-                className="min-h-[100px]" 
-                required 
-              />
+              <Label htmlFor="edit-description">
+                Description <span className="text-destructive">*</span>
+              </Label>
+              <Textarea id="edit-description" defaultValue={blog.description} className="min-h-[100px]" required />
             </div>
-            
+
             <div className="grid gap-2">
               <Label>Cover Image</Label>
               <div className="flex flex-col items-center gap-4 mb-2 mt-1">

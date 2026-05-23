@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { MessageSquare, CreditCard } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
+
+import { CreditCard, MessageSquare } from "lucide-react";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,10 +17,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { WebsiteInfoTab } from "./_components/website-info-tab";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+
 import { ChangeLogoTab } from "./_components/change-logo-tab";
 import { ChangePasswordTab } from "./_components/change-password-tab";
 import { GenericContentTab } from "./_components/generic-content-tab";
+import { WebsiteInfoTab } from "./_components/website-info-tab";
 
 const TABS = [
   { id: "website-info", label: "Website Information" },
@@ -36,7 +39,7 @@ const TABS = [
   { id: "shipping-delivery", label: "Shipping & Delivery" },
 ] as const;
 
-type TabId = typeof TABS[number]["id"];
+type TabId = (typeof TABS)[number]["id"];
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("website-info");
@@ -47,9 +50,7 @@ export default function SettingsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl tracking-tight">Settings</h1>
-          <p className="text-muted-foreground text-sm">
-            Update account preferences and manage integrations.
-          </p>
+          <p className="text-muted-foreground text-sm">Update account preferences and manage integrations.</p>
         </div>
       </div>
 
@@ -57,16 +58,21 @@ export default function SettingsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between rounded-lg border p-5 bg-card">
         <div className="space-y-1 mb-4 md:mb-0">
           <p className="text-base font-semibold text-foreground">Remove Account</p>
-          <p className="text-sm text-muted-foreground">
-            You can do 'Disable account' to take a break from panel.
-          </p>
+          <p className="text-sm text-muted-foreground">You can do 'Disable account' to take a break from panel.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" className="text-red-500 border-red-200 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
+          <Button
+            variant="outline"
+            className="text-red-500 border-red-200 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+          >
             Deactivate Account
           </Button>
 
-          <AlertDialog onOpenChange={(open) => { if (!open) setDeleteConfirmation(""); }}>
+          <AlertDialog
+            onOpenChange={(open) => {
+              if (!open) setDeleteConfirmation("");
+            }}
+          >
             <AlertDialogTrigger asChild>
               <Button variant="destructive">Delete Account</Button>
             </AlertDialogTrigger>
@@ -75,9 +81,8 @@ export default function SettingsPage() {
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription className="space-y-4">
                   <p>
-                    This action cannot be undone. This will permanently delete your
-                    account and remove your data from our servers. All your active
-                    services will be canceled immediately.
+                    This action cannot be undone. This will permanently delete your account and remove your data from
+                    our servers. All your active services will be canceled immediately.
                   </p>
                   <p className="text-foreground font-medium">
                     Please type <strong>Delete</strong> to confirm.
@@ -115,7 +120,7 @@ export default function SettingsPage() {
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === tab.id
                     ? "bg-muted/60 text-foreground"
-                    : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                    : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
                 )}
               >
                 {tab.label}
@@ -129,12 +134,22 @@ export default function SettingsPage() {
           {activeTab === "website-info" && <WebsiteInfoTab />}
           {activeTab === "change-logo" && <ChangeLogoTab />}
           {activeTab === "change-password" && <ChangePasswordTab />}
-          {activeTab === "about-us" && <GenericContentTab title="About Us" description="Update the About Us page content." />}
-          {activeTab === "contact-us" && <GenericContentTab title="Contact Us" description="Update your contact information." />}
+          {activeTab === "about-us" && (
+            <GenericContentTab title="About Us" description="Update the About Us page content." />
+          )}
+          {activeTab === "contact-us" && (
+            <GenericContentTab title="Contact Us" description="Update your contact information." />
+          )}
           {activeTab === "faq" && <GenericContentTab title="FAQ" description="Manage frequently asked questions." />}
-          {activeTab === "terms-of-use" && <GenericContentTab title="Terms of Use" description="Update the terms of service." />}
-          {activeTab === "privacy-policy" && <GenericContentTab title="Privacy Policy" description="Update the privacy policy." />}
-          {activeTab === "shipping-delivery" && <GenericContentTab title="Shipping & Delivery" description="Manage shipping options and info." />}
+          {activeTab === "terms-of-use" && (
+            <GenericContentTab title="Terms of Use" description="Update the terms of service." />
+          )}
+          {activeTab === "privacy-policy" && (
+            <GenericContentTab title="Privacy Policy" description="Update the privacy policy." />
+          )}
+          {activeTab === "shipping-delivery" && (
+            <GenericContentTab title="Shipping & Delivery" description="Manage shipping options and info." />
+          )}
         </div>
       </div>
     </div>

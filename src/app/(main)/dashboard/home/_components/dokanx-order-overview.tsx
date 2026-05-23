@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
+
 import { Label, Pie, PieChart } from "recharts";
-import { Card, CardAction, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -59,10 +61,7 @@ export function DokanxOrderOverview() {
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-8 pb-6">
         <ChartContainer config={orderConfig} className="mx-auto aspect-square max-h-56 w-full">
-          <PieChart
-            className="m-0"
-            margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-          >
+          <PieChart className="m-0" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
             <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel className="w-52" nameKey="name" />} />
             <Pie
               cornerRadius={4}
@@ -101,10 +100,7 @@ export function DokanxOrderOverview() {
           {orderOverviewData.map((item) => (
             <li key={item.name} className="flex w-full items-center justify-between">
               <span className="flex items-center gap-2 text-sm capitalize">
-                <span
-                  className="size-3 shrink-0 rounded-full"
-                  style={{ background: item.fill }}
-                />
+                <span className="size-3 shrink-0 rounded-full" style={{ background: item.fill }} />
                 <span className="truncate">{item.name}</span>
               </span>
               <span className="text-sm tabular-nums ml-2">{item.value}</span>

@@ -1,14 +1,11 @@
 "use client";
 
 import * as React from "react";
+
 import { Bell } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
@@ -53,7 +50,10 @@ export function NotificationButton() {
         <Button variant="outline" size="icon" className="relative">
           <Bell className="size-4" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full text-[10px] font-medium text-white" style={{ backgroundColor: "#E7000B" }}>
+            <span
+              className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full text-[10px] font-medium text-white"
+              style={{ backgroundColor: "#E7000B" }}
+            >
               {unreadCount}
             </span>
           )}

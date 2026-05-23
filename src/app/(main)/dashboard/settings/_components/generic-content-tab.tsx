@@ -13,12 +13,9 @@ export function GenericContentTab({ title, description }: { title: string; descr
 
       <div className="space-y-4">
         <p className="text-sm font-medium text-foreground">Content</p>
-        <Textarea 
-          placeholder={`Enter content for ${title}...`} 
-          className="min-h-[300px] resize-y"
-        />
+        <Textarea placeholder={`Enter content for ${title}...`} className="min-h-[300px] resize-y" />
       </div>
-      
+
       <div className="flex justify-end pt-4 pb-8">
         <Button>Save Changes</Button>
       </div>

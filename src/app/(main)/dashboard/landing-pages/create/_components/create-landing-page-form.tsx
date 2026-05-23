@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
+
 import { useRouter } from "next/navigation";
+
 import {
   Check,
   ChevronRight,
@@ -24,13 +26,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -39,27 +35,124 @@ import { Textarea } from "@/components/ui/textarea";
 /* ---- Catalogue ---- */
 
 const productCatalogue = [
-  { id: "PRD-001", name: "Premium Cotton T-Shirt",       sku: "SKU-001", price: 850,  stock: 124, image: "https://placehold.co/80x80/6366f1/ffffff?text=TS", category: "Clothing"     },
-  { id: "PRD-002", name: "Slim Fit Denim Jeans",         sku: "SKU-002", price: 1450, stock: 67,  image: "https://placehold.co/80x80/f59e0b/ffffff?text=DJ", category: "Clothing"     },
-  { id: "PRD-003", name: "Wireless Bluetooth Earbuds",   sku: "SKU-003", price: 2200, stock: 42,  image: "https://placehold.co/80x80/06b6d4/ffffff?text=BE", category: "Electronics"  },
-  { id: "PRD-004", name: "Leather Crossbody Bag",        sku: "SKU-004", price: 3100, stock: 18,  image: "https://placehold.co/80x80/10b981/ffffff?text=CB", category: "Accessories"  },
-  { id: "PRD-005", name: "Running Sneakers Pro",         sku: "SKU-005", price: 2800, stock: 55,  image: "https://placehold.co/80x80/f43f5e/ffffff?text=RS", category: "Footwear"     },
-  { id: "PRD-006", name: "Organic Face Moisturizer",     sku: "SKU-006", price: 650,  stock: 200, image: "https://placehold.co/80x80/d946ef/ffffff?text=FM", category: "Beauty"       },
-  { id: "PRD-007", name: "Stainless Steel Water Bottle", sku: "SKU-007", price: 480,  stock: 310, image: "https://placehold.co/80x80/14b8a6/ffffff?text=WB", category: "Home"         },
-  { id: "PRD-008", name: "Smart Fitness Watch",          sku: "SKU-008", price: 4500, stock: 29,  image: "https://placehold.co/80x80/8b5cf6/ffffff?text=FW", category: "Electronics"  },
-  { id: "PRD-009", name: "Classic Polo Shirt",           sku: "SKU-009", price: 950,  stock: 88,  image: "https://placehold.co/80x80/f97316/ffffff?text=PS", category: "Clothing"     },
-  { id: "PRD-010", name: "Minimalist Desk Lamp",         sku: "SKU-010", price: 1200, stock: 45,  image: "https://placehold.co/80x80/0ea5e9/ffffff?text=DL", category: "Home"         },
+  {
+    id: "PRD-001",
+    name: "Premium Cotton T-Shirt",
+    sku: "SKU-001",
+    price: 850,
+    stock: 124,
+    image: "https://placehold.co/80x80/6366f1/ffffff?text=TS",
+    category: "Clothing",
+  },
+  {
+    id: "PRD-002",
+    name: "Slim Fit Denim Jeans",
+    sku: "SKU-002",
+    price: 1450,
+    stock: 67,
+    image: "https://placehold.co/80x80/f59e0b/ffffff?text=DJ",
+    category: "Clothing",
+  },
+  {
+    id: "PRD-003",
+    name: "Wireless Bluetooth Earbuds",
+    sku: "SKU-003",
+    price: 2200,
+    stock: 42,
+    image: "https://placehold.co/80x80/06b6d4/ffffff?text=BE",
+    category: "Electronics",
+  },
+  {
+    id: "PRD-004",
+    name: "Leather Crossbody Bag",
+    sku: "SKU-004",
+    price: 3100,
+    stock: 18,
+    image: "https://placehold.co/80x80/10b981/ffffff?text=CB",
+    category: "Accessories",
+  },
+  {
+    id: "PRD-005",
+    name: "Running Sneakers Pro",
+    sku: "SKU-005",
+    price: 2800,
+    stock: 55,
+    image: "https://placehold.co/80x80/f43f5e/ffffff?text=RS",
+    category: "Footwear",
+  },
+  {
+    id: "PRD-006",
+    name: "Organic Face Moisturizer",
+    sku: "SKU-006",
+    price: 650,
+    stock: 200,
+    image: "https://placehold.co/80x80/d946ef/ffffff?text=FM",
+    category: "Beauty",
+  },
+  {
+    id: "PRD-007",
+    name: "Stainless Steel Water Bottle",
+    sku: "SKU-007",
+    price: 480,
+    stock: 310,
+    image: "https://placehold.co/80x80/14b8a6/ffffff?text=WB",
+    category: "Home",
+  },
+  {
+    id: "PRD-008",
+    name: "Smart Fitness Watch",
+    sku: "SKU-008",
+    price: 4500,
+    stock: 29,
+    image: "https://placehold.co/80x80/8b5cf6/ffffff?text=FW",
+    category: "Electronics",
+  },
+  {
+    id: "PRD-009",
+    name: "Classic Polo Shirt",
+    sku: "SKU-009",
+    price: 950,
+    stock: 88,
+    image: "https://placehold.co/80x80/f97316/ffffff?text=PS",
+    category: "Clothing",
+  },
+  {
+    id: "PRD-010",
+    name: "Minimalist Desk Lamp",
+    sku: "SKU-010",
+    price: 1200,
+    stock: 45,
+    image: "https://placehold.co/80x80/0ea5e9/ffffff?text=DL",
+    category: "Home",
+  },
 ];
 
 type Product = (typeof productCatalogue)[0];
 
 /* ---- Repeatable item types ---- */
-interface FeatureItem   { id: string; title: string; description: string; }
-interface WhyChooseItem { id: string; text: string; }
-interface ReviewItem    { id: string; file: File | null; preview: string; }
-interface GalleryItem   { id: string; file: File | null; preview: string; }
+interface FeatureItem {
+  id: string;
+  title: string;
+  description: string;
+}
+interface WhyChooseItem {
+  id: string;
+  text: string;
+}
+interface ReviewItem {
+  id: string;
+  file: File | null;
+  preview: string;
+}
+interface GalleryItem {
+  id: string;
+  file: File | null;
+  preview: string;
+}
 
-function uid() { return Math.random().toString(36).slice(2, 9); }
+function uid() {
+  return Math.random().toString(36).slice(2, 9);
+}
 
 /* ---- Sub-components ---- */
 
@@ -87,9 +180,7 @@ function SectionCard({
           </span>
           {title}
         </CardTitle>
-        {description && (
-          <CardDescription className="text-xs">{description}</CardDescription>
-        )}
+        {description && <CardDescription className="text-xs">{description}</CardDescription>}
       </CardHeader>
       <CardContent className="overflow-visible">{children}</CardContent>
     </Card>
@@ -151,17 +242,16 @@ function ImageUploadBox({
             : "border-border bg-muted/30 hover:border-primary/60 hover:bg-muted/50",
         ].join(" ")}
         onClick={() => inputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
       >
         {preview ? (
           <>
-            <img
-              src={preview}
-              alt="preview"
-              className="absolute inset-0 size-full rounded-[10px] object-cover"
-            />
+            <img src={preview} alt="preview" className="absolute inset-0 size-full rounded-[10px] object-cover" />
             <div className="absolute inset-0 flex items-center justify-center rounded-[10px] bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
               <div className="flex flex-col items-center gap-1 text-white">
                 <UploadCloud className="size-4" />
@@ -172,7 +262,11 @@ function ImageUploadBox({
               type="button"
               aria-label="Remove image"
               className="absolute right-1.5 top-1.5 z-10 flex size-5 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-destructive"
-              onClick={(e) => { e.stopPropagation(); onChange(null, ""); if (inputRef.current) inputRef.current.value = ""; }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange(null, "");
+                if (inputRef.current) inputRef.current.value = "";
+              }}
             >
               <X className="size-3" />
             </button>
@@ -185,14 +279,7 @@ function ImageUploadBox({
             <p className="text-xs text-muted-foreground">Click or drag & drop</p>
           </div>
         )}
-        <input
-          ref={inputRef}
-          id={id}
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          onChange={handleChange}
-        />
+        <input ref={inputRef} id={id} type="file" accept="image/*" className="sr-only" onChange={handleChange} />
       </div>
     </div>
   );
@@ -239,17 +326,16 @@ function RepeatableImageUpload({
             : "border-border bg-muted/30 hover:border-primary/60 hover:bg-muted/50",
         ].join(" ")}
         onClick={() => inputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
       >
         {preview ? (
           <>
-            <img
-              src={preview}
-              alt="preview"
-              className="absolute inset-0 size-full rounded-[10px] object-cover"
-            />
+            <img src={preview} alt="preview" className="absolute inset-0 size-full rounded-[10px] object-cover" />
             <div className="absolute inset-0 flex items-center justify-center rounded-[10px] bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
               <UploadCloud className="size-4 text-white" />
             </div>
@@ -316,37 +402,38 @@ export function CreateLandingPageForm() {
   const router = useRouter();
 
   /* ---- Product search ---- */
-  const [query, setQuery]                 = React.useState("");
-  const [focused, setFocused]             = React.useState(false);
-  const [product, setProduct]             = React.useState<Product | null>(null);
-  const searchRef                         = React.useRef<HTMLDivElement>(null);
+  const [query, setQuery] = React.useState("");
+  const [focused, setFocused] = React.useState(false);
+  const [product, setProduct] = React.useState<Product | null>(null);
+  const searchRef = React.useRef<HTMLDivElement>(null);
 
   /* ---- Page Info fields ---- */
-  const [homeTitle, setHomeTitle]                     = React.useState("");
-  const [homeDescription, setHomeDescription]         = React.useState("");
-  const [homeImageFile, setHomeImageFile]             = React.useState<File | null>(null);
-  const [homeImagePreview, setHomeImagePreview]       = React.useState("");
-  const [featureImageFile, setFeatureImageFile]       = React.useState<File | null>(null);
+  const [homeTitle, setHomeTitle] = React.useState("");
+  const [homeDescription, setHomeDescription] = React.useState("");
+  const [homeImageFile, setHomeImageFile] = React.useState<File | null>(null);
+  const [homeImagePreview, setHomeImagePreview] = React.useState("");
+  const [featureImageFile, setFeatureImageFile] = React.useState<File | null>(null);
   const [featureImagePreview, setFeatureImagePreview] = React.useState("");
-  const [featuresMainTitle, setFeaturesMainTitle]     = React.useState("");
-  const [whyChooseTopTitle, setWhyChooseTopTitle]     = React.useState("");
+  const [featuresMainTitle, setFeaturesMainTitle] = React.useState("");
+  const [whyChooseTopTitle, setWhyChooseTopTitle] = React.useState("");
   const [whyChooseBottomTitle, setWhyChooseBottomTitle] = React.useState("");
-  const [reviewMainTitle, setReviewMainTitle]         = React.useState("");
-  const [checkoutMainTitle, setCheckoutMainTitle]     = React.useState("");
-  const [youtubeVideoUrl, setYoutubeVideoUrl]         = React.useState("");
+  const [reviewMainTitle, setReviewMainTitle] = React.useState("");
+  const [checkoutMainTitle, setCheckoutMainTitle] = React.useState("");
+  const [youtubeVideoUrl, setYoutubeVideoUrl] = React.useState("");
 
   /* ---- Repeatable lists ---- */
-  const [features,   setFeatures]   = React.useState<FeatureItem[]>([{ id: uid(), title: "", description: "" }]);
-  const [whyChoose,  setWhyChoose]  = React.useState<WhyChooseItem[]>([{ id: uid(), text: "" }]);
-  const [reviews,    setReviews]    = React.useState<ReviewItem[]>([{ id: uid(), file: null, preview: "" }]);
-  const [gallery,    setGallery]    = React.useState<GalleryItem[]>([{ id: uid(), file: null, preview: "" }]);
+  const [features, setFeatures] = React.useState<FeatureItem[]>([{ id: uid(), title: "", description: "" }]);
+  const [whyChoose, setWhyChoose] = React.useState<WhyChooseItem[]>([{ id: uid(), text: "" }]);
+  const [reviews, setReviews] = React.useState<ReviewItem[]>([{ id: uid(), file: null, preview: "" }]);
+  const [gallery, setGallery] = React.useState<GalleryItem[]>([{ id: uid(), file: null, preview: "" }]);
 
   /* ---- Filtered products ---- */
   const filtered = React.useMemo(() => {
     if (!query.trim()) return [];
     const q = query.toLowerCase();
     return productCatalogue.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+      (p) =>
+        p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.category.toLowerCase().includes(q),
     );
   }, [query]);
 
@@ -367,44 +454,47 @@ export function CreateLandingPageForm() {
   }
 
   /* Features */
-  const addFeature    = () => setFeatures((p) => [...p, { id: uid(), title: "", description: "" }]);
+  const addFeature = () => setFeatures((p) => [...p, { id: uid(), title: "", description: "" }]);
   const removeFeature = (id: string) => setFeatures((p) => p.filter((f) => f.id !== id));
   const updateFeature = (id: string, field: "title" | "description", v: string) =>
     setFeatures((p) => p.map((f) => (f.id === id ? { ...f, [field]: v } : f)));
 
   /* WhyChoose */
-  const addWhy    = () => setWhyChoose((p) => [...p, { id: uid(), text: "" }]);
+  const addWhy = () => setWhyChoose((p) => [...p, { id: uid(), text: "" }]);
   const removeWhy = (id: string) => setWhyChoose((p) => p.filter((w) => w.id !== id));
-  const updateWhy = (id: string, v: string) =>
-    setWhyChoose((p) => p.map((w) => (w.id === id ? { ...w, text: v } : w)));
+  const updateWhy = (id: string, v: string) => setWhyChoose((p) => p.map((w) => (w.id === id ? { ...w, text: v } : w)));
 
   /* Reviews */
-  const addReview    = () => setReviews((p) => [...p, { id: uid(), file: null, preview: "" }]);
+  const addReview = () => setReviews((p) => [...p, { id: uid(), file: null, preview: "" }]);
   const removeReview = (id: string) => setReviews((p) => p.filter((r) => r.id !== id));
   const updateReview = (id: string, file: File | null, preview: string) =>
     setReviews((p) => p.map((r) => (r.id === id ? { ...r, file, preview } : r)));
 
   /* Gallery */
-  const addGallery    = () => setGallery((p) => [...p, { id: uid(), file: null, preview: "" }]);
+  const addGallery = () => setGallery((p) => [...p, { id: uid(), file: null, preview: "" }]);
   const removeGallery = (id: string) => setGallery((p) => p.filter((g) => g.id !== id));
   const updateGallery = (id: string, file: File | null, preview: string) =>
     setGallery((p) => p.map((g) => (g.id === id ? { ...g, file, preview } : g)));
 
   /* Publish */
   function handlePublish() {
-    if (!product) { toast.error("Please select a product first."); return; }
-    if (!homeTitle.trim()) { toast.error("Home title is required."); return; }
+    if (!product) {
+      toast.error("Please select a product first.");
+      return;
+    }
+    if (!homeTitle.trim()) {
+      toast.error("Home title is required.");
+      return;
+    }
     toast.success(`Landing page for "${product.name}" published!`);
     router.push("/dashboard/landing-pages");
   }
-
 
   /* ================================================================
      RENDER
      ================================================================ */
   return (
     <div className="flex flex-col gap-6 pb-28">
-
       <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl tracking-tight">Create Landing Page</h1>
@@ -478,11 +568,11 @@ export function CreateLandingPageForm() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{p.sku} · {p.category}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {p.sku} · {p.category}
+                        </p>
                       </div>
-                      <span className="text-sm font-semibold tabular-nums shrink-0">
-                        ৳{p.price.toLocaleString()}
-                      </span>
+                      <span className="text-sm font-semibold tabular-nums shrink-0">৳{p.price.toLocaleString()}</span>
                       <ChevronRight className="size-4 text-muted-foreground shrink-0" />
                     </button>
                     {i < filtered.length - 1 && <Separator />}
@@ -504,105 +594,112 @@ export function CreateLandingPageForm() {
       </SectionCard>
 
       {/* ── Landing Page Info ── */}
-      <SectionCard
-        icon={Info}
-        title="Landing Page Info"
-        description="Core content sections of the landing page."
-      >
+      <SectionCard icon={Info} title="Landing Page Info" description="Core content sections of the landing page.">
         <div className="grid gap-3 sm:grid-cols-2 content-start">
+          {/* Home Title */}
+          <div className="space-y-1.5">
+            <Label htmlFor="home-title" className="text-xs">
+              Home Title <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="home-title"
+              placeholder="e.g. Discover Our Best Product"
+              value={homeTitle}
+              onChange={(e) => setHomeTitle(e.target.value)}
+            />
+          </div>
 
-            {/* Home Title */}
-            <div className="space-y-1.5">
-              <Label htmlFor="home-title" className="text-xs">
-                Home Title <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="home-title"
-                placeholder="e.g. Discover Our Best Product"
-                value={homeTitle}
-                onChange={(e) => setHomeTitle(e.target.value)}
-              />
-            </div>
+          {/* Features Main Title */}
+          <div className="space-y-1.5">
+            <Label htmlFor="feat-main-title" className="text-xs">
+              Features Main Title
+            </Label>
+            <Input
+              id="feat-main-title"
+              placeholder="e.g. Why You'll Love This"
+              value={featuresMainTitle}
+              onChange={(e) => setFeaturesMainTitle(e.target.value)}
+            />
+          </div>
 
-            {/* Features Main Title */}
-            <div className="space-y-1.5">
-              <Label htmlFor="feat-main-title" className="text-xs">Features Main Title</Label>
-              <Input
-                id="feat-main-title"
-                placeholder="e.g. Why You'll Love This"
-                value={featuresMainTitle}
-                onChange={(e) => setFeaturesMainTitle(e.target.value)}
-              />
-            </div>
+          {/* Home Description — full row */}
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="home-desc" className="text-xs">
+              Home Description
+            </Label>
+            <Textarea
+              id="home-desc"
+              placeholder="A short intro text shown in the hero section…"
+              className="min-h-[68px] resize-y"
+              value={homeDescription}
+              onChange={(e) => setHomeDescription(e.target.value)}
+            />
+          </div>
 
-            {/* Home Description — full row */}
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="home-desc" className="text-xs">Home Description</Label>
-              <Textarea
-                id="home-desc"
-                placeholder="A short intro text shown in the hero section…"
-                className="min-h-[68px] resize-y"
-                value={homeDescription}
-                onChange={(e) => setHomeDescription(e.target.value)}
-              />
-            </div>
+          {/* Why Choose Top */}
+          <div className="space-y-1.5">
+            <Label htmlFor="why-top" className="text-xs">
+              Why Choose — Top Title
+            </Label>
+            <Input
+              id="why-top"
+              placeholder="e.g. The Smarter Choice"
+              value={whyChooseTopTitle}
+              onChange={(e) => setWhyChooseTopTitle(e.target.value)}
+            />
+          </div>
 
-            {/* Why Choose Top */}
-            <div className="space-y-1.5">
-              <Label htmlFor="why-top" className="text-xs">Why Choose — Top Title</Label>
-              <Input
-                id="why-top"
-                placeholder="e.g. The Smarter Choice"
-                value={whyChooseTopTitle}
-                onChange={(e) => setWhyChooseTopTitle(e.target.value)}
-              />
-            </div>
+          {/* Why Choose Bottom */}
+          <div className="space-y-1.5">
+            <Label htmlFor="why-bottom" className="text-xs">
+              Why Choose — Bottom Title
+            </Label>
+            <Input
+              id="why-bottom"
+              placeholder="e.g. Trusted by thousands"
+              value={whyChooseBottomTitle}
+              onChange={(e) => setWhyChooseBottomTitle(e.target.value)}
+            />
+          </div>
 
-            {/* Why Choose Bottom */}
-            <div className="space-y-1.5">
-              <Label htmlFor="why-bottom" className="text-xs">Why Choose — Bottom Title</Label>
-              <Input
-                id="why-bottom"
-                placeholder="e.g. Trusted by thousands"
-                value={whyChooseBottomTitle}
-                onChange={(e) => setWhyChooseBottomTitle(e.target.value)}
-              />
-            </div>
+          {/* Review Main Title */}
+          <div className="space-y-1.5">
+            <Label htmlFor="review-main" className="text-xs">
+              Review Main Title
+            </Label>
+            <Input
+              id="review-main"
+              placeholder="e.g. What Our Customers Say"
+              value={reviewMainTitle}
+              onChange={(e) => setReviewMainTitle(e.target.value)}
+            />
+          </div>
 
-            {/* Review Main Title */}
-            <div className="space-y-1.5">
-              <Label htmlFor="review-main" className="text-xs">Review Main Title</Label>
-              <Input
-                id="review-main"
-                placeholder="e.g. What Our Customers Say"
-                value={reviewMainTitle}
-                onChange={(e) => setReviewMainTitle(e.target.value)}
-              />
-            </div>
+          {/* Checkout Main Title */}
+          <div className="space-y-1.5">
+            <Label htmlFor="checkout-main" className="text-xs">
+              Checkout Main Title
+            </Label>
+            <Input
+              id="checkout-main"
+              placeholder="e.g. Order Now & Get it Fast"
+              value={checkoutMainTitle}
+              onChange={(e) => setCheckoutMainTitle(e.target.value)}
+            />
+          </div>
 
-            {/* Checkout Main Title */}
-            <div className="space-y-1.5">
-              <Label htmlFor="checkout-main" className="text-xs">Checkout Main Title</Label>
-              <Input
-                id="checkout-main"
-                placeholder="e.g. Order Now & Get it Fast"
-                value={checkoutMainTitle}
-                onChange={(e) => setCheckoutMainTitle(e.target.value)}
-              />
-            </div>
-
-            {/* YouTube Video URL */}
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="yt-url" className="text-xs flex items-center gap-1">
-                <Video className="size-3" /> YouTube Video URL
-              </Label>
-              <Input
-                id="yt-url"
-                placeholder="https://youtube.com/watch?v=…"
-                value={youtubeVideoUrl}
-                onChange={(e) => setYoutubeVideoUrl(e.target.value)}
-              />
-            </div>
+          {/* YouTube Video URL */}
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="yt-url" className="text-xs flex items-center gap-1">
+              <Video className="size-3" /> YouTube Video URL
+            </Label>
+            <Input
+              id="yt-url"
+              placeholder="https://youtube.com/watch?v=…"
+              value={youtubeVideoUrl}
+              onChange={(e) => setYoutubeVideoUrl(e.target.value)}
+            />
+          </div>
         </div>
       </SectionCard>
 
@@ -614,7 +711,10 @@ export function CreateLandingPageForm() {
             label=""
             file={homeImageFile}
             preview={homeImagePreview}
-            onChange={(f, p) => { setHomeImageFile(f); setHomeImagePreview(p); }}
+            onChange={(f, p) => {
+              setHomeImageFile(f);
+              setHomeImagePreview(p);
+            }}
           />
         </SectionCard>
         <SectionCard title="" icon={ImageIcon} description="Feature Image">
@@ -623,20 +723,18 @@ export function CreateLandingPageForm() {
             label=""
             file={featureImageFile}
             preview={featureImagePreview}
-            onChange={(f, p) => { setFeatureImageFile(f); setFeatureImagePreview(p); }}
+            onChange={(f, p) => {
+              setFeatureImageFile(f);
+              setFeatureImagePreview(p);
+            }}
           />
         </SectionCard>
       </div>
 
       {/* ── Features + Why Choose (side by side) ── */}
       <div className="grid gap-4 md:grid-cols-2">
-
         {/* Features */}
-        <SectionCard
-          icon={Sparkles}
-          title="Features"
-          description="Highlight the key features of this product."
-        >
+        <SectionCard icon={Sparkles} title="Features" description="Highlight the key features of this product.">
           <div className="flex flex-col gap-2.5">
             {features.map((feat, i) => (
               <div
@@ -674,11 +772,7 @@ export function CreateLandingPageForm() {
         </SectionCard>
 
         {/* Why Choose This Product */}
-        <SectionCard
-          icon={Zap}
-          title="Why Choose This Product"
-          description="List the compelling reasons to buy."
-        >
+        <SectionCard icon={Zap} title="Why Choose This Product" description="List the compelling reasons to buy.">
           <div className="flex flex-col gap-2.5">
             {whyChoose.map((item, i) => (
               <div
@@ -708,58 +802,47 @@ export function CreateLandingPageForm() {
             <AddRowButton label="Add Reason" onClick={addWhy} />
           </div>
         </SectionCard>
-
       </div>
 
       {/* ── Reviews + Gallery (side by side) ── */}
       <div className="grid gap-4 md:grid-cols-2">
-
         {/* Reviews */}
-        <SectionCard
-        icon={Quote}
-        title="Reviews"
-        description="Add customer review screenshot images."
-      >
-        <div className="flex flex-col gap-2.5">
-          <div className="grid gap-2.5 grid-cols-3 sm:grid-cols-4 md:grid-cols-5">
-            {reviews.map((rev, i) => (
-              <RepeatableImageUpload
-                key={rev.id}
-                index={i}
-                file={rev.file}
-                preview={rev.preview}
-                onUpdate={(f, p) => updateReview(rev.id, f, p)}
-                onRemove={() => removeReview(rev.id)}
-              />
-            ))}
+        <SectionCard icon={Quote} title="Reviews" description="Add customer review screenshot images.">
+          <div className="flex flex-col gap-2.5">
+            <div className="grid gap-2.5 grid-cols-3 sm:grid-cols-4 md:grid-cols-5">
+              {reviews.map((rev, i) => (
+                <RepeatableImageUpload
+                  key={rev.id}
+                  index={i}
+                  file={rev.file}
+                  preview={rev.preview}
+                  onUpdate={(f, p) => updateReview(rev.id, f, p)}
+                  onRemove={() => removeReview(rev.id)}
+                />
+              ))}
+            </div>
+            <AddRowButton label="Add Review Image" onClick={addReview} />
           </div>
-          <AddRowButton label="Add Review Image" onClick={addReview} />
-        </div>
-      </SectionCard>
+        </SectionCard>
 
-      {/* ── Gallery ── */}
-      <SectionCard
-        icon={GalleryHorizontal}
-        title="Gallery"
-        description="Upload product gallery / lifestyle images."
-      >
-        <div className="flex flex-col gap-2.5">
-          <div className="grid gap-2.5 grid-cols-3 sm:grid-cols-4 md:grid-cols-5">
-            {gallery.map((img, i) => (
-              <RepeatableImageUpload
-                key={img.id}
-                index={i}
-                file={img.file}
-                preview={img.preview}
-                onUpdate={(f, p) => updateGallery(img.id, f, p)}
-                onRemove={() => removeGallery(img.id)}
-              />
-            ))}
+        {/* ── Gallery ── */}
+        <SectionCard icon={GalleryHorizontal} title="Gallery" description="Upload product gallery / lifestyle images.">
+          <div className="flex flex-col gap-2.5">
+            <div className="grid gap-2.5 grid-cols-3 sm:grid-cols-4 md:grid-cols-5">
+              {gallery.map((img, i) => (
+                <RepeatableImageUpload
+                  key={img.id}
+                  index={i}
+                  file={img.file}
+                  preview={img.preview}
+                  onUpdate={(f, p) => updateGallery(img.id, f, p)}
+                  onRemove={() => removeGallery(img.id)}
+                />
+              ))}
+            </div>
+            <AddRowButton label="Add Gallery Image" onClick={addGallery} />
           </div>
-          <AddRowButton label="Add Gallery Image" onClick={addGallery} />
-        </div>
-      </SectionCard>
-
+        </SectionCard>
       </div>
 
       {/* ── Fixed bottom publish bar ── */}

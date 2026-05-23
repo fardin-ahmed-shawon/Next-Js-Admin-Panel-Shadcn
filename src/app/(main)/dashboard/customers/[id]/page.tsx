@@ -1,33 +1,54 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
 import { useParams } from "next/navigation";
+
 import { ArrowLeft, CreditCard, Mail, MapPin, Package, Phone, User } from "lucide-react";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // Using our mock data concept
 const mockCustomers = [
-  { id: "CUST-001", name: "Arham Khan", phone: "+880 1711-234567", email: "arham@example.com", address: "House 12, Road 5, Banani", division: "Dhaka", district: "Dhaka", thana: "Banani", avatar: "https://placehold.co/100x100/1a1a2e/e0e0e0?text=AK", totalOrders: 15, totalSpent: 45000, lastPurchaseDate: "2026-05-19", status: "Active", customerType: "Registered" },
-  { id: "CUST-002", name: "Nusrat Jahan", phone: "+880 1614-567890", email: "nusrat@example.com", address: "Flat 4B, Green Tower, Dhanmondi", division: "Dhaka", district: "Dhaka", thana: "Dhanmondi", avatar: "https://placehold.co/100x100/1a1a2e/e0e0e0?text=NJ", totalOrders: 8, totalSpent: 22000, lastPurchaseDate: "2026-05-18", status: "Active", customerType: "Registered" },
+  {
+    id: "CUST-001",
+    name: "Arham Khan",
+    phone: "+880 1711-234567",
+    email: "arham@example.com",
+    address: "House 12, Road 5, Banani",
+    division: "Dhaka",
+    district: "Dhaka",
+    thana: "Banani",
+    avatar: "https://placehold.co/100x100/1a1a2e/e0e0e0?text=AK",
+    totalOrders: 15,
+    totalSpent: 45000,
+    lastPurchaseDate: "2026-05-19",
+    status: "Active",
+    customerType: "Registered",
+  },
+  {
+    id: "CUST-002",
+    name: "Nusrat Jahan",
+    phone: "+880 1614-567890",
+    email: "nusrat@example.com",
+    address: "Flat 4B, Green Tower, Dhanmondi",
+    division: "Dhaka",
+    district: "Dhaka",
+    thana: "Dhanmondi",
+    avatar: "https://placehold.co/100x100/1a1a2e/e0e0e0?text=NJ",
+    totalOrders: 8,
+    totalSpent: 22000,
+    lastPurchaseDate: "2026-05-18",
+    status: "Active",
+    customerType: "Registered",
+  },
 ];
 
 const mockOrderHistory = [
@@ -39,8 +60,8 @@ const mockOrderHistory = [
     paymentStatus: "Full Paid",
     items: [
       { name: "Premium Cotton T-Shirt", price: 850, qty: 2, color: "Black", size: "M" },
-      { name: "Slim Fit Denim Jeans", price: 1450, qty: 1, color: "Blue", size: "32" }
-    ]
+      { name: "Slim Fit Denim Jeans", price: 1450, qty: 1, color: "Blue", size: "32" },
+    ],
   },
   {
     id: "ORD-8750",
@@ -48,9 +69,7 @@ const mockOrderHistory = [
     total: 2200,
     status: "Delivered",
     paymentStatus: "Full Paid",
-    items: [
-      { name: "Wireless Bluetooth Earbuds", price: 2200, qty: 1, color: "White", size: "Standard" }
-    ]
+    items: [{ name: "Wireless Bluetooth Earbuds", price: 2200, qty: 1, color: "White", size: "Standard" }],
   },
   {
     id: "ORD-8102",
@@ -58,17 +77,15 @@ const mockOrderHistory = [
     total: 480,
     status: "Returned",
     paymentStatus: "Refund",
-    items: [
-      { name: "Stainless Steel Water Bottle", price: 480, qty: 1, color: "Silver", size: "500ml" }
-    ]
-  }
+    items: [{ name: "Stainless Steel Water Bottle", price: 480, qty: 1, color: "Silver", size: "500ml" }],
+  },
 ];
 
 export default function CustomerDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  
+
   // Find customer or fallback to first one for preview purposes
-  const customer = mockCustomers.find(c => c.id === id) || mockCustomers[0];
+  const customer = mockCustomers.find((c) => c.id === id) || mockCustomers[0];
 
   return (
     <div className="flex flex-col gap-6">
@@ -76,15 +93,21 @@ export default function CustomerDetailsPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="size-8" asChild>
-              <Link href="/dashboard/purchase-history"><ArrowLeft className="size-4" /></Link>
+              <Link href="/dashboard/purchase-history">
+                <ArrowLeft className="size-4" />
+              </Link>
             </Button>
             <h1 className="text-3xl tracking-tight">Customer Profile</h1>
           </div>
-          <p className="text-sm text-muted-foreground ml-11">View complete details, history, and metrics for this customer.</p>
+          <p className="text-sm text-muted-foreground ml-11">
+            View complete details, history, and metrics for this customer.
+          </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">Edit Customer</Button>
+          <Button variant="outline" size="sm">
+            Edit Customer
+          </Button>
           <Button size="sm">Create New Order</Button>
         </div>
       </div>
@@ -100,12 +123,13 @@ export default function CustomerDetailsPage() {
             <div className="space-y-1">
               <h2 className="text-xl font-bold">{customer.name}</h2>
               <div className="flex items-center justify-center gap-2">
-                <Badge variant={customer.customerType === "Registered" ? "secondary" : "outline"} className={customer.customerType === "Registered" ? "bg-blue-50 text-blue-700 border-blue-200" : ""}>
+                <Badge
+                  variant={customer.customerType === "Registered" ? "secondary" : "outline"}
+                  className={customer.customerType === "Registered" ? "bg-blue-50 text-blue-700 border-blue-200" : ""}
+                >
                   {customer.customerType}
                 </Badge>
-                <Badge variant={customer.status === "Active" ? "default" : "secondary"}>
-                  {customer.status}
-                </Badge>
+                <Badge variant={customer.status === "Active" ? "default" : "secondary"}>{customer.status}</Badge>
               </div>
             </div>
 
@@ -123,8 +147,10 @@ export default function CustomerDetailsPage() {
               <div className="flex items-start gap-3">
                 <MapPin className="size-4 text-muted-foreground shrink-0 mt-0.5" />
                 <span className="font-medium text-muted-foreground leading-snug">
-                  {customer.address}<br/>
-                  {customer.thana}, {customer.district}<br/>
+                  {customer.address}
+                  <br />
+                  {customer.thana}, {customer.district}
+                  <br />
                   {customer.division}
                 </span>
               </div>
@@ -154,7 +180,9 @@ export default function CustomerDetailsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-primary">৳{customer.totalSpent.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">Average order: ৳{Math.round(customer.totalSpent / customer.totalOrders).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Average order: ৳{Math.round(customer.totalSpent / customer.totalOrders).toLocaleString()}
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -188,9 +216,17 @@ export default function CustomerDetailsPage() {
                         <div className="flex flex-col gap-2 py-1">
                           {order.items.map((item, idx) => (
                             <div key={idx} className="flex flex-col">
-                              <span className="text-sm font-medium">{item.name} <span className="text-muted-foreground font-normal">x{item.qty}</span></span>
+                              <span className="text-sm font-medium">
+                                {item.name} <span className="text-muted-foreground font-normal">x{item.qty}</span>
+                              </span>
                               <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                <span className="flex items-center gap-1"><div className="size-2 rounded-full bg-border" style={{ backgroundColor: item.color.toLowerCase() }} /> {item.color}</span>
+                                <span className="flex items-center gap-1">
+                                  <div
+                                    className="size-2 rounded-full bg-border"
+                                    style={{ backgroundColor: item.color.toLowerCase() }}
+                                  />{" "}
+                                  {item.color}
+                                </span>
                                 <span>·</span>
                                 <span>Size: {item.size}</span>
                               </div>
@@ -200,7 +236,15 @@ export default function CustomerDetailsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1 items-start">
-                          <Badge variant={order.status === "Delivered" ? "default" : order.status === "Returned" ? "destructive" : "secondary"}>
+                          <Badge
+                            variant={
+                              order.status === "Delivered"
+                                ? "default"
+                                : order.status === "Returned"
+                                  ? "destructive"
+                                  : "secondary"
+                            }
+                          >
                             {order.status}
                           </Badge>
                           <Badge variant="outline" className="text-[10px] uppercase">
@@ -208,9 +252,7 @@ export default function CustomerDetailsPage() {
                           </Badge>
                         </div>
                       </TableCell>
-                      <TableCell className="pr-6 text-right font-semibold">
-                        ৳{order.total.toLocaleString()}
-                      </TableCell>
+                      <TableCell className="pr-6 text-right font-semibold">৳{order.total.toLocaleString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

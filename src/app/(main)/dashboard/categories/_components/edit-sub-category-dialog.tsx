@@ -78,7 +78,15 @@ export function EditSubCategoryDialog({ open, onOpenChange, category }: EditSubC
           </Field>
         </div>
         <div className="flex items-center gap-2 pt-2">
-          <Button type="submit" onClick={() => { onOpenChange(false); toast.success(`"${category.name}" has been updated successfully.`); }}>Save Changes</Button>
+          <Button
+            type="submit"
+            onClick={() => {
+              onOpenChange(false);
+              toast.success(`"${category.name}" has been updated successfully.`);
+            }}
+          >
+            Save Changes
+          </Button>
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>

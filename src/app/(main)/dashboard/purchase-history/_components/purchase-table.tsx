@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+
+import Link from "next/link";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -12,30 +15,16 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, ArrowUpDown, Eye, Users } from "lucide-react";
-import Link from "next/link";
+import { ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, Search, Users } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export type CustomerPurchaseEntry = {
   id: string;
@@ -63,7 +52,11 @@ export function PurchaseTable({ data }: { data: CustomerPurchaseEntry[] }) {
         const name = row.getValue("customerName") as string;
         const phone = row.original.phone;
         const avatar = row.original.avatar;
-        const initials = name.split(" ").map(n => n[0]).join("").substring(0, 2);
+        const initials = name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .substring(0, 2);
 
         return (
           <div className="flex items-center gap-3">
@@ -85,7 +78,10 @@ export function PurchaseTable({ data }: { data: CustomerPurchaseEntry[] }) {
       cell: ({ row }) => {
         const type = row.getValue("customerType") as string;
         return (
-          <Badge variant={type === "Registered" ? "secondary" : "outline"} className={type === "Registered" ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50" : ""}>
+          <Badge
+            variant={type === "Registered" ? "secondary" : "outline"}
+            className={type === "Registered" ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50" : ""}
+          >
             {type}
           </Badge>
         );
@@ -94,9 +90,7 @@ export function PurchaseTable({ data }: { data: CustomerPurchaseEntry[] }) {
     {
       accessorKey: "totalOrders",
       header: "Total Orders",
-      cell: ({ row }) => (
-        <span className="font-medium">{row.getValue("totalOrders")}</span>
-      ),
+      cell: ({ row }) => <span className="font-medium">{row.getValue("totalOrders")}</span>,
     },
     {
       accessorKey: "totalSpent",
@@ -228,7 +222,9 @@ export function PurchaseTable({ data }: { data: CustomerPurchaseEntry[] }) {
             <Button
               size="icon-sm"
               variant="outline"
-              onClick={() => table.getColumn("totalSpent")?.toggleSorting(table.getColumn("totalSpent")?.getIsSorted() === "asc")}
+              onClick={() =>
+                table.getColumn("totalSpent")?.toggleSorting(table.getColumn("totalSpent")?.getIsSorted() === "asc")
+              }
             >
               <ArrowUpDown className="size-4" />
             </Button>
@@ -243,12 +239,7 @@ export function PurchaseTable({ data }: { data: CustomerPurchaseEntry[] }) {
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -257,17 +248,9 @@ export function PurchaseTable({ data }: { data: CustomerPurchaseEntry[] }) {
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
+                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}
                   </TableRow>
                 ))
@@ -315,8 +298,7 @@ export function PurchaseTable({ data }: { data: CustomerPurchaseEntry[] }) {
               </Select>
             </div>
             <div className="flex items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount() || 1}
+              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </div>
             <div className="flex items-center space-x-2">
               <Button

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import {
   ArrowUpDown,
   ChevronLeft,
@@ -17,22 +18,9 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 /* ------------------------------------------------------------------ */
@@ -55,25 +43,164 @@ interface EngagementCustomer {
 
 const allCustomers: EngagementCustomer[] = [
   // Active
-  { name: "Nusrat Jahan", phone: "+880 1614-567890", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NJ", orders: 42, spent: 28750, status: "Active", meta: "2 hours ago" },
-  { name: "Arham Khan", phone: "+880 1711-234567", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AK", orders: 24, spent: 12450, status: "Active", meta: "1 day ago" },
-  { name: "Maliha Sultana", phone: "+880 1918-901234", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=MS", orders: 31, spent: 18500, status: "Active", meta: "2 days ago" },
-  { name: "Fatima Akter", phone: "+880 1812-345678", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=FA", orders: 18, spent: 8920, status: "Active", meta: "3 days ago" },
-  { name: "Ayesha Siddiqua", phone: "+880 1520-123456", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AS", orders: 28, spent: 15200, status: "Active", meta: "4 days ago" },
-  { name: "Imran Haque", phone: "+880 1817-890123", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=IH", orders: 15, spent: 9820, status: "Active", meta: "5 days ago" },
-  { name: "Kamal Hossain", phone: "+880 1721-234567", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=KH", orders: 9, spent: 5430, status: "Active", meta: "1 week ago" },
-  { name: "Tanvir Hossain", phone: "+880 1515-678901", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=TH", orders: 7, spent: 3680, status: "Active", meta: "2 weeks ago" },
+  {
+    name: "Nusrat Jahan",
+    phone: "+880 1614-567890",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NJ",
+    orders: 42,
+    spent: 28750,
+    status: "Active",
+    meta: "2 hours ago",
+  },
+  {
+    name: "Arham Khan",
+    phone: "+880 1711-234567",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AK",
+    orders: 24,
+    spent: 12450,
+    status: "Active",
+    meta: "1 day ago",
+  },
+  {
+    name: "Maliha Sultana",
+    phone: "+880 1918-901234",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=MS",
+    orders: 31,
+    spent: 18500,
+    status: "Active",
+    meta: "2 days ago",
+  },
+  {
+    name: "Fatima Akter",
+    phone: "+880 1812-345678",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=FA",
+    orders: 18,
+    spent: 8920,
+    status: "Active",
+    meta: "3 days ago",
+  },
+  {
+    name: "Ayesha Siddiqua",
+    phone: "+880 1520-123456",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AS",
+    orders: 28,
+    spent: 15200,
+    status: "Active",
+    meta: "4 days ago",
+  },
+  {
+    name: "Imran Haque",
+    phone: "+880 1817-890123",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=IH",
+    orders: 15,
+    spent: 9820,
+    status: "Active",
+    meta: "5 days ago",
+  },
+  {
+    name: "Kamal Hossain",
+    phone: "+880 1721-234567",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=KH",
+    orders: 9,
+    spent: 5430,
+    status: "Active",
+    meta: "1 week ago",
+  },
+  {
+    name: "Tanvir Hossain",
+    phone: "+880 1515-678901",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=TH",
+    orders: 7,
+    spent: 3680,
+    status: "Active",
+    meta: "2 weeks ago",
+  },
   // Inactive
-  { name: "Rahim Uddin", phone: "+880 1913-456789", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RU", orders: 3, spent: 1250, status: "Inactive", meta: "120 days inactive" },
-  { name: "Sadia Rahman", phone: "+880 1716-789012", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SR", orders: 1, spent: 580, status: "Inactive", meta: "150 days inactive" },
-  { name: "Rafiq Islam", phone: "+880 1619-012345", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RI", orders: 1, spent: 450, status: "Inactive", meta: "90 days inactive" },
-  { name: "Priya Das", phone: "+880 1822-345678", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=PD", orders: 2, spent: 1200, status: "Inactive", meta: "180 days inactive" },
-  { name: "Habibur Rahman", phone: "+880 1511-987654", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=HR", orders: 5, spent: 3200, status: "Inactive", meta: "240 days inactive" },
-  { name: "Monir Hossain", phone: "+880 1611-987654", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=MH", orders: 2, spent: 890, status: "Inactive", meta: "210 days inactive" },
+  {
+    name: "Rahim Uddin",
+    phone: "+880 1913-456789",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RU",
+    orders: 3,
+    spent: 1250,
+    status: "Inactive",
+    meta: "120 days inactive",
+  },
+  {
+    name: "Sadia Rahman",
+    phone: "+880 1716-789012",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SR",
+    orders: 1,
+    spent: 580,
+    status: "Inactive",
+    meta: "150 days inactive",
+  },
+  {
+    name: "Rafiq Islam",
+    phone: "+880 1619-012345",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RI",
+    orders: 1,
+    spent: 450,
+    status: "Inactive",
+    meta: "90 days inactive",
+  },
+  {
+    name: "Priya Das",
+    phone: "+880 1822-345678",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=PD",
+    orders: 2,
+    spent: 1200,
+    status: "Inactive",
+    meta: "180 days inactive",
+  },
+  {
+    name: "Habibur Rahman",
+    phone: "+880 1511-987654",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=HR",
+    orders: 5,
+    spent: 3200,
+    status: "Inactive",
+    meta: "240 days inactive",
+  },
+  {
+    name: "Monir Hossain",
+    phone: "+880 1611-987654",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=MH",
+    orders: 2,
+    spent: 890,
+    status: "Inactive",
+    meta: "210 days inactive",
+  },
   // Banned
-  { name: "Shahid Mia", phone: "+880 1813-765432", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SM", orders: 6, spent: 0, status: "Banned", meta: "Multiple fraudulent chargebacks", metaSub: "Banned on 2025-12-10" },
-  { name: "Raju Ahmed", phone: "+880 1913-765432", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RA", orders: 12, spent: 4500, status: "Banned", meta: "Repeated abusive behaviour towards delivery staff", metaSub: "Banned on 2026-01-22" },
-  { name: "Nasir Uddin", phone: "+880 1712-876543", avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NU", orders: 3, spent: 980, status: "Banned", meta: "Violation of terms of service", metaSub: "Banned on 2026-03-05" },
+  {
+    name: "Shahid Mia",
+    phone: "+880 1813-765432",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SM",
+    orders: 6,
+    spent: 0,
+    status: "Banned",
+    meta: "Multiple fraudulent chargebacks",
+    metaSub: "Banned on 2025-12-10",
+  },
+  {
+    name: "Raju Ahmed",
+    phone: "+880 1913-765432",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RA",
+    orders: 12,
+    spent: 4500,
+    status: "Banned",
+    meta: "Repeated abusive behaviour towards delivery staff",
+    metaSub: "Banned on 2026-01-22",
+  },
+  {
+    name: "Nasir Uddin",
+    phone: "+880 1712-876543",
+    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NU",
+    orders: 3,
+    spent: 980,
+    status: "Banned",
+    meta: "Violation of terms of service",
+    metaSub: "Banned on 2026-03-05",
+  },
 ];
 
 type StatusFilter = "All" | "Active" | "Inactive" | "Banned";
@@ -85,19 +212,44 @@ type SortField = "name" | "spent" | "orders";
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const statusConfig: Record<EngagementStatus, { color: string; border: string; bg: string; icon: React.ElementType; badgeVariant: "default" | "outline" | "destructive" | "secondary" }> = {
-  Active: { color: "text-emerald-600", border: "border-emerald-600/20 hover:border-emerald-600/40", bg: "", icon: UserCheck, badgeVariant: "default" },
-  Inactive: { color: "text-amber-600", border: "border-amber-600/20 hover:border-amber-600/40", bg: "", icon: UserMinus, badgeVariant: "outline" },
-  Banned: { color: "text-destructive", border: "border-destructive/20 hover:border-destructive/40", bg: "bg-destructive/5", icon: ShieldAlert, badgeVariant: "destructive" },
+const statusConfig: Record<
+  EngagementStatus,
+  {
+    color: string;
+    border: string;
+    bg: string;
+    icon: React.ElementType;
+    badgeVariant: "default" | "outline" | "destructive" | "secondary";
+  }
+> = {
+  Active: {
+    color: "text-emerald-600",
+    border: "border-emerald-600/20 hover:border-emerald-600/40",
+    bg: "",
+    icon: UserCheck,
+    badgeVariant: "default",
+  },
+  Inactive: {
+    color: "text-amber-600",
+    border: "border-amber-600/20 hover:border-amber-600/40",
+    bg: "",
+    icon: UserMinus,
+    badgeVariant: "outline",
+  },
+  Banned: {
+    color: "text-destructive",
+    border: "border-destructive/20 hover:border-destructive/40",
+    bg: "bg-destructive/5",
+    icon: ShieldAlert,
+    badgeVariant: "destructive",
+  },
 };
 
 function exportCustomers(data: EngagementCustomer[]) {
   const headers = ["Name", "Phone", "Status", "Orders", "Total Spent", "Details"];
   const csvRows = [
     headers.join(","),
-    ...data.map((r) =>
-      [`"${r.name}"`, `"${r.phone}"`, r.status, r.orders, r.spent, `"${r.meta}"`].join(",")
-    ),
+    ...data.map((r) => [`"${r.name}"`, `"${r.phone}"`, r.status, r.orders, r.spent, `"${r.meta}"`].join(",")),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -171,9 +323,7 @@ export function CustomerEngagementGrid() {
           <Users className="size-5" />
           Customer Engagement
         </CardTitle>
-        <CardDescription>
-          Active, inactive, and banned customers &middot; {sorted.length} total
-        </CardDescription>
+        <CardDescription>Active, inactive, and banned customers &middot; {sorted.length} total</CardDescription>
         <CardAction>
           <Button variant="outline" size="sm" onClick={() => exportCustomers(sorted)}>
             <Download className="mr-2 size-4" />
@@ -192,13 +342,20 @@ export function CustomerEngagementGrid() {
                 className="h-8 w-48 rounded-[min(var(--radius-md),12px)] pl-8"
                 placeholder="Search customers..."
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); setPageIndex(0); }}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPageIndex(0);
+                }}
               />
             </div>
 
             <ToggleGroup
               className="bg-muted p-0.75 text-muted-foreground **:data-[slot=toggle-group-item]:rounded-md **:data-[slot=toggle-group-item]:border **:data-[slot=toggle-group-item]:border-transparent **:data-[slot=toggle-group-item]:text-foreground/60 **:data-[slot=toggle-group-item]:hover:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:bg-background [&_[data-slot=toggle-group-item][data-state=on]]:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:shadow-sm dark:[&_[data-slot=toggle-group-item][data-state=on]]:border-input dark:[&_[data-slot=toggle-group-item][data-state=on]]:bg-input/30"
-              onValueChange={(v) => { if (!v) return; setFilter(v as StatusFilter); setPageIndex(0); }}
+              onValueChange={(v) => {
+                if (!v) return;
+                setFilter(v as StatusFilter);
+                setPageIndex(0);
+              }}
               size="sm"
               spacing={1}
               type="single"
@@ -213,7 +370,13 @@ export function CustomerEngagementGrid() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Select value={sortField} onValueChange={(v) => { setSortField(v as SortField); setPageIndex(0); }}>
+            <Select
+              value={sortField}
+              onValueChange={(v) => {
+                setSortField(v as SortField);
+                setPageIndex(0);
+              }}
+            >
               <SelectTrigger className="h-8 w-28">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -249,13 +412,18 @@ export function CustomerEngagementGrid() {
                 >
                   {/* Avatar + Identity */}
                   <div className="flex items-center gap-3">
-                    <div className={`size-10 shrink-0 overflow-hidden rounded-full border bg-muted ${c.status === "Banned" ? "opacity-60 grayscale" : c.status === "Inactive" ? "opacity-70" : ""}`}>
+                    <div
+                      className={`size-10 shrink-0 overflow-hidden rounded-full border bg-muted ${c.status === "Banned" ? "opacity-60 grayscale" : c.status === "Inactive" ? "opacity-70" : ""}`}
+                    >
                       <img src={c.avatar} alt={c.name} className="size-full object-cover" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium leading-none truncate">{c.name}</p>
-                        <Badge variant={cfg.badgeVariant} className={`shrink-0 text-[10px] px-1.5 py-0 ${c.status === "Inactive" ? "text-amber-600 border-amber-600/30" : ""}`}>
+                        <Badge
+                          variant={cfg.badgeVariant}
+                          className={`shrink-0 text-[10px] px-1.5 py-0 ${c.status === "Inactive" ? "text-amber-600 border-amber-600/30" : ""}`}
+                        >
                           {c.status}
                         </Badge>
                       </div>
@@ -267,9 +435,7 @@ export function CustomerEngagementGrid() {
                   {c.status === "Active" && (
                     <p className="text-xs text-emerald-600 font-medium">Last order: {c.meta}</p>
                   )}
-                  {c.status === "Inactive" && (
-                    <p className="text-xs text-amber-600 font-medium">{c.meta}</p>
-                  )}
+                  {c.status === "Inactive" && <p className="text-xs text-amber-600 font-medium">{c.meta}</p>}
                   {c.status === "Banned" && (
                     <div className="space-y-1">
                       <p className="text-xs text-destructive font-medium leading-snug">{c.meta}</p>
@@ -298,11 +464,21 @@ export function CustomerEngagementGrid() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Per page</span>
-            <Select value={`${pageSize}`} onValueChange={(v) => { setPageSize(Number(v)); setPageIndex(0); }}>
-              <SelectTrigger className="h-8 w-16"><SelectValue /></SelectTrigger>
+            <Select
+              value={`${pageSize}`}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setPageIndex(0);
+              }}
+            >
+              <SelectTrigger className="h-8 w-16">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {[3, 6, 9, 12].map((s) => (
-                  <SelectItem key={s} value={`${s}`}>{s}</SelectItem>
+                  <SelectItem key={s} value={`${s}`}>
+                    {s}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

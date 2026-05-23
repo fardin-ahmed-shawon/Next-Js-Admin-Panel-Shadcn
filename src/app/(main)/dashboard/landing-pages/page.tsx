@@ -12,9 +12,7 @@ export default function LandingPagesPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl tracking-tight">Landing Pages</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage your marketing and promotional landing pages.
-          </p>
+          <p className="text-muted-foreground text-sm">Manage your marketing and promotional landing pages.</p>
         </div>
 
         <div className="flex items-center gap-2">

@@ -1,17 +1,18 @@
 "use client";
 
 import * as React from "react";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
-  type PaginationState,
-  type SortingState,
+  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type PaginationState,
+  type SortingState,
   useReactTable,
-  flexRender,
 } from "@tanstack/react-table";
 import {
   ArrowUpDown,
@@ -20,24 +21,19 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Download,
-  MoreHorizontal,
-  Search,
-  Package,
   Eye,
-  Truck,
-  RefreshCcw,
+  MoreHorizontal,
+  Package,
   PackagePlus,
+  RefreshCcw,
+  Search,
+  Truck,
 } from "lucide-react";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -48,32 +44,83 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const ordersData = [
-  { id: "ORD-5001", customer: { name: "John Doe", email: "john@example.com", phone: "+8801700000001" }, amount: "৳150.00", paymentMethod: "Card", paymentStatus: "Paid", date: "15 Mar 2024", time: "10:30 AM", orderStatus: "Processing", parcelStatus: "Not Added", courier: "Steadfast" },
-  { id: "ORD-5002", customer: { name: "Jane Smith", email: "jane@example.com", phone: "+8801700000002" }, amount: "৳85.50", paymentMethod: "COD", paymentStatus: "Pending", date: "15 Mar 2024", time: "02:15 PM", orderStatus: "Shipped", parcelStatus: "Added", courier: "Pathao" },
-  { id: "ORD-5003", customer: { name: "Alice Johnson", email: "alice@example.com", phone: "+8801700000003" }, amount: "৳210.00", paymentMethod: "Bkash", paymentStatus: "Paid", date: "14 Mar 2024", time: "11:45 AM", orderStatus: "Delivered", parcelStatus: "Returned", courier: "Steadfast" },
-  { id: "ORD-5004", customer: { name: "Bob Brown", email: "bob@example.com", phone: "+8801700000004" }, amount: "৳45.00", paymentMethod: "Card", paymentStatus: "Paid", date: "14 Mar 2024", time: "04:20 PM", orderStatus: "Processing", parcelStatus: "Not Added", courier: "Steadfast" },
-  { id: "ORD-5005", customer: { name: "Charlie Davis", email: "charlie@example.com", phone: "+8801700000005" }, amount: "৳320.00", paymentMethod: "Bank Transfer", paymentStatus: "Paid", date: "13 Mar 2024", time: "09:00 AM", orderStatus: "Shipped", parcelStatus: "Added", courier: "Pathao" },
-  { id: "ORD-5006", customer: { name: "Diana Evans", email: "diana@example.com", phone: "+8801700000006" }, amount: "৳90.00", paymentMethod: "COD", paymentStatus: "Pending", date: "12 Mar 2024", time: "01:30 PM", orderStatus: "Returned", parcelStatus: "Returned", courier: "Steadfast" },
+  {
+    id: "ORD-5001",
+    customer: { name: "John Doe", email: "john@example.com", phone: "+8801700000001" },
+    amount: "৳150.00",
+    paymentMethod: "Card",
+    paymentStatus: "Paid",
+    date: "15 Mar 2024",
+    time: "10:30 AM",
+    orderStatus: "Processing",
+    parcelStatus: "Not Added",
+    courier: "Steadfast",
+  },
+  {
+    id: "ORD-5002",
+    customer: { name: "Jane Smith", email: "jane@example.com", phone: "+8801700000002" },
+    amount: "৳85.50",
+    paymentMethod: "COD",
+    paymentStatus: "Pending",
+    date: "15 Mar 2024",
+    time: "02:15 PM",
+    orderStatus: "Shipped",
+    parcelStatus: "Added",
+    courier: "Pathao",
+  },
+  {
+    id: "ORD-5003",
+    customer: { name: "Alice Johnson", email: "alice@example.com", phone: "+8801700000003" },
+    amount: "৳210.00",
+    paymentMethod: "Bkash",
+    paymentStatus: "Paid",
+    date: "14 Mar 2024",
+    time: "11:45 AM",
+    orderStatus: "Delivered",
+    parcelStatus: "Returned",
+    courier: "Steadfast",
+  },
+  {
+    id: "ORD-5004",
+    customer: { name: "Bob Brown", email: "bob@example.com", phone: "+8801700000004" },
+    amount: "৳45.00",
+    paymentMethod: "Card",
+    paymentStatus: "Paid",
+    date: "14 Mar 2024",
+    time: "04:20 PM",
+    orderStatus: "Processing",
+    parcelStatus: "Not Added",
+    courier: "Steadfast",
+  },
+  {
+    id: "ORD-5005",
+    customer: { name: "Charlie Davis", email: "charlie@example.com", phone: "+8801700000005" },
+    amount: "৳320.00",
+    paymentMethod: "Bank Transfer",
+    paymentStatus: "Paid",
+    date: "13 Mar 2024",
+    time: "09:00 AM",
+    orderStatus: "Shipped",
+    parcelStatus: "Added",
+    courier: "Pathao",
+  },
+  {
+    id: "ORD-5006",
+    customer: { name: "Diana Evans", email: "diana@example.com", phone: "+8801700000006" },
+    amount: "৳90.00",
+    paymentMethod: "COD",
+    paymentStatus: "Pending",
+    date: "12 Mar 2024",
+    time: "01:30 PM",
+    orderStatus: "Returned",
+    parcelStatus: "Returned",
+    courier: "Steadfast",
+  },
 ];
 
 type OrderRow = (typeof ordersData)[0];
@@ -126,9 +173,7 @@ const columns: ColumnDef<OrderRow>[] = [
       return (
         <div className="flex items-center gap-3">
           <Avatar className="size-9 rounded-full bg-slate-900 border-0">
-            <AvatarFallback className="bg-slate-900 text-white text-xs font-medium border-0">
-              {initials}
-            </AvatarFallback>
+            <AvatarFallback className="bg-slate-900 text-white text-xs font-medium border-0">{initials}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col gap-0.5">
             <span className="font-medium text-sm leading-none">{customer.name}</span>
@@ -151,11 +196,7 @@ const columns: ColumnDef<OrderRow>[] = [
     header: "Payment Status",
     cell: ({ row }) => {
       const status = row.original.paymentStatus;
-      return (
-        <Badge variant={status === "Paid" ? "default" : "secondary"}>
-          {status}
-        </Badge>
-      );
+      return <Badge variant={status === "Paid" ? "default" : "secondary"}>{status}</Badge>;
     },
   },
   {
@@ -174,13 +215,20 @@ const columns: ColumnDef<OrderRow>[] = [
     cell: ({ row }) => {
       const status = row.original.orderStatus;
       return (
-        <Badge variant="outline" className={
-          status === "Delivered" ? "border-green-500 text-green-600" :
-          status === "Cancelled" ? "border-red-500 text-red-600" :
-          status === "Returned" ? "border-orange-500 text-orange-600" :
-          status === "Shipped" ? "border-blue-500 text-blue-600" :
-          "border-yellow-500 text-yellow-600"
-        }>
+        <Badge
+          variant="outline"
+          className={
+            status === "Delivered"
+              ? "border-green-500 text-green-600"
+              : status === "Cancelled"
+                ? "border-red-500 text-red-600"
+                : status === "Returned"
+                  ? "border-orange-500 text-orange-600"
+                  : status === "Shipped"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-yellow-500 text-yellow-600"
+          }
+        >
           {status}
         </Badge>
       );
@@ -207,11 +255,7 @@ const columns: ColumnDef<OrderRow>[] = [
     cell: ({ row }) => {
       const status = row.original.parcelStatus;
       return (
-        <Badge variant={
-          status === "Added" ? "default" :
-          status === "Returned" ? "destructive" :
-          "secondary"
-        }>
+        <Badge variant={status === "Added" ? "default" : status === "Returned" ? "destructive" : "secondary"}>
           {status}
         </Badge>
       );
@@ -383,9 +427,7 @@ export function ParcelListTable() {
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}
                   </TableRow>
                 ))

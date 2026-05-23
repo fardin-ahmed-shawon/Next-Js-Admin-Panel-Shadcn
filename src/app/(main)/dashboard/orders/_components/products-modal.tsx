@@ -1,7 +1,10 @@
 import * as React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
+
 import { Package } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 import type { OrderRow } from "./orders-table";
 
 interface ProductsModalProps {
@@ -23,7 +26,7 @@ export function ProductsModal({ order, open, onOpenChange }: ProductsModalProps)
       size: i % 2 === 0 ? "—" : "L",
       color: i % 2 === 0 ? "—" : "Black",
       qty: 1,
-      price: price
+      price: price,
     };
   });
 
@@ -36,41 +39,43 @@ export function ProductsModal({ order, open, onOpenChange }: ProductsModalProps)
             Ordered Products <span className="text-muted-foreground font-normal">— {order.id}</span>
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="w-full max-h-[60vh] overflow-y-auto p-3 bg-muted/20">
           <div className="flex flex-col gap-2.5">
             {products.map((prod, idx) => (
-              <div 
-                key={idx} 
+              <div
+                key={idx}
                 className="group relative flex flex-row items-stretch overflow-hidden rounded-lg border border-border/60 bg-card text-card-foreground shadow-sm"
               >
                 {/* Image Section - Very small width */}
                 <div className="relative w-[90px] h-[90px] shrink-0 overflow-hidden bg-muted">
-                  <img 
-                    src={prod.image} 
-                    alt={prod.name} 
-                    className="size-full object-cover" 
-                  />
+                  <img src={prod.image} alt={prod.name} className="size-full object-cover" />
                 </div>
-                
+
                 {/* Content Section - Compact and vertically centered */}
                 <div className="flex flex-1 flex-col justify-center p-2.5 gap-1.5 relative">
-                  <h4 className="font-semibold text-[13px] leading-tight line-clamp-2 pr-6">
-                    {prod.name}
-                  </h4>
-                  <span className="absolute top-2.5 right-2.5 text-[11px] font-medium text-muted-foreground">x{prod.qty}</span>
-                  
+                  <h4 className="font-semibold text-[13px] leading-tight line-clamp-2 pr-6">{prod.name}</h4>
+                  <span className="absolute top-2.5 right-2.5 text-[11px] font-medium text-muted-foreground">
+                    x{prod.qty}
+                  </span>
+
                   <div className="flex flex-col gap-1.5 mt-1">
                     <div className="flex items-center gap-1.5 text-[11px]">
                       <span className="text-muted-foreground w-8">Size:</span>
-                      <Badge variant="outline" className="rounded bg-transparent border-border/50 px-1.5 font-normal h-4 text-[10px]">
+                      <Badge
+                        variant="outline"
+                        className="rounded bg-transparent border-border/50 px-1.5 font-normal h-4 text-[10px]"
+                      >
                         {prod.size}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
                       <div className="flex items-center gap-1.5">
                         <span className="text-muted-foreground w-8">Color:</span>
-                        <Badge variant="outline" className="rounded bg-transparent border-border/50 px-1.5 font-normal h-4 text-[10px]">
+                        <Badge
+                          variant="outline"
+                          className="rounded bg-transparent border-border/50 px-1.5 font-normal h-4 text-[10px]"
+                        >
                           {prod.color}
                         </Badge>
                       </div>

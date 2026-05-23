@@ -1,13 +1,14 @@
-import { Users, CreditCard, RefreshCw, TrendingUp } from "lucide-react";
+import { CreditCard, RefreshCw, TrendingUp, Users } from "lucide-react";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function PurchaseStats({ data }: { data: any[] }) {
   const totalCustomers = data.length;
   const totalSpent = data.reduce((acc, curr) => acc + curr.totalSpent, 0);
   const totalOrders = data.reduce((acc, curr) => acc + curr.totalOrders, 0);
-  
+
   const avgOrderValue = totalOrders > 0 ? Math.round(totalSpent / totalOrders) : 0;
-  const repeatCustomers = data.filter(c => c.totalOrders > 1).length;
+  const repeatCustomers = data.filter((c) => c.totalOrders > 1).length;
 
   const stats = [
     {

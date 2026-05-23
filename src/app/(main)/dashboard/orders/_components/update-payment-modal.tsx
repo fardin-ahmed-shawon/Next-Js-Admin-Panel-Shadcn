@@ -1,13 +1,21 @@
 "use client";
 
 import * as React from "react";
+
 import { CreditCard } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+
 import { PartialPaymentForm } from "./partial-payment-form";
 
 interface OrderData {
@@ -27,13 +35,13 @@ interface UpdatePaymentModalProps {
 
 export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, children }: UpdatePaymentModalProps) {
   const [internalOpen, setInternalOpen] = React.useState(false);
-  
-  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+
+  const open = controlledOpen ?? internalOpen;
   const setOpen = (newOpen: boolean) => {
     if (controlledOpen === undefined) setInternalOpen(newOpen);
     if (onOpenChange) onOpenChange(newOpen);
   };
-  
+
   // Form state
   const [accountNumber, setAccountNumber] = React.useState("");
   const [transactionId, setTransactionId] = React.useState("");
@@ -57,11 +65,7 @@ export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {children && (
-        <DialogTrigger asChild>
-          {children}
-        </DialogTrigger>
-      )}
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
@@ -72,7 +76,7 @@ export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, 
             Record a new payment and update the payment status for order {order.id}.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="rounded-lg border bg-muted/30 p-4 grid gap-2">
             <div className="flex items-center justify-between text-sm">
@@ -89,7 +93,7 @@ export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, 
             </div>
           </div>
 
-          <PartialPaymentForm 
+          <PartialPaymentForm
             orderTotal={order.total}
             currentPaid={order.paid}
             status={status}
