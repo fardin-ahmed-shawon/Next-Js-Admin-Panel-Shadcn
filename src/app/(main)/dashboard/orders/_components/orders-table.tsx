@@ -117,22 +117,21 @@ function ProductsCell({ row }: { row: any }) {
   const [modalOpen, setModalOpen] = React.useState(false);
   return (
     <>
-      <div className="flex flex-col items-start gap-1.5">
-        <div className="flex -space-x-2">
-          {row.original.productImages.slice(0, 3).map((img: string, i: number) => (
-            <div key={i} className="size-8 shrink-0 overflow-hidden rounded-full border-2 border-background bg-muted">
-              <img src={img} alt="" className="size-full object-cover" />
-            </div>
-          ))}
-          {row.original.productImages.length > 3 && (
-            <div className="flex size-8 items-center justify-center rounded-full border-2 border-background bg-muted text-[10px] font-medium">
-              +{row.original.productImages.length - 3}
-            </div>
-          )}
-        </div>
-        <button className="text-[11px] text-primary hover:underline font-medium" onClick={() => setModalOpen(true)}>
-          See all
-        </button>
+      <div 
+        className="flex -space-x-2 cursor-pointer hover:opacity-80 transition-opacity w-fit" 
+        onClick={() => setModalOpen(true)}
+        title="View all products"
+      >
+        {row.original.productImages.slice(0, 3).map((img: string, i: number) => (
+          <div key={i} className="size-8 shrink-0 overflow-hidden rounded-full border-2 border-background bg-muted">
+            <img src={img} alt="" className="size-full object-cover" />
+          </div>
+        ))}
+        {row.original.productImages.length > 3 && (
+          <div className="flex size-8 items-center justify-center rounded-full border-2 border-background bg-muted text-[10px] font-medium">
+            +{row.original.productImages.length - 3}
+          </div>
+        )}
       </div>
       <ProductsModal
         order={row.original}
