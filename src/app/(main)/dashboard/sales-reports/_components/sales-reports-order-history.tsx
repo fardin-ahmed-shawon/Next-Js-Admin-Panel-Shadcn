@@ -18,6 +18,8 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Search,
   Package,
   Download,
@@ -180,11 +182,11 @@ export function SalesReportsOrderHistory({ data }: { data: OrderRow[] }) {
       </CardHeader>
 
       <CardContent className="flex flex-col flex-1 gap-4 pt-0">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="h-9 w-full pl-8"
+              className="h-8 rounded-[min(var(--radius-md),12px)] pl-8"
               placeholder="Search orders..."
               value={(table.getColumn("search")?.getFilterValue() as string) ?? ""}
               onChange={(event) => {
@@ -193,37 +195,39 @@ export function SalesReportsOrderHistory({ data }: { data: OrderRow[] }) {
               }}
             />
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <ArrowUpDown className="mr-2 size-4" />
-                Sort
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[150px]">
-              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup 
-                value={
-                  table.getState().sorting[0]?.id === "date" ? 
-                    (table.getState().sorting[0]?.desc ? "newest" : "oldest") : 
-                    "default"
-                }
-                onValueChange={(val) => {
-                  if (val === "newest") table.setSorting([{ id: "date", desc: true }]);
-                  else if (val === "oldest") table.setSorting([{ id: "date", desc: false }]);
-                  else table.setSorting([]);
-                }}
-              >
-                <DropdownMenuRadioItem value="default">Default</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="newest">Newest First</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="oldest">Oldest First</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <ArrowUpDown className="mr-2 size-4" />
+                  Sort
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[150px]">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup 
+                  value={
+                    table.getState().sorting[0]?.id === "date" ? 
+                      (table.getState().sorting[0]?.desc ? "newest" : "oldest") : 
+                      "default"
+                  }
+                  onValueChange={(val) => {
+                    if (val === "newest") table.setSorting([{ id: "date", desc: true }]);
+                    else if (val === "oldest") table.setSorting([{ id: "date", desc: false }]);
+                    else table.setSorting([]);
+                  }}
+                >
+                  <DropdownMenuRadioItem value="default">Default</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="newest">Newest First</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="oldest">Oldest First</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border bg-card">
+        <div className="rounded-md border">
           <Table className="whitespace-nowrap">
             <TableHeader className="bg-muted/15">
               {table.getHeaderGroups().map((headerGroup) => (
@@ -265,16 +269,22 @@ export function SalesReportsOrderHistory({ data }: { data: OrderRow[] }) {
           </Table>
         </div>
 
-        <div className="flex items-center gap-2 pt-2">
-          <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground ml-auto">
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-          </span>
-          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-            Next
-          </Button>
+        {/* Pagination */}
+        <div className="flex items-center justify-between pt-2">
+          <div className="text-sm text-muted-foreground">
+            Total {data.length} order(s).
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium">
+              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}><ChevronsLeft className="size-4" /></Button>
+              <Button size="icon-sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}><ChevronLeft className="size-4" /></Button>
+              <Button size="icon-sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}><ChevronRight className="size-4" /></Button>
+              <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}><ChevronsRight className="size-4" /></Button>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

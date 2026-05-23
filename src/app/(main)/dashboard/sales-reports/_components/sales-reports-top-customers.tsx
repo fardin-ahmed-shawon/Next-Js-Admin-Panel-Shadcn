@@ -228,8 +228,8 @@ export function SalesReportsTopCustomers({ data }: { data: OrderRow[] }) {
         </div>
 
         {/* Data Table */}
-        <div className="overflow-hidden rounded-lg border bg-card">
-          <Table>
+        <div className="rounded-md border">
+          <Table className="whitespace-nowrap">
             <TableHeader className="bg-muted/15">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -254,7 +254,7 @@ export function SalesReportsTopCustomers({ data }: { data: OrderRow[] }) {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-auto p-0">
+                  <TableCell colSpan={6} className="h-auto p-0">
                     <div className="flex flex-col items-center justify-center gap-3 py-12">
                       <div className="flex size-14 items-center justify-center rounded-full bg-muted">
                         <Package className="size-6 text-muted-foreground" />
@@ -275,32 +275,20 @@ export function SalesReportsTopCustomers({ data }: { data: OrderRow[] }) {
           </Table>
         </div>
 
-        {/* Pagination Controls */}
-        <div className="flex items-center justify-between px-1">
-          <div className="hidden flex-1 text-muted-foreground text-sm sm:flex">
-            Total {table.getFilteredRowModel().rows.length} customer(s).
+        {/* Pagination */}
+        <div className="flex items-center justify-between pt-2">
+          <div className="text-sm text-muted-foreground">
+            Total {customerSales.length} customer(s).
           </div>
-          <div className="flex w-full items-center justify-between sm:w-fit sm:gap-8">
-            <div className="flex w-fit items-center justify-center font-medium text-sm">
-              Page {table.getState().pagination.pageIndex + 1} of {Math.max(1, table.getPageCount())}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" className="hidden size-8 lg:flex" size="icon" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
-                <span className="sr-only">Go to first page</span>
-                <ChevronsLeft className="size-4" />
-              </Button>
-              <Button variant="outline" className="size-8" size="icon" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-                <span className="sr-only">Go to previous page</span>
-                <ChevronLeft className="size-4" />
-              </Button>
-              <Button variant="outline" className="size-8" size="icon" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-                <span className="sr-only">Go to next page</span>
-                <ChevronRight className="size-4" />
-              </Button>
-              <Button variant="outline" className="hidden size-8 lg:flex" size="icon" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
-                <span className="sr-only">Go to last page</span>
-                <ChevronsRight className="size-4" />
-              </Button>
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium">
+              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button size="icon" variant="outline" className="size-8" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}><ChevronsLeft className="size-4" /></Button>
+              <Button size="icon" variant="outline" className="size-8" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}><ChevronLeft className="size-4" /></Button>
+              <Button size="icon" variant="outline" className="size-8" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}><ChevronRight className="size-4" /></Button>
+              <Button size="icon" variant="outline" className="size-8" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}><ChevronsRight className="size-4" /></Button>
             </div>
           </div>
         </div>
