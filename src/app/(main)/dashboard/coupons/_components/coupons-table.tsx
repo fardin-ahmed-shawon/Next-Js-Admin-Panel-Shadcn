@@ -20,10 +20,9 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Edit,
-  MessageSquare,
   MoreHorizontal,
   Search,
-  Star,
+  Ticket,
   Trash,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -39,7 +38,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -54,61 +53,84 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { EditReviewDialog } from "./edit-review-dialog";
+import { EditCouponDialog } from "./edit-coupon-dialog";
 
 /* ---- Demo Data ---- */
-const initialReviews = [
+
+const coupons = [
   {
-    id: "REV-1001",
-    productId: "PRD-1001",
-    productName: "Classic Cotton T-Shirt",
-    productImage: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=T",
-    customerId: "CUS-1001",
-    customerName: "Arham Khan",
-    customerEmail: "arham@example.com",
-    customerAvatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AK",
-    rating: 5,
-    text: "The cotton quality is superb! It is super breathable and fits perfectly.",
-    date: "2026-05-20",
+    id: "CPN-001",
+    code: "SUMMER24",
+    type: "Percentage",
+    value: 20,
+    expiryDate: "2024-08-31",
+    usageCount: 145,
+    usageLimit: 500,
+    status: "Active",
   },
   {
-    id: "REV-1002",
-    productId: "PRD-1002",
-    productName: "Wireless Bluetooth Earbuds",
-    productImage: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=E",
-    customerId: "CUS-1002",
-    customerName: "Fatima Akter",
-    customerEmail: "fatima@example.com",
-    customerAvatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=FA",
-    rating: 4,
-    text: "Sound quality is very clean and crisp. Bass could be slightly punchier, but battery life is incredible.",
-    date: "2026-05-22",
+    id: "CPN-002",
+    code: "WELCOME10",
+    type: "Percentage",
+    value: 10,
+    expiryDate: "2024-12-31",
+    usageCount: 890,
+    usageLimit: "Unlimited",
+    status: "Active",
   },
   {
-    id: "REV-1003",
-    productId: "PRD-1003",
-    productName: "Leather Crossbody Bag",
-    productImage: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=B",
-    customerId: "CUS-1003",
-    customerName: "Rahim Uddin",
-    customerEmail: "rahim@example.com",
-    customerAvatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=RU",
-    rating: 3,
-    text: "Decent bag, but the strap feels a bit stiff. Plenty of pockets though.",
-    date: "2026-05-21",
+    id: "CPN-003",
+    code: "MINUS50",
+    type: "Fixed Amount",
+    value: 50,
+    expiryDate: "2024-05-15",
+    usageCount: 200,
+    usageLimit: 200,
+    status: "Expired",
+  },
+  {
+    id: "CPN-004",
+    code: "FREESHIP",
+    type: "Percentage",
+    value: 100, // Assuming 100% off shipping
+    expiryDate: "2024-06-30",
+    usageCount: 56,
+    usageLimit: 100,
+    status: "Active",
+  },
+  {
+    id: "CPN-005",
+    code: "WINTER23",
+    type: "Percentage",
+    value: 25,
+    expiryDate: "2024-02-28",
+    usageCount: 430,
+    usageLimit: 500,
+    status: "Expired",
+  },
+  {
+    id: "CPN-006",
+    code: "FLASH5",
+    type: "Fixed Amount",
+    value: 5,
+    expiryDate: "2024-07-01",
+    usageCount: 0,
+    usageLimit: 1000,
+    status: "Inactive",
   },
 ];
 
-type ReviewRow = (typeof initialReviews)[0];
+type CouponRow = (typeof coupons)[0];
 
 /* ---- Columns ---- */
-const columns: ColumnDef<ReviewRow>[] = [
+
+const columns: ColumnDef<CouponRow>[] = [
   {
     id: "select",
     header: ({ table }) => (
       <div className="w-10">
         <Checkbox
-          aria-label="Select all reviews"
+          aria-label="Select all coupons"
           checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         />
@@ -117,7 +139,7 @@ const columns: ColumnDef<ReviewRow>[] = [
     cell: ({ row }) => (
       <div className="w-10">
         <Checkbox
-          aria-label={`Select review ${row.original.id}`}
+          aria-label={`Select coupon ${row.original.id}`}
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
         />
@@ -128,63 +150,70 @@ const columns: ColumnDef<ReviewRow>[] = [
   },
   {
     id: "search",
-    accessorFn: (row) => `${row.productName} ${row.customerName} ${row.text}`,
+    accessorFn: (row) => `${row.code} ${row.id}`,
     filterFn: "includesString",
     enableHiding: true,
   },
   {
-    accessorKey: "product",
-    header: "Product",
+    accessorKey: "code",
+    header: "Coupon Code",
     cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
-          <img src={row.original.productImage} alt={row.original.productName} className="size-full object-cover" />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <div className="font-semibold leading-none text-sm">{row.original.productName}</div>
-          <div className="text-muted-foreground text-xs">{row.original.productId}</div>
-        </div>
+      <div className="flex flex-col gap-1">
+        <span className="font-semibold">{row.original.code}</span>
+        <span className="text-xs text-muted-foreground">{row.original.id}</span>
       </div>
     ),
   },
   {
-    accessorKey: "customer",
-    header: "Customer",
+    accessorKey: "type",
+    header: "Type",
+    cell: ({ row }) => <span>{row.original.type}</span>,
+  },
+  {
+    accessorKey: "value",
+    header: "Value",
     cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <Avatar className="size-10 border shadow-sm">
-          <AvatarImage src={row.original.customerAvatar} />
-          <AvatarFallback>{row.original.customerName.substring(0, 2).toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <div className="flex flex-col">
-          <div className="font-semibold leading-none">{row.original.customerName}</div>
-          <div className="text-muted-foreground text-xs mt-1">{row.original.customerEmail}</div>
-        </div>
+      <span className="font-medium">
+        {row.original.type === "Percentage" ? `${row.original.value}%` : `$${row.original.value}`}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "usage",
+    header: "Usage",
+    cell: ({ row }) => (
+      <div className="flex flex-col gap-1">
+        <span className="text-sm">
+          {row.original.usageCount} / {row.original.usageLimit}
+        </span>
       </div>
     ),
   },
   {
-    accessorKey: "rating",
-    header: "Rating",
-    cell: ({ row }) => (
-      <div className="flex items-center text-amber-500">
-        {Array.from({ length: row.original.rating }).map((_, i) => (
-          <Star key={i} className="size-4 fill-current" />
-        ))}
-      </div>
-    ),
+    accessorKey: "expiryDate",
+    header: "Expiry Date",
+    cell: ({ row }) => <span>{row.original.expiryDate}</span>,
   },
   {
-    accessorKey: "text",
-    header: "Review Preview",
-    cell: ({ row }) => (
-      <div className="text-muted-foreground text-sm line-clamp-2 max-w-[300px]">"{row.original.text}"</div>
-    ),
-  },
-  {
-    accessorKey: "date",
-    header: "Date",
-    cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.date}</span>,
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.original.status;
+      return (
+        <Badge
+          variant={
+            status === "Active"
+              ? "default"
+              : status === "Inactive"
+                ? "secondary"
+                : "destructive"
+          }
+        >
+          {status}
+        </Badge>
+      );
+    },
+    filterFn: "equals",
   },
   {
     id: "actions",
@@ -196,7 +225,8 @@ const columns: ColumnDef<ReviewRow>[] = [
 ];
 
 /* ---- Row Actions ---- */
-function RowActions({ row }: { row: ReviewRow }) {
+
+function RowActions({ row }: { row: CouponRow }) {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
 
@@ -216,7 +246,7 @@ function RowActions({ row }: { row: ReviewRow }) {
             }}
           >
             <Edit className="mr-2 size-4" />
-            Edit
+            Edit Coupon
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -232,15 +262,14 @@ function RowActions({ row }: { row: ReviewRow }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <EditReviewDialog review={row} open={editOpen} onOpenChange={setEditOpen} />
+      <EditCouponDialog coupon={row} open={editOpen} onOpenChange={setEditOpen} />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the review written by <strong>{row.customerName}</strong>. This action cannot be
-              undone.
+              This will permanently delete the coupon <strong>{row.code}</strong>. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -248,7 +277,7 @@ function RowActions({ row }: { row: ReviewRow }) {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
-                toast.success(`Review deleted successfully.`);
+                toast.success(`Coupon ${row.code} deleted successfully.`);
                 setDeleteOpen(false);
               }}
             >
@@ -262,14 +291,15 @@ function RowActions({ row }: { row: ReviewRow }) {
 }
 
 /* ---- Main Table Component ---- */
-export function ReviewsTable() {
+
+export function CouponsTable() {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   const table = useReactTable({
-    data: initialReviews,
+    data: coupons,
     columns,
     state: {
       columnFilters,
@@ -296,9 +326,9 @@ export function ReviewsTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-normal text-muted-foreground text-sm">Product Reviews</CardTitle>
+        <CardTitle className="font-normal text-muted-foreground text-sm">Coupons List</CardTitle>
         <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
-          {totalCount > 0 ? `${totalCount} reviews` : "No reviews"}
+          {totalCount > 0 ? `${totalCount} coupons` : "No coupons"}
         </CardDescription>
       </CardHeader>
 
@@ -309,13 +339,32 @@ export function ReviewsTable() {
               <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="h-8 w-48 rounded-[min(var(--radius-md),12px)] pl-8 sm:w-64"
-                placeholder="Search reviews..."
+                placeholder="Search coupons..."
                 value={searchQuery}
                 onChange={(event) => {
                   table.getColumn("search")?.setFilterValue(event.target.value || undefined);
                   table.setPageIndex(0);
                 }}
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={(table.getColumn("status")?.getFilterValue() as string) ?? "all"}
+                onValueChange={(value) => {
+                  table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value);
+                  table.setPageIndex(0);
+                }}
+              >
+                <SelectTrigger className="h-8 w-[130px] rounded-[min(var(--radius-md),12px)]">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="Expired">Expired</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {selectedCount > 0 && (
@@ -330,7 +379,7 @@ export function ReviewsTable() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? 'review' : 'reviews'}. This action cannot be undone.
+                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? 'coupon' : 'coupons'}. This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -338,7 +387,7 @@ export function ReviewsTable() {
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => {
-                      toast.success(`${selectedCount} ${selectedCount === 1 ? 'review' : 'reviews'} deleted successfully.`);
+                      toast.success(`${selectedCount} ${selectedCount === 1 ? 'coupon' : 'coupons'} deleted successfully.`);
                       table.toggleAllPageRowsSelected(false);
                     }}
                   >
@@ -378,10 +427,10 @@ export function ReviewsTable() {
                   <TableCell colSpan={columns.length} className="h-48">
                     <div className="flex flex-col items-center justify-center gap-2 text-center">
                       <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-                        <MessageSquare className="size-6 text-muted-foreground" />
+                        <Ticket className="size-6 text-muted-foreground" />
                       </div>
-                      <p className="text-sm font-medium">No reviews found</p>
-                      <p className="text-xs text-muted-foreground">Try adjusting your search query.</p>
+                      <p className="text-sm font-medium">No coupons found</p>
+                      <p className="text-xs text-muted-foreground">Try adjusting your search or filter.</p>
                     </div>
                   </TableCell>
                 </TableRow>

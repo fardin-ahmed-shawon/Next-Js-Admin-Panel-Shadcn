@@ -37,6 +37,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -248,6 +249,7 @@ export function TestimonialsTable() {
 
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
   const totalCount = table.getFilteredRowModel().rows.length;
+  const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
   return (
     <Card>
@@ -274,6 +276,36 @@ export function TestimonialsTable() {
               />
             </div>
           </div>
+          {selectedCount > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash className="mr-2 size-4" />
+                  Delete Selected ({selectedCount})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? 'item' : 'items'}. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => {
+                      toast.success(`${selectedCount} ${selectedCount === 1 ? 'item' : 'items'} deleted successfully.`);
+                      table.toggleAllPageRowsSelected(false);
+                    }}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
 
         {/* Table */}

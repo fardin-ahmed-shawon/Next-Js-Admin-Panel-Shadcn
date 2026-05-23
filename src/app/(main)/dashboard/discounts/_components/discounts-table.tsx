@@ -15,15 +15,14 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
+  BadgePercent,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Edit,
-  MessageSquare,
   MoreHorizontal,
   Search,
-  Star,
   Trash,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -39,7 +38,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -54,61 +53,64 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { EditReviewDialog } from "./edit-review-dialog";
+import { EditDiscountDialog } from "./edit-discount-dialog";
 
 /* ---- Demo Data ---- */
-const initialReviews = [
+
+const discounts = [
   {
-    id: "REV-1001",
-    productId: "PRD-1001",
-    productName: "Classic Cotton T-Shirt",
-    productImage: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=T",
-    customerId: "CUS-1001",
-    customerName: "Arham Khan",
-    customerEmail: "arham@example.com",
-    customerAvatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AK",
-    rating: 5,
-    text: "The cotton quality is superb! It is super breathable and fits perfectly.",
-    date: "2026-05-20",
+    id: "DSC-001",
+    purchaseAmount: 500,
+    discountAmount: 50,
+    type: "Fixed",
+    freeShipping: false,
+    status: "Active",
   },
   {
-    id: "REV-1002",
-    productId: "PRD-1002",
-    productName: "Wireless Bluetooth Earbuds",
-    productImage: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=E",
-    customerId: "CUS-1002",
-    customerName: "Fatima Akter",
-    customerEmail: "fatima@example.com",
-    customerAvatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=FA",
-    rating: 4,
-    text: "Sound quality is very clean and crisp. Bass could be slightly punchier, but battery life is incredible.",
-    date: "2026-05-22",
+    id: "DSC-002",
+    purchaseAmount: 1000,
+    discountAmount: 10,
+    type: "Percentage",
+    freeShipping: true,
+    status: "Active",
   },
   {
-    id: "REV-1003",
-    productId: "PRD-1003",
-    productName: "Leather Crossbody Bag",
-    productImage: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=B",
-    customerId: "CUS-1003",
-    customerName: "Rahim Uddin",
-    customerEmail: "rahim@example.com",
-    customerAvatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=RU",
-    rating: 3,
-    text: "Decent bag, but the strap feels a bit stiff. Plenty of pockets though.",
-    date: "2026-05-21",
+    id: "DSC-003",
+    purchaseAmount: 2000,
+    discountAmount: 20,
+    type: "Percentage",
+    freeShipping: true,
+    status: "Active",
+  },
+  {
+    id: "DSC-004",
+    purchaseAmount: 300,
+    discountAmount: 0,
+    type: "Fixed",
+    freeShipping: true,
+    status: "Inactive",
+  },
+  {
+    id: "DSC-005",
+    purchaseAmount: 1500,
+    discountAmount: 150,
+    type: "Fixed",
+    freeShipping: false,
+    status: "Active",
   },
 ];
 
-type ReviewRow = (typeof initialReviews)[0];
+type DiscountRow = (typeof discounts)[0];
 
 /* ---- Columns ---- */
-const columns: ColumnDef<ReviewRow>[] = [
+
+const columns: ColumnDef<DiscountRow>[] = [
   {
     id: "select",
     header: ({ table }) => (
       <div className="w-10">
         <Checkbox
-          aria-label="Select all reviews"
+          aria-label="Select all discounts"
           checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         />
@@ -117,7 +119,7 @@ const columns: ColumnDef<ReviewRow>[] = [
     cell: ({ row }) => (
       <div className="w-10">
         <Checkbox
-          aria-label={`Select review ${row.original.id}`}
+          aria-label={`Select discount ${row.original.id}`}
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
         />
@@ -128,63 +130,70 @@ const columns: ColumnDef<ReviewRow>[] = [
   },
   {
     id: "search",
-    accessorFn: (row) => `${row.productName} ${row.customerName} ${row.text}`,
+    accessorFn: (row) => `${row.id} ${row.purchaseAmount}`,
     filterFn: "includesString",
     enableHiding: true,
   },
   {
-    accessorKey: "product",
-    header: "Product",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
-          <img src={row.original.productImage} alt={row.original.productName} className="size-full object-cover" />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <div className="font-semibold leading-none text-sm">{row.original.productName}</div>
-          <div className="text-muted-foreground text-xs">{row.original.productId}</div>
-        </div>
-      </div>
-    ),
+    id: "slNo",
+    header: "SL No",
+    cell: ({ row }) => <span className="font-medium text-muted-foreground">{(row.index + 1).toString().padStart(2, '0')}</span>,
   },
   {
-    accessorKey: "customer",
-    header: "Customer",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <Avatar className="size-10 border shadow-sm">
-          <AvatarImage src={row.original.customerAvatar} />
-          <AvatarFallback>{row.original.customerName.substring(0, 2).toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <div className="flex flex-col">
-          <div className="font-semibold leading-none">{row.original.customerName}</div>
-          <div className="text-muted-foreground text-xs mt-1">{row.original.customerEmail}</div>
-        </div>
-      </div>
-    ),
+    accessorKey: "purchaseAmount",
+    header: "Min. Purchase",
+    cell: ({ row }) => <span className="font-semibold text-primary">৳{row.original.purchaseAmount.toLocaleString()}</span>,
   },
   {
-    accessorKey: "rating",
-    header: "Rating",
-    cell: ({ row }) => (
-      <div className="flex items-center text-amber-500">
-        {Array.from({ length: row.original.rating }).map((_, i) => (
-          <Star key={i} className="size-4 fill-current" />
-        ))}
-      </div>
-    ),
+    accessorKey: "discountAmount",
+    header: "Discount Value",
+    cell: ({ row }) => {
+      const { discountAmount, type } = row.original;
+      return (
+        <span className="font-medium">
+          {discountAmount > 0 
+            ? type === "Percentage" 
+              ? `${discountAmount}% off` 
+              : `৳${discountAmount} off`
+            : "No monetary discount"
+          }
+        </span>
+      );
+    },
   },
   {
-    accessorKey: "text",
-    header: "Review Preview",
-    cell: ({ row }) => (
-      <div className="text-muted-foreground text-sm line-clamp-2 max-w-[300px]">"{row.original.text}"</div>
-    ),
+    accessorKey: "freeShipping",
+    header: "Perks",
+    cell: ({ row }) => {
+      return row.original.freeShipping ? (
+        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+          Free Shipping
+        </Badge>
+      ) : (
+        <span className="text-muted-foreground text-sm">-</span>
+      );
+    },
   },
   {
-    accessorKey: "date",
-    header: "Date",
-    cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.date}</span>,
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.original.status;
+      return (
+        <Badge
+          variant={
+            status === "Active"
+              ? "default"
+              : status === "Inactive"
+                ? "secondary"
+                : "destructive"
+          }
+        >
+          {status}
+        </Badge>
+      );
+    },
+    filterFn: "equals",
   },
   {
     id: "actions",
@@ -196,7 +205,8 @@ const columns: ColumnDef<ReviewRow>[] = [
 ];
 
 /* ---- Row Actions ---- */
-function RowActions({ row }: { row: ReviewRow }) {
+
+function RowActions({ row }: { row: DiscountRow }) {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
 
@@ -216,7 +226,7 @@ function RowActions({ row }: { row: ReviewRow }) {
             }}
           >
             <Edit className="mr-2 size-4" />
-            Edit
+            Edit Discount
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -232,15 +242,14 @@ function RowActions({ row }: { row: ReviewRow }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <EditReviewDialog review={row} open={editOpen} onOpenChange={setEditOpen} />
+      <EditDiscountDialog discount={row} open={editOpen} onOpenChange={setEditOpen} />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the review written by <strong>{row.customerName}</strong>. This action cannot be
-              undone.
+              This will permanently delete the discount rule <strong>{row.id}</strong>. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -248,7 +257,7 @@ function RowActions({ row }: { row: ReviewRow }) {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
-                toast.success(`Review deleted successfully.`);
+                toast.success(`Discount rule ${row.id} deleted successfully.`);
                 setDeleteOpen(false);
               }}
             >
@@ -262,14 +271,15 @@ function RowActions({ row }: { row: ReviewRow }) {
 }
 
 /* ---- Main Table Component ---- */
-export function ReviewsTable() {
+
+export function DiscountsTable() {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   const table = useReactTable({
-    data: initialReviews,
+    data: discounts,
     columns,
     state: {
       columnFilters,
@@ -296,9 +306,9 @@ export function ReviewsTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-normal text-muted-foreground text-sm">Product Reviews</CardTitle>
+        <CardTitle className="font-normal text-muted-foreground text-sm">Discounts List</CardTitle>
         <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
-          {totalCount > 0 ? `${totalCount} reviews` : "No reviews"}
+          {totalCount > 0 ? `${totalCount} rules` : "No discounts configured"}
         </CardDescription>
       </CardHeader>
 
@@ -309,13 +319,31 @@ export function ReviewsTable() {
               <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="h-8 w-48 rounded-[min(var(--radius-md),12px)] pl-8 sm:w-64"
-                placeholder="Search reviews..."
+                placeholder="Search discounts..."
                 value={searchQuery}
                 onChange={(event) => {
                   table.getColumn("search")?.setFilterValue(event.target.value || undefined);
                   table.setPageIndex(0);
                 }}
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={(table.getColumn("status")?.getFilterValue() as string) ?? "all"}
+                onValueChange={(value) => {
+                  table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value);
+                  table.setPageIndex(0);
+                }}
+              >
+                <SelectTrigger className="h-8 w-[130px] rounded-[min(var(--radius-md),12px)]">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {selectedCount > 0 && (
@@ -330,7 +358,7 @@ export function ReviewsTable() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? 'review' : 'reviews'}. This action cannot be undone.
+                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? 'discount' : 'discounts'}. This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -338,7 +366,7 @@ export function ReviewsTable() {
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => {
-                      toast.success(`${selectedCount} ${selectedCount === 1 ? 'review' : 'reviews'} deleted successfully.`);
+                      toast.success(`${selectedCount} ${selectedCount === 1 ? 'discount' : 'discounts'} deleted successfully.`);
                       table.toggleAllPageRowsSelected(false);
                     }}
                   >
@@ -378,10 +406,10 @@ export function ReviewsTable() {
                   <TableCell colSpan={columns.length} className="h-48">
                     <div className="flex flex-col items-center justify-center gap-2 text-center">
                       <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-                        <MessageSquare className="size-6 text-muted-foreground" />
+                        <BadgePercent className="size-6 text-muted-foreground" />
                       </div>
-                      <p className="text-sm font-medium">No reviews found</p>
-                      <p className="text-xs text-muted-foreground">Try adjusting your search query.</p>
+                      <p className="text-sm font-medium">No discounts found</p>
+                      <p className="text-xs text-muted-foreground">Try adjusting your search or filter.</p>
                     </div>
                   </TableCell>
                 </TableRow>
