@@ -40,7 +40,7 @@ export default function NotFound() {
             size="lg"
             className="rounded-full px-8 shadow-md transition-transform hover:scale-105 font-bold tracking-wide"
           >
-            <Link href="/dashboard/default" prefetch={false} replace>
+            <Link href="/dashboard/" prefetch={false} replace>
               <MoveLeft className="mr-2 size-5" />
               GO BACK HOME
             </Link>

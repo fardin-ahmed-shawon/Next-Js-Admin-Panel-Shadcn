@@ -33,7 +33,7 @@ export default function ComingSoonPage() {
 
         <div className="flex items-center justify-center pt-6">
           <Button asChild size="lg" className="rounded-full shadow-lg transition-transform hover:scale-105">
-            <Link href="/dashboard/default" prefetch={false}>
+            <Link href="/dashboard/" prefetch={false}>
               <MoveLeft className="mr-2 size-4" />
               Return to Dashboard
             </Link>
