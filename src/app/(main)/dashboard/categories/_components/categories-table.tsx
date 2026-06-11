@@ -211,8 +211,33 @@ function RowActions({ row }: { row: CategoryRow }) {
             <AlertDialogCancel variant="outline">Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={() => {
-                toast.success(`"${row.name}" has been deleted successfully.`);
+              onClick={async (e) => {
+                e.preventDefault(); // Prevent closing immediately to show loading or just handle manually
+                if (row.type === "Sub") {
+                  const numericId = row.id.replace("SUB-", "");
+                  const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_SUB_CATEGORIES_URL || "sub-categories"}`;
+                  
+                  try {
+                    const res = await fetch(`${API_URL}/${numericId}`, {
+                      method: "DELETE",
+                    });
+                    const data = await res.json();
+                    
+                    if (!res.ok || !data.success) {
+                      throw new Error(data.message || "Failed to delete sub category");
+                    }
+                    
+                    toast.success(data.message || "Sub category deleted successfully");
+                    setDeleteOpen(false);
+                    window.location.reload();
+                  } catch (error: any) {
+                    toast.error(error.message || "Something went wrong.");
+                  }
+                } else {
+                  // Fallback for Main Categories if not implemented yet
+                  toast.success(`"${row.name}" has been deleted successfully. (UI only)`);
+                  setDeleteOpen(false);
+                }
               }}
             >
               Delete
