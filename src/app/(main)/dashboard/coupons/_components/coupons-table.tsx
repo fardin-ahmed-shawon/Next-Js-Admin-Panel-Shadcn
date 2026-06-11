@@ -200,15 +200,7 @@ const columns: ColumnDef<CouponRow>[] = [
     cell: ({ row }) => {
       const status = row.original.status;
       return (
-        <Badge
-          variant={
-            status === "Active"
-              ? "default"
-              : status === "Inactive"
-                ? "secondary"
-                : "destructive"
-          }
-        >
+        <Badge variant={status === "Active" ? "default" : status === "Inactive" ? "secondary" : "destructive"}>
           {status}
         </Badge>
       );
@@ -379,7 +371,8 @@ export function CouponsTable() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? 'coupon' : 'coupons'}. This action cannot be undone.
+                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? "coupon" : "coupons"}.
+                    This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -387,7 +380,9 @@ export function CouponsTable() {
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => {
-                      toast.success(`${selectedCount} ${selectedCount === 1 ? 'coupon' : 'coupons'} deleted successfully.`);
+                      toast.success(
+                        `${selectedCount} ${selectedCount === 1 ? "coupon" : "coupons"} deleted successfully.`,
+                      );
                       table.toggleAllPageRowsSelected(false);
                     }}
                   >

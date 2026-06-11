@@ -49,107 +49,28 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import useCategories from "@/hooks/useCategories";
 
 import { EditMainCategoryDialog } from "./edit-main-category-dialog";
 import { EditSubCategoryDialog } from "./edit-sub-category-dialog";
 
-const categories = [
-  {
-    id: "CAT-1001",
-    name: "Electronics",
-    type: "Main",
-    description: "Gadgets, appliances, and more.",
-    subcategories: 12,
-    status: "Active",
-  },
-  {
-    id: "CAT-1002",
-    name: "Clothing",
-    type: "Main",
-    description: "Apparel for men, women, and children.",
-    subcategories: 8,
-    status: "Active",
-  },
-  {
-    id: "CAT-1003",
-    name: "Home & Garden",
-    type: "Main",
-    description: "Furniture, decor, and outdoor essentials.",
-    subcategories: 15,
-    status: "Inactive",
-  },
-  {
-    id: "CAT-1004",
-    name: "Sports & Outdoors",
-    type: "Main",
-    description: "Sporting goods and outdoor recreation.",
-    subcategories: 5,
-    status: "Active",
-  },
-  {
-    id: "CAT-1005",
-    name: "Beauty & Health",
-    type: "Main",
-    description: "Cosmetics, skincare, and wellness products.",
-    subcategories: 9,
-    status: "Active",
-  },
-  {
-    id: "SUB-2001",
-    name: "Smartphones",
-    type: "Sub",
-    parent: "Electronics",
-    description: "Mobile phones and accessories.",
-    subcategories: 0,
-    status: "Active",
-  },
-  {
-    id: "SUB-2002",
-    name: "Laptops",
-    type: "Sub",
-    parent: "Electronics",
-    description: "Notebooks and ultrabooks.",
-    subcategories: 0,
-    status: "Active",
-  },
-  {
-    id: "SUB-2003",
-    name: "Men's Wear",
-    type: "Sub",
-    parent: "Clothing",
-    description: "Shirts, pants, and formal wear.",
-    subcategories: 0,
-    status: "Active",
-  },
-  {
-    id: "SUB-2004",
-    name: "Women's Wear",
-    type: "Sub",
-    parent: "Clothing",
-    description: "Dresses, tops, and ethnic wear.",
-    subcategories: 0,
-    status: "Inactive",
-  },
-  {
-    id: "SUB-2005",
-    name: "Skincare",
-    type: "Sub",
-    parent: "Beauty & Health",
-    description: "Face wash, moisturizer, and serums.",
-    subcategories: 0,
-    status: "Active",
-  },
-];
+// CategoryRow shape used by the table
+interface CategoryRow {
+  id: string;
+  name: string;
+  type: "Main" | "Sub";
+  description: string;
+  subcategories: number;
+  status: string;
+  parent?: string;
+}
 
-type CategoryRow = (typeof categories)[0];
 type CategoryFilter = "All" | "Main" | "Sub";
 const categoryFilters: CategoryFilter[] = ["All", "Main", "Sub"];
 
@@ -271,7 +192,7 @@ function RowActions({ row }: { row: CategoryRow }) {
         <EditSubCategoryDialog
           open={editOpen}
           onOpenChange={setEditOpen}
-          category={{ id: row.id, name: row.name, parent: (row as any).parent, status: row.status }}
+          category={{ id: row.id, name: row.name, parent: row.parent, status: row.status }}
         />
       )}
 
@@ -322,6 +243,37 @@ function exportToExcel(data: CategoryRow[]) {
 }
 
 export function CategoriesTable() {
+  const { categories: apiData, loading, error } = useCategories();
+
+  // Flatten API data into table rows
+  const tableData = React.useMemo<CategoryRow[]>(() => {
+    const rows: CategoryRow[] = [];
+    apiData.forEach((cat) => {
+      // Main category row
+      rows.push({
+        id: `CAT-${cat.id}`,
+        name: cat.main_category_name,
+        type: "Main",
+        description: cat.main_category_slug,
+        subcategories: cat["sub-categories"]?.length ?? 0,
+        status: "Active",
+      });
+      // Sub category rows
+      cat["sub-categories"]?.forEach((sub) => {
+        rows.push({
+          id: `SUB-${sub.id}`,
+          name: sub.name,
+          type: "Sub",
+          description: sub.slug,
+          subcategories: 0,
+          status: "Active",
+          parent: cat.main_category_name,
+        });
+      });
+    });
+    return rows;
+  }, [apiData]);
+
   const [activeFilter, setActiveFilter] = React.useState<CategoryFilter>("All");
   const [rowSelection, setRowSelection] = React.useState({});
   const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
@@ -333,7 +285,7 @@ export function CategoriesTable() {
   });
 
   const table = useReactTable({
-    data: categories,
+    data: tableData,
     columns,
     state: {
       rowSelection,
@@ -363,6 +315,26 @@ export function CategoriesTable() {
 
   const countDescription =
     selectedCount > 0 ? `${selectedCount} of ${totalCount} selected` : `${totalCount} categories`;
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-16 text-muted-foreground text-sm">
+          Loading categories...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-16 text-destructive text-sm">
+          Error: {error}
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>

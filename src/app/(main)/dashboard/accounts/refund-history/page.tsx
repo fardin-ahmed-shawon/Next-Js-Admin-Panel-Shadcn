@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import { CalendarIcon, Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,9 @@ export default function RefundHistoryPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl tracking-tight">Refund History</h1>
-          <p className="text-muted-foreground text-sm">Track all refunds issued to customers across all payment methods.</p>
+          <p className="text-muted-foreground text-sm">
+            Track all refunds issued to customers across all payment methods.
+          </p>
         </div>
 
         <div className="flex flex-col gap-2 sm:items-end">
@@ -80,7 +83,7 @@ export default function RefundHistoryPage() {
               Download Report
             </Button>
           </div>
-          
+
           {/* Custom date inputs — own row on mobile only */}
           {timeRange === "custom" && (
             <div className="flex sm:hidden items-center gap-2 w-full mt-2">

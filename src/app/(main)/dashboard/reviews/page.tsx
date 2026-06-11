@@ -13,9 +13,7 @@ export default function ReviewsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl tracking-tight">Reviews</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage product reviews, ratings, and customer feedback.
-          </p>
+          <p className="text-muted-foreground text-sm">Manage product reviews, ratings, and customer feedback.</p>
         </div>
 
         <div className="flex items-center gap-3">

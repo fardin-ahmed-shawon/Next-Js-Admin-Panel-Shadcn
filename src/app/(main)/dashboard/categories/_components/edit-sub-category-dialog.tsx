@@ -14,6 +14,7 @@ import {
 import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import useMainCategories from "@/hooks/useMainCategories";
 
 interface EditSubCategoryDialogProps {
   open: boolean;
@@ -27,6 +28,11 @@ interface EditSubCategoryDialogProps {
 }
 
 export function EditSubCategoryDialog({ open, onOpenChange, category }: EditSubCategoryDialogProps) {
+  const { mainCategories, loading } = useMainCategories();
+
+  // Find matching category id by title for the default value
+  const defaultParentId = mainCategories.find((c) => c.title === category.parent);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -40,16 +46,16 @@ export function EditSubCategoryDialog({ open, onOpenChange, category }: EditSubC
           <Field>
             <FieldLabel htmlFor="edit-choose-main-category">Parent Category</FieldLabel>
             <FieldContent>
-              <Select defaultValue={category.parent?.toLowerCase().replace(/ & /g, "-")}>
+              <Select defaultValue={defaultParentId ? String(defaultParentId.id) : undefined} disabled={loading}>
                 <SelectTrigger id="edit-choose-main-category" className="w-full">
-                  <SelectValue placeholder="Select Main Category" />
+                  <SelectValue placeholder={loading ? "Loading..." : "Select Main Category"} />
                 </SelectTrigger>
                 <SelectContent className="w-[var(--radix-select-trigger-width)]">
-                  <SelectItem value="electronics">Electronics</SelectItem>
-                  <SelectItem value="clothing">Clothing</SelectItem>
-                  <SelectItem value="home-garden">Home & Garden</SelectItem>
-                  <SelectItem value="sports-outdoors">Sports & Outdoors</SelectItem>
-                  <SelectItem value="beauty-health">Beauty & Health</SelectItem>
+                  {mainCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={String(cat.id)}>
+                      {cat.title}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </FieldContent>

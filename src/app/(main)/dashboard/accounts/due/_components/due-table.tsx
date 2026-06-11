@@ -15,8 +15,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
-  ArrowUpDown,
   Archive,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -59,14 +59,94 @@ type DueItem = {
 };
 
 const mockData: DueItem[] = [
-  { id: "DUE-01", orderId: "ORD-2602", customerName: "Arham Khan", customerPhone: "+880 1711-234567", totalAmount: 2300, paidAmount: 0, dueAmount: 2300, date: "2026-05-18", status: "Unpaid" },
-  { id: "DUE-02", orderId: "ORD-2604", customerName: "Imran Haque", customerPhone: "+880 1817-890123", totalAmount: 5800, paidAmount: 2000, dueAmount: 3800, date: "2026-05-17", status: "Partially Paid" },
-  { id: "DUE-03", orderId: "ORD-2608", customerName: "Kamal Hossain", customerPhone: "+880 1721-234567", totalAmount: 950, paidAmount: 0, dueAmount: 950, date: "2026-05-15", status: "Unpaid" },
-  { id: "DUE-04", orderId: "ORD-2609", customerName: "Rahim Uddin", customerPhone: "+880 1913-456789", totalAmount: 1800, paidAmount: 0, dueAmount: 1800, date: "2026-05-14", status: "Unpaid" },
-  { id: "DUE-05", orderId: "ORD-2611", customerName: "Sadia Rahman", customerPhone: "+880 1716-789012", totalAmount: 2100, paidAmount: 1000, dueAmount: 1100, date: "2026-05-13", status: "Partially Paid" },
-  { id: "DUE-06", orderId: "ORD-2612", customerName: "Rafiq Islam", customerPhone: "+880 1619-012345", totalAmount: 480, paidAmount: 0, dueAmount: 480, date: "2026-05-01", status: "Unpaid" },
-  { id: "DUE-07", orderId: "ORD-2615", customerName: "Shahid Mia", customerPhone: "+880 1913-456789", totalAmount: 2800, paidAmount: 0, dueAmount: 2800, date: "2026-03-15", status: "Unpaid" },
-  { id: "DUE-08", orderId: "ORD-2624", customerName: "Karim Uddin", customerPhone: "+880 1515-111222", totalAmount: 1100, paidAmount: 0, dueAmount: 1100, date: "2026-05-22", status: "Unpaid" },
+  {
+    id: "DUE-01",
+    orderId: "ORD-2602",
+    customerName: "Arham Khan",
+    customerPhone: "+880 1711-234567",
+    totalAmount: 2300,
+    paidAmount: 0,
+    dueAmount: 2300,
+    date: "2026-05-18",
+    status: "Unpaid",
+  },
+  {
+    id: "DUE-02",
+    orderId: "ORD-2604",
+    customerName: "Imran Haque",
+    customerPhone: "+880 1817-890123",
+    totalAmount: 5800,
+    paidAmount: 2000,
+    dueAmount: 3800,
+    date: "2026-05-17",
+    status: "Partially Paid",
+  },
+  {
+    id: "DUE-03",
+    orderId: "ORD-2608",
+    customerName: "Kamal Hossain",
+    customerPhone: "+880 1721-234567",
+    totalAmount: 950,
+    paidAmount: 0,
+    dueAmount: 950,
+    date: "2026-05-15",
+    status: "Unpaid",
+  },
+  {
+    id: "DUE-04",
+    orderId: "ORD-2609",
+    customerName: "Rahim Uddin",
+    customerPhone: "+880 1913-456789",
+    totalAmount: 1800,
+    paidAmount: 0,
+    dueAmount: 1800,
+    date: "2026-05-14",
+    status: "Unpaid",
+  },
+  {
+    id: "DUE-05",
+    orderId: "ORD-2611",
+    customerName: "Sadia Rahman",
+    customerPhone: "+880 1716-789012",
+    totalAmount: 2100,
+    paidAmount: 1000,
+    dueAmount: 1100,
+    date: "2026-05-13",
+    status: "Partially Paid",
+  },
+  {
+    id: "DUE-06",
+    orderId: "ORD-2612",
+    customerName: "Rafiq Islam",
+    customerPhone: "+880 1619-012345",
+    totalAmount: 480,
+    paidAmount: 0,
+    dueAmount: 480,
+    date: "2026-05-01",
+    status: "Unpaid",
+  },
+  {
+    id: "DUE-07",
+    orderId: "ORD-2615",
+    customerName: "Shahid Mia",
+    customerPhone: "+880 1913-456789",
+    totalAmount: 2800,
+    paidAmount: 0,
+    dueAmount: 2800,
+    date: "2026-03-15",
+    status: "Unpaid",
+  },
+  {
+    id: "DUE-08",
+    orderId: "ORD-2624",
+    customerName: "Karim Uddin",
+    customerPhone: "+880 1515-111222",
+    totalAmount: 1100,
+    paidAmount: 0,
+    dueAmount: 1100,
+    date: "2026-05-22",
+    status: "Unpaid",
+  },
 ];
 
 type DueFilter = "All" | "Unpaid" | "Partially Paid";
@@ -114,23 +194,27 @@ const columns: ColumnDef<DueItem>[] = [
   {
     accessorKey: "paidAmount",
     header: "Paid Amount",
-    cell: ({ row }) => <span className="tabular-nums text-emerald-600 dark:text-emerald-500">৳{row.original.paidAmount.toLocaleString()}</span>,
+    cell: ({ row }) => (
+      <span className="tabular-nums text-emerald-600 dark:text-emerald-500">
+        ৳{row.original.paidAmount.toLocaleString()}
+      </span>
+    ),
   },
   {
     accessorKey: "dueAmount",
     header: "Due Amount",
-    cell: ({ row }) => <span className="tabular-nums font-bold text-amber-600 dark:text-amber-500">৳{row.original.dueAmount.toLocaleString()}</span>,
+    cell: ({ row }) => (
+      <span className="tabular-nums font-bold text-amber-600 dark:text-amber-500">
+        ৳{row.original.dueAmount.toLocaleString()}
+      </span>
+    ),
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
       const s = row.original.status;
-      return (
-        <Badge variant={s === "Unpaid" ? "destructive" : "secondary"}>
-          {s}
-        </Badge>
-      );
+      return <Badge variant={s === "Unpaid" ? "destructive" : "secondary"}>{s}</Badge>;
     },
   },
   {
@@ -165,7 +249,16 @@ const columns: ColumnDef<DueItem>[] = [
 /* ---- CSV Export ---- */
 
 function exportToExcel(data: DueItem[]) {
-  const headers = ["Order ID", "Date", "Customer Name", "Customer Phone", "Total Amount", "Paid Amount", "Due Amount", "Status"];
+  const headers = [
+    "Order ID",
+    "Date",
+    "Customer Name",
+    "Customer Phone",
+    "Total Amount",
+    "Paid Amount",
+    "Due Amount",
+    "Status",
+  ];
   const csvRows = [
     headers.join(","),
     ...data.map((row) =>

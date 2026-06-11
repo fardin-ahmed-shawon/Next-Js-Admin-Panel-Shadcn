@@ -15,8 +15,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
-  ArrowUpDown,
   Archive,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -55,7 +55,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-import { CategoryDialog, CategoryData } from "./category-dialog";
+import { type CategoryData, CategoryDialog } from "./category-dialog";
 
 /* ---- Demo Data ---- */
 
@@ -159,11 +159,7 @@ const columns: ColumnDef<ExpenseCategoryItem>[] = [
     header: "Status",
     cell: ({ row }) => {
       const s = row.original.status;
-      return (
-        <Badge variant={s === "Active" ? "default" : "secondary"}>
-          {s}
-        </Badge>
-      );
+      return <Badge variant={s === "Active" ? "default" : "secondary"}>{s}</Badge>;
     },
   },
   {
@@ -211,14 +207,7 @@ function exportToExcel(data: ExpenseCategoryItem[]) {
   const headers = ["ID", "Category Name", "Description", "Status"];
   const csvRows = [
     headers.join(","),
-    ...data.map((row) =>
-      [
-        row.id,
-        `"${row.name}"`,
-        `"${row.description}"`,
-        row.status,
-      ].join(","),
-    ),
+    ...data.map((row) => [row.id, `"${row.name}"`, `"${row.description}"`, row.status].join(",")),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -521,12 +510,7 @@ export function ExpenseCategoryTable() {
         </div>
       </CardContent>
 
-      <CategoryDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        initialData={editData}
-        mode="edit"
-      />
+      <CategoryDialog open={dialogOpen} onOpenChange={setDialogOpen} initialData={editData} mode="edit" />
     </Card>
   );
 }

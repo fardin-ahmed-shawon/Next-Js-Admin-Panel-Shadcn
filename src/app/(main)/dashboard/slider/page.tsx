@@ -104,8 +104,10 @@ function SplitImageUpload({
             </Button>
           )}
         </div>
-        <div className={`relative flex w-full flex-col items-center justify-center rounded-xl border bg-muted/30 overflow-hidden ${aspectRatio}`}>
-          {(preview || defaultImage) ? (
+        <div
+          className={`relative flex w-full flex-col items-center justify-center rounded-xl border bg-muted/30 overflow-hidden ${aspectRatio}`}
+        >
+          {preview || defaultImage ? (
             <img src={preview || defaultImage} alt="preview" className="size-full object-cover" />
           ) : (
             <div className="flex flex-col items-center text-muted-foreground">

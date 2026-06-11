@@ -114,7 +114,11 @@ const columns: ColumnDef<FinancialCollectionItem>[] = [
   {
     accessorKey: "amount",
     header: "Amount",
-    cell: ({ row }) => <span className="tabular-nums font-medium text-emerald-600 dark:text-emerald-500">৳{row.original.amount.toLocaleString()}</span>,
+    cell: ({ row }) => (
+      <span className="tabular-nums font-medium text-emerald-600 dark:text-emerald-500">
+        ৳{row.original.amount.toLocaleString()}
+      </span>
+    ),
   },
   {
     accessorKey: "date",
@@ -126,11 +130,7 @@ const columns: ColumnDef<FinancialCollectionItem>[] = [
     header: "Status",
     cell: ({ row }) => {
       const s = row.original.status;
-      return (
-        <Badge variant={s === "Collected" ? "default" : s === "Pending" ? "secondary" : "destructive"}>
-          {s}
-        </Badge>
-      );
+      return <Badge variant={s === "Collected" ? "default" : s === "Pending" ? "secondary" : "destructive"}>{s}</Badge>;
     },
   },
 ];

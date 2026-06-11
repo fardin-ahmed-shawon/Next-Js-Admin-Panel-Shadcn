@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
+
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+
 import { CategoryDialog } from "./category-dialog";
 
 export function AddCategoryButton() {
@@ -15,11 +17,7 @@ export function AddCategoryButton() {
         <Plus className="mr-2 size-4" />
         Add Category
       </Button>
-      <CategoryDialog
-        open={open}
-        onOpenChange={setOpen}
-        mode="add"
-      />
+      <CategoryDialog open={open} onOpenChange={setOpen} mode="add" />
     </>
   );
 }

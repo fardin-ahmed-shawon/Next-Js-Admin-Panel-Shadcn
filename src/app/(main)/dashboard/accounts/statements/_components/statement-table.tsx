@@ -15,9 +15,9 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
+  Archive,
   ArrowDownRight,
   ArrowUpRight,
-  Archive,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -56,20 +56,142 @@ type StatementItem = {
 };
 
 // Start Balance: 2,450,000
-const mockData: StatementItem[] = ([
-  { id: "ST-01", date: "05/18/2026", time: "09:00 AM", transactionId: "TRX-101", type: "Revenue" as const, details: "Order Payment - Nusrat Jahan", amountIn: 4100, amountOut: 0, balance: 2454100 },
-  { id: "ST-02", date: "05/18/2026", time: "10:15 AM", transactionId: "TRX-102", type: "Revenue" as const, details: "Order Payment - Maliha Sultana", amountIn: 1450, amountOut: 0, balance: 2455550 },
-  { id: "ST-03", date: "05/18/2026", time: "11:30 AM", transactionId: "EXP-501", type: "Expense" as const, details: "Office Supplies - Stationery", amountIn: 0, amountOut: 1200, balance: 2454350 },
-  { id: "ST-04", date: "05/18/2026", time: "01:00 PM", transactionId: "CGS-901", type: "COGS" as const, details: "Supplier Payment - Electronics", amountIn: 0, amountOut: 15000, balance: 2439350 },
-  { id: "ST-05", date: "05/19/2026", time: "10:25 AM", transactionId: "TRX-103", type: "Revenue" as const, details: "Order Payment - Arham Khan", amountIn: 2300, amountOut: 0, balance: 2441650 },
-  { id: "ST-06", date: "05/19/2026", time: "02:20 PM", transactionId: "EXP-502", type: "Expense" as const, details: "Utility Bill - Internet", amountIn: 0, amountOut: 3500, balance: 2438150 },
-  { id: "ST-07", date: "05/20/2026", time: "09:15 AM", transactionId: "TRX-104", type: "Revenue" as const, details: "Order Payment - Karim Uddin", amountIn: 3200, amountOut: 0, balance: 2441350 },
-  { id: "ST-08", date: "05/20/2026", time: "11:00 AM", transactionId: "TRX-105", type: "Revenue" as const, details: "Order Payment - Samira Ahmed", amountIn: 8500, amountOut: 0, balance: 2449850 },
-  { id: "ST-09", date: "05/21/2026", time: "10:00 AM", transactionId: "CGS-902", type: "COGS" as const, details: "Supplier Payment - Clothing", amountIn: 0, amountOut: 25000, balance: 2424850 },
-  { id: "ST-10", date: "05/21/2026", time: "03:45 PM", transactionId: "EXP-503", type: "Expense" as const, details: "Marketing - Facebook Ads", amountIn: 0, amountOut: 10000, balance: 2414850 },
-  { id: "ST-11", date: "05/22/2026", time: "11:10 AM", transactionId: "TRX-106", type: "Revenue" as const, details: "Order Payment - Arham Khan", amountIn: 450, amountOut: 0, balance: 2415300 },
-  { id: "ST-12", date: "05/23/2026", time: "10:05 AM", transactionId: "TRX-107", type: "Revenue" as const, details: "Order Payment - Rafiq Islam", amountIn: 5400, amountOut: 0, balance: 2420700 },
-] as StatementItem[]).reverse(); // Reverse so newest is at the top like a typical ledger
+const mockData: StatementItem[] = (
+  [
+    {
+      id: "ST-01",
+      date: "05/18/2026",
+      time: "09:00 AM",
+      transactionId: "TRX-101",
+      type: "Revenue" as const,
+      details: "Order Payment - Nusrat Jahan",
+      amountIn: 4100,
+      amountOut: 0,
+      balance: 2454100,
+    },
+    {
+      id: "ST-02",
+      date: "05/18/2026",
+      time: "10:15 AM",
+      transactionId: "TRX-102",
+      type: "Revenue" as const,
+      details: "Order Payment - Maliha Sultana",
+      amountIn: 1450,
+      amountOut: 0,
+      balance: 2455550,
+    },
+    {
+      id: "ST-03",
+      date: "05/18/2026",
+      time: "11:30 AM",
+      transactionId: "EXP-501",
+      type: "Expense" as const,
+      details: "Office Supplies - Stationery",
+      amountIn: 0,
+      amountOut: 1200,
+      balance: 2454350,
+    },
+    {
+      id: "ST-04",
+      date: "05/18/2026",
+      time: "01:00 PM",
+      transactionId: "CGS-901",
+      type: "COGS" as const,
+      details: "Supplier Payment - Electronics",
+      amountIn: 0,
+      amountOut: 15000,
+      balance: 2439350,
+    },
+    {
+      id: "ST-05",
+      date: "05/19/2026",
+      time: "10:25 AM",
+      transactionId: "TRX-103",
+      type: "Revenue" as const,
+      details: "Order Payment - Arham Khan",
+      amountIn: 2300,
+      amountOut: 0,
+      balance: 2441650,
+    },
+    {
+      id: "ST-06",
+      date: "05/19/2026",
+      time: "02:20 PM",
+      transactionId: "EXP-502",
+      type: "Expense" as const,
+      details: "Utility Bill - Internet",
+      amountIn: 0,
+      amountOut: 3500,
+      balance: 2438150,
+    },
+    {
+      id: "ST-07",
+      date: "05/20/2026",
+      time: "09:15 AM",
+      transactionId: "TRX-104",
+      type: "Revenue" as const,
+      details: "Order Payment - Karim Uddin",
+      amountIn: 3200,
+      amountOut: 0,
+      balance: 2441350,
+    },
+    {
+      id: "ST-08",
+      date: "05/20/2026",
+      time: "11:00 AM",
+      transactionId: "TRX-105",
+      type: "Revenue" as const,
+      details: "Order Payment - Samira Ahmed",
+      amountIn: 8500,
+      amountOut: 0,
+      balance: 2449850,
+    },
+    {
+      id: "ST-09",
+      date: "05/21/2026",
+      time: "10:00 AM",
+      transactionId: "CGS-902",
+      type: "COGS" as const,
+      details: "Supplier Payment - Clothing",
+      amountIn: 0,
+      amountOut: 25000,
+      balance: 2424850,
+    },
+    {
+      id: "ST-10",
+      date: "05/21/2026",
+      time: "03:45 PM",
+      transactionId: "EXP-503",
+      type: "Expense" as const,
+      details: "Marketing - Facebook Ads",
+      amountIn: 0,
+      amountOut: 10000,
+      balance: 2414850,
+    },
+    {
+      id: "ST-11",
+      date: "05/22/2026",
+      time: "11:10 AM",
+      transactionId: "TRX-106",
+      type: "Revenue" as const,
+      details: "Order Payment - Arham Khan",
+      amountIn: 450,
+      amountOut: 0,
+      balance: 2415300,
+    },
+    {
+      id: "ST-12",
+      date: "05/23/2026",
+      time: "10:05 AM",
+      transactionId: "TRX-107",
+      type: "Revenue" as const,
+      details: "Order Payment - Rafiq Islam",
+      amountIn: 5400,
+      amountOut: 0,
+      balance: 2420700,
+    },
+  ] as StatementItem[]
+).reverse(); // Reverse so newest is at the top like a typical ledger
 
 type StatementFilter = "All" | "Revenue" | "Expense" | "COGS";
 const filters: StatementFilter[] = ["All", "Revenue", "Expense", "COGS"];
@@ -106,7 +228,11 @@ const columns: ColumnDef<StatementItem>[] = [
   {
     accessorKey: "details",
     header: "Details",
-    cell: ({ row }) => <span className="font-medium max-w-[200px] truncate block" title={row.original.details}>{row.original.details}</span>,
+    cell: ({ row }) => (
+      <span className="font-medium max-w-[200px] truncate block" title={row.original.details}>
+        {row.original.details}
+      </span>
+    ),
   },
   {
     accessorKey: "type",
@@ -114,7 +240,10 @@ const columns: ColumnDef<StatementItem>[] = [
     cell: ({ row }) => {
       const type = row.original.type;
       return (
-        <Badge variant={type === "Revenue" ? "default" : type === "COGS" ? "outline" : "secondary"} className={type === "COGS" ? "border-amber-500/50 text-amber-600 dark:text-amber-500" : ""}>
+        <Badge
+          variant={type === "Revenue" ? "default" : type === "COGS" ? "outline" : "secondary"}
+          className={type === "COGS" ? "border-amber-500/50 text-amber-600 dark:text-amber-500" : ""}
+        >
           {type}
         </Badge>
       );
@@ -122,7 +251,11 @@ const columns: ColumnDef<StatementItem>[] = [
   },
   {
     accessorKey: "amountIn",
-    header: () => <div className="text-right flex items-center justify-end"><ArrowDownRight className="mr-1 size-3 text-emerald-500"/> In (Credit)</div>,
+    header: () => (
+      <div className="text-right flex items-center justify-end">
+        <ArrowDownRight className="mr-1 size-3 text-emerald-500" /> In (Credit)
+      </div>
+    ),
     cell: ({ row }) => {
       const val = row.original.amountIn;
       return (
@@ -134,7 +267,11 @@ const columns: ColumnDef<StatementItem>[] = [
   },
   {
     accessorKey: "amountOut",
-    header: () => <div className="text-right flex items-center justify-end"><ArrowUpRight className="mr-1 size-3 text-destructive"/> Out (Debit)</div>,
+    header: () => (
+      <div className="text-right flex items-center justify-end">
+        <ArrowUpRight className="mr-1 size-3 text-destructive" /> Out (Debit)
+      </div>
+    ),
     cell: ({ row }) => {
       const val = row.original.amountOut;
       return (
@@ -147,7 +284,9 @@ const columns: ColumnDef<StatementItem>[] = [
   {
     accessorKey: "balance",
     header: () => <div className="text-right font-bold">Balance</div>,
-    cell: ({ row }) => <div className="text-right tabular-nums font-bold">৳{row.original.balance.toLocaleString()}</div>,
+    cell: ({ row }) => (
+      <div className="text-right tabular-nums font-bold">৳{row.original.balance.toLocaleString()}</div>
+    ),
   },
 ];
 

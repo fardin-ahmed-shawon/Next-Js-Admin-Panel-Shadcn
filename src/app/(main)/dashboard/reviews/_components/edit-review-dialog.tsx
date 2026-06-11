@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 const products = [
   { id: "PRD-1001", name: "Classic Cotton T-Shirt" },
@@ -84,9 +85,7 @@ export function EditReviewDialog({ review, open, onOpenChange }: EditReviewDialo
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Review</DialogTitle>
-          <DialogDescription>
-            Modify the product review details below.
-          </DialogDescription>
+          <DialogDescription>Modify the product review details below.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">

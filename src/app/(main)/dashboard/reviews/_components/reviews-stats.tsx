@@ -1,4 +1,4 @@
-import { CheckCircle2, FileEdit, Star, MessageSquare } from "lucide-react";
+import { CheckCircle2, FileEdit, MessageSquare, Star } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 

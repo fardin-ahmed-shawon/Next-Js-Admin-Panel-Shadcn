@@ -239,8 +239,8 @@ function RowActions({ row }: { row: ReviewRow }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the review written by <strong>{row.customerName}</strong>. This action cannot be
-              undone.
+              This will permanently delete the review written by <strong>{row.customerName}</strong>. This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -330,7 +330,8 @@ export function ReviewsTable() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? 'review' : 'reviews'}. This action cannot be undone.
+                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? "review" : "reviews"}.
+                    This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -338,7 +339,9 @@ export function ReviewsTable() {
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => {
-                      toast.success(`${selectedCount} ${selectedCount === 1 ? 'review' : 'reviews'} deleted successfully.`);
+                      toast.success(
+                        `${selectedCount} ${selectedCount === 1 ? "review" : "reviews"} deleted successfully.`,
+                      );
                       table.toggleAllPageRowsSelected(false);
                     }}
                   >

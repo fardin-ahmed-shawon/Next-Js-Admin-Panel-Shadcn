@@ -1,4 +1,5 @@
 import { Archive } from "lucide-react";
+
 import { InventoryStats } from "./_components/inventory-stats";
 import { InventoryTable } from "./_components/inventory-table";
 

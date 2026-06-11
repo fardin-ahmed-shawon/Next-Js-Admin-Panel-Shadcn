@@ -15,8 +15,11 @@ import {
 import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import useMainCategories from "@/hooks/useMainCategories";
 
 export function AddSubCategoryDialog() {
+  const { mainCategories, loading } = useMainCategories();
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -34,14 +37,16 @@ export function AddSubCategoryDialog() {
           <Field>
             <FieldLabel htmlFor="choose-main-category">Parent Category</FieldLabel>
             <FieldContent>
-              <Select>
+              <Select disabled={loading}>
                 <SelectTrigger id="choose-main-category" className="w-full">
-                  <SelectValue placeholder="Select Main Category" />
+                  <SelectValue placeholder={loading ? "Loading..." : "Select Main Category"} />
                 </SelectTrigger>
                 <SelectContent className="w-[var(--radix-select-trigger-width)]">
-                  <SelectItem value="electronics">Electronics</SelectItem>
-                  <SelectItem value="clothing">Clothing</SelectItem>
-                  <SelectItem value="home">Home & Garden</SelectItem>
+                  {mainCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={String(cat.id)}>
+                      {cat.title}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </FieldContent>

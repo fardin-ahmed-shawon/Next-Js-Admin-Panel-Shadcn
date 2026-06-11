@@ -95,17 +95,11 @@ export function EditDiscountDialog({ discount, open, onOpenChange }: EditDiscoun
                 <Label htmlFor="edit-freeShipping" className="text-base">
                   Free Shipping
                 </Label>
-                <p className="text-sm text-muted-foreground">
-                  Include free shipping with this discount
-                </p>
+                <p className="text-sm text-muted-foreground">Include free shipping with this discount</p>
               </div>
-              <Switch
-                id="edit-freeShipping"
-                checked={freeShipping}
-                onCheckedChange={setFreeShipping}
-              />
+              <Switch id="edit-freeShipping" checked={freeShipping} onCheckedChange={setFreeShipping} />
             </div>
-            
+
             <div className="grid gap-2 mt-2">
               <Label htmlFor="edit-status">Status</Label>
               <Select defaultValue={discount.status.toLowerCase()}>

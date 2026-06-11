@@ -288,7 +288,8 @@ export function TestimonialsTable() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? 'item' : 'items'}. This action cannot be undone.
+                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? "item" : "items"}. This
+                    action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -296,7 +297,7 @@ export function TestimonialsTable() {
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => {
-                      toast.success(`${selectedCount} ${selectedCount === 1 ? 'item' : 'items'} deleted successfully.`);
+                      toast.success(`${selectedCount} ${selectedCount === 1 ? "item" : "items"} deleted successfully.`);
                       table.toggleAllPageRowsSelected(false);
                     }}
                   >

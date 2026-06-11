@@ -106,8 +106,10 @@ function SplitImageUpload({
             </Button>
           )}
         </div>
-        <div className={`relative flex w-full flex-col items-center justify-center rounded-xl border bg-muted/30 overflow-hidden ${aspectRatio}`}>
-          {(preview || defaultImage) ? (
+        <div
+          className={`relative flex w-full flex-col items-center justify-center rounded-xl border bg-muted/30 overflow-hidden ${aspectRatio}`}
+        >
+          {preview || defaultImage ? (
             <img src={preview || defaultImage} alt="preview" className="size-full object-cover" />
           ) : (
             <div className="flex flex-col items-center text-muted-foreground">
@@ -127,12 +129,16 @@ export default function BannerPage() {
   // Banner 1 State
   const [banner1File, setBanner1File] = React.useState<File | null>(null);
   const [banner1Preview, setBanner1Preview] = React.useState("");
-  const [banner1Default, setBanner1Default] = React.useState("https://placehold.co/1200x400/1a1a2e/e0e0e0?text=Summer+Sale+Banner");
+  const [banner1Default, setBanner1Default] = React.useState(
+    "https://placehold.co/1200x400/1a1a2e/e0e0e0?text=Summer+Sale+Banner",
+  );
 
   // Banner 2 State
   const [banner2File, setBanner2File] = React.useState<File | null>(null);
   const [banner2Preview, setBanner2Preview] = React.useState("");
-  const [banner2Default, setBanner2Default] = React.useState("https://placehold.co/1200x400/4f46e5/ffffff?text=New+Arrivals+Banner");
+  const [banner2Default, setBanner2Default] = React.useState(
+    "https://placehold.co/1200x400/4f46e5/ffffff?text=New+Arrivals+Banner",
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

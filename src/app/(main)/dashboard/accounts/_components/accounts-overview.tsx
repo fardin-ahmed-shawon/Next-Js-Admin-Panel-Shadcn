@@ -56,11 +56,26 @@ export function AccountsOverview() {
             <CardTitle className="text-base">Today Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Revenue</span><span className="font-medium">৳0</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">COGS</span><span className="font-medium">৳0</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Gross Profit</span><span className="font-medium">৳0</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Expenses</span><span className="font-medium">৳0</span></div>
-            <div className="flex justify-between border-t pt-2 mt-2"><span className="font-medium">Net Profit</span><span className="font-bold">৳0</span></div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Revenue</span>
+              <span className="font-medium">৳0</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">COGS</span>
+              <span className="font-medium">৳0</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Gross Profit</span>
+              <span className="font-medium">৳0</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Expenses</span>
+              <span className="font-medium">৳0</span>
+            </div>
+            <div className="flex justify-between border-t pt-2 mt-2">
+              <span className="font-medium">Net Profit</span>
+              <span className="font-bold">৳0</span>
+            </div>
           </CardContent>
         </Card>
 
@@ -70,11 +85,26 @@ export function AccountsOverview() {
             <CardTitle className="text-base">This Month Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Revenue</span><span className="font-medium">৳209,337</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">COGS</span><span className="font-medium">৳3,500</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Gross Profit</span><span className="font-medium">৳205,837</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Expenses</span><span className="font-medium">৳35,000</span></div>
-            <div className="flex justify-between border-t pt-2 mt-2"><span className="font-medium">Net Profit</span><span className="font-bold text-emerald-600 dark:text-emerald-500">৳170,837</span></div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Revenue</span>
+              <span className="font-medium">৳209,337</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">COGS</span>
+              <span className="font-medium">৳3,500</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Gross Profit</span>
+              <span className="font-medium">৳205,837</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Expenses</span>
+              <span className="font-medium">৳35,000</span>
+            </div>
+            <div className="flex justify-between border-t pt-2 mt-2">
+              <span className="font-medium">Net Profit</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-500">৳170,837</span>
+            </div>
           </CardContent>
         </Card>
 
@@ -84,11 +114,26 @@ export function AccountsOverview() {
             <CardTitle className="text-base">This Year Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Revenue</span><span className="font-medium">৳3,499,320</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">COGS</span><span className="font-medium">৳39,500</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Gross Profit</span><span className="font-medium">৳3,459,820</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Expenses</span><span className="font-medium">৳2,074,800</span></div>
-            <div className="flex justify-between border-t pt-2 mt-2"><span className="font-medium">Net Profit</span><span className="font-bold text-emerald-600 dark:text-emerald-500">৳1,385,020</span></div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Revenue</span>
+              <span className="font-medium">৳3,499,320</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">COGS</span>
+              <span className="font-medium">৳39,500</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Gross Profit</span>
+              <span className="font-medium">৳3,459,820</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Expenses</span>
+              <span className="font-medium">৳2,074,800</span>
+            </div>
+            <div className="flex justify-between border-t pt-2 mt-2">
+              <span className="font-medium">Net Profit</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-500">৳1,385,020</span>
+            </div>
           </CardContent>
         </Card>
 
@@ -98,12 +143,29 @@ export function AccountsOverview() {
             <CardTitle className="text-base">All Time Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Revenue</span><span className="font-medium">৳3,499,320</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">COGS</span><span className="font-medium">৳39,500</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Gross Profit</span><span className="font-medium">৳3,459,820</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Expenses</span><span className="font-medium">৳2,074,800</span></div>
-            <div className="flex justify-between border-t pt-2 mt-2"><span className="font-medium">Net Profit</span><span className="font-bold text-emerald-600 dark:text-emerald-500">৳1,385,020</span></div>
-            <div className="pt-2 text-xs text-muted-foreground text-center">Gross Margin: 98.9% · Net Margin: 39.6%</div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Revenue</span>
+              <span className="font-medium">৳3,499,320</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">COGS</span>
+              <span className="font-medium">৳39,500</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Gross Profit</span>
+              <span className="font-medium">৳3,459,820</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Expenses</span>
+              <span className="font-medium">৳2,074,800</span>
+            </div>
+            <div className="flex justify-between border-t pt-2 mt-2">
+              <span className="font-medium">Net Profit</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-500">৳1,385,020</span>
+            </div>
+            <div className="pt-2 text-xs text-muted-foreground text-center">
+              Gross Margin: 98.9% · Net Margin: 39.6%
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -116,17 +178,27 @@ export function AccountsOverview() {
         <CardContent className="grid gap-4 sm:grid-cols-3 text-sm">
           <div>
             <p className="font-medium mb-1">Revenue</p>
-            <p className="text-muted-foreground"><span className="font-medium text-foreground">Revenue:</span> Total revenue from paid orders</p>
+            <p className="text-muted-foreground">
+              <span className="font-medium text-foreground">Revenue:</span> Total revenue from paid orders
+            </p>
           </div>
           <div>
             <p className="font-medium mb-1">Cost & Expenses</p>
-            <p className="text-muted-foreground"><span className="font-medium text-foreground">COGS:</span> Purchase price × quantity sold</p>
-            <p className="text-muted-foreground mt-1"><span className="font-medium text-foreground">Expenses:</span> Rent, salary, utilities, etc.</p>
+            <p className="text-muted-foreground">
+              <span className="font-medium text-foreground">COGS:</span> Purchase price × quantity sold
+            </p>
+            <p className="text-muted-foreground mt-1">
+              <span className="font-medium text-foreground">Expenses:</span> Rent, salary, utilities, etc.
+            </p>
           </div>
           <div>
             <p className="font-medium mb-1">Profitability</p>
-            <p className="text-muted-foreground"><span className="font-medium text-foreground">Gross Profit:</span> Revenue − COGS</p>
-            <p className="text-muted-foreground mt-1"><span className="font-medium text-foreground">Net Profit:</span> Gross Profit − Expenses</p>
+            <p className="text-muted-foreground">
+              <span className="font-medium text-foreground">Gross Profit:</span> Revenue − COGS
+            </p>
+            <p className="text-muted-foreground mt-1">
+              <span className="font-medium text-foreground">Net Profit:</span> Gross Profit − Expenses
+            </p>
           </div>
         </CardContent>
       </Card>

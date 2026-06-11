@@ -215,7 +215,9 @@ const columns: ColumnDef<InventoryItem>[] = [
           size="icon"
           onClick={row.getToggleExpandedHandler()}
         >
-          <ChevronRight className={`size-4 text-muted-foreground transition-transform ${row.getIsExpanded() ? "rotate-90" : ""}`} />
+          <ChevronRight
+            className={`size-4 text-muted-foreground transition-transform ${row.getIsExpanded() ? "rotate-90" : ""}`}
+          />
         </Button>
       ) : (
         <div className="w-7" />
@@ -304,7 +306,7 @@ const columns: ColumnDef<InventoryItem>[] = [
         <div className="flex flex-col gap-0.5">
           <span className="tabular-nums font-medium">৳{row.original.sellingPrice.toFixed(2)}</span>
           <span className="tabular-nums text-xs text-muted-foreground line-through">
-             ৳{row.original.purchasePrice?.toFixed(2) || "0.00"}
+            ৳{row.original.purchasePrice?.toFixed(2) || "0.00"}
           </span>
         </div>
       );
@@ -323,7 +325,9 @@ const columns: ColumnDef<InventoryItem>[] = [
     header: "Status",
     cell: ({ row }) => {
       const s = row.original.status;
-      return <Badge variant={s === "In Stock" ? "default" : s === "Low Stock" ? "secondary" : "destructive"}>{s}</Badge>;
+      return (
+        <Badge variant={s === "In Stock" ? "default" : s === "Low Stock" ? "secondary" : "destructive"}>{s}</Badge>
+      );
     },
   },
   {
@@ -593,7 +597,11 @@ export function InventoryTable() {
             <TableBody className="**:data-[slot='table-row']:border-border/50 **:data-[slot='table-cell']:py-3 **:data-[slot='table-row']:hover:bg-transparent">
               {table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className={row.depth > 0 ? "bg-muted/30" : ""}>
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className={row.depth > 0 ? "bg-muted/30" : ""}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}

@@ -15,8 +15,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
-  ArrowUpDown,
   Archive,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -58,9 +58,39 @@ type RefundItem = {
 };
 
 const mockData: RefundItem[] = [
-  { id: "REF-01", orderId: "ORD-2605", customerName: "Fatima Akter", customerPhone: "+880 1812-345678", originalAmount: 850, refundAmount: 850, refundMethod: "COD", date: "2026-05-16", status: "Completed" },
-  { id: "REF-02", orderId: "ORD-2610", customerName: "Priya Das", customerPhone: "+880 1822-345678", originalAmount: 650, refundAmount: 650, refundMethod: "Nagad", date: "2026-05-14", status: "Completed" },
-  { id: "REF-03", orderId: "ORD-2616", customerName: "Raju Ahmed", customerPhone: "+880 1614-567890", originalAmount: 950, refundAmount: 950, refundMethod: "bKash", date: "2026-02-10", status: "Pending" },
+  {
+    id: "REF-01",
+    orderId: "ORD-2605",
+    customerName: "Fatima Akter",
+    customerPhone: "+880 1812-345678",
+    originalAmount: 850,
+    refundAmount: 850,
+    refundMethod: "COD",
+    date: "2026-05-16",
+    status: "Completed",
+  },
+  {
+    id: "REF-02",
+    orderId: "ORD-2610",
+    customerName: "Priya Das",
+    customerPhone: "+880 1822-345678",
+    originalAmount: 650,
+    refundAmount: 650,
+    refundMethod: "Nagad",
+    date: "2026-05-14",
+    status: "Completed",
+  },
+  {
+    id: "REF-03",
+    orderId: "ORD-2616",
+    customerName: "Raju Ahmed",
+    customerPhone: "+880 1614-567890",
+    originalAmount: 950,
+    refundAmount: 950,
+    refundMethod: "bKash",
+    date: "2026-02-10",
+    status: "Pending",
+  },
 ];
 
 type RefundFilter = "All" | "Completed" | "Pending";
@@ -113,18 +143,18 @@ const columns: ColumnDef<RefundItem>[] = [
   {
     accessorKey: "refundAmount",
     header: "Refund Amount",
-    cell: ({ row }) => <span className="tabular-nums font-bold text-amber-600 dark:text-amber-500">৳{row.original.refundAmount.toLocaleString()}</span>,
+    cell: ({ row }) => (
+      <span className="tabular-nums font-bold text-amber-600 dark:text-amber-500">
+        ৳{row.original.refundAmount.toLocaleString()}
+      </span>
+    ),
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
       const s = row.original.status;
-      return (
-        <Badge variant={s === "Completed" ? "default" : "secondary"}>
-          {s}
-        </Badge>
-      );
+      return <Badge variant={s === "Completed" ? "default" : "secondary"}>{s}</Badge>;
     },
   },
   {
@@ -146,7 +176,9 @@ const columns: ColumnDef<RefundItem>[] = [
               {row.original.status === "Pending" && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => toast.success(`Refund marked as completed for ${row.original.orderId}`)}>
+                  <DropdownMenuItem
+                    onClick={() => toast.success(`Refund marked as completed for ${row.original.orderId}`)}
+                  >
                     Mark as Completed
                   </DropdownMenuItem>
                 </>
@@ -162,7 +194,16 @@ const columns: ColumnDef<RefundItem>[] = [
 /* ---- CSV Export ---- */
 
 function exportToExcel(data: RefundItem[]) {
-  const headers = ["Order ID", "Date", "Customer Name", "Customer Phone", "Method", "Original Amount", "Refund Amount", "Status"];
+  const headers = [
+    "Order ID",
+    "Date",
+    "Customer Name",
+    "Customer Phone",
+    "Method",
+    "Original Amount",
+    "Refund Amount",
+    "Status",
+  ];
   const csvRows = [
     headers.join(","),
     ...data.map((row) =>

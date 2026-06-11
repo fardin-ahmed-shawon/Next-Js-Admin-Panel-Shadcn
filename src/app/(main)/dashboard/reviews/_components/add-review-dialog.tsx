@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,8 +16,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 const products = [
   { id: "PRD-1001", name: "Classic Cotton T-Shirt" },
@@ -77,9 +78,7 @@ export function AddReviewDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Review</DialogTitle>
-          <DialogDescription>
-            Fill in the details to add a new customer product review.
-          </DialogDescription>
+          <DialogDescription>Fill in the details to add a new customer product review.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">

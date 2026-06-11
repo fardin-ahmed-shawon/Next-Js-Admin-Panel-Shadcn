@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 import { AddCategoryButton } from "./_components/add-category-button";
 import { ExpenseCategoryStats } from "./_components/expense-category-stats";

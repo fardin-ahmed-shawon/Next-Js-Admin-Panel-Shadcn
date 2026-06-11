@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 import { AccountsOverview } from "./_components/accounts-overview";
 

@@ -72,14 +72,20 @@ export function EditCouponDialog({ coupon, open, onOpenChange }: EditCouponDialo
                 Coupon Code <span className="text-destructive">*</span>
               </Label>
               <div className="flex items-center gap-2">
-                <Input 
-                  id="edit-code" 
-                  value={code} 
+                <Input
+                  id="edit-code"
+                  value={code}
                   className="font-mono uppercase"
-                  onChange={(e) => setCode(e.target.value.toUpperCase())} 
-                  required 
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  required
                 />
-                <Button type="button" variant="secondary" onClick={generateCode} className="shrink-0" title="Generate random code">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={generateCode}
+                  className="shrink-0"
+                  title="Generate random code"
+                >
                   <Repeat className="mr-2 size-4" />
                   Generate
                 </Button>
@@ -101,7 +107,9 @@ export function EditCouponDialog({ coupon, open, onOpenChange }: EditCouponDialo
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="edit-discountValue">Value <span className="text-destructive">*</span></Label>
+                <Label htmlFor="edit-discountValue">
+                  Value <span className="text-destructive">*</span>
+                </Label>
                 <Input id="edit-discountValue" type="number" defaultValue={coupon.value} required />
               </div>
             </div>
@@ -114,10 +122,15 @@ export function EditCouponDialog({ coupon, open, onOpenChange }: EditCouponDialo
 
               <div className="grid gap-2">
                 <Label htmlFor="edit-usageLimit">Usage Limit</Label>
-                <Input id="edit-usageLimit" type="number" defaultValue={coupon.usageLimit !== "Unlimited" ? coupon.usageLimit : ""} placeholder="Leave empty for unlimited" />
+                <Input
+                  id="edit-usageLimit"
+                  type="number"
+                  defaultValue={coupon.usageLimit !== "Unlimited" ? coupon.usageLimit : ""}
+                  placeholder="Leave empty for unlimited"
+                />
               </div>
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor="edit-status">Status</Label>
               <Select defaultValue={coupon.status.toLowerCase()}>

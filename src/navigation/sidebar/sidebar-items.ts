@@ -1,3 +1,5 @@
+import { Carter_One } from "next/font/google";
+
 import {
   AppWindow,
   Archive,
@@ -47,7 +49,6 @@ import {
   UserCog,
   Users,
 } from "lucide-react";
-import { Carter_One } from "next/font/google";
 
 export interface NavSubItem {
   title: string;
@@ -183,5 +184,5 @@ export const sidebarItems: NavGroup[] = [
       { title: "Login", url: "/auth/v2/login", icon: Fingerprint, newTab: true },
       { title: "Logout", url: "#", icon: LogOut },
     ],
-  }
+  },
 ];

@@ -15,8 +15,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
-  ArrowUpDown,
   Archive,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -185,7 +185,11 @@ const columns: ColumnDef<RevenueItem>[] = [
   {
     accessorKey: "amount",
     header: "Amount",
-    cell: ({ row }) => <span className="tabular-nums font-medium text-emerald-600 dark:text-emerald-500">৳{row.original.amount.toLocaleString()}</span>,
+    cell: ({ row }) => (
+      <span className="tabular-nums font-medium text-emerald-600 dark:text-emerald-500">
+        ৳{row.original.amount.toLocaleString()}
+      </span>
+    ),
   },
   {
     accessorKey: "date",
@@ -246,7 +250,16 @@ function RowActions({ row }: { row: RevenueItem }) {
 /* ---- CSV Export ---- */
 
 function exportToExcel(data: RevenueItem[]) {
-  const headers = ["Transaction ID", "Order ID", "Account No", "Customer", "Method", "Amount", "Date", "Payment Status"];
+  const headers = [
+    "Transaction ID",
+    "Order ID",
+    "Account No",
+    "Customer",
+    "Method",
+    "Amount",
+    "Date",
+    "Payment Status",
+  ];
   const csvRows = [
     headers.join(","),
     ...data.map((row) =>
@@ -372,7 +385,11 @@ export function RevenueTable() {
             <Button
               size="icon-sm"
               variant="outline"
-              onClick={() => table.getColumn("transactionId")?.toggleSorting(table.getColumn("transactionId")?.getIsSorted() === "asc")}
+              onClick={() =>
+                table
+                  .getColumn("transactionId")
+                  ?.toggleSorting(table.getColumn("transactionId")?.getIsSorted() === "asc")
+              }
             >
               <ArrowUpDown className="size-4" />
             </Button>

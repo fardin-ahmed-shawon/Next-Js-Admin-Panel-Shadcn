@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 import { PaymentsStats } from "./_components/payments-stats";
 import { PaymentsTable } from "./_components/payments-table";

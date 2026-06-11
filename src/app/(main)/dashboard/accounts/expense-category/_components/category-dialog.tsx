@@ -1,4 +1,5 @@
 import * as React from "react";
+
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,7 @@ export function CategoryDialog({ open, onOpenChange, initialData, mode }: Catego
       toast.error("Category name is required.");
       return;
     }
-    
+
     toast.success(`Expense Category successfully ${mode === "add" ? "added" : "updated"}!`);
     onOpenChange(false);
   };
@@ -82,7 +83,7 @@ export function CategoryDialog({ open, onOpenChange, initialData, mode }: Catego
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
           </div>
-          
+
           <div className="grid gap-2">
             <Label htmlFor="description">Description (Optional)</Label>
             <Textarea
@@ -92,7 +93,7 @@ export function CategoryDialog({ open, onOpenChange, initialData, mode }: Catego
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
-          
+
           <div className="grid gap-2">
             <Label htmlFor="status">Status</Label>
             <Select
@@ -108,14 +109,12 @@ export function CategoryDialog({ open, onOpenChange, initialData, mode }: Catego
               </SelectContent>
             </Select>
           </div>
-          
+
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">
-              {mode === "add" ? "Create Category" : "Save Changes"}
-            </Button>
+            <Button type="submit">{mode === "add" ? "Create Category" : "Save Changes"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

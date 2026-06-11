@@ -137,12 +137,16 @@ const columns: ColumnDef<DiscountRow>[] = [
   {
     id: "slNo",
     header: "SL No",
-    cell: ({ row }) => <span className="font-medium text-muted-foreground">{(row.index + 1).toString().padStart(2, '0')}</span>,
+    cell: ({ row }) => (
+      <span className="font-medium text-muted-foreground">{(row.index + 1).toString().padStart(2, "0")}</span>
+    ),
   },
   {
     accessorKey: "purchaseAmount",
     header: "Min. Purchase",
-    cell: ({ row }) => <span className="font-semibold text-primary">৳{row.original.purchaseAmount.toLocaleString()}</span>,
+    cell: ({ row }) => (
+      <span className="font-semibold text-primary">৳{row.original.purchaseAmount.toLocaleString()}</span>
+    ),
   },
   {
     accessorKey: "discountAmount",
@@ -151,12 +155,11 @@ const columns: ColumnDef<DiscountRow>[] = [
       const { discountAmount, type } = row.original;
       return (
         <span className="font-medium">
-          {discountAmount > 0 
-            ? type === "Percentage" 
-              ? `${discountAmount}% off` 
+          {discountAmount > 0
+            ? type === "Percentage"
+              ? `${discountAmount}% off`
               : `৳${discountAmount} off`
-            : "No monetary discount"
-          }
+            : "No monetary discount"}
         </span>
       );
     },
@@ -180,15 +183,7 @@ const columns: ColumnDef<DiscountRow>[] = [
     cell: ({ row }) => {
       const status = row.original.status;
       return (
-        <Badge
-          variant={
-            status === "Active"
-              ? "default"
-              : status === "Inactive"
-                ? "secondary"
-                : "destructive"
-          }
-        >
+        <Badge variant={status === "Active" ? "default" : status === "Inactive" ? "secondary" : "destructive"}>
           {status}
         </Badge>
       );
@@ -358,7 +353,8 @@ export function DiscountsTable() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? 'discount' : 'discounts'}. This action cannot be undone.
+                    This will permanently delete {selectedCount} selected{" "}
+                    {selectedCount === 1 ? "discount" : "discounts"}. This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -366,7 +362,9 @@ export function DiscountsTable() {
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => {
-                      toast.success(`${selectedCount} ${selectedCount === 1 ? 'discount' : 'discounts'} deleted successfully.`);
+                      toast.success(
+                        `${selectedCount} ${selectedCount === 1 ? "discount" : "discounts"} deleted successfully.`,
+                      );
                       table.toggleAllPageRowsSelected(false);
                     }}
                   >

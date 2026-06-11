@@ -1,4 +1,5 @@
 import * as React from "react";
+
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,7 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode }: Expense
       toast.error("Please fill in all required fields.");
       return;
     }
-    
+
     toast.success(`Expense successfully ${mode === "add" ? "added" : "updated"}!`);
     onOpenChange(false);
   };
@@ -72,9 +73,7 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode }: Expense
         <DialogHeader>
           <DialogTitle>{mode === "add" ? "Add New Expense" : "Edit Expense"}</DialogTitle>
           <DialogDescription>
-            {mode === "add"
-              ? "Enter the details of the new expense."
-              : "Make changes to this expense record here."}
+            {mode === "add" ? "Enter the details of the new expense." : "Make changes to this expense record here."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -87,14 +86,11 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode }: Expense
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="category">Category</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(val) => setFormData({ ...formData, category: val })}
-              >
+              <Select value={formData.category} onValueChange={(val) => setFormData({ ...formData, category: val })}>
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
@@ -107,7 +103,7 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode }: Expense
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor="status">Status</Label>
               <Select
@@ -124,7 +120,7 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode }: Expense
               </Select>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="amount">Amount (৳)</Label>
@@ -146,14 +142,12 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode }: Expense
               />
             </div>
           </div>
-          
+
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">
-              {mode === "add" ? "Save Expense" : "Save Changes"}
-            </Button>
+            <Button type="submit">{mode === "add" ? "Save Expense" : "Save Changes"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

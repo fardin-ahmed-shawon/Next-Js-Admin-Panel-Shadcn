@@ -66,15 +66,21 @@ export function AddCouponDialog() {
                 Coupon Code <span className="text-destructive">*</span>
               </Label>
               <div className="flex items-center gap-2">
-                <Input 
-                  id="code" 
-                  placeholder="e.g. SUMMER24" 
+                <Input
+                  id="code"
+                  placeholder="e.g. SUMMER24"
                   className="font-mono uppercase"
-                  required 
+                  required
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                 />
-                <Button type="button" variant="secondary" onClick={generateCode} className="shrink-0" title="Generate random code">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={generateCode}
+                  className="shrink-0"
+                  title="Generate random code"
+                >
                   <Repeat className="mr-2 size-4" />
                   Generate
                 </Button>
@@ -96,7 +102,9 @@ export function AddCouponDialog() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="discountValue">Value <span className="text-destructive">*</span></Label>
+                <Label htmlFor="discountValue">
+                  Value <span className="text-destructive">*</span>
+                </Label>
                 <Input id="discountValue" type="number" placeholder="10" required />
               </div>
             </div>
@@ -112,7 +120,7 @@ export function AddCouponDialog() {
                 <Input id="usageLimit" type="number" placeholder="Leave empty for unlimited" />
               </div>
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor="status">Status</Label>
               <Select defaultValue="active">

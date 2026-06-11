@@ -15,8 +15,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
-  ArrowUpDown,
   Archive,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -55,7 +55,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-import { ExpenseDialog, ExpenseData } from "./expense-dialog";
+import { type ExpenseData, ExpenseDialog } from "./expense-dialog";
 
 /* ---- Demo Data ---- */
 
@@ -171,18 +171,16 @@ const columns: ColumnDef<ExpenseItem>[] = [
   {
     accessorKey: "amount",
     header: "Amount",
-    cell: ({ row }) => <span className="tabular-nums font-medium text-destructive">৳{row.original.amount.toLocaleString()}</span>,
+    cell: ({ row }) => (
+      <span className="tabular-nums font-medium text-destructive">৳{row.original.amount.toLocaleString()}</span>
+    ),
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
       const s = row.original.status;
-      return (
-        <Badge variant={s === "Paid" ? "default" : "secondary"}>
-          {s}
-        </Badge>
-      );
+      return <Badge variant={s === "Paid" ? "default" : "secondary"}>{s}</Badge>;
     },
   },
   {
@@ -230,16 +228,7 @@ function exportToExcel(data: ExpenseItem[]) {
   const headers = ["Expense ID", "Date", "Category", "Title", "Amount", "Status"];
   const csvRows = [
     headers.join(","),
-    ...data.map((row) =>
-      [
-        row.id,
-        row.date,
-        `"${row.category}"`,
-        `"${row.title}"`,
-        row.amount,
-        row.status,
-      ].join(","),
-    ),
+    ...data.map((row) => [row.id, row.date, `"${row.category}"`, `"${row.title}"`, row.amount, row.status].join(",")),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -544,12 +533,7 @@ export function ExpensesTable() {
         </div>
       </CardContent>
 
-      <ExpenseDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        initialData={editData}
-        mode="edit"
-      />
+      <ExpenseDialog open={dialogOpen} onOpenChange={setDialogOpen} initialData={editData} mode="edit" />
     </Card>
   );
 }
