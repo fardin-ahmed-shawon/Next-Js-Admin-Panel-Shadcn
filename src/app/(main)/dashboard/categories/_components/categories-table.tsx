@@ -233,10 +233,26 @@ function RowActions({ row }: { row: CategoryRow }) {
                   } catch (error: any) {
                     toast.error(error.message || "Something went wrong.");
                   }
-                } else {
-                  // Fallback for Main Categories if not implemented yet
-                  toast.success(`"${row.name}" has been deleted successfully. (UI only)`);
-                  setDeleteOpen(false);
+                } else if (row.type === "Main") {
+                  const numericId = row.id.replace("CAT-", "");
+                  const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_MAIN_CATEGORIES_URL || "main-categories"}`;
+                  
+                  try {
+                    const res = await fetch(`${API_URL}/${numericId}`, {
+                      method: "DELETE",
+                    });
+                    const data = await res.json();
+                    
+                    if (!res.ok || !data.success) {
+                      throw new Error(data.message || "Failed to delete main category");
+                    }
+                    
+                    toast.success(data.message || "Main category deleted successfully");
+                    setDeleteOpen(false);
+                    window.location.reload();
+                  } catch (error: any) {
+                    toast.error(error.message || "Something went wrong.");
+                  }
                 }
               }}
             >
