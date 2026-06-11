@@ -53,7 +53,7 @@ export function EditSubCategoryDialog({ open, onOpenChange, category }: EditSubC
                 <SelectContent className="w-[var(--radix-select-trigger-width)]">
                   {mainCategories.map((cat) => (
                     <SelectItem key={cat.id} value={String(cat.id)}>
-                      {cat.title}
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

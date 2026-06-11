@@ -4,7 +4,7 @@ const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT
 
 export interface MainCategory {
   id: number;
-  title: string;
+  name: string;
   slug: string;
   img?: string | null;
   sub_categories_count?: number;
