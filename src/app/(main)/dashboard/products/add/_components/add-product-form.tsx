@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 
-import { CirclePlus, ImagePlus, Package, RefreshCw, Save, Upload, X } from "lucide-react";
+import { CirclePlus, ImagePlus, Package, RefreshCw, Save, Upload, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+
+import useCategories from "@/hooks/useCategories";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -35,44 +38,13 @@ interface MediaItem {
   id: string;
   url: string;
   name: string;
+  file: File;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
 /* ------------------------------------------------------------------ */
 
-const mainCategories = [
-  { value: "electronics", label: "Electronics" },
-  { value: "clothing", label: "Clothing" },
-  { value: "home-garden", label: "Home & Garden" },
-  { value: "sports", label: "Sports & Outdoors" },
-  { value: "beauty", label: "Beauty & Health" },
-];
-
-const subCategories: Record<string, { value: string; label: string }[]> = {
-  electronics: [
-    { value: "smartphones", label: "Smartphones" },
-    { value: "laptops", label: "Laptops" },
-    { value: "tablets", label: "Tablets" },
-  ],
-  clothing: [
-    { value: "mens-wear", label: "Men's Wear" },
-    { value: "womens-wear", label: "Women's Wear" },
-    { value: "kids-wear", label: "Kids Wear" },
-  ],
-  "home-garden": [
-    { value: "furniture", label: "Furniture" },
-    { value: "decor", label: "Decor" },
-  ],
-  sports: [
-    { value: "fitness", label: "Fitness" },
-    { value: "outdoor", label: "Outdoor" },
-  ],
-  beauty: [
-    { value: "skincare", label: "Skincare" },
-    { value: "makeup", label: "Makeup" },
-  ],
-};
 
 const colorOptions = [
   { value: "red", label: "Red" },
@@ -109,26 +81,18 @@ const sizeOptions = [
   { value: "free", label: "Free Size" },
 ];
 
-const weightOptions = [
-  { value: "100g", label: "100g" },
-  { value: "250g", label: "250g" },
-  { value: "500g", label: "500g" },
-  { value: "750g", label: "750g" },
-  { value: "1kg", label: "1 kg" },
-  { value: "1.5kg", label: "1.5 kg" },
-  { value: "2kg", label: "2 kg" },
-  { value: "3kg", label: "3 kg" },
-  { value: "5kg", label: "5 kg" },
-  { value: "10kg", label: "10 kg" },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
 export function AddProductForm() {
+  const router = useRouter();
+  const { categories, loading: categoriesLoading } = useCategories();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
   // Product info
-  const [thumbnail, setThumbnail] = React.useState<string | null>(null);
+  const [thumbnailUrl, setThumbnailUrl] = React.useState<string | null>(null);
+  const [thumbnailFile, setThumbnailFile] = React.useState<File | null>(null);
   const [productName, setProductName] = React.useState("");
   const [category, setCategory] = React.useState("");
   const [subCategory, setSubCategory] = React.useState("");
@@ -164,7 +128,8 @@ export function AddProductForm() {
   const thumbnailRef = React.useRef<HTMLInputElement>(null);
   const mediaRef = React.useRef<HTMLInputElement>(null);
 
-  const filteredSubCategories = category ? subCategories[category] || [] : [];
+  const selectedMainCategory = categories.find((c) => String(c.id) === category);
+  const filteredSubCategories = selectedMainCategory?.["sub-categories"] || [];
 
   /* ---- variant helpers ---- */
   function addVariant() {
@@ -200,6 +165,7 @@ export function AddProductForm() {
       id: `m${Date.now()}-${i}`,
       url: URL.createObjectURL(f),
       name: f.name,
+      file: f,
     }));
     setMedia((p) => [...p, ...items]);
   }
@@ -217,7 +183,8 @@ export function AddProductForm() {
     setLongDescription("");
     setCategory("");
     setSubCategory("");
-    setThumbnail(null);
+    setThumbnailUrl(null);
+    setThumbnailFile(null);
     setIsActive(true);
     setMedia([]);
     setVariants([]);
@@ -238,12 +205,104 @@ export function AddProductForm() {
   function handleSaveDraft() {
     toast.success("Product saved as draft.");
   }
-  function handleSaveProduct() {
-    if (!productName.trim()) {
-      toast.error("Product name is required.");
+  async function handleSaveProduct() {
+    if (!thumbnailFile) { toast.error("Thumbnail image is required."); return; }
+    if (!productName.trim()) { toast.error("Product name is required."); return; }
+    if (!category) { toast.error("Main category is required."); return; }
+    if (!subCategory) { toast.error("Sub category is required."); return; }
+    if (!shortDescription.trim()) { toast.error("Short description is required."); return; }
+    if (!longDescription.trim()) { toast.error("Long description is required."); return; }
+    if (!purchasePrice || !regularPrice || !sellingPrice) {
+      toast.error("Pricing (Purchase, Regular, Selling) is required.");
       return;
     }
-    toast.success(`"${productName}" has been saved successfully.`);
+    
+    if (variants.length === 0) {
+      if (!sku.trim()) { toast.error("SKU is required when there are no variants."); return; }
+      if (!availableStock) { toast.error("Available stock is required when there are no variants."); return; }
+    } else {
+      for (let i = 0; i < variants.length; i++) {
+        if (!variants[i].sku.trim() || !variants[i].stock) {
+          toast.error(`SKU and Stock are required for Variant ${i + 1}.`);
+          return;
+        }
+      }
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append("name", productName.trim());
+      formData.append("status", isActive ? "Active" : "Inactive");
+      
+      if (category) formData.append("main_category_id", category);
+      if (subCategory) formData.append("sub_category_id", subCategory);
+      
+      if (purchasePrice) formData.append("purchase_price", purchasePrice);
+      if (regularPrice) formData.append("regular_price", regularPrice);
+      if (sellingPrice) formData.append("selling_price", sellingPrice);
+      if (availableStock) formData.append("available_stock", availableStock);
+      formData.append("is_preorder", isPreOrder ? "true" : "false");
+      
+      if (shortDescription) formData.append("short_description", shortDescription);
+      if (longDescription) formData.append("long_description", longDescription);
+      if (sku) formData.append("sku", sku);
+      
+      if (metaTitle) formData.append("meta_title", metaTitle);
+      if (metaDescription) formData.append("meta_description", metaDescription);
+      if (metaKeywords) formData.append("meta_keywords", metaKeywords);
+      if (canonicalUrl) formData.append("canonical_url", canonicalUrl);
+      
+      if (thumbnailFile) {
+        formData.append("thumbnail", thumbnailFile);
+      }
+      
+      media.forEach((item, index) => {
+        formData.append(`gallery_images[${index}]`, item.file);
+      });
+      
+      if (variants.length > 0) {
+        const mappedVariants = variants.map((v) => ({
+          sku: v.sku,
+          color: v.color,
+          size: v.size,
+          weight: v.weight,
+          purchase_price: v.purchasePrice ? Number(v.purchasePrice) : undefined,
+          regular_price: v.regularPrice ? Number(v.regularPrice) : undefined,
+          selling_price: v.sellingPrice ? Number(v.sellingPrice) : undefined,
+          available_stock: v.stock ? Number(v.stock) : undefined,
+        }));
+        formData.append("variants", JSON.stringify(mappedVariants));
+      }
+
+      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}product`;
+      
+      // Retrieve token from your preferred storage, e.g., localStorage or cookies
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
+      
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to create product");
+      }
+
+      toast.success(data.message || "Product created successfully");
+      router.push("/dashboard/products");
+    } catch (error: any) {
+      toast.error(error.message || "Something went wrong.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -265,8 +324,12 @@ export function AddProductForm() {
             <Save className="mr-2 size-4" />
             Save draft
           </Button>
-          <Button size="sm" onClick={handleSaveProduct}>
-            <Upload className="mr-2 size-4" />
+          <Button size="sm" onClick={handleSaveProduct} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <Upload className="mr-2 size-4" />
+            )}
             Upload Product
           </Button>
         </div>
@@ -287,9 +350,9 @@ export function AddProductForm() {
               <div className="space-y-2">
                 <Label className="text-primary font-medium">Thumbnail</Label>
                 <div className="flex items-center gap-4">
-                  {thumbnail ? (
+                  {thumbnailUrl ? (
                     <div className="relative size-16 overflow-hidden rounded-lg border">
-                      <img src={thumbnail} alt="Thumbnail" className="size-full object-cover" />
+                      <img src={thumbnailUrl} alt="Thumbnail" className="size-full object-cover" />
                     </div>
                   ) : (
                     <div className="flex size-16 items-center justify-center rounded-lg border border-dashed">
@@ -308,14 +371,17 @@ export function AddProductForm() {
                         className="h-auto p-0 text-xs text-primary"
                         onClick={() => thumbnailRef.current?.click()}
                       >
-                        {thumbnail ? "Replace image" : "Upload image"}
+                        {thumbnailUrl ? "Replace image" : "Upload image"}
                       </Button>
-                      {thumbnail && (
+                      {thumbnailUrl && (
                         <Button
                           variant="link"
                           size="sm"
                           className="h-auto p-0 text-xs text-primary"
-                          onClick={() => setThumbnail(null)}
+                          onClick={() => {
+                            setThumbnailUrl(null);
+                            setThumbnailFile(null);
+                          }}
                         >
                           Remove
                         </Button>
@@ -329,7 +395,10 @@ export function AddProductForm() {
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
-                      if (f) setThumbnail(URL.createObjectURL(f));
+                      if (f) {
+                        setThumbnailUrl(URL.createObjectURL(f));
+                        setThumbnailFile(f);
+                      }
                     }}
                   />
                 </div>
@@ -358,14 +427,15 @@ export function AddProductForm() {
                       setCategory(v);
                       setSubCategory("");
                     }}
+                    disabled={categoriesLoading}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder={categoriesLoading ? "Loading..." : "Select category"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {mainCategories.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>
-                          {c.label}
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.main_category_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -379,8 +449,8 @@ export function AddProductForm() {
                     </SelectTrigger>
                     <SelectContent>
                       {filteredSubCategories.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>
-                          {c.label}
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -559,8 +629,8 @@ export function AddProductForm() {
                           <X className="size-4" />
                         </Button>
                       </div>
-                      {/* Color, Size, Weight */}
-                      <div className="grid gap-3 sm:grid-cols-3">
+                      {/* Color, Size */}
+                      <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1.5">
                           <Label className="text-xs">
                             Color <span className="text-muted-foreground">(optional)</span>
@@ -595,26 +665,9 @@ export function AddProductForm() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">
-                            Weight <span className="text-muted-foreground">(optional)</span>
-                          </Label>
-                          <Select value={v.weight} onValueChange={(val) => updateVariant(v.id, "weight", val)}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select weight" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {weightOptions.map((o) => (
-                                <SelectItem key={o.value} value={o.value}>
-                                  {o.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
                       </div>
-                      {/* SKU & Stock */}
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      {/* SKU, Stock & Weight */}
+                      <div className="grid gap-3 sm:grid-cols-3">
                         <div className="space-y-1.5">
                           <Label className="text-xs">SKU</Label>
                           <Input
@@ -632,39 +685,46 @@ export function AddProductForm() {
                             onChange={(e) => updateVariant(v.id, "stock", e.target.value)}
                           />
                         </div>
-                      </div>
-                      {/* Variant Pricing (optional) */}
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Variant Pricing <span>(optional)</span>
-                        </p>
-                        <div className="grid gap-3 sm:grid-cols-3">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs">Purchase Price (৳)</Label>
-                            <Input
-                              placeholder="0.00"
-                              value={v.purchasePrice}
-                              onChange={(e) => updateVariant(v.id, "purchasePrice", e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs">Regular Price (৳)</Label>
-                            <Input
-                              placeholder="0.00"
-                              value={v.regularPrice}
-                              onChange={(e) => updateVariant(v.id, "regularPrice", e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs">Selling Price (৳)</Label>
-                            <Input
-                              placeholder="0.00"
-                              value={v.sellingPrice}
-                              onChange={(e) => updateVariant(v.id, "sellingPrice", e.target.value)}
-                            />
-                          </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Weight</Label>
+                          <Input
+                            placeholder="1kg, 500g"
+                            value={v.weight}
+                            onChange={(e) => updateVariant(v.id, "weight", e.target.value)}
+                          />
                         </div>
                       </div>
+                      {/* Prices */}
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Purchase Price</Label>
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            value={v.purchasePrice}
+                            onChange={(e) => updateVariant(v.id, "purchasePrice", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Regular Price</Label>
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            value={v.regularPrice}
+                            onChange={(e) => updateVariant(v.id, "regularPrice", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Selling Price</Label>
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            value={v.sellingPrice}
+                            onChange={(e) => updateVariant(v.id, "sellingPrice", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      {/* End Variant Fields */}
                     </div>
                   ))}
                   <Button variant="ghost" size="sm" className="w-fit" onClick={addVariant}>
