@@ -276,7 +276,7 @@ export function AddProductForm() {
         formData.append("variants", JSON.stringify(mappedVariants));
       }
 
-      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}product`;
+      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_URL || "product"}`;
       
       // Retrieve token from your preferred storage, e.g., localStorage or cookies
       const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
