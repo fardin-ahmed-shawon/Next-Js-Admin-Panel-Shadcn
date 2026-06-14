@@ -2,34 +2,45 @@ import { UserCheck, UserMinus, UserPlus, Users } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const stats = [
-  {
-    title: "Total Customers",
-    value: "1,248",
-    icon: Users,
-    subtitle: "All customers in the system",
-  },
-  {
-    title: "Registered",
-    value: "1,085",
-    icon: UserCheck,
-    subtitle: "Customers with accounts",
-  },
-  {
-    title: "Guest",
-    value: "163",
-    icon: UserMinus,
-    subtitle: "Checked out without account",
-  },
-  {
-    title: "New This Month",
-    value: "63",
-    icon: UserPlus,
-    subtitle: "Joined in the last 30 days",
-  },
-];
+import { CustomerRow } from "./customers-table";
 
-export function CustomersStats() {
+export function CustomersStats({ data }: { data: CustomerRow[] }) {
+  const totalCustomers = data.length;
+  const registered = data.filter((c) => c.status === "Registered").length;
+  const guest = data.filter((c) => c.status === "Guest").length;
+  const newThisMonth = data.filter((c) => {
+    const joinDate = new Date(c.joinDate);
+    const now = new Date();
+    return joinDate.getMonth() === now.getMonth() && joinDate.getFullYear() === now.getFullYear();
+  }).length;
+
+  const stats = [
+    {
+      title: "Total Customers",
+      value: totalCustomers.toLocaleString(),
+      icon: Users,
+      subtitle: "All customers in the system",
+    },
+    {
+      title: "Registered",
+      value: registered.toLocaleString(),
+      icon: UserCheck,
+      subtitle: "Customers with accounts",
+    },
+    {
+      title: "Guest",
+      value: guest.toLocaleString(),
+      icon: UserMinus,
+      subtitle: "Checked out without account",
+    },
+    {
+      title: "New This Month",
+      value: newThisMonth.toLocaleString(),
+      icon: UserPlus,
+      subtitle: "Joined in the last 30 days",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs sm:grid-cols-2 lg:grid-cols-4 dark:*:data-[slot=card]:bg-card">
       {stats.map((stat, i) => (

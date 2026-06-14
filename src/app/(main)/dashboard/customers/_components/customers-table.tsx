@@ -56,144 +56,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-/* ---- Demo Data ---- */
+export interface CustomerRow {
+  id: number | string;
+  name: string;
+  email: string;
+  phone: string;
+  totalOrders: number;
+  totalSpent: number;
+  status: string;
+  avatar: string;
+  joinDate: string;
+}
 
-const customers = [
-  {
-    id: "CUS-1001",
-    name: "Arham Khan",
-    email: "arham@example.com",
-    phone: "+880 1711-234567",
-    totalOrders: 24,
-    totalSpent: 12450,
-    status: "Registered",
-    avatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AK",
-    joinDate: "2024-03-15",
-  },
-  {
-    id: "CUS-1002",
-    name: "Fatima Akter",
-    email: "fatima@example.com",
-    phone: "+880 1812-345678",
-    totalOrders: 18,
-    totalSpent: 8920,
-    status: "Registered",
-    avatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=FA",
-    joinDate: "2024-05-22",
-  },
-  {
-    id: "CUS-1003",
-    name: "Rahim Uddin",
-    email: "rahim@example.com",
-    phone: "+880 1913-456789",
-    totalOrders: 3,
-    totalSpent: 1250,
-    status: "Guest",
-    avatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=RU",
-    joinDate: "2025-01-10",
-  },
-  {
-    id: "CUS-1004",
-    name: "Nusrat Jahan",
-    email: "nusrat@example.com",
-    phone: "+880 1614-567890",
-    totalOrders: 42,
-    totalSpent: 28750,
-    status: "Registered",
-    avatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NJ",
-    joinDate: "2023-11-08",
-  },
-  {
-    id: "CUS-1005",
-    name: "Tanvir Hossain",
-    email: "tanvir@example.com",
-    phone: "+880 1515-678901",
-    totalOrders: 7,
-    totalSpent: 3680,
-    status: "Registered",
-    avatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=TH",
-    joinDate: "2024-09-01",
-  },
-  {
-    id: "CUS-1006",
-    name: "Sadia Rahman",
-    email: "sadia@example.com",
-    phone: "+880 1716-789012",
-    totalOrders: 1,
-    totalSpent: 580,
-    status: "Guest",
-    avatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=SR",
-    joinDate: "2025-04-20",
-  },
-  {
-    id: "CUS-1007",
-    name: "Imran Haque",
-    email: "imran@example.com",
-    phone: "+880 1817-890123",
-    totalOrders: 15,
-    totalSpent: 9820,
-    status: "Registered",
-    avatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=IH",
-    joinDate: "2024-02-14",
-  },
-  {
-    id: "CUS-1008",
-    name: "Maliha Sultana",
-    email: "maliha@example.com",
-    phone: "+880 1918-901234",
-    totalOrders: 31,
-    totalSpent: 18500,
-    status: "Registered",
-    avatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=MS",
-    joinDate: "2024-01-05",
-  },
-  {
-    id: "CUS-1009",
-    name: "Rafiq Islam",
-    email: "rafiq@example.com",
-    phone: "+880 1619-012345",
-    totalOrders: 1,
-    totalSpent: 450,
-    status: "Guest",
-    avatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=RI",
-    joinDate: "2025-03-12",
-  },
-  {
-    id: "CUS-1010",
-    name: "Ayesha Siddiqua",
-    email: "ayesha@example.com",
-    phone: "+880 1520-123456",
-    totalOrders: 28,
-    totalSpent: 15200,
-    status: "Registered",
-    avatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AS",
-    joinDate: "2023-08-30",
-  },
-  {
-    id: "CUS-1011",
-    name: "Kamal Hossain",
-    email: "kamal@example.com",
-    phone: "+880 1721-234567",
-    totalOrders: 9,
-    totalSpent: 5430,
-    status: "Registered",
-    avatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=KH",
-    joinDate: "2024-07-18",
-  },
-  {
-    id: "CUS-1012",
-    name: "Priya Das",
-    email: "priya@example.com",
-    phone: "+880 1822-345678",
-    totalOrders: 2,
-    totalSpent: 1200,
-    status: "Guest",
-    avatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=PD",
-    joinDate: "2025-05-01",
-  },
-];
-
-type CustomerRow = (typeof customers)[0];
 type CustomerFilter = "All" | "Registered" | "Guest";
 const customerFilters: CustomerFilter[] = ["All", "Registered", "Guest"];
 
@@ -353,7 +227,7 @@ function exportToExcel(data: CustomerRow[]) {
 
 /* ---- Main Table Component ---- */
 
-export function CustomersTable() {
+export function CustomersTable({ data }: { data: CustomerRow[] }) {
   const [activeFilter, setActiveFilter] = React.useState<CustomerFilter>("All");
   const [rowSelection, setRowSelection] = React.useState({});
   const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
@@ -362,7 +236,7 @@ export function CustomersTable() {
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   const table = useReactTable({
-    data: customers,
+    data,
     columns,
     state: {
       rowSelection,
@@ -371,7 +245,7 @@ export function CustomersTable() {
       columnVisibility: { search: false, status: false },
       pagination,
     },
-    getRowId: (row) => row.id,
+    getRowId: (row) => String(row.id),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
