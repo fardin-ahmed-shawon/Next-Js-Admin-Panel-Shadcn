@@ -10,18 +10,15 @@ import {
   getCoreRowModel,
   getExpandedRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
-  type PaginationState,
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
 import {
   Archive,
   ArrowUpDown,
-  ChevronDown,
-  ChevronLeft,
   ChevronRight,
+  ChevronLeft,
   ChevronsLeft,
   ChevronsRight,
   Download,
@@ -62,131 +59,25 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Skeleton } from "@/components/ui/skeleton";
 
-/* ---- Demo Data ---- */
+import type { InventoryItem, InventoryRecords, InventoryVariant } from "@/hooks/useInventory";
 
-type InventoryItem = {
-  id: string;
-  image?: string;
-  name: string;
-  variantsCount?: number;
-  sku?: string;
-  category?: string;
-  subCategory?: string;
-  stock: number;
-  purchasePrice?: number;
-  sellingPrice?: number;
-  value?: number;
-  profit?: number;
-  status: "In Stock" | "Low Stock" | "Out of Stock";
-  subRows?: InventoryItem[];
+/* ---- Helper to get image URL ---- */
+const getImageUrl = (path: string | null) => {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+  return `${baseUrl}${path}`;
 };
-
-const mockData: InventoryItem[] = [
-  {
-    id: "31",
-    image: "https://placehold.co/40x40/f1f5f9/64748b?text=Img",
-    name: "Mens Premium Red Panjabi",
-    variantsCount: 3,
-    category: "Mens Fashion",
-    subCategory: "Panjabi",
-    stock: 153,
-    purchasePrice: 1000,
-    sellingPrice: 1750,
-    value: 267750,
-    profit: 114750,
-    status: "In Stock",
-    subRows: [
-      {
-        id: "31-1",
-        name: "M",
-        sku: "GHJ354",
-        stock: 49,
-        status: "In Stock",
-      },
-      {
-        id: "31-2",
-        name: "30",
-        sku: "KJHGTJ3",
-        stock: 76,
-        status: "In Stock",
-      },
-      {
-        id: "31-3",
-        name: "L",
-        sku: "KJGHJF5346",
-        stock: 28,
-        status: "Low Stock",
-      },
-    ],
-  },
-  {
-    id: "30",
-    image: "https://placehold.co/40x40/fef3c7/d97706?text=Img",
-    name: "Panjabi For Eid 2026",
-    sku: "RTHJ65",
-    category: "Mens Fashion",
-    subCategory: "Panjabi",
-    stock: 23,
-    purchasePrice: 500,
-    sellingPrice: 700,
-    value: 16100,
-    profit: 4600,
-    status: "Low Stock",
-  },
-  {
-    id: "28",
-    image: "https://placehold.co/40x40/e0f2fe/0ea5e9?text=Img",
-    name: "Football Jercey",
-    variantsCount: 5,
-    category: "Mens Fashion",
-    subCategory: "T-Shirt",
-    stock: 189,
-    purchasePrice: 500,
-    sellingPrice: 600,
-    value: 113400,
-    profit: 18900,
-    status: "In Stock",
-    subRows: [
-      {
-        id: "28-1",
-        name: "S",
-        sku: "FBJ001",
-        stock: 50,
-        status: "In Stock",
-      },
-    ],
-  },
-  {
-    id: "25",
-    image: "https://placehold.co/40x40/fef2f2/ef4444?text=Img",
-    name: "Winter Jacket Deluxe",
-    sku: "WJD-099",
-    category: "Mens Fashion",
-    subCategory: "Jacket",
-    stock: 0,
-    purchasePrice: 2000,
-    sellingPrice: 3500,
-    value: 0,
-    profit: 0,
-    status: "Out of Stock",
-  },
-];
 
 type InventoryFilter = "All" | "In Stock" | "Low Stock" | "Out of Stock";
 const inventoryFilters: InventoryFilter[] = ["All", "In Stock", "Low Stock", "Out of Stock"];
-const allCategories = [...new Set(mockData.map((p) => p.category).filter(Boolean))] as string[];
-const allSubCategories = [...new Set(mockData.map((p) => p.subCategory).filter(Boolean))] as string[];
 
 /* ---- Columns ---- */
 
-const columns: ColumnDef<InventoryItem>[] = [
-  {
-    id: "search",
-    accessorFn: (row) => `${row.name} ${row.sku || ""} ${row.id}`,
-    filterFn: "includesString",
-    enableHiding: true,
-  },
+// We use 'any' for the column generic to accommodate both InventoryItem and InventoryVariant easily
+const columns: ColumnDef<any>[] = [
   {
     accessorKey: "status",
     filterFn: "equals",
@@ -194,13 +85,13 @@ const columns: ColumnDef<InventoryItem>[] = [
   },
   {
     id: "categoryFilter",
-    accessorKey: "category",
+    accessorFn: (row) => row.category?.main || "",
     filterFn: "equals",
     enableHiding: true,
   },
   {
     id: "subCategoryFilter",
-    accessorKey: "subCategory",
+    accessorFn: (row) => row.category?.sub || "",
     filterFn: "equals",
     enableHiding: true,
   },
@@ -233,7 +124,8 @@ const columns: ColumnDef<InventoryItem>[] = [
     },
   },
   {
-    accessorKey: "name",
+    id: "name",
+    accessorFn: (row) => row.title || row.name,
     header: "Product",
     cell: ({ row }) => {
       const isVariant = row.depth > 0;
@@ -249,16 +141,16 @@ const columns: ColumnDef<InventoryItem>[] = [
       }
       return (
         <div className="flex items-center gap-3 w-[200px]">
-          {row.original.image && (
-            <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
-              <img src={row.original.image} alt={row.original.name} className="size-full object-cover" />
-            </div>
-          )}
+          <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
+            {row.original.product_thumbnail_img && (
+              <img src={getImageUrl(row.original.product_thumbnail_img)} alt={row.original.title} className="size-full object-cover" />
+            )}
+          </div>
           <div className="flex flex-col gap-0.5">
-            <span className="font-medium leading-none">{row.original.name}</span>
-            {row.original.variantsCount && (
+            <span className="font-medium leading-none">{row.original.title}</span>
+            {row.original.variants_count > 0 && (
               <Badge variant="outline" className="w-fit text-muted-foreground text-[10px] h-4 px-1.5 mt-1">
-                <Layers className="size-3 mr-1" /> {row.original.variantsCount} variants
+                <Layers className="size-3 mr-1" /> {row.original.variants_count} variants
               </Badge>
             )}
           </div>
@@ -278,14 +170,15 @@ const columns: ColumnDef<InventoryItem>[] = [
     },
   },
   {
-    accessorKey: "category",
+    id: "category",
+    accessorFn: (row) => row.category?.main,
     header: "Category",
     cell: ({ row }) => {
       if (row.depth > 0) return <span className="text-muted-foreground">-</span>;
       return (
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm">{row.original.category}</span>
-          <span className="text-xs text-muted-foreground">{row.original.subCategory}</span>
+          <span className="text-sm">{row.original.category?.main || "-"}</span>
+          <span className="text-xs text-muted-foreground">{row.original.category?.sub || ""}</span>
         </div>
       );
     },
@@ -298,15 +191,16 @@ const columns: ColumnDef<InventoryItem>[] = [
     ),
   },
   {
-    accessorKey: "sellingPrice",
+    id: "sellingPrice",
+    accessorFn: (row) => row.price?.selling,
     header: "Price",
     cell: ({ row }) => {
-      if (row.depth > 0 || !row.original.sellingPrice) return <span className="text-muted-foreground">-</span>;
+      if (!row.original.price?.selling) return <span className="text-muted-foreground">-</span>;
       return (
         <div className="flex flex-col gap-0.5">
-          <span className="tabular-nums font-medium">৳{row.original.sellingPrice.toFixed(2)}</span>
+          <span className="tabular-nums font-medium">৳{Number(row.original.price.selling).toFixed(2)}</span>
           <span className="tabular-nums text-xs text-muted-foreground line-through">
-            ৳{row.original.purchasePrice?.toFixed(2) || "0.00"}
+            ৳{Number(row.original.price.purchase || 0).toFixed(2)}
           </span>
         </div>
       );
@@ -316,7 +210,7 @@ const columns: ColumnDef<InventoryItem>[] = [
     accessorKey: "profit",
     header: "Profit",
     cell: ({ row }) => {
-      if (row.depth > 0 || !row.original.profit) return null;
+      if (!row.original.profit) return null;
       return <span className="tabular-nums">৳{row.original.profit.toLocaleString()}</span>;
     },
   },
@@ -341,10 +235,11 @@ const columns: ColumnDef<InventoryItem>[] = [
 
 /* ---- Row Actions ---- */
 
-function RowActions({ row }: { row: InventoryItem }) {
+function RowActions({ row }: { row: any }) {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
 
-  if (row.subRows && row.subRows.length > 0) {
+  // If this item has variants itself, don't show actions, let them edit per variant or main product elsewhere
+  if (row.variants && row.variants.length > 0) {
     return <div className="flex w-full justify-end text-muted-foreground text-sm italic pr-4">per variant</div>;
   }
 
@@ -411,17 +306,17 @@ function RowActions({ row }: { row: InventoryItem }) {
 
 /* ---- CSV Export ---- */
 
-function exportToExcel(data: InventoryItem[]) {
-  const headers = ["ID", "Name", "SKU", "Category", "Sub Category", "Stock", "Status"];
+function exportToExcel(data: any[]) {
+  const headers = ["ID", "Name", "SKU", "Main Category", "Sub Category", "Stock", "Status"];
   const csvRows = [
     headers.join(","),
     ...data.map((row) =>
       [
         row.id,
-        `"${row.name}"`,
+        `"${row.title || row.name || ""}"`,
         row.sku || "",
-        `"${row.category || ""}"`,
-        `"${row.subCategory || ""}"`,
+        `"${row.category?.main || ""}"`,
+        `"${row.category?.sub || ""}"`,
         row.stock,
         row.status,
       ].join(","),
@@ -438,40 +333,64 @@ function exportToExcel(data: InventoryItem[]) {
 
 /* ---- Main Table Component ---- */
 
-export function InventoryTable() {
-  const [activeFilter, setActiveFilter] = React.useState<InventoryFilter>("All");
+interface InventoryTableProps {
+  records?: InventoryRecords;
+  loading?: boolean;
+  page: number;
+  setPage: (page: number) => void;
+  search: string;
+  setSearch: (search: string) => void;
+  statusFilter: string;
+  setStatusFilter: (status: string) => void;
+}
+
+export function InventoryTable({
+  records,
+  loading,
+  page,
+  setPage,
+  search,
+  setSearch,
+  statusFilter,
+  setStatusFilter,
+}: InventoryTableProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [expanded, setExpanded] = React.useState<ExpandedState>({});
-  const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+
+  const tableData = React.useMemo(() => {
+    if (!records?.data) return [];
+    return records.data.map(item => ({
+      ...item,
+      subRows: item.variants || [], // For expander to work properly
+    }));
+  }, [records]);
+
+  const allCategories = React.useMemo(() => [...new Set(tableData.map((p) => p.category?.main).filter(Boolean))] as string[], [tableData]);
+  const allSubCategories = React.useMemo(() => [...new Set(tableData.map((p) => p.category?.sub).filter(Boolean))] as string[], [tableData]);
 
   const table = useReactTable({
-    data: mockData,
+    data: tableData,
     columns,
     state: {
       columnFilters,
       sorting,
       expanded,
-      columnVisibility: { search: false, status: false, categoryFilter: false, subCategoryFilter: false },
-      pagination,
+      columnVisibility: { status: false, categoryFilter: false, subCategoryFilter: false },
     },
-    getRowId: (row) => row.id,
+    getRowId: (row) => String(row.id),
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onExpandedChange: setExpanded,
-    onPaginationChange: setPagination,
     getSubRows: (row) => row.subRows,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
-  const totalCount = table.getFilteredRowModel().rows.length;
-
-  const filterLabel = activeFilter === "All" ? "All Inventory" : `${activeFilter} Items`;
+  const totalCount = records?.total || 0;
+  const filterLabel = statusFilter === "All" ? "All Inventory" : `${statusFilter} Items`;
   const countDescription = `${totalCount} records`;
 
   return (
@@ -479,7 +398,7 @@ export function InventoryTable() {
       <CardHeader>
         <CardTitle className="font-normal text-muted-foreground text-sm">{filterLabel}</CardTitle>
         <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
-          {countDescription}
+          {loading ? <Skeleton className="h-6 w-20" /> : countDescription}
         </CardDescription>
         <CardAction>
           <Button
@@ -501,10 +420,10 @@ export function InventoryTable() {
               <Input
                 className="h-8 w-48 rounded-[min(var(--radius-md),12px)] pl-8"
                 placeholder="Search inventory..."
-                value={searchQuery}
+                value={search}
                 onChange={(event) => {
-                  table.getColumn("search")?.setFilterValue(event.target.value || undefined);
-                  table.setPageIndex(0);
+                  setSearch(event.target.value);
+                  setPage(1);
                 }}
               />
             </div>
@@ -512,7 +431,6 @@ export function InventoryTable() {
             <Select
               onValueChange={(value) => {
                 table.getColumn("categoryFilter")?.setFilterValue(value === "all" ? undefined : value);
-                table.setPageIndex(0);
               }}
             >
               <SelectTrigger className="h-8 w-40">
@@ -531,7 +449,6 @@ export function InventoryTable() {
             <Select
               onValueChange={(value) => {
                 table.getColumn("subCategoryFilter")?.setFilterValue(value === "all" ? undefined : value);
-                table.setPageIndex(0);
               }}
             >
               <SelectTrigger className="h-8 w-40">
@@ -551,15 +468,13 @@ export function InventoryTable() {
               className="bg-muted p-0.75 text-muted-foreground **:data-[slot=toggle-group-item]:rounded-md **:data-[slot=toggle-group-item]:border **:data-[slot=toggle-group-item]:border-transparent **:data-[slot=toggle-group-item]:text-foreground/60 **:data-[slot=toggle-group-item]:hover:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:bg-background [&_[data-slot=toggle-group-item][data-state=on]]:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:shadow-sm dark:[&_[data-slot=toggle-group-item][data-state=on]]:border-input dark:[&_[data-slot=toggle-group-item][data-state=on]]:bg-input/30"
               onValueChange={(value) => {
                 if (!value) return;
-                const filter = value as InventoryFilter;
-                setActiveFilter(filter);
-                table.getColumn("status")?.setFilterValue(filter === "All" ? undefined : filter);
-                table.setPageIndex(0);
+                setStatusFilter(value);
+                setPage(1);
               }}
               size="sm"
               spacing={1}
               type="single"
-              value={activeFilter}
+              value={statusFilter}
             >
               {inventoryFilters.map((filter) => (
                 <ToggleGroupItem key={filter} value={filter}>
@@ -595,7 +510,15 @@ export function InventoryTable() {
               ))}
             </TableHeader>
             <TableBody className="**:data-[slot='table-row']:border-border/50 **:data-[slot='table-cell']:py-3 **:data-[slot='table-row']:hover:bg-transparent">
-              {table.getRowModel().rows.length ? (
+              {loading && !tableData.length ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {columns.map((c, j) => (
+                      <TableCell key={j}><Skeleton className="h-6 w-full" /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
@@ -617,10 +540,10 @@ export function InventoryTable() {
                       <div className="space-y-1 text-center">
                         <p className="text-sm font-medium">No inventory found</p>
                         <p className="text-xs text-muted-foreground">
-                          {searchQuery
+                          {search
                             ? "Try adjusting your search to find what you're looking for."
-                            : activeFilter !== "All"
-                              ? `There are no ${activeFilter.toLowerCase()} items.`
+                            : statusFilter !== "All"
+                              ? `There are no ${statusFilter.toLowerCase()} items.`
                               : "Start by adding your first product."}
                         </p>
                       </div>
@@ -642,8 +565,8 @@ export function InventoryTable() {
               variant="outline"
               className="hidden size-8 lg:flex"
               size="icon"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => setPage(1)}
+              disabled={page <= 1}
             >
               <span className="sr-only">Go to first page</span>
               <ChevronsLeft className="size-4" />
@@ -652,18 +575,19 @@ export function InventoryTable() {
               variant="outline"
               className="size-8"
               size="icon"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => setPage(page - 1)}
+              disabled={page <= 1}
             >
               <span className="sr-only">Go to previous page</span>
               <ChevronLeft className="size-4" />
             </Button>
+            <span className="text-sm font-medium mx-2">{page} / {records?.last_page || 1}</span>
             <Button
               variant="outline"
               className="size-8"
               size="icon"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              onClick={() => setPage(page + 1)}
+              disabled={!records?.last_page || page >= records.last_page}
             >
               <span className="sr-only">Go to next page</span>
               <ChevronRight className="size-4" />
@@ -672,8 +596,8 @@ export function InventoryTable() {
               variant="outline"
               className="hidden size-8 lg:flex"
               size="icon"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
+              onClick={() => setPage(records?.last_page || 1)}
+              disabled={!records?.last_page || page >= records.last_page}
             >
               <span className="sr-only">Go to last page</span>
               <ChevronsRight className="size-4" />
