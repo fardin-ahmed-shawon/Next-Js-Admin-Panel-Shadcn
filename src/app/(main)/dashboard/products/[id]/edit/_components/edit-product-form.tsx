@@ -19,18 +19,15 @@ import { Textarea } from "@/components/ui/textarea";
 
 import useProduct from "@/hooks/useProduct";
 import useCategories from "@/hooks/useCategories";
+import useAttributes from "@/hooks/useAttributes";
 
 /* ---- Types ---- */
 interface Variant {
   id?: number | string;
   color: string;
   size: string;
-  weight: string;
   sku: string;
   available_stock: string | number;
-  purchase_price: string | number;
-  regular_price: string | number;
-  selling_price: string | number;
 }
 
 interface MediaItem {
@@ -39,30 +36,7 @@ interface MediaItem {
   name: string;
 }
 
-const colorOptions = [
-  { value: "red", label: "Red" },
-  { value: "blue", label: "Blue" },
-  { value: "green", label: "Green" },
-  { value: "black", label: "Black" },
-  { value: "white", label: "White" },
-  { value: "ocean", label: "Ocean" },
-  { value: "sand", label: "Sand" },
-  { value: "rose", label: "Rose" },
-];
-const sizeOptions = [
-  { value: "s", label: "S" },
-  { value: "m", label: "M" },
-  { value: "l", label: "L" },
-  { value: "xl", label: "XL" },
-  { value: "free", label: "Free Size" },
-];
-const weightOptions = [
-  { value: "100g", label: "100g" },
-  { value: "250g", label: "250g" },
-  { value: "500g", label: "500g" },
-  { value: "1kg", label: "1 kg" },
-  { value: "2kg", label: "2 kg" },
-];
+
 
 const getImageUrl = (path: string | null) => {
   if (!path) return "";
@@ -75,6 +49,7 @@ export function EditProductForm({ productId }: { productId: string }) {
   const router = useRouter();
   const { product, loading: productLoading } = useProduct(productId);
   const { categories } = useCategories();
+  const { colors, sizes } = useAttributes();
 
   // State initialization flag
   const [initialized, setInitialized] = React.useState(false);
@@ -153,12 +128,8 @@ export function EditProductForm({ productId }: { productId: string }) {
           id: v.id,
           color: v.color || "",
           size: v.size || "",
-          weight: v.weight || "",
           sku: v.sku || "",
           available_stock: v.available_stock || 0,
-          purchase_price: v.purchase_price || "",
-          regular_price: v.regular_price || "",
-          selling_price: v.selling_price || "",
         })));
       }
 
@@ -180,7 +151,7 @@ export function EditProductForm({ productId }: { productId: string }) {
   function addVariant() {
     setVariants((p) => [
       ...p,
-      { id: `new_${Date.now()}`, color: "", size: "", weight: "", sku: "", available_stock: 0, purchase_price: "", regular_price: "", selling_price: "" },
+      { id: `new_${Date.now()}`, color: "", size: "", sku: "", available_stock: 0 },
     ]);
   }
 
@@ -439,19 +410,13 @@ export function EditProductForm({ productId }: { productId: string }) {
               {variants.map((v, idx) => (
                 <div key={v.id} className="space-y-4 rounded-lg border p-4">
                   <div className="flex items-center justify-between"><p className="text-sm font-medium">Variant {idx + 1}</p><Button variant="ghost" size="icon-sm" onClick={() => removeVariant(v.id!)}><X className="size-4" /></Button></div>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="space-y-1.5"><Label className="text-xs">Color</Label><Select value={v.color} onValueChange={(val) => updateVariant(v.id!, "color", val)}><SelectTrigger><SelectValue placeholder="Color" /></SelectTrigger><SelectContent>{colorOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-1.5"><Label className="text-xs">Size</Label><Select value={v.size} onValueChange={(val) => updateVariant(v.id!, "size", val)}><SelectTrigger><SelectValue placeholder="Size" /></SelectTrigger><SelectContent>{sizeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-1.5"><Label className="text-xs">Weight</Label><Select value={v.weight} onValueChange={(val) => updateVariant(v.id!, "weight", val)}><SelectTrigger><SelectValue placeholder="Weight" /></SelectTrigger><SelectContent>{weightOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5"><Label className="text-xs">Color</Label><Select value={v.color} onValueChange={(val) => updateVariant(v.id!, "color", val)}><SelectTrigger><SelectValue placeholder="Color" /></SelectTrigger><SelectContent>{colors.map((o: any) => <SelectItem key={o.label} value={o.label}><div className="flex items-center gap-2">{o.hex_value && <div className="size-3 rounded-full border border-black/10" style={{ backgroundColor: o.hex_value }} />}{o.label}</div></SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-1.5"><Label className="text-xs">Size</Label><Select value={v.size} onValueChange={(val) => updateVariant(v.id!, "size", val)}><SelectTrigger><SelectValue placeholder="Size" /></SelectTrigger><SelectContent>{sizes.map((o: any) => <SelectItem key={o.label} value={o.label}>{o.label}</SelectItem>)}</SelectContent></Select></div>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5"><Label className="text-xs">SKU</Label><Input value={v.sku} onChange={(e) => updateVariant(v.id!, "sku", e.target.value)} /></div>
                     <div className="space-y-1.5"><Label className="text-xs">Stock</Label><Input type="number" value={v.available_stock} onChange={(e) => updateVariant(v.id!, "available_stock", e.target.value)} /></div>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="space-y-1.5"><Label className="text-xs">Purchase Price</Label><Input value={v.purchase_price} onChange={(e) => updateVariant(v.id!, "purchase_price", e.target.value)} /></div>
-                    <div className="space-y-1.5"><Label className="text-xs">Regular Price</Label><Input value={v.regular_price} onChange={(e) => updateVariant(v.id!, "regular_price", e.target.value)} /></div>
-                    <div className="space-y-1.5"><Label className="text-xs">Selling Price</Label><Input value={v.selling_price} onChange={(e) => updateVariant(v.id!, "selling_price", e.target.value)} /></div>
                   </div>
                 </div>
               ))}

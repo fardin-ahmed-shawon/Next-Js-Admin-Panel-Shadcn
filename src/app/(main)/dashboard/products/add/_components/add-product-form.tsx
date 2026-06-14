@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
 import useCategories from "@/hooks/useCategories";
+import useAttributes from "@/hooks/useAttributes";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -26,12 +27,8 @@ interface Variant {
   id: string;
   color: string;
   size: string;
-  weight: string;
   sku: string;
   stock: string;
-  purchasePrice: string;
-  regularPrice: string;
-  sellingPrice: string;
 }
 
 interface MediaItem {
@@ -46,40 +43,6 @@ interface MediaItem {
 /* ------------------------------------------------------------------ */
 
 
-const colorOptions = [
-  { value: "red", label: "Red" },
-  { value: "blue", label: "Blue" },
-  { value: "green", label: "Green" },
-  { value: "black", label: "Black" },
-  { value: "white", label: "White" },
-  { value: "yellow", label: "Yellow" },
-  { value: "pink", label: "Pink" },
-  { value: "purple", label: "Purple" },
-  { value: "orange", label: "Orange" },
-  { value: "brown", label: "Brown" },
-  { value: "gray", label: "Gray" },
-  { value: "navy", label: "Navy" },
-  { value: "maroon", label: "Maroon" },
-];
-
-const sizeOptions = [
-  { value: "xs", label: "XS" },
-  { value: "s", label: "S" },
-  { value: "m", label: "M" },
-  { value: "l", label: "L" },
-  { value: "xl", label: "XL" },
-  { value: "xxl", label: "XXL" },
-  { value: "3xl", label: "3XL" },
-  { value: "28", label: "28" },
-  { value: "30", label: "30" },
-  { value: "32", label: "32" },
-  { value: "34", label: "34" },
-  { value: "36", label: "36" },
-  { value: "38", label: "38" },
-  { value: "40", label: "40" },
-  { value: "42", label: "42" },
-  { value: "free", label: "Free Size" },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -88,6 +51,7 @@ const sizeOptions = [
 export function AddProductForm() {
   const router = useRouter();
   const { categories, loading: categoriesLoading } = useCategories();
+  const { colors, sizes } = useAttributes();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Product info
@@ -139,12 +103,8 @@ export function AddProductForm() {
         id: `v${Date.now()}`,
         color: "",
         size: "",
-        weight: "",
         sku: "",
         stock: "",
-        purchasePrice: "",
-        regularPrice: "",
-        sellingPrice: "",
       },
     ]);
   }
@@ -267,10 +227,6 @@ export function AddProductForm() {
           sku: v.sku,
           color: v.color,
           size: v.size,
-          weight: v.weight,
-          purchase_price: v.purchasePrice ? Number(v.purchasePrice) : undefined,
-          regular_price: v.regularPrice ? Number(v.regularPrice) : undefined,
-          selling_price: v.sellingPrice ? Number(v.sellingPrice) : undefined,
           available_stock: v.stock ? Number(v.stock) : undefined,
         }));
         formData.append("variants", JSON.stringify(mappedVariants));
@@ -579,7 +535,7 @@ export function AddProductForm() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Variants & Stock</CardTitle>
-              <CardDescription>Configure alternate sizes, colors, or weights with their own inventory.</CardDescription>
+              <CardDescription>Configure alternate sizes or colors with their own inventory.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
               {/* Base SKU & Stock */}
@@ -611,7 +567,7 @@ export function AddProductForm() {
                   <div className="space-y-1 text-center">
                     <p className="text-sm font-medium">No variants added</p>
                     <p className="text-xs text-muted-foreground">
-                      Add variants to offer different sizes, colors, or weights.
+                      Add variants to offer different sizes or colors.
                     </p>
                   </div>
                   <Button variant="outline" size="sm" onClick={addVariant}>
@@ -640,9 +596,17 @@ export function AddProductForm() {
                               <SelectValue placeholder="Select color" />
                             </SelectTrigger>
                             <SelectContent>
-                              {colorOptions.map((o) => (
-                                <SelectItem key={o.value} value={o.value}>
-                                  {o.label}
+                              {colors.map((o: any) => (
+                                <SelectItem key={o.label} value={o.label}>
+                                  <div className="flex items-center gap-2">
+                                    {o.hex_value && (
+                                      <div
+                                        className="size-3 rounded-full border border-black/10"
+                                        style={{ backgroundColor: o.hex_value }}
+                                      />
+                                    )}
+                                    {o.label}
+                                  </div>
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -657,8 +621,8 @@ export function AddProductForm() {
                               <SelectValue placeholder="Select size" />
                             </SelectTrigger>
                             <SelectContent>
-                              {sizeOptions.map((o) => (
-                                <SelectItem key={o.value} value={o.value}>
+                              {sizes.map((o: any) => (
+                                <SelectItem key={o.label} value={o.label}>
                                   {o.label}
                                 </SelectItem>
                               ))}
@@ -666,8 +630,8 @@ export function AddProductForm() {
                           </Select>
                         </div>
                       </div>
-                      {/* SKU, Stock & Weight */}
-                      <div className="grid gap-3 sm:grid-cols-3">
+                      {/* SKU, Stock */}
+                      <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1.5">
                           <Label className="text-xs">SKU</Label>
                           <Input
@@ -685,45 +649,8 @@ export function AddProductForm() {
                             onChange={(e) => updateVariant(v.id, "stock", e.target.value)}
                           />
                         </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">Weight</Label>
-                          <Input
-                            placeholder="1kg, 500g"
-                            value={v.weight}
-                            onChange={(e) => updateVariant(v.id, "weight", e.target.value)}
-                          />
-                        </div>
                       </div>
-                      {/* Prices */}
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">Purchase Price</Label>
-                          <Input
-                            type="number"
-                            placeholder="0.00"
-                            value={v.purchasePrice}
-                            onChange={(e) => updateVariant(v.id, "purchasePrice", e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">Regular Price</Label>
-                          <Input
-                            type="number"
-                            placeholder="0.00"
-                            value={v.regularPrice}
-                            onChange={(e) => updateVariant(v.id, "regularPrice", e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">Selling Price</Label>
-                          <Input
-                            type="number"
-                            placeholder="0.00"
-                            value={v.sellingPrice}
-                            onChange={(e) => updateVariant(v.id, "sellingPrice", e.target.value)}
-                          />
-                        </div>
-                      </div>
+
                       {/* End Variant Fields */}
                     </div>
                   ))}
