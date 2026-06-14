@@ -16,6 +16,7 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import useSWR from "swr";
 import {
   ArrowUpDown,
   Ban,
@@ -71,12 +72,9 @@ import { UpdatePaymentModal } from "./update-payment-modal";
 const orderStatuses = [
   "All",
   "Pending",
-  "Confirmed",
-  "Ready To Ship",
-  "In-Courier",
-  "Ship Later",
   "Hold",
-  "Returned",
+  "Ship Later",
+  "Partially Delivered",
   "Pre-Order",
   "Delivered",
   "Cancelled",
@@ -86,16 +84,6 @@ const orderStatuses = [
   "Trash",
 ] as const;
 const paymentStatuses = ["All", "Full Paid", "Unpaid", "Partially Paid", "Refund"] as const;
-
-const mainCategories = ["All", "Electronics", "Clothing", "Accessories", "Footwear", "Beauty", "Home"];
-const subCategories: Record<string, string[]> = {
-  Electronics: ["Smartphones", "Laptops", "Earbuds", "Watches"],
-  Clothing: ["T-Shirts", "Jeans", "Polo Shirts", "Jackets"],
-  Accessories: ["Bags", "Wallets", "Belts"],
-  Footwear: ["Sneakers", "Sandals", "Boots"],
-  Beauty: ["Skincare", "Makeup", "Fragrance"],
-  Home: ["Bottles", "Lamps", "Decor"],
-};
 
 type OrderStatus = (typeof orderStatuses)[number];
 type PaymentStatus = (typeof paymentStatuses)[number];
@@ -118,6 +106,7 @@ export interface OrderRow {
   due: number;
   paymentMethod: string;
   productImages: string[];
+  orderedProducts: any[];
   parcelStatus: string;
   courier: string;
   parcelHistory: { total: number; delivered: number; cancelled: number; successRate: string };
@@ -520,6 +509,29 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+  const mainCatUrl = process.env.NEXT_PUBLIC_API_MAIN_CATEGORIES_URL ? `${baseUrl}api/v1/admin/${process.env.NEXT_PUBLIC_API_MAIN_CATEGORIES_URL}` : null;
+  const subCatUrl = process.env.NEXT_PUBLIC_API_SUB_CATEGORIES_URL ? `${baseUrl}api/v1/admin/${process.env.NEXT_PUBLIC_API_SUB_CATEGORIES_URL}` : null;
+
+  const { data: mainCatsRaw } = useSWR(mainCatUrl);
+  const { data: subCatsRaw } = useSWR(subCatUrl);
+
+  const mainCategories = React.useMemo(() => {
+    if (!mainCatsRaw?.data) return ["All"];
+    return ["All", ...mainCatsRaw.data.map((c: any) => c.name)];
+  }, [mainCatsRaw]);
+
+  const subCategories = React.useMemo(() => {
+    if (!subCatsRaw?.data) return {} as Record<string, string[]>;
+    const subs: Record<string, string[]> = {};
+    subCatsRaw.data.forEach((sub: any) => {
+      const mainName = sub.main_category?.name || "Uncategorized";
+      if (!subs[mainName]) subs[mainName] = [];
+      subs[mainName].push(sub.name);
+    });
+    return subs;
+  }, [subCatsRaw]);
 
   const table = useReactTable({
     data,

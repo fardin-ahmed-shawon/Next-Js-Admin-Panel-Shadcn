@@ -16,19 +16,7 @@ interface ProductsModalProps {
 export function ProductsModal({ order, open, onOpenChange }: ProductsModalProps) {
   if (!order) return null;
 
-  // Generate dummy product details based on the images and order category
-  const products = order.productImages.map((img, i) => {
-    const price = Math.round(order.total / order.productImages.length);
-    return {
-      id: `PROD-${i + 1}`,
-      image: img,
-      name: `${order.category} - ${order.subCategory} Item ${i + 1}`,
-      size: i % 2 === 0 ? "—" : "L",
-      color: i % 2 === 0 ? "—" : "Black",
-      qty: 1,
-      price: price,
-    };
-  });
+  const products = order.orderedProducts || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

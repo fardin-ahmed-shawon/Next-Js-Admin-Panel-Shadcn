@@ -83,9 +83,22 @@ export default function OrdersPage() {
     return apiData.data.data.map((order: any) => {
       const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
       const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
-      const productImages = order.ordered_products?.map((p: any) => getImageUrl(p.product?.product_thumbnail_img)) || [];
       const paymentMethod = order.payments?.[0]?.payment_method || "COD";
       
+      const mappedProducts = order.ordered_products?.map((p: any) => ({
+        id: p.id || p.product_id,
+        image: getImageUrl(p.product?.product_thumbnail_img),
+        name: p.product?.product_name || p.product?.title || "Unknown Product",
+        size: p.size_label || "—",
+        color: p.color_label || "—",
+        qty: p.qty || 1,
+        price: p.unit_price || 0,
+      })) || [];
+      const productImages = mappedProducts.map((p: any) => p.image);
+
+      const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
+      const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
+
       const createdDate = new Date(order.created_at);
       const dateString = createdDate.toISOString().slice(0, 10);
       const timeString = createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -113,12 +126,18 @@ export default function OrdersPage() {
         time: timeString,
         orderType: "regular",
         avatar: avatarUrl,
-        category: "Mixed",
-        subCategory: "Mixed",
+        category: mainCategory,
+        subCategory: subCategory,
         productImages: productImages,
+        orderedProducts: mappedProducts,
         parcelStatus: "",
         courier: "",
-        parcelHistory: order.customer?.parcel_history || { total: 0, delivered: 0, cancelled: 0, successRate: "0" },
+        parcelHistory: {
+          total: order.customer?.parcel_history?.total || 0,
+          delivered: order.customer?.parcel_history?.delivered || 0,
+          cancelled: order.customer?.parcel_history?.cancelled || 0,
+          successRate: order.customer?.parcel_history?.success_rate || "0",
+        },
       };
     });
   }, [apiData, getImageUrl]);
