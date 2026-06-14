@@ -33,6 +33,8 @@ interface UpdatePaymentModalProps {
   children?: React.ReactNode;
 }
 
+import { mutate } from "swr";
+
 export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, children }: UpdatePaymentModalProps) {
   const [internalOpen, setInternalOpen] = React.useState(false);
 
@@ -47,6 +49,7 @@ export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, 
   const [transactionId, setTransactionId] = React.useState("");
   const [newPaidAmount, setNewPaidAmount] = React.useState<number | "">("");
   const [status, setStatus] = React.useState(order.paymentStatus);
+  const [isSaving, setIsSaving] = React.useState(false);
 
   // Sync state when open
   React.useEffect(() => {
@@ -58,9 +61,29 @@ export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, 
     }
   }, [open, order]);
 
-  const handleSave = () => {
-    toast.success(`Payment updated for ${order.id}`);
-    setOpen(false);
+  const handleSave = async () => {
+    const toastId = toast.loading("Updating payment...");
+    setIsSaving(true);
+    try {
+      const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const res = await fetch(`${getApiBaseUrl()}orders/${order.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payment_status: status,
+          ...(newPaidAmount !== "" && { paid_amount: newPaidAmount }),
+        }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`Payment updated for ${order.id}`, { id: toastId });
+      setOpen(false);
+      const ordersEndpoint = process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders";
+      mutate((key) => typeof key === "string" && key.includes(ordersEndpoint), undefined, { revalidate: true });
+    } catch (e) {
+      toast.error("Failed to update payment", { id: toastId });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -108,9 +131,11 @@ export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, 
         </div>
 
         <div className="flex items-center gap-2 pt-2">
-          <Button onClick={handleSave}>Save Changes</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Changes"}
+          </Button>
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline" disabled={isSaving}>Cancel</Button>
           </DialogClose>
         </div>
       </DialogContent>

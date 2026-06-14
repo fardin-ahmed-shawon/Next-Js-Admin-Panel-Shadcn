@@ -16,7 +16,7 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import {
   ArrowUpDown,
   Ban,
@@ -128,6 +128,14 @@ function paymentBadge(s: string): "default" | "secondary" | "outline" | "destruc
   return "outline";
 }
 
+/* ---- API Helpers ---- */
+export const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+
+export function invalidateOrders() {
+  const ordersEndpoint = process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders";
+  mutate((key) => typeof key === "string" && key.includes(ordersEndpoint), undefined, { revalidate: true });
+}
+
 /* ---- Columns ---- */
 
 function PaymentStatusCell({ row }: { row: any }) {
@@ -138,10 +146,25 @@ function PaymentStatusCell({ row }: { row: any }) {
     <>
       <Select
         value={status}
-        onValueChange={(val) => {
+        onValueChange={async (val) => {
           setStatus(val);
-          if (val !== "Partially Paid") {
-            toast.success(`Order ${row.original.id} payment → ${val}`);
+          if (val === "Partially Paid") {
+            setModalOpen(true);
+          } else {
+            const toastId = toast.loading(`Updating payment...`);
+            try {
+              const res = await fetch(`${getApiBaseUrl()}orders/${row.original.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ payment_status: val }),
+              });
+              if (!res.ok) throw new Error();
+              toast.success(`Order ${row.original.id} payment → ${val}`, { id: toastId });
+              invalidateOrders();
+            } catch (err) {
+              toast.error("Failed to update payment status.", { id: toastId });
+              setStatus(row.original.paymentStatus);
+            }
           }
         }}
       >
@@ -324,7 +347,21 @@ const columns: ColumnDef<OrderRow>[] = [
     cell: ({ row }) => (
       <Select
         defaultValue={row.original.orderStatus}
-        onValueChange={(val) => toast.success(`Order ${row.original.id} status → ${val}`)}
+        onValueChange={async (val) => {
+          const toastId = toast.loading("Updating status...");
+          try {
+             const res = await fetch(`${getApiBaseUrl()}orders/${row.original.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ order_status: val }),
+              });
+              if (!res.ok) throw new Error();
+              toast.success(`Order ${row.original.id} status → ${val}`, { id: toastId });
+              invalidateOrders();
+          } catch (e) {
+             toast.error("Failed to update status", { id: toastId });
+          }
+        }}
       >
         <SelectTrigger className="h-7 w-[140px] text-xs border-border/60 rounded-md px-2 gap-1">
           <SelectValue />
@@ -621,6 +658,27 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
   const hasFilters =
     activeOrderFilter !== "All" || activePaymentFilter !== "All" || activeCatFilter !== "All" || searchQuery;
 
+  const handleBulkUpdate = async (type: "status" | "payment", val: string) => {
+    const selectedIds = table.getSelectedRowModel().rows.map(r => r.original.id);
+    const toastId = toast.loading(`Updating ${selectedIds.length} orders...`);
+    try {
+      const endpoint = type === "status" ? "bulk-update-status" : "bulk-update-payment";
+      const bodyKey = type === "status" ? "order_status" : "payment_status";
+      
+      const res = await fetch(`${getApiBaseUrl()}orders/${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_nos: selectedIds, [bodyKey]: val }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`Successfully updated ${selectedIds.length} orders.`, { id: toastId });
+      setRowSelection({});
+      invalidateOrders();
+    } catch (err) {
+      toast.error(`Failed to bulk update orders.`, { id: toastId });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -825,7 +883,7 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
                       {orderStatuses
                         .filter((s) => s !== "All")
                         .map((s) => (
-                          <DropdownMenuItem key={s} onClick={() => toast.success(`Bulk order status → ${s}`)}>
+                          <DropdownMenuItem key={s} onClick={() => handleBulkUpdate("status", s)}>
                             {s}
                           </DropdownMenuItem>
                         ))}
@@ -840,7 +898,7 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
                       {paymentStatuses
                         .filter((s) => s !== "All")
                         .map((s) => (
-                          <DropdownMenuItem key={s} onClick={() => toast.success(`Bulk payment status → ${s}`)}>
+                          <DropdownMenuItem key={s} onClick={() => handleBulkUpdate("payment", s)}>
                             {s}
                           </DropdownMenuItem>
                         ))}

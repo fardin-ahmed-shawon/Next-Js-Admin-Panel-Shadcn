@@ -34,8 +34,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { PartialPaymentForm } from "../../_components/partial-payment-form";
 // Re-using locations from create order
 import { districts, divisions, thanas } from "../../create/_components/bd-locations";
-// Re-using mock data from orders page
-import { allOrders } from "../../page";
 
 /* ---- catalogue ---- */
 
@@ -252,38 +250,20 @@ export default function EditOrderPage() {
   const customerSearchRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    // Populate form with mock data if order exists
-    const order = allOrders.find((o) => o.id === id);
-    if (order) {
-      setCustomerName(order.customer);
-      setCustomerPhone(order.phone);
-      setShippingAddress("123 Dhanmondi, Dhaka-1205"); // Mock address
-      setDivision("Dhaka");
-      setDistrict("Dhaka");
-      setThana("Dhanmondi");
+    // Populate form with mock data
+    setCustomerName("Mock Customer");
+    setCustomerPhone("+880 1711-234567");
+    setShippingAddress("123 Dhanmondi, Dhaka-1205"); 
+    setDivision("Dhaka");
+    setDistrict("Dhaka");
+    setThana("Dhanmondi");
 
-      const methodMap: Record<string, string> = {
-        bKash: "bkash",
-        Nagad: "nagad",
-        COD: "cod",
-        Bank: "bank",
-      };
-      setPaymentMethod(methodMap[order.paymentMethod] || "cod");
+    setPaymentMethod("cod");
+    setPaymentStatus("unpaid");
+    setPaidAmount("");
+    setOrderStatus("pending");
 
-      const statusMap: Record<string, string> = {
-        "Full Paid": "full-paid",
-        Unpaid: "unpaid",
-        "Partially Paid": "partially-paid",
-        Refund: "refund",
-      };
-      setPaymentStatus(statusMap[order.paymentStatus] || "unpaid");
-      setPaidAmount(order.paid > 0 ? order.paid : "");
-      setOrderStatus(order.orderStatus.toLowerCase().replace(" ", "-"));
-
-      // Add a mock product to cart based on the order
-      const mockProduct = productCatalogue.find((p) => p.category === order.category) || productCatalogue[0];
-      setCart([{ product: mockProduct, quantity: order.items, color: "Black", size: "M" }]);
-    }
+    setCart([{ product: productCatalogue[0], quantity: 1, color: "Black", size: "M" }]);
   }, [id]);
 
   const filteredProducts = React.useMemo(() => {
@@ -406,7 +386,8 @@ export default function EditOrderPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  if (!allOrders.find((o) => o.id === id)) {
+  // Mock check for missing order
+  if (!id) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-24">
         <p className="text-lg font-medium">Order not found</p>
