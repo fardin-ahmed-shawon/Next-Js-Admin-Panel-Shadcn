@@ -14,7 +14,7 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { Archive, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from "lucide-react";
+import { Archive, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,36 +25,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 /* ---- Demo Data ---- */
 
-type PaymentItem = {
-  id: string;
+export type PaymentItem = {
+  id: string | number;
   orderId: string;
   account: string;
   method: string;
   amount: number;
   date: string;
-  status: "Full Paid" | "Partially Paid";
+  status: "Full Paid" | "Partially Paid" | "Unpaid" | "Refund" | string;
 };
-
-const mockData: PaymentItem[] = [
-  {
-    id: "TRX-101",
-    orderId: "ORD-1021",
-    account: "Main Bank Account",
-    method: "bKash",
-    amount: 15500,
-    date: "10/24/2026",
-    status: "Full Paid",
-  },
-  {
-    id: "TRX-102",
-    orderId: "ORD-1022",
-    account: "Cash",
-    method: "Cash",
-    amount: 500,
-    date: "10/23/2026",
-    status: "Partially Paid",
-  },
-];
 
 /* ---- Columns ---- */
 
@@ -95,12 +74,22 @@ const columns: ColumnDef<PaymentItem>[] = [
   },
   {
     accessorKey: "id",
-    header: "Transaction",
+    header: ({ column }) => (
+      <Button variant="ghost" className="p-0" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+        Transaction
+        <ArrowUpDown className="ml-2 size-4" />
+      </Button>
+    ),
     cell: ({ row }) => <span className="text-muted-foreground">{row.original.id}</span>,
   },
   {
     accessorKey: "amount",
-    header: "Amount",
+    header: ({ column }) => (
+      <Button variant="ghost" className="p-0" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+        Amount
+        <ArrowUpDown className="ml-2 size-4" />
+      </Button>
+    ),
     cell: ({ row }) => (
       <span className="tabular-nums font-medium text-emerald-600 dark:text-emerald-500">
         ৳{row.original.amount.toLocaleString()}
@@ -109,8 +98,20 @@ const columns: ColumnDef<PaymentItem>[] = [
   },
   {
     accessorKey: "date",
-    header: "Date",
-    cell: ({ row }) => <span className="text-muted-foreground tabular-nums">{row.original.date}</span>,
+    header: ({ column }) => (
+      <Button variant="ghost" className="p-0" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+        Date
+        <ArrowUpDown className="ml-2 size-4" />
+      </Button>
+    ),
+    cell: ({ row }) => {
+      const dateStr = new Date(row.original.date).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+      return <span className="text-muted-foreground tabular-nums">{dateStr}</span>;
+    },
   },
   {
     accessorKey: "status",
@@ -124,7 +125,7 @@ const columns: ColumnDef<PaymentItem>[] = [
 
 /* ---- Main Table Component ---- */
 
-export function PaymentsTable() {
+export function PaymentsTable({ data }: { data: PaymentItem[] }) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
@@ -136,7 +137,7 @@ export function PaymentsTable() {
   const [dateTo, setDateTo] = React.useState("");
 
   const table = useReactTable({
-    data: mockData,
+    data,
     columns,
     state: {
       columnFilters,
@@ -144,7 +145,7 @@ export function PaymentsTable() {
       columnVisibility: { search: false, status: false, method: false },
       pagination,
     },
-    getRowId: (row) => row.id,
+    getRowId: (row) => String(row.id),
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
