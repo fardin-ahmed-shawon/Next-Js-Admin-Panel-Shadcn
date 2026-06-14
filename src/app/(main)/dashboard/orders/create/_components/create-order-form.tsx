@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { PartialPaymentForm } from "../../_components/partial-payment-form";
 import { districts, divisions, thanas } from "./bd-locations";
+import useProducts, { Product } from "@/hooks/useProducts";
 
 /* ---- catalogue ---- */
 
@@ -54,136 +55,8 @@ const sizeOptions = [
   "Free Size",
 ];
 
-const productCatalogue = [
-  {
-    id: "PRD-001",
-    name: "Premium Cotton T-Shirt",
-    sku: "SKU-001",
-    price: 850,
-    stock: 124,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=TS",
-    category: "Clothing",
-  },
-  {
-    id: "PRD-002",
-    name: "Slim Fit Denim Jeans",
-    sku: "SKU-002",
-    price: 1450,
-    stock: 67,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=DJ",
-    category: "Clothing",
-  },
-  {
-    id: "PRD-003",
-    name: "Wireless Bluetooth Earbuds",
-    sku: "SKU-003",
-    price: 2200,
-    stock: 42,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=BE",
-    category: "Electronics",
-  },
-  {
-    id: "PRD-004",
-    name: "Leather Crossbody Bag",
-    sku: "SKU-004",
-    price: 3100,
-    stock: 18,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=CB",
-    category: "Accessories",
-  },
-  {
-    id: "PRD-005",
-    name: "Running Sneakers Pro",
-    sku: "SKU-005",
-    price: 2800,
-    stock: 55,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=RS",
-    category: "Footwear",
-  },
-  {
-    id: "PRD-006",
-    name: "Organic Face Moisturizer",
-    sku: "SKU-006",
-    price: 650,
-    stock: 200,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=FM",
-    category: "Beauty",
-  },
-  {
-    id: "PRD-007",
-    name: "Stainless Steel Water Bottle",
-    sku: "SKU-007",
-    price: 480,
-    stock: 310,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=WB",
-    category: "Home",
-  },
-  {
-    id: "PRD-008",
-    name: "Smart Fitness Watch",
-    sku: "SKU-008",
-    price: 4500,
-    stock: 29,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=FW",
-    category: "Electronics",
-  },
-  {
-    id: "PRD-009",
-    name: "Classic Polo Shirt",
-    sku: "SKU-009",
-    price: 950,
-    stock: 88,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=PS",
-    category: "Clothing",
-  },
-  {
-    id: "PRD-010",
-    name: "Minimalist Desk Lamp",
-    sku: "SKU-010",
-    price: 1200,
-    stock: 45,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=DL",
-    category: "Home",
-  },
-];
-
-const mockCustomers = [
-  {
-    id: "CUST-001",
-    name: "Arham Khan",
-    phone: "+880 1711-234567",
-    email: "arham@example.com",
-    address: "House 12, Road 5, Banani",
-    division: "Dhaka",
-    district: "Dhaka",
-    thana: "Banani",
-  },
-  {
-    id: "CUST-002",
-    name: "Nusrat Jahan",
-    phone: "+880 1614-567890",
-    email: "nusrat@example.com",
-    address: "Flat 4B, Green Tower, Dhanmondi",
-    division: "Dhaka",
-    district: "Dhaka",
-    thana: "Dhanmondi",
-  },
-  {
-    id: "CUST-003",
-    name: "Maliha Sultana",
-    phone: "+880 1918-901234",
-    email: "maliha@example.com",
-    address: "24/A, South Surma",
-    division: "Sylhet",
-    district: "Sylhet",
-    thana: "South Surma",
-  },
-];
-
-type CatalogueProduct = (typeof productCatalogue)[0];
-
 interface CartItem {
-  product: CatalogueProduct;
+  product: Product;
   quantity: number;
   color: string;
   size: string;
@@ -193,11 +66,17 @@ interface CartItem {
 
 export function CreateOrderForm() {
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = React.useState("");
   const [searchFocused, setSearchFocused] = React.useState(false);
   const [cart, setCart] = React.useState<CartItem[]>([]);
 
-  const [customerSearchQuery, setCustomerSearchQuery] = React.useState("");
-  const [customerSearchFocused, setCustomerSearchFocused] = React.useState(false);
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const { data: productsData } = useProducts({ search: debouncedSearchQuery });
+  const filteredProducts = productsData?.data || [];
 
   const [customerName, setCustomerName] = React.useState("");
   const [customerEmail, setCustomerEmail] = React.useState("");
@@ -209,6 +88,26 @@ export function CreateOrderForm() {
   const [thana, setThana] = React.useState("");
   const [shippingMethod, setShippingMethod] = React.useState("inside-dhaka");
 
+  const [insideShippingCharge, setInsideShippingCharge] = React.useState(70);
+  const [outsideShippingCharge, setOutsideShippingCharge] = React.useState(150);
+
+  React.useEffect(() => {
+    async function fetchWebSettings() {
+      try {
+        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SETTINGS || "web-settings"}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        if (json.success && json.data) {
+          setInsideShippingCharge(Number(json.data.inside_shipping_charge) || 70);
+          setOutsideShippingCharge(Number(json.data.outside_shipping_charge) || 150);
+        }
+      } catch (err) {
+        console.error("Failed to fetch web settings:", err);
+      }
+    }
+    fetchWebSettings();
+  }, []);
+
   const [paymentMethod, setPaymentMethod] = React.useState("cod");
   const [paymentStatus, setPaymentStatus] = React.useState("unpaid");
   const [transactionId, setTransactionId] = React.useState("");
@@ -218,31 +117,15 @@ export function CreateOrderForm() {
   const [discountValue, setDiscountValue] = React.useState("");
   const [orderNote, setOrderNote] = React.useState("");
   const [orderStatus, setOrderStatus] = React.useState("pending");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const searchRef = React.useRef<HTMLDivElement>(null);
-  const customerSearchRef = React.useRef<HTMLDivElement>(null);
   const router = useRouter();
-
-  const filteredProducts = React.useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase();
-    return productCatalogue.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.id.toLowerCase().includes(q),
-    );
-  }, [searchQuery]);
-
-  const filteredCustomers = React.useMemo(() => {
-    if (!customerSearchQuery.trim()) return [];
-    const q = customerSearchQuery.toLowerCase();
-    return mockCustomers.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.email.toLowerCase().includes(q),
-    );
-  }, [customerSearchQuery]);
 
   const availableDistricts = division ? districts[division] || [] : [];
   const availableThanas = district ? thanas[district] || [] : [];
 
-  function addToCart(product: CatalogueProduct) {
+  function addToCart(product: Product) {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
@@ -250,7 +133,7 @@ export function CreateOrderForm() {
     });
     setSearchQuery("");
     setSearchFocused(false);
-    toast.success(`${product.name} added to order.`);
+    toast.success(`${product.title} added to order.`);
   }
 
   function updateQuantity(productId: string, delta: number) {
@@ -269,21 +152,8 @@ export function CreateOrderForm() {
     setCart((prev) => prev.map((i) => (i.product.id === productId ? { ...i, [field]: value } : i)));
   }
 
-  function selectCustomer(customer: (typeof mockCustomers)[0]) {
-    setCustomerName(customer.name);
-    setCustomerEmail(customer.email);
-    setCustomerPhone(customer.phone);
-    setShippingAddress(customer.address);
-    setDivision(customer.division);
-    setDistrict(customer.district);
-    setThana(customer.thana);
-    setCustomerSearchQuery("");
-    setCustomerSearchFocused(false);
-    toast.success("Customer details loaded.");
-  }
-
-  const subtotal = cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
-  const shippingCost = shippingMethod === "outside-dhaka" ? 150 : shippingMethod === "inside-dhaka" ? 70 : 0;
+  const subtotal = cart.reduce((sum, i) => sum + i.product.selling_price * i.quantity, 0);
+  const shippingCost = shippingMethod === "outside-dhaka" ? outsideShippingCharge : shippingMethod === "inside-dhaka" ? insideShippingCharge : 0;
   const discountAmount =
     discountType === "percentage"
       ? Math.round((subtotal * (Number(discountValue) || 0)) / 100)
@@ -312,7 +182,7 @@ export function CreateOrderForm() {
     toast.info("Form has been reset.");
   }
 
-  function handleCreateOrder() {
+  async function handleCreateOrder() {
     if (cart.length === 0) {
       toast.error("Please add at least one product.");
       return;
@@ -325,19 +195,64 @@ export function CreateOrderForm() {
       toast.error("Customer phone is required.");
       return;
     }
-    if (!shippingAddress.trim()) {
-      toast.error("Shipping address is required.");
+    if (!shippingAddress.trim() || !division || !district || !thana) {
+      toast.error("Complete shipping address is required.");
       return;
     }
-    toast.success(`Order created successfully! Total: ৳${total.toLocaleString()}`);
-    router.push("/dashboard/orders/success");
+
+    const payload = {
+      customer_full_name: customerName,
+      customer_phone: customerPhone,
+      customer_email: customerEmail,
+      customer_shipping_address: `${shippingAddress}, ${thana}, ${district}, ${division}`,
+      shipping_area: shippingMethod === "inside-dhaka" ? "Inside Dhaka" : "Outside Dhaka",
+      subtotal_amount: subtotal,
+      discount_amount: discountAmount,
+      shipping_charge: shippingCost,
+      grand_total_amount: total,
+      order_status: orderStatus.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+      order_note: orderNote,
+      payment_method: paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod === "bkash" ? "bKash" : paymentMethod === "nagad" ? "Nagad" : paymentMethod === "rocket" ? "Rocket" : paymentMethod === "bank" ? "Bank Transfer" : "Card Payment",
+      paid_amount: Number(paidAmount) || 0,
+      payment_status: paymentStatus === "unpaid" ? "Unpaid" : paymentStatus === "paid" ? "Paid" : "Partial",
+      products: cart.map((item) => ({
+        product_id: item.product.id,
+        qty: item.quantity,
+        unit_price: item.product.selling_price,
+        ...(item.size ? { size_label: item.size } : {}),
+        ...(item.color ? { color_label: item.color } : {}),
+      })),
+    };
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (res.ok && json.status) {
+        toast.success(json.message || `Order created successfully! Total: ৳${total.toLocaleString()}`);
+        router.push("/dashboard/orders");
+      } else {
+        toast.error(json.error || json.message || "Failed to create order.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("An error occurred while creating the order.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchFocused(false);
-      if (customerSearchRef.current && !customerSearchRef.current.contains(e.target as Node))
-        setCustomerSearchFocused(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -354,13 +269,13 @@ export function CreateOrderForm() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={resetForm}>
+          <Button variant="outline" size="sm" onClick={resetForm} disabled={isSubmitting}>
             <RefreshCw className="mr-2 size-4" />
             Reset
           </Button>
-          <Button size="sm" onClick={handleCreateOrder}>
+          <Button size="sm" onClick={handleCreateOrder} disabled={isSubmitting}>
             <Send className="mr-2 size-4" />
-            Create Order
+            {isSubmitting ? "Creating..." : "Create Order"}
           </Button>
         </div>
       </div>
@@ -399,16 +314,16 @@ export function CreateOrderForm() {
                           onClick={() => addToCart(p)}
                         >
                           <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
-                            <img src={p.image} alt={p.name} className="size-full object-cover" />
+                            <img src={p.product_thumbnail_img || "https://placehold.co/80x80/1a1a2e/e0e0e0?text=IMG"} alt={p.title} className="size-full object-cover" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{p.name}</p>
+                            <p className="text-sm font-medium truncate">{p.title}</p>
                             <p className="text-xs text-muted-foreground">
-                              {p.sku} · Stock: {p.stock}
+                              {p.sku || "N/A"} · Stock: {p.available_stock}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-sm font-semibold tabular-nums">৳{p.price.toLocaleString()}</span>
+                            <span className="text-sm font-semibold tabular-nums">৳{p.selling_price.toLocaleString()}</span>
                             {inCart && (
                               <Badge variant="secondary" className="text-[10px]">
                                 ×{inCart.quantity}
@@ -445,27 +360,27 @@ export function CreateOrderForm() {
                     <div key={item.product.id} className="rounded-lg border p-3 transition-colors hover:bg-muted/30">
                       <div className="flex items-center gap-3">
                         <div className="size-12 shrink-0 overflow-hidden rounded-md border bg-muted">
-                          <img src={item.product.image} alt={item.product.name} className="size-full object-cover" />
+                          <img src={item.product.product_thumbnail_img || "https://placehold.co/80x80/1a1a2e/e0e0e0?text=IMG"} alt={item.product.title} className="size-full object-cover" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{item.product.name}</p>
+                          <p className="text-sm font-medium truncate">{item.product.title}</p>
                           <p className="text-xs text-muted-foreground">
-                            {item.product.sku} · ৳{item.product.price.toLocaleString()} each
+                            {item.product.sku || "N/A"} · ৳{item.product.selling_price.toLocaleString()} each
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, -1)}>
+                          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id.toString(), -1)}>
                             <Minus className="size-3" />
                           </Button>
                           <span className="w-8 text-center text-sm font-medium tabular-nums">{item.quantity}</span>
-                          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, 1)}>
+                          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id.toString(), 1)}>
                             <Plus className="size-3" />
                           </Button>
                         </div>
                         <span className="w-20 text-right text-sm font-semibold tabular-nums">
-                          ৳{(item.product.price * item.quantity).toLocaleString()}
+                          ৳{(item.product.selling_price * item.quantity).toLocaleString()}
                         </span>
-                        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id)}>
+                        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id.toString())}>
                           <X className="size-4 text-muted-foreground" />
                         </Button>
                       </div>
@@ -519,39 +434,6 @@ export function CreateOrderForm() {
               <CardDescription>Enter the customer information for this order.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
-              <div ref={customerSearchRef} className="relative z-40">
-                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="pl-9 bg-muted/50 border-dashed"
-                  placeholder="Search registered customer by name, phone, or email..."
-                  value={customerSearchQuery}
-                  onChange={(e) => setCustomerSearchQuery(e.target.value)}
-                  onFocus={() => setCustomerSearchFocused(true)}
-                />
-                {customerSearchFocused && filteredCustomers.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-lg">
-                    {filteredCustomers.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className="flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-muted/50"
-                        onClick={() => selectCustomer(c)}
-                      >
-                        <p className="text-sm font-semibold">{c.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {c.phone} · {c.email}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {customerSearchFocused && customerSearchQuery.trim() && filteredCustomers.length === 0 && (
-                  <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-popover p-4 shadow-lg text-center">
-                    <p className="text-sm font-medium">No registered customers found</p>
-                  </div>
-                )}
-              </div>
-
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="customer-name">
@@ -681,8 +563,8 @@ export function CreateOrderForm() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="inside-dhaka">Inside Dhaka — ৳70</SelectItem>
-                    <SelectItem value="outside-dhaka">Outside Dhaka — ৳150</SelectItem>
+                    <SelectItem value="inside-dhaka">Inside Dhaka — ৳{insideShippingCharge}</SelectItem>
+                    <SelectItem value="outside-dhaka">Outside Dhaka — ৳{outsideShippingCharge}</SelectItem>
                     <SelectItem value="free">Free Shipping — ৳0</SelectItem>
                   </SelectContent>
                 </Select>
@@ -841,9 +723,9 @@ export function CreateOrderForm() {
                 <span className="font-semibold">Total</span>
                 <span className="font-bold tabular-nums text-primary">৳{total.toLocaleString()}</span>
               </div>
-              <Button className="w-full mt-2" onClick={handleCreateOrder}>
+              <Button className="w-full mt-2" onClick={handleCreateOrder} disabled={isSubmitting}>
                 <Send className="mr-2 size-4" />
-                Create Order
+                {isSubmitting ? "Creating..." : "Create Order"}
               </Button>
             </CardContent>
           </Card>
