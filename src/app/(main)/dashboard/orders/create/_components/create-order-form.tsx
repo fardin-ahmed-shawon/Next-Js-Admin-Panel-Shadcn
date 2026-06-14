@@ -21,45 +21,124 @@ import { districts, divisions, thanas } from "./bd-locations";
 import useProducts, { Product } from "@/hooks/useProducts";
 
 /* ---- catalogue ---- */
-
-const colorOptions = [
-  "Red",
-  "Blue",
-  "Green",
-  "Black",
-  "White",
-  "Yellow",
-  "Pink",
-  "Purple",
-  "Orange",
-  "Navy",
-  "Maroon",
-  "Gray",
-];
-const sizeOptions = [
-  "XS",
-  "S",
-  "M",
-  "L",
-  "XL",
-  "XXL",
-  "3XL",
-  "28",
-  "30",
-  "32",
-  "34",
-  "36",
-  "38",
-  "40",
-  "42",
-  "Free Size",
-];
+import useSWR from "swr";
 
 interface CartItem {
   product: Product;
   quantity: number;
   color: string;
   size: string;
+}
+
+const fetcher = async (url: string) => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) throw new Error("Failed to fetch");
+  const json = await res.json();
+  return json.data || [];
+};
+
+const getImageUrl = (path: string | null) => {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+  return `${baseUrl}${path}`;
+};
+
+function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem }: any) {
+  const { data: sizesRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_SIZES || "product-sizes"}?product_id=${item.product.id}`, fetcher);
+  const { data: colorsRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_COLORS || "product-colors"}?product_id=${item.product.id}`, fetcher);
+  const { data: variantsRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_VARIANTS || "product-variants"}?product_id=${item.product.id}`, fetcher);
+
+  const sizes = Array.isArray(sizesRes) ? sizesRes : [];
+  const colors = Array.isArray(colorsRes) ? colorsRes : [];
+  const variants = Array.isArray(variantsRes) ? variantsRes : [];
+
+  const requiresVariant = sizes.length > 0 || colors.length > 0;
+  let isValidVariant = true;
+
+  if (requiresVariant && (item.size || item.color)) {
+    const selectedSizeId = sizes.find((s: any) => s.size === item.size)?.id || null;
+    const selectedColorId = colors.find((c: any) => c.color === item.color)?.id || null;
+    
+    // Check if variant exists
+    isValidVariant = variants.some((v: any) => v.size_id === selectedSizeId && v.color_id === selectedColorId);
+  }
+
+  return (
+    <div className="rounded-lg border p-3 transition-colors hover:bg-muted/30">
+      <div className="flex items-center gap-3">
+        <div className="size-12 shrink-0 overflow-hidden rounded-md border bg-muted">
+          <img src={getImageUrl(item.product.product_thumbnail_img)} alt={item.product.title} className="size-full object-cover" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{item.product.title}</p>
+          <p className="text-xs text-muted-foreground">
+            {item.product.sku || "N/A"} · ৳{item.product.selling_price.toLocaleString()} each
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, -1)}>
+            <Minus className="size-3" />
+          </Button>
+          <span className="w-8 text-center text-sm font-medium tabular-nums">{item.quantity}</span>
+          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, 1)}>
+            <Plus className="size-3" />
+          </Button>
+        </div>
+        <span className="w-20 text-right text-sm font-semibold tabular-nums">
+          ৳{(item.product.selling_price * item.quantity).toLocaleString()}
+        </span>
+        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id)}>
+          <X className="size-4 text-muted-foreground" />
+        </Button>
+      </div>
+
+      {requiresVariant && (
+        <div className="mt-2 flex flex-col gap-2 pl-15">
+          <div className="flex items-center gap-3">
+            {colors.length > 0 && (
+              <Select value={item.color} onValueChange={(v) => updateCartItem(item.product.id, "color", v)}>
+                <SelectTrigger className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}>
+                  <SelectValue placeholder="Color" />
+                </SelectTrigger>
+                <SelectContent>
+                  {colors.map((c: any) => (
+                    <SelectItem key={c.id} value={c.color}>
+                      {c.color}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {sizes.length > 0 && (
+              <Select value={item.size} onValueChange={(v) => updateCartItem(item.product.id, "size", v)}>
+                <SelectTrigger className={`h-7 w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}>
+                  <SelectValue placeholder="Size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sizes.map((s: any) => (
+                    <SelectItem key={s.id} value={s.size}>
+                      {s.size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          {!isValidVariant && (item.color || item.size) && (
+            <span className="text-[10px] text-destructive font-medium">Selected combination is out of stock or unavailable.</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ---- component ---- */
@@ -413,61 +492,13 @@ export function CreateOrderForm() {
               ) : (
                 <div className="flex flex-col gap-3">
                   {cart.map((item) => (
-                    <div key={item.product.id} className="rounded-lg border p-3 transition-colors hover:bg-muted/30">
-                      <div className="flex items-center gap-3">
-                        <div className="size-12 shrink-0 overflow-hidden rounded-md border bg-muted">
-                          <img src={getImageUrl(item.product.product_thumbnail_img)} alt={item.product.title} className="size-full object-cover" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{item.product.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.product.sku || "N/A"} · ৳{item.product.selling_price.toLocaleString()} each
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, -1)}>
-                            <Minus className="size-3" />
-                          </Button>
-                          <span className="w-8 text-center text-sm font-medium tabular-nums">{item.quantity}</span>
-                          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, 1)}>
-                            <Plus className="size-3" />
-                          </Button>
-                        </div>
-                        <span className="w-20 text-right text-sm font-semibold tabular-nums">
-                          ৳{(item.product.selling_price * item.quantity).toLocaleString()}
-                        </span>
-                        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id)}>
-                          <X className="size-4 text-muted-foreground" />
-                        </Button>
-                      </div>
-                      {/* Color & Size */}
-                      <div className="mt-2 flex items-center gap-3 pl-15">
-                        <Select value={item.color} onValueChange={(v) => updateCartItem(item.product.id, "color", v)}>
-                          <SelectTrigger className="h-7 w-28 text-xs">
-                            <SelectValue placeholder="Color" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {colorOptions.map((c) => (
-                              <SelectItem key={c} value={c}>
-                                {c}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Select value={item.size} onValueChange={(v) => updateCartItem(item.product.id, "size", v)}>
-                          <SelectTrigger className="h-7 w-28 text-xs">
-                            <SelectValue placeholder="Size" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {sizeOptions.map((s) => (
-                              <SelectItem key={s} value={s}>
-                                {s}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+                    <CartItemRow
+                      key={item.product.id}
+                      item={item}
+                      updateQuantity={updateQuantity}
+                      removeFromCart={removeFromCart}
+                      updateCartItem={updateCartItem}
+                    />
                   ))}
                   <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2">
                     <span className="text-sm text-muted-foreground">
