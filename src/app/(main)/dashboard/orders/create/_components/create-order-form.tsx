@@ -78,6 +78,27 @@ export function CreateOrderForm() {
   const { data: productsData } = useProducts({ search: debouncedSearchQuery });
   const filteredProducts = productsData?.data || [];
 
+  const [customersData, setCustomersData] = React.useState<any[]>([]);
+  React.useEffect(() => {
+    async function fetchCustomers() {
+      try {
+        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_CUSTOMERS || "customers"}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        if (json.success && json.data) {
+          setCustomersData(json.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch customers:", err);
+      }
+    }
+    fetchCustomers();
+  }, []);
+
+  const [customerSearchQuery, setCustomerSearchQuery] = React.useState("");
+  const [customerSearchFocused, setCustomerSearchFocused] = React.useState(false);
+  const [customerId, setCustomerId] = React.useState<number>(0);
+
   const [customerName, setCustomerName] = React.useState("");
   const [customerEmail, setCustomerEmail] = React.useState("");
   const [customerPhone, setCustomerPhone] = React.useState("");
@@ -136,7 +157,7 @@ export function CreateOrderForm() {
     toast.success(`${product.title} added to order.`);
   }
 
-  function updateQuantity(productId: string, delta: number) {
+  function updateQuantity(productId: number, delta: number) {
     setCart((prev) =>
       prev
         .map((i) => (i.product.id === productId ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i))
@@ -144,12 +165,34 @@ export function CreateOrderForm() {
     );
   }
 
-  function removeFromCart(productId: string) {
+  function removeFromCart(productId: number) {
     setCart((prev) => prev.filter((i) => i.product.id !== productId));
   }
 
-  function updateCartItem(productId: string, field: "color" | "size", value: string) {
+  function updateCartItem(productId: number, field: "color" | "size", value: string) {
     setCart((prev) => prev.map((i) => (i.product.id === productId ? { ...i, [field]: value } : i)));
+  }
+
+  const filteredCustomers = React.useMemo(() => {
+    if (!customerSearchQuery.trim()) return [];
+    const q = customerSearchQuery.toLowerCase();
+    return customersData.filter(
+      (c) => c.full_name?.toLowerCase().includes(q) || c.phone?.includes(q) || c.email?.toLowerCase().includes(q)
+    );
+  }, [customerSearchQuery, customersData]);
+
+  function selectCustomer(customer: any) {
+    setCustomerId(customer.id);
+    setCustomerName(customer.full_name || "");
+    setCustomerEmail(customer.email || "");
+    setCustomerPhone(customer.phone || "");
+    
+    // Automatically fill address if available in parcel_history or orders? No, just address from the model if any. 
+    // They don't have address in the root JSON, so leave address blank for them to type.
+    
+    setCustomerSearchQuery("");
+    setCustomerSearchFocused(false);
+    toast.success("Customer details loaded.");
   }
 
   const subtotal = cart.reduce((sum, i) => sum + i.product.selling_price * i.quantity, 0);
@@ -163,6 +206,8 @@ export function CreateOrderForm() {
   function resetForm() {
     setCart([]);
     setSearchQuery("");
+    setCustomerSearchQuery("");
+    setCustomerId(0);
     setCustomerName("");
     setCustomerEmail("");
     setCustomerPhone("");
@@ -201,11 +246,12 @@ export function CreateOrderForm() {
     }
 
     const payload = {
+      customer_id: customerId || 0,
       customer_full_name: customerName,
       customer_phone: customerPhone,
       customer_email: customerEmail,
       customer_shipping_address: `${shippingAddress}, ${thana}, ${district}, ${division}`,
-      shipping_area: shippingMethod === "inside-dhaka" ? "Inside Dhaka" : "Outside Dhaka",
+      shipping_area: shippingMethod === "inside-dhaka" ? "Inside Dhaka" : shippingMethod === "outside-dhaka" ? "Outside Dhaka" : (division === "Dhaka" ? "Inside Dhaka" : "Outside Dhaka"),
       subtotal_amount: subtotal,
       discount_amount: discountAmount,
       shipping_charge: shippingCost,
@@ -250,13 +296,23 @@ export function CreateOrderForm() {
     }
   }
 
+  const customerSearchRef = React.useRef<HTMLDivElement>(null);
+
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchFocused(false);
+      if (customerSearchRef.current && !customerSearchRef.current.contains(e.target as Node)) setCustomerSearchFocused(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+  const getImageUrl = (path: string | null) => {
+    if (!path) return "https://placehold.co/80x80/1a1a2e/e0e0e0?text=No+Image";
+    if (path.startsWith("http")) return path;
+    return `${baseUrl}${path.startsWith("/") ? path.slice(1) : path}`;
+  };
 
   return (
     <>
@@ -314,7 +370,7 @@ export function CreateOrderForm() {
                           onClick={() => addToCart(p)}
                         >
                           <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
-                            <img src={p.product_thumbnail_img || "https://placehold.co/80x80/1a1a2e/e0e0e0?text=IMG"} alt={p.title} className="size-full object-cover" />
+                            <img src={getImageUrl(p.product_thumbnail_img)} alt={p.title} className="size-full object-cover" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{p.title}</p>
@@ -360,7 +416,7 @@ export function CreateOrderForm() {
                     <div key={item.product.id} className="rounded-lg border p-3 transition-colors hover:bg-muted/30">
                       <div className="flex items-center gap-3">
                         <div className="size-12 shrink-0 overflow-hidden rounded-md border bg-muted">
-                          <img src={item.product.product_thumbnail_img || "https://placehold.co/80x80/1a1a2e/e0e0e0?text=IMG"} alt={item.product.title} className="size-full object-cover" />
+                          <img src={getImageUrl(item.product.product_thumbnail_img)} alt={item.product.title} className="size-full object-cover" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{item.product.title}</p>
@@ -369,18 +425,18 @@ export function CreateOrderForm() {
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id.toString(), -1)}>
+                          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, -1)}>
                             <Minus className="size-3" />
                           </Button>
                           <span className="w-8 text-center text-sm font-medium tabular-nums">{item.quantity}</span>
-                          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id.toString(), 1)}>
+                          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, 1)}>
                             <Plus className="size-3" />
                           </Button>
                         </div>
                         <span className="w-20 text-right text-sm font-semibold tabular-nums">
                           ৳{(item.product.selling_price * item.quantity).toLocaleString()}
                         </span>
-                        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id.toString())}>
+                        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id)}>
                           <X className="size-4 text-muted-foreground" />
                         </Button>
                       </div>
@@ -434,6 +490,39 @@ export function CreateOrderForm() {
               <CardDescription>Enter the customer information for this order.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
+              <div ref={customerSearchRef} className="relative z-40">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-9 bg-muted/50 border-dashed"
+                  placeholder="Search registered customer by name, phone, or email..."
+                  value={customerSearchQuery}
+                  onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                  onFocus={() => setCustomerSearchFocused(true)}
+                />
+                {customerSearchFocused && filteredCustomers.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-lg">
+                    {filteredCustomers.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className="flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-muted/50"
+                        onClick={() => selectCustomer(c)}
+                      >
+                        <p className="text-sm font-semibold">{c.full_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {c.phone} · {c.email}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {customerSearchFocused && customerSearchQuery.trim() && filteredCustomers.length === 0 && (
+                  <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-popover p-4 shadow-lg text-center">
+                    <p className="text-sm font-medium">No registered customers found</p>
+                  </div>
+                )}
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="customer-name">
@@ -443,7 +532,10 @@ export function CreateOrderForm() {
                     id="customer-name"
                     placeholder="e.g. Arham Khan"
                     value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
+                    onChange={(e) => {
+                      setCustomerName(e.target.value);
+                      setCustomerId(0);
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -453,7 +545,10 @@ export function CreateOrderForm() {
                     type="email"
                     placeholder="customer@example.com"
                     value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    onChange={(e) => {
+                      setCustomerEmail(e.target.value);
+                      setCustomerId(0);
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -465,7 +560,10 @@ export function CreateOrderForm() {
                     type="tel"
                     placeholder="+880 1XXX-XXXXXX"
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => {
+                      setCustomerPhone(e.target.value);
+                      setCustomerId(0);
+                    }}
                   />
                 </div>
               </div>

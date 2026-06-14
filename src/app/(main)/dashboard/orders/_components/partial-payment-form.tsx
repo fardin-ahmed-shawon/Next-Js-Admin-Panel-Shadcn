@@ -42,7 +42,7 @@ export function PartialPaymentForm({
     onStatusChange(val);
     if (val === "Full Paid") {
       onPaidAmountChange(Math.max(0, orderTotal - currentPaid));
-    } else if (val === "Unpaid" || val === "Refund") {
+    } else if (val === "Unpaid") {
       onPaidAmountChange(0);
     }
   };
@@ -140,12 +140,6 @@ export function PartialPaymentForm({
               className="border data-[state=on]:border-primary data-[state=on]:bg-primary/10"
             >
               Full Paid
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="Refund"
-              className="border data-[state=on]:border-primary data-[state=on]:bg-primary/10"
-            >
-              Refund
             </ToggleGroupItem>
           </ToggleGroup>
         </FieldContent>
