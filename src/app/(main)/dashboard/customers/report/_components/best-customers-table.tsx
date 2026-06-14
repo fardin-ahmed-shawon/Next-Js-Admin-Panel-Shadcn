@@ -39,162 +39,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-/* ---- Demo Data ---- */
+export interface BestCustomerRow {
+  rank: number;
+  name: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  orders: number;
+  spent: number;
+  period: "all" | "monthly" | "yearly";
+}
 
-const allBestCustomers = [
-  {
-    rank: 1,
-    name: "Nusrat Jahan",
-    email: "nusrat@example.com",
-    phone: "+880 1614-567890",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NJ",
-    orders: 127,
-    spent: 84500,
-    period: "all" as const,
-  },
-  {
-    rank: 2,
-    name: "Maliha Sultana",
-    email: "maliha@example.com",
-    phone: "+880 1918-901234",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=MS",
-    orders: 98,
-    spent: 62300,
-    period: "all" as const,
-  },
-  {
-    rank: 3,
-    name: "Ayesha Siddiqua",
-    email: "ayesha@example.com",
-    phone: "+880 1520-123456",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AS",
-    orders: 85,
-    spent: 51200,
-    period: "all" as const,
-  },
-  {
-    rank: 4,
-    name: "Arham Khan",
-    email: "arham@example.com",
-    phone: "+880 1711-234567",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=AK",
-    orders: 72,
-    spent: 43800,
-    period: "all" as const,
-  },
-  {
-    rank: 5,
-    name: "Imran Haque",
-    email: "imran@example.com",
-    phone: "+880 1817-890123",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=IH",
-    orders: 64,
-    spent: 38900,
-    period: "all" as const,
-  },
-  {
-    rank: 6,
-    name: "Fatima Akter",
-    email: "fatima@example.com",
-    phone: "+880 1812-345678",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=FA",
-    orders: 58,
-    spent: 32100,
-    period: "all" as const,
-  },
-  {
-    rank: 7,
-    name: "Kamal Hossain",
-    email: "kamal@example.com",
-    phone: "+880 1721-234567",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=KH",
-    orders: 45,
-    spent: 27600,
-    period: "all" as const,
-  },
-  {
-    rank: 8,
-    name: "Tanvir Hossain",
-    email: "tanvir@example.com",
-    phone: "+880 1515-678901",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=TH",
-    orders: 39,
-    spent: 21400,
-    period: "all" as const,
-  },
-  {
-    rank: 9,
-    name: "Priya Das",
-    email: "priya@example.com",
-    phone: "+880 1822-345678",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=PD",
-    orders: 31,
-    spent: 18900,
-    period: "all" as const,
-  },
-  {
-    rank: 10,
-    name: "Rahim Uddin",
-    email: "rahim@example.com",
-    phone: "+880 1913-456789",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RU",
-    orders: 22,
-    spent: 12500,
-    period: "all" as const,
-  },
-  {
-    rank: 11,
-    name: "Sadia Rahman",
-    email: "sadia@example.com",
-    phone: "+880 1716-789012",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SR",
-    orders: 19,
-    spent: 10200,
-    period: "all" as const,
-  },
-  {
-    rank: 12,
-    name: "Rafiq Islam",
-    email: "rafiq@example.com",
-    phone: "+880 1619-012345",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=RI",
-    orders: 14,
-    spent: 8750,
-    period: "all" as const,
-  },
-  {
-    rank: 13,
-    name: "Habibur Rahman",
-    email: "habib@example.com",
-    phone: "+880 1511-987654",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=HR",
-    orders: 11,
-    spent: 6400,
-    period: "all" as const,
-  },
-  {
-    rank: 14,
-    name: "Nasir Uddin",
-    email: "nasir@example.com",
-    phone: "+880 1712-876543",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=NU",
-    orders: 8,
-    spent: 4200,
-    period: "all" as const,
-  },
-  {
-    rank: 15,
-    name: "Shahid Mia",
-    email: "shahid@example.com",
-    phone: "+880 1813-765432",
-    avatar: "https://placehold.co/48x48/1a1a2e/e0e0e0?text=SM",
-    orders: 5,
-    spent: 2800,
-    period: "all" as const,
-  },
-];
-
-type BestCustomerRow = (typeof allBestCustomers)[0];
 type PeriodFilter = "All" | "Monthly" | "Yearly";
 const periodFilters: PeriodFilter[] = ["All", "Monthly", "Yearly"];
 
@@ -289,14 +144,14 @@ function exportBestCustomers(data: BestCustomerRow[]) {
 
 /* ---- Main Component ---- */
 
-export function BestCustomersTable() {
+export function BestCustomersTable({ data }: { data: BestCustomerRow[] }) {
   const [activeFilter, setActiveFilter] = React.useState<PeriodFilter>("All");
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([{ id: "spent", desc: true }]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 5 });
 
   const table = useReactTable({
-    data: allBestCustomers,
+    data,
     columns,
     state: {
       columnFilters,
