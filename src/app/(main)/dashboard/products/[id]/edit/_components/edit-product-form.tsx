@@ -225,16 +225,19 @@ export function EditProductForm({ productId }: { productId: string }) {
         formData.append("deleted_gallery_ids", JSON.stringify(deletedGalleryIds));
       }
 
-      newMediaFiles.forEach((m, idx) => {
-        formData.append(`gallery_images[${idx}]`, m.file);
+      newMediaFiles.forEach((m) => {
+        formData.append(`gallery_images[]`, m.file);
       });
 
       // Filter out temporary string IDs for new variants
       const mappedVariants = variants.map(v => {
-        const mapped = { ...v };
+        const mapped: any = { ...v };
         if (typeof mapped.id === 'string' && mapped.id.startsWith('new_')) {
           delete mapped.id;
         }
+        mapped.color = mapped.color || null;
+        mapped.size = mapped.size || null;
+        mapped.available_stock = mapped.available_stock ? Number(mapped.available_stock) : undefined;
         return mapped;
       });
       formData.append("variants", JSON.stringify(mappedVariants));

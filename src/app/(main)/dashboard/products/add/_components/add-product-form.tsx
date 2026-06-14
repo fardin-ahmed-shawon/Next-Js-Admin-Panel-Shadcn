@@ -218,15 +218,15 @@ export function AddProductForm() {
         formData.append("thumbnail", thumbnailFile);
       }
       
-      media.forEach((item, index) => {
-        formData.append(`gallery_images[${index}]`, item.file);
+      media.forEach((item) => {
+        formData.append(`gallery_images[]`, item.file);
       });
       
       if (variants.length > 0) {
         const mappedVariants = variants.map((v) => ({
           sku: v.sku,
-          color: v.color,
-          size: v.size,
+          color: v.color || null,
+          size: v.size || null,
           available_stock: v.stock ? Number(v.stock) : undefined,
         }));
         formData.append("variants", JSON.stringify(mappedVariants));
