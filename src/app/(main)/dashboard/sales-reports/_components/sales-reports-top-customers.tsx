@@ -22,11 +22,14 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Crown,
   Download,
   Eye,
+  Medal,
   MoreHorizontal,
   Package,
   Search,
+  Award,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,9 +49,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import type { allOrders } from "../../orders/page";
+import { useCustomers } from "@/hooks/useCustomers";
+import { Loader2 } from "lucide-react";
 
-type OrderRow = (typeof allOrders)[0];
+type OrderRow = any;
 
 type CustomerRow = {
   name: string;
@@ -57,7 +61,16 @@ type CustomerRow = {
   totalSpent: number;
   ordersCount: number;
   type: "Registered" | "Guest";
+  rank: number;
 };
+
+/* ---- Rank Icon ---- */
+function RankBadge({ rank }: { rank: number }) {
+  if (rank === 1) return <Crown className="size-4 text-amber-500" />;
+  if (rank === 2) return <Medal className="size-4 text-slate-400" />;
+  if (rank === 3) return <Award className="size-4 text-amber-700" />;
+  return <span className="text-xs font-bold text-muted-foreground">#{rank}</span>;
+}
 
 const columns: ColumnDef<CustomerRow>[] = [
   {
@@ -65,6 +78,15 @@ const columns: ColumnDef<CustomerRow>[] = [
     accessorFn: (row) => `${row.name} ${row.phone}`,
     filterFn: "includesString",
     enableHiding: true,
+  },
+  {
+    accessorKey: "rank",
+    header: "Rank",
+    cell: ({ row }) => (
+      <div className="flex items-center justify-center size-7">
+        <RankBadge rank={row.original.rank} />
+      </div>
+    ),
   },
   {
     accessorKey: "name",
@@ -78,7 +100,7 @@ const columns: ColumnDef<CustomerRow>[] = [
       return (
         <div className="flex items-center gap-2">
           <Avatar className="size-8 rounded-full border shrink-0">
-            <AvatarImage src={row.original.avatar} alt={row.original.name} />
+            <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(row.original.name)}&background=random`} alt={row.original.name} />
             <AvatarFallback className="bg-muted text-muted-foreground text-xs font-medium border-0">
               {initials}
             </AvatarFallback>
@@ -133,33 +155,31 @@ const columns: ColumnDef<CustomerRow>[] = [
   },
 ];
 
-export function SalesReportsTopCustomers({ data }: { data: OrderRow[] }) {
-  // Aggregate sales by customer
-  const customerSales = React.useMemo(() => {
-    const acc: Record<string, CustomerRow> = {};
-    data.forEach((order) => {
-      if (order.paymentStatus === "Full Paid" || order.paymentStatus === "Partially Paid") {
-        const id = order.phone;
-        if (!acc[id]) {
-          // Mock Type based on last digit of phone
-          const lastDigit = parseInt(order.phone.slice(-1));
-          const type = isNaN(lastDigit) || lastDigit % 2 === 0 ? "Registered" : "Guest";
+export function SalesReportsTopCustomers({ data: _unused }: { data: OrderRow[] }) {
+  const { data: response, isLoading } = useCustomers();
 
-          acc[id] = {
-            name: order.customer,
-            phone: order.phone,
-            avatar: order.avatar,
-            totalSpent: 0,
-            ordersCount: 0,
-            type,
-          };
-        }
-        acc[id].totalSpent += order.paid;
-        acc[id].ordersCount += 1;
-      }
-    });
-    return Object.values(acc).sort((a, b) => b.totalSpent - a.totalSpent);
-  }, [data]);
+  // Aggregate sales by customer using the customers API
+  const customerSales = React.useMemo(() => {
+    if (!response?.data) return [];
+    const customers = response.data;
+
+    const ranked = [...customers]
+      .filter((c: any) => c.parcel_history?.total_spent > 0)
+      .sort((a: any, b: any) => (b.parcel_history?.total_spent || 0) - (a.parcel_history?.total_spent || 0))
+      .map((c: any, idx: number) => {
+        return {
+          name: c.full_name,
+          phone: c.phone || "",
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.full_name)}&background=random`,
+          totalSpent: c.parcel_history?.total_spent || 0,
+          ordersCount: c.parcel_history?.total || 0,
+          type: "Registered", // Or determine based on data if available
+          rank: idx + 1,
+        };
+      });
+
+    return ranked;
+  }, [response]);
 
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -198,7 +218,10 @@ export function SalesReportsTopCustomers({ data }: { data: OrderRow[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="leading-none">Top Customers</CardTitle>
+        <CardTitle className="leading-none flex items-center gap-2">
+          Top Customers
+          {isLoading && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+        </CardTitle>
         <CardDescription>Most valuable customers by revenue</CardDescription>
         <CardAction className="flex items-center gap-2">
           <Button variant="outline" size="sm">

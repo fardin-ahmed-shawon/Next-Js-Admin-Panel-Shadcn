@@ -44,9 +44,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import type { allOrders } from "../../orders/page";
-
-type OrderRow = (typeof allOrders)[0];
+type OrderRow = any;
 
 type ProductRow = {
   id: string;

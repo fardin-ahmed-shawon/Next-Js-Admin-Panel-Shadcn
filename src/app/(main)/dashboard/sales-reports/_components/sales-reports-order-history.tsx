@@ -43,9 +43,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { ProductsModal } from "../../orders/_components/products-modal";
-import type { allOrders } from "../../orders/page";
-
-type OrderRow = (typeof allOrders)[0];
+type OrderRow = any;
 
 function ProductsCell({ row }: { row: any }) {
   const [modalOpen, setModalOpen] = React.useState(false);

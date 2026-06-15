@@ -2,9 +2,7 @@ import { Boxes, DollarSign, Package, Percent, Receipt, ShoppingCart, TrendingDow
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import type { allOrders } from "../../orders/page";
-
-type OrderRow = (typeof allOrders)[0];
+type OrderRow = any;
 
 export function SalesReportsStats({ data }: { data: OrderRow[] }) {
   const totalOrders = data.length;
