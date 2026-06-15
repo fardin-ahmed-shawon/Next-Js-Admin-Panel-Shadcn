@@ -4,7 +4,7 @@ import * as React from "react";
 
 import Link from "next/link";
 
-import { CalendarIcon, Ellipsis, FileDown, Plus, Printer, RefreshCw } from "lucide-react";
+import { CalendarIcon, Ellipsis, FileDown, Loader2, Plus, Printer, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,65 +21,9 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 
 import { PurchaseStats } from "./_components/purchase-stats";
 import { type CustomerPurchaseEntry, PurchaseTable } from "./_components/purchase-table";
+import { useCustomers } from "@/hooks/useCustomers";
 
-// Mock Data for Customer-wise Purchase History
-const allCustomers: CustomerPurchaseEntry[] = [
-  {
-    id: "CUST-001",
-    customerName: "Arham Khan",
-    phone: "+880 1711-234567",
-    avatar: "https://placehold.co/40x40/1a1a2e/e0e0e0?text=AK",
-    totalOrders: 15,
-    totalSpent: 45000,
-    lastPurchaseDate: "2026-05-19",
-    status: "Active",
-    customerType: "Registered",
-  },
-  {
-    id: "CUST-002",
-    customerName: "Nusrat Jahan",
-    phone: "+880 1614-567890",
-    avatar: "https://placehold.co/40x40/1a1a2e/e0e0e0?text=NJ",
-    totalOrders: 8,
-    totalSpent: 22000,
-    lastPurchaseDate: "2026-05-18",
-    status: "Active",
-    customerType: "Registered",
-  },
-  {
-    id: "CUST-003",
-    customerName: "Maliha Sultana",
-    phone: "+880 1918-901234",
-    avatar: "https://placehold.co/40x40/1a1a2e/e0e0e0?text=MS",
-    totalOrders: 1,
-    totalSpent: 1450,
-    lastPurchaseDate: "2026-05-15",
-    status: "Inactive",
-    customerType: "Guest",
-  },
-  {
-    id: "CUST-004",
-    customerName: "Imran Haque",
-    phone: "+880 1817-890123",
-    avatar: "https://placehold.co/40x40/1a1a2e/e0e0e0?text=IH",
-    totalOrders: 24,
-    totalSpent: 120500,
-    lastPurchaseDate: "2026-05-10",
-    status: "Active",
-    customerType: "Registered",
-  },
-  {
-    id: "CUST-005",
-    customerName: "Fatima Akter",
-    phone: "+880 1812-345678",
-    avatar: "https://placehold.co/40x40/1a1a2e/e0e0e0?text=FA",
-    totalOrders: 3,
-    totalSpent: 4500,
-    lastPurchaseDate: "2026-04-25",
-    status: "Blocked",
-    customerType: "Guest",
-  },
-];
+// Customer data is now fetched from the API
 
 type TimeRange = "daily" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
 
@@ -125,6 +69,29 @@ export default function PurchaseHistoryPage() {
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
 
+  const { data: response, isLoading } = useCustomers();
+
+  const allCustomers = React.useMemo<CustomerPurchaseEntry[]>(() => {
+    if (!response?.data) return [];
+    return response.data.map((c: any) => {
+      let lastOrderDate = c.created_at;
+      if (c.orders && c.orders.length > 0) {
+        lastOrderDate = c.orders[c.orders.length - 1].created_at;
+      }
+      return {
+        id: `CUST-${c.id?.toString().padStart(3, "0")}`,
+        customerName: c.full_name || "Unknown",
+        phone: c.phone || "N/A",
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.full_name || "U")}&background=random`,
+        totalOrders: c.parcel_history?.total || 0,
+        totalSpent: c.parcel_history?.total_spent || 0,
+        lastPurchaseDate: new Date(lastOrderDate).toISOString().slice(0, 10),
+        status: c.status === "inactive" ? "Blocked" : "Active",
+        customerType: "Registered",
+      };
+    });
+  }, [response]);
+
   const filteredByTime = React.useMemo(() => {
     if (timeRange === "alltime") return allCustomers;
     if (timeRange === "custom") {
@@ -136,7 +103,7 @@ export default function PurchaseHistoryPage() {
     }
     const from = getDateFrom(timeRange);
     return allCustomers.filter((c) => c.lastPurchaseDate >= from);
-  }, [timeRange, customFrom, customTo]);
+  }, [timeRange, customFrom, customTo, allCustomers]);
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -144,7 +111,10 @@ export default function PurchaseHistoryPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         {/* Title + description */}
         <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl tracking-tight">Customer Purchase History</h1>
+          <h1 className="text-2xl sm:text-3xl tracking-tight flex items-center gap-2">
+            Customer Purchase History
+            {isLoading && <Loader2 className="size-5 animate-spin text-muted-foreground" />}
+          </h1>
           <p className="text-muted-foreground text-sm">
             Track lifetime value, total orders, and purchase history of your customers.
           </p>
