@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 
 import {
   Archive,
@@ -33,6 +34,7 @@ import {
   Ticket,
   Trash,
   Truck,
+  UserX,
   Users,
   X,
 } from "lucide-react";
@@ -54,6 +56,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useRoles, PageAccess } from "@/hooks/useRoles";
 
 type PermissionItem = {
   id: string;
@@ -76,6 +80,8 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     icon: Shield,
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, alwaysOn: true },
+      { id: "roles_and_permission", label: "Roles & Permission", icon: Shield },
+      { id: "users", label: "Users", icon: Users },
       { id: "settings", label: "Settings", icon: Settings, alwaysOn: true },
     ],
   },
@@ -113,7 +119,6 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "discounts", label: "Discounts", icon: Percent },
       { id: "coupons", label: "Coupons", icon: Ticket },
       { id: "courier", label: "Courier", icon: Truck },
-      { id: "invoice", label: "Invoice", icon: FileText },
     ],
   },
   {
@@ -123,7 +128,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     items: [
       { id: "accounts", label: "Accounts", icon: Briefcase },
       { id: "sales_report", label: "Sales Report", icon: BarChart },
-      { id: "purchase_history", label: "Purchase History", icon: History },
+      { id: "history", label: "History", icon: History },
     ],
   },
   {
@@ -132,25 +137,65 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     icon: ShieldAlert,
     items: [
       { id: "customers", label: "Customers", icon: Users },
-      { id: "customer_messages", label: "Customer Messages", icon: MessageCircle },
+      { id: "messages", label: "Messages", icon: MessageCircle },
       { id: "fraud_checker", label: "Fraud Checker", icon: ShieldAlert },
+      { id: "blocklist", label: "Blocklist", icon: UserX },
     ],
   },
 ];
 
-// Mock selected permissions for a "Manager" role
-const initialSelected: Record<string, boolean> = {
-  products: true,
-  categories: true,
-  brands: true,
-  orders: true,
-  payments: true,
-  customers: true,
-  customer_messages: true,
-};
-
 export default function EditRolePage() {
-  const [selected, setSelected] = React.useState<Record<string, boolean>>(initialSelected);
+  const router = useRouter();
+  const { roles, loading, error, setRoles } = useRoles();
+  
+  const [roleName, setRoleName] = React.useState("");
+  const [selected, setSelected] = React.useState<Record<string, boolean>>({});
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [errors, setErrors] = React.useState<Record<string, string[]>>({});
+  const [isLoaded, setIsLoaded] = React.useState(false);
+
+  const params = useParams();
+  const roleId = params?.id ? params.id.toString() : "";
+  const role = roles.find((r) => r.id.toString() === roleId);
+
+  React.useEffect(() => {
+    if (role && !isLoaded) {
+      setRoleName(role.role_name || "");
+      
+      const newSelected: Record<string, boolean> = {};
+      PERMISSION_GROUPS.forEach((group) => {
+        group.items.forEach((item) => {
+          if (role.page_access && role.page_access[item.id as keyof PageAccess] === 1) {
+            newSelected[item.id] = true;
+          }
+        });
+      });
+      setSelected(newSelected);
+      setIsLoaded(true);
+    }
+  }, [role, isLoaded]);
+
+  if (loading || (role && !isLoaded)) {
+    return (
+      <div className="flex flex-col gap-6 pb-10">
+        <Skeleton className="h-10 w-48 mb-4" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  if (error || !role) {
+    return (
+      <div className="p-6 border border-destructive/20 bg-destructive/10 text-destructive rounded-lg">
+        <p className="font-medium">Error loading role</p>
+        <p className="text-sm">{error || "Role not found."}</p>
+        <Link href="/dashboard/roles">
+          <Button variant="outline" className="mt-4">Back to Roles</Button>
+        </Link>
+      </div>
+    );
+  }
 
   let totalSelectable = 0;
   let totalSelected = 0;
@@ -196,8 +241,86 @@ export default function EditRolePage() {
     setSelected({});
   };
 
-  const handleDelete = () => {
-    toast.success("Role deleted successfully.");
+  const handleSave = async () => {
+    if (!roleName.trim()) {
+      setErrors({ role_name: ["The role name field is required."] });
+      toast.error("Please provide a role name.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrors({});
+
+    try {
+      const pageAccessPayload: Record<string, number> = {};
+      
+      PERMISSION_GROUPS.forEach((group) => {
+        group.items.forEach((item) => {
+          if (item.alwaysOn) {
+            pageAccessPayload[item.id] = 1;
+          } else {
+            pageAccessPayload[item.id] = selected[item.id] ? 1 : 0;
+          }
+        });
+      });
+
+      const payload = {
+        role_name: roleName.trim(),
+        page_access: pageAccessPayload,
+      };
+
+      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ROLES || ""}/${roleId}`;
+      
+      const response = await fetch(API_URL, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 422) {
+          setErrors(data.errors || {});
+          toast.error(data.message || "Validation failed.");
+        } else {
+          toast.error(data.message || "An error occurred while updating the role.");
+        }
+        return;
+      }
+
+      toast.success(data.message || "Role updated successfully!");
+      router.push("/dashboard/roles");
+    } catch (error) {
+      toast.error("Failed to connect to the server.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ROLES || ""}/${roleId}`;
+      const response = await fetch(API_URL, {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete role.");
+      }
+
+      setRoles((prev) => prev.filter((r) => r.id !== roleId));
+      toast.success("Role deleted successfully.");
+      router.push("/dashboard/roles");
+    } catch (error) {
+      toast.error("Failed to delete role.");
+    }
   };
 
   return (
@@ -229,9 +352,17 @@ export default function EditRolePage() {
           <CardContent>
             <div className="max-w-xl space-y-2">
               <label htmlFor="roleName" className="text-sm font-medium text-foreground">
-                Role Name
+                Role Name <span className="text-destructive">*</span>
               </label>
-              <Input id="roleName" className="mt-3 mb-1" defaultValue="Manager" />
+              <Input
+                id="roleName"
+                className={`mt-3 mb-1 ${errors.role_name ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                value={roleName}
+                onChange={(e) => setRoleName(e.target.value)}
+              />
+              {errors.role_name && (
+                <p className="text-sm font-medium text-destructive">{errors.role_name[0]}</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -313,9 +444,9 @@ export default function EditRolePage() {
         {/* Footer Actions */}
         <div className="flex flex-col sm:flex-row items-stretch justify-between gap-3 mt-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <Button className="px-8 gap-2">
+            <Button className="px-8 gap-2" onClick={handleSave} disabled={isSubmitting}>
               <Save className="h-4 w-4" />
-              Update Role
+              {isSubmitting ? "Updating..." : "Update Role"}
             </Button>
             <Link href="/dashboard/roles">
               <Button variant="outline" className="px-8 w-full sm:w-auto">
@@ -326,7 +457,7 @@ export default function EditRolePage() {
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="px-8 gap-2 w-full sm:w-auto">
+              <Button variant="destructive" className="px-8 gap-2 w-full sm:w-auto" disabled={role.role_name === "Admin"}>
                 <Trash className="h-4 w-4" />
                 Delete Role
               </Button>
@@ -341,14 +472,12 @@ export default function EditRolePage() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <Link href="/dashboard/roles">
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={handleDelete}
-                  >
-                    Yes, delete
-                  </AlertDialogAction>
-                </Link>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={handleDelete}
+                >
+                  Yes, delete
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

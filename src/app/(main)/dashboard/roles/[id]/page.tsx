@@ -3,6 +3,7 @@
 import type * as React from "react";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
 import {
   Archive,
@@ -31,6 +32,7 @@ import {
   Tag,
   Ticket,
   Truck,
+  UserX,
   Users,
 } from "lucide-react";
 
@@ -39,6 +41,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useRoles, PageAccess } from "@/hooks/useRoles";
 
 type PermissionItem = {
   id: string;
@@ -61,6 +65,8 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     icon: Shield,
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, alwaysOn: true },
+      { id: "roles_and_permission", label: "Roles & Permission", icon: Shield },
+      { id: "users", label: "Users", icon: Users },
       { id: "settings", label: "Settings", icon: Settings, alwaysOn: true },
     ],
   },
@@ -98,7 +104,6 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "discounts", label: "Discounts", icon: Percent },
       { id: "coupons", label: "Coupons", icon: Ticket },
       { id: "courier", label: "Courier", icon: Truck },
-      { id: "invoice", label: "Invoice", icon: FileText },
     ],
   },
   {
@@ -108,7 +113,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     items: [
       { id: "accounts", label: "Accounts", icon: Briefcase },
       { id: "sales_report", label: "Sales Report", icon: BarChart },
-      { id: "purchase_history", label: "Purchase History", icon: History },
+      { id: "history", label: "History", icon: History },
     ],
   },
   {
@@ -117,25 +122,50 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     icon: ShieldAlert,
     items: [
       { id: "customers", label: "Customers", icon: Users },
-      { id: "customer_messages", label: "Customer Messages", icon: MessageCircle },
+      { id: "messages", label: "Messages", icon: MessageCircle },
       { id: "fraud_checker", label: "Fraud Checker", icon: ShieldAlert },
+      { id: "blocklist", label: "Blocklist", icon: UserX },
     ],
   },
 ];
 
-// Mock selected permissions for a "Manager" role
-const initialSelected: Record<string, boolean> = {
-  products: true,
-  categories: true,
-  brands: true,
-  orders: true,
-  payments: true,
-  customers: true,
-  customer_messages: true,
-};
-
 export default function ViewRolePage() {
-  const selected = initialSelected;
+  const params = useParams();
+  const roleId = params?.id ? params.id.toString() : "";
+
+  const { roles, loading, error } = useRoles();
+  const role = roles.find((r) => r.id.toString() === roleId);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-6 pb-10">
+        <Skeleton className="h-10 w-48 mb-4" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  if (error || !role) {
+    return (
+      <div className="p-6 border border-destructive/20 bg-destructive/10 text-destructive rounded-lg">
+        <p className="font-medium">Error loading role</p>
+        <p className="text-sm">{error || "Role not found."}</p>
+        <Link href="/dashboard/roles">
+          <Button variant="outline" className="mt-4">Back to Roles</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const selected: Record<string, boolean> = {};
+  PERMISSION_GROUPS.forEach((group) => {
+    group.items.forEach((item) => {
+      if (role.page_access && role.page_access[item.id as keyof PageAccess] === 1) {
+        selected[item.id] = true;
+      }
+    });
+  });
 
   let totalSelectable = 0;
   let totalSelected = 0;
@@ -180,7 +210,7 @@ export default function ViewRolePage() {
               <label htmlFor="roleName" className="text-sm font-medium text-foreground">
                 Role Name
               </label>
-              <Input id="roleName" className="mt-3 mb-1 font-semibold" value="Manager" readOnly disabled />
+              <Input id="roleName" className="mt-3 mb-1 font-semibold" value={role.role_name} readOnly disabled />
             </div>
           </CardContent>
         </Card>
@@ -241,10 +271,12 @@ export default function ViewRolePage() {
 
         {/* Footer Actions */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-4">
-          <Button className="px-8 gap-2">
-            <Edit className="h-4 w-4" />
-            Edit Role
-          </Button>
+          <Link href={`/dashboard/roles/${roleId}/edit`}>
+            <Button className="px-8 gap-2 w-full sm:w-auto">
+              <Edit className="h-4 w-4" />
+              Edit Role
+            </Button>
+          </Link>
           <Link href="/dashboard/roles">
             <Button variant="outline" className="px-8 w-full sm:w-auto">
               Return to Roles

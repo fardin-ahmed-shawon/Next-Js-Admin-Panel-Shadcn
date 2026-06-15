@@ -89,10 +89,19 @@ export function RolesGrid() {
   const { roles, loading, error, setRoles } = useRoles();
 
   const handleDelete = async (id: number) => {
-    // Ideally call API to delete here, then update UI state
     try {
-      // simulate API delete
-      // await fetch(`/api/roles/${id}`, { method: 'DELETE' });
+      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ROLES || ""}/${id}`;
+      const response = await fetch(API_URL, {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete role.");
+      }
+
       setRoles((prev) => prev.filter((r) => r.id !== id));
       toast.success("Role deleted successfully.");
     } catch (error) {
@@ -166,7 +175,7 @@ export function RolesGrid() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Link href={`/dashboard/roles/${role.id}`}>
+                <Link href={`/dashboard/roles/${role.id}/edit`}>
                   <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2.5">
                     <Edit className="h-3.5 w-3.5" />
                     <span className="sr-only sm:not-sr-only sm:inline-block">Edit</span>
@@ -240,12 +249,14 @@ export function RolesGrid() {
             <Separator />
 
             <CardFooter className="p-0">
-              <Button
-                variant="ghost"
-                className="w-full rounded-t-none rounded-b-xl text-muted-foreground hover:text-foreground"
-              >
-                Show Details <ChevronDown className="ml-1 h-4 w-4" />
-              </Button>
+              <Link href={`/dashboard/roles/${role.id}`} className="w-full">
+                <Button
+                  variant="ghost"
+                  className="w-full rounded-t-none rounded-b-xl text-muted-foreground hover:text-foreground"
+                >
+                  Show Details <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </Link>
             </CardFooter>
           </Card>
         );
