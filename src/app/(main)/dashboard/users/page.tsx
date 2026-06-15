@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { AddUserDialog } from "./_components/add-user-dialog";
 import { UsersStats } from "./_components/users-stats";
 import { UsersTable } from "./_components/users-table";
+import { useUsers } from "@/hooks/useUsers";
 
 export default function UsersPage() {
   const [isAddOpen, setIsAddOpen] = React.useState(false);
+  const { users, loading, refetch } = useUsers();
 
   return (
     <div className="flex flex-col gap-6">
@@ -26,12 +28,12 @@ export default function UsersPage() {
             <PlusCircle className="h-4 w-4" />
             Add User
           </Button>
-          <AddUserDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
+          <AddUserDialog open={isAddOpen} onOpenChange={setIsAddOpen} onSuccess={refetch} />
         </div>
       </div>
 
       <UsersStats />
-      <UsersTable />
+      <UsersTable users={users} loading={loading} refetch={refetch} />
     </div>
   );
 }
