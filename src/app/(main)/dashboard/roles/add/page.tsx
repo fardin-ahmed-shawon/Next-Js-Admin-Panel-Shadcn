@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   Archive,
@@ -32,9 +33,11 @@ import {
   Tag,
   Ticket,
   Truck,
+  UserX,
   Users,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,6 +66,8 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     icon: Shield,
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, alwaysOn: true },
+      { id: "roles_and_permission", label: "Roles & Permission", icon: Shield },
+      { id: "users", label: "Users", icon: Users },
       { id: "settings", label: "Settings", icon: Settings, alwaysOn: true },
     ],
   },
@@ -100,7 +105,6 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "discounts", label: "Discounts", icon: Percent },
       { id: "coupons", label: "Coupons", icon: Ticket },
       { id: "courier", label: "Courier", icon: Truck },
-      { id: "invoice", label: "Invoice", icon: FileText },
     ],
   },
   {
@@ -110,7 +114,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     items: [
       { id: "accounts", label: "Accounts", icon: Briefcase },
       { id: "sales_report", label: "Sales Report", icon: BarChart },
-      { id: "purchase_history", label: "Purchase History", icon: History },
+      { id: "history", label: "History", icon: History },
     ],
   },
   {
@@ -119,14 +123,19 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     icon: ShieldAlert,
     items: [
       { id: "customers", label: "Customers", icon: Users },
-      { id: "customer_messages", label: "Customer Messages", icon: MessageCircle },
+      { id: "messages", label: "Messages", icon: MessageCircle },
       { id: "fraud_checker", label: "Fraud Checker", icon: ShieldAlert },
+      { id: "blocklist", label: "Blocklist", icon: UserX },
     ],
   },
 ];
 
 export default function AddRolePage() {
+  const router = useRouter();
+  const [roleName, setRoleName] = React.useState("");
   const [selected, setSelected] = React.useState<Record<string, boolean>>({});
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [errors, setErrors] = React.useState<Record<string, string[]>>({});
 
   let totalSelectable = 0;
   let totalSelected = 0;
@@ -172,6 +181,67 @@ export default function AddRolePage() {
     setSelected({});
   };
 
+  const handleSave = async () => {
+    if (!roleName.trim()) {
+      setErrors({ role_name: ["The role name field is required."] });
+      toast.error("Please provide a role name.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrors({});
+
+    try {
+      const pageAccessPayload: Record<string, number> = {};
+      
+      // Populate payload with explicitly 1 or 0
+      PERMISSION_GROUPS.forEach((group) => {
+        group.items.forEach((item) => {
+          if (item.alwaysOn) {
+            pageAccessPayload[item.id] = 1;
+          } else {
+            pageAccessPayload[item.id] = selected[item.id] ? 1 : 0;
+          }
+        });
+      });
+
+      const payload = {
+        role_name: roleName.trim(),
+        page_access: pageAccessPayload,
+      };
+
+      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ROLES || ""}`;
+      
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 422) {
+          setErrors(data.errors || {});
+          toast.error(data.message || "Validation failed.");
+        } else {
+          toast.error(data.message || "An error occurred while saving the role.");
+        }
+        return;
+      }
+
+      toast.success(data.message || "Role created successfully!");
+      router.push("/dashboard/roles");
+    } catch (error) {
+      toast.error("Failed to connect to the server.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 pb-10">
       {/* Standard Page Header */}
@@ -203,9 +273,18 @@ export default function AddRolePage() {
           <CardContent>
             <div className="max-w-xl space-y-2">
               <label htmlFor="roleName" className="text-sm font-medium text-foreground">
-                Role Name
+                Role Name <span className="text-destructive">*</span>
               </label>
-              <Input id="roleName" className="mt-3 mb-1" placeholder="e.g. Manager, Editor, Operator..." />
+              <Input
+                id="roleName"
+                className={`mt-3 mb-1 ${errors.role_name ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                placeholder="e.g. Manager, Editor, Operator..."
+                value={roleName}
+                onChange={(e) => setRoleName(e.target.value)}
+              />
+              {errors.role_name && (
+                <p className="text-sm font-medium text-destructive">{errors.role_name[0]}</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -235,7 +314,7 @@ export default function AddRolePage() {
             </div>
           </div>
 
-          {/* Grid Layout matches the prototype but stripped of loud colors */}
+          {/* Grid Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {PERMISSION_GROUPS.map((group) => (
               <Card key={group.id} className="flex flex-col overflow-hidden shadow-none gap-0 py-0">
@@ -286,13 +365,15 @@ export default function AddRolePage() {
 
         {/* Footer Actions */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-4">
-          <Button className="px-8 gap-2">
+          <Button className="px-8 gap-2" onClick={handleSave} disabled={isSubmitting}>
             <Save className="h-4 w-4" />
-            Save Role & Permissions
+            {isSubmitting ? "Saving..." : "Save Role & Permissions"}
           </Button>
-          <Button variant="outline" className="px-8">
-            Cancel
-          </Button>
+          <Link href="/dashboard/roles">
+            <Button variant="outline" className="px-8 w-full">
+              Cancel
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
