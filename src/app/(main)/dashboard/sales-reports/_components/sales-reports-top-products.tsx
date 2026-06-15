@@ -44,11 +44,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+import { useTopProducts } from "@/hooks/useTopProducts";
+import { Loader2 } from "lucide-react";
+
 type OrderRow = any;
 
 type ProductRow = {
   id: string;
   name: string;
+  image: string;
   sold: number;
   ordersCount: number;
 };
@@ -70,9 +74,13 @@ const columns: ColumnDef<ProductRow>[] = [
     header: "PRODUCT",
     cell: ({ row }) => (
       <div className="flex items-center gap-2 max-w-[150px] sm:max-w-[200px]">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-muted">
-          <Package className="size-4 text-muted-foreground" />
-        </span>
+        <div className="size-8 shrink-0 overflow-hidden rounded-md border bg-muted flex items-center justify-center">
+          {row.original.image ? (
+            <img src={row.original.image} alt={row.original.name} className="size-full object-cover" />
+          ) : (
+            <Package className="size-4 text-muted-foreground" />
+          )}
+        </div>
         <div className="min-w-0 flex-1">
           <span className="truncate font-medium text-sm leading-none block" title={row.original.name}>
             {row.original.name}
@@ -104,27 +112,29 @@ const columns: ColumnDef<ProductRow>[] = [
   },
 ];
 
-export function SalesReportsTopProducts({ data }: { data: OrderRow[] }) {
-  // Aggregate sales by subCategory (treating subCategory as Product)
+export function SalesReportsTopProducts({ data: _unused }: { data: OrderRow[] }) {
+  const { data: response, isLoading } = useTopProducts({ limit: 50 });
+
+  // Map API response to the ProductRow structure
   const productSales = React.useMemo(() => {
-    const acc: Record<string, ProductRow> = {};
-    data.forEach((order) => {
-      if (order.orderStatus === "Delivered" || order.orderStatus === "Shipped" || order.orderStatus === "Confirmed") {
-        if (!acc[order.subCategory]) {
-          const newId = String(Object.keys(acc).length + 1);
-          acc[order.subCategory] = {
-            id: newId,
-            name: order.subCategory,
-            sold: 0,
-            ordersCount: 0,
-          };
-        }
-        acc[order.subCategory].sold += order.items;
-        acc[order.subCategory].ordersCount += 1;
-      }
-    });
-    return Object.values(acc).sort((a, b) => b.sold - a.sold);
-  }, [data]);
+    if (!response?.data) return [];
+    
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+
+    const getImageUrl = (path: string | null) => {
+      if (!path) return "";
+      if (path.startsWith("http")) return path;
+      return `${baseUrl}${path.startsWith("/") ? path.slice(1) : path}`;
+    };
+    
+    return response.data.map((item: any) => ({
+      id: item.id.toString(),
+      name: item.product_title,
+      image: getImageUrl(item.product_thumbnail_img),
+      sold: Number(item.total_units) || 0,
+      ordersCount: Number(item.total_orders) || 0,
+    }));
+  }, [response]);
 
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -163,7 +173,10 @@ export function SalesReportsTopProducts({ data }: { data: OrderRow[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="leading-none">Top Products</CardTitle>
+        <CardTitle className="leading-none flex items-center gap-2">
+          Top Products
+          {isLoading && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+        </CardTitle>
         <CardDescription>Best performing items in this period</CardDescription>
         <CardAction className="flex items-center gap-2">
           <Button variant="outline" size="sm">
