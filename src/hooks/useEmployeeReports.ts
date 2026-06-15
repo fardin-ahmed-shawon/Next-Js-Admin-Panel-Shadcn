@@ -18,6 +18,7 @@ export interface EmployeeReportPayment {
 }
 
 export interface EmployeeReportOrder {
+  assigned_date: string;
   order_no: string;
   order_status: string;
   payment_status: string;
@@ -43,8 +44,17 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
-export function useEmployeeReports() {
-  const { data, error, isLoading, mutate } = useSWR(API_URL, fetcher, {
+export function useEmployeeReports(startDate?: string, endDate?: string) {
+  let url = API_URL;
+  const params = new URLSearchParams();
+  if (startDate) params.append("start_date", startDate);
+  if (endDate) params.append("end_date", endDate);
+  
+  if (params.toString()) {
+    url += `?${params.toString()}`;
+  }
+
+  const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
     revalidateOnFocus: false,
   });
 
