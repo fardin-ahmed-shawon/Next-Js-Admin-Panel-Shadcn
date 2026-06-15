@@ -18,6 +18,7 @@ import { APP_CONFIG } from "@/config/app-config";
 import { rootUser } from "@/data/users";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
+import { useAuth } from "@/hooks/useAuth";
 
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -61,6 +62,7 @@ const _data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useAuth();
   const { sidebarVariant, sidebarCollapsible, isSynced } = usePreferencesStore(
     useShallow((s) => ({
       sidebarVariant: s.sidebarVariant,
@@ -71,6 +73,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const variant = isSynced ? sidebarVariant : props.variant;
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
+
+  const filteredItems = sidebarItems.map((group) => {
+    const filteredGroupItems = group.items.filter((item) => {
+      if (!item.module) return true; // Login/Logout or items without module requirements
+      if (user?.role?.role_name === "Admin") return true;
+      if (user?.role?.page_access && user.role.page_access[item.module as keyof typeof user.role.page_access] === 1) {
+        return true;
+      }
+      return false;
+    });
+    return { ...group, items: filteredGroupItems };
+  });
 
   return (
     <Sidebar {...props} variant={variant} collapsible={collapsible}>
@@ -87,13 +101,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={sidebarItems} />
+        <NavMain items={filteredItems} />
         {/* <NavDocuments items={data.documents} /> */}
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
       <SidebarFooter>
         <SidebarSupportCard />
-        <NavUser user={rootUser} />
+        <NavUser user={{
+          name: user?.full_name || "Guest",
+          email: user?.email || "",
+          avatar: "",
+        }} />
       </SidebarFooter>
     </Sidebar>
   );

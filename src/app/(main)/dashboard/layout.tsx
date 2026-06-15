@@ -6,7 +6,6 @@ import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sideb
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { users } from "@/data/users";
 import { SIDEBAR_COLLAPSIBLE_VALUES, SIDEBAR_VARIANT_VALUES } from "@/lib/preferences/layout";
 import { cn } from "@/lib/utils";
 import { getPreference } from "@/server/server-actions";
@@ -17,6 +16,7 @@ import { NotificationButton } from "./_components/sidebar/notification-button";
 import { SearchDialog } from "./_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { AuthInitializer } from "@/components/auth-initializer";
+import { RoleGuard } from "@/components/role-guard";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
@@ -66,11 +66,13 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <LayoutControls />
               <ThemeSwitcher />
               <NotificationButton />
-              <AccountSwitcher users={users} />
+              <AccountSwitcher />
             </div>
           </div>
         </header>
-        <div className="h-full p-4 md:p-6 max-w-full">{children}</div>
+        <div className="h-full p-4 md:p-6 max-w-full">
+          <RoleGuard>{children}</RoleGuard>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

@@ -67,6 +67,7 @@ export interface NavMainItem {
   comingSoon?: boolean;
   newTab?: boolean;
   isNew?: boolean;
+  module?: string; // Corresponds to PageAccess keys
 }
 
 export interface NavGroup {
@@ -84,16 +85,19 @@ export const sidebarItems: NavGroup[] = [
         title: "Dashboard",
         url: "/dashboard/home",
         icon: LayoutDashboard,
+        module: "dashboard",
       },
       {
         title: "Categories",
         url: "/dashboard/categories",
         icon: Layers,
+        module: "categories",
       },
       {
         title: "Products",
         url: "/dashboard/products",
         icon: Package,
+        module: "products",
         subItems: [
           { title: "Add Product", url: "/dashboard/products/add" },
           { title: "All Products", url: "/dashboard/products" },
@@ -103,6 +107,7 @@ export const sidebarItems: NavGroup[] = [
         title: "Orders",
         url: "/dashboard/orders",
         icon: ShoppingCart,
+        module: "orders",
         subItems: [
           { title: "Create Order", url: "/dashboard/orders/create" },
           { title: "Order Management", url: "/dashboard/orders" },
@@ -112,6 +117,7 @@ export const sidebarItems: NavGroup[] = [
         title: "Landing Page",
         url: "/dashboard/landing-pages",
         icon: AppWindow,
+        module: "landing_pages",
         subItems: [
           { title: "Create Landing Page", url: "/dashboard/landing-pages/create" },
           { title: "All Landing Pages", url: "/dashboard/landing-pages" },
@@ -121,16 +127,18 @@ export const sidebarItems: NavGroup[] = [
         title: "Customers",
         url: "/dashboard/customers",
         icon: Users,
+        module: "customers",
         subItems: [
           { title: "All Customers", url: "/dashboard/customers" },
           { title: "Customer Report", url: "/dashboard/customers/report" },
         ],
       },
-      { title: "Payments", url: "/dashboard/payments", icon: Banknote },
+      { title: "Payments", url: "/dashboard/payments", icon: Banknote, module: "payments" },
       {
         title: "Accounts",
         url: "/dashboard/accounts",
         icon: ChartBar,
+        module: "accounts",
         subItems: [
           { title: "Dashboard", url: "/dashboard/accounts" },
           { title: "Revenue", url: "/dashboard/accounts/revenue" },
@@ -142,46 +150,48 @@ export const sidebarItems: NavGroup[] = [
           { title: "Refund History", url: "/dashboard/accounts/refund-history" },
         ],
       },
-      { title: "Inventory", url: "/dashboard/inventory", icon: Archive },
-      { title: "Slider", url: "/dashboard/slider", icon: SlidersHorizontal },
-      { title: "Banner", url: "/dashboard/banner", icon: Flag },
-      { title: "Discounts", url: "/dashboard/discounts", icon: BadgePercent },
-      { title: "Coupons", url: "/dashboard/coupons", icon: Ticket },
-      { title: "Reviews", url: "/dashboard/reviews", icon: Star },
-      { title: "Testimonials", url: "/dashboard/testimonials", icon: MessageSquareQuote },
-      { title: "Fraud Checker", url: "/dashboard/fraud-checker", icon: ShieldAlert },
+      { title: "Inventory", url: "/dashboard/inventory", icon: Archive, module: "inventory" },
+      { title: "Slider", url: "/dashboard/slider", icon: SlidersHorizontal, module: "slider" },
+      { title: "Banner", url: "/dashboard/banner", icon: Flag, module: "banner" },
+      { title: "Discounts", url: "/dashboard/discounts", icon: BadgePercent, module: "discounts" },
+      { title: "Coupons", url: "/dashboard/coupons", icon: Ticket, module: "coupons" },
+      { title: "Reviews", url: "/dashboard/reviews", icon: Star, module: "reviews" },
+      { title: "Testimonials", url: "/dashboard/testimonials", icon: MessageSquareQuote, module: "testimonials" },
+      { title: "Fraud Checker", url: "/dashboard/fraud-checker", icon: ShieldAlert, module: "fraud_checker" },
       {
         title: "Blogs",
         url: "/dashboard/blogs",
         icon: BookOpenText,
+        module: "blogs",
       },
-      { title: "Sales Reports", url: "/dashboard/sales-reports", icon: TrendingUp },
-      { title: "Brands", url: "/dashboard/brands", icon: Award },
+      { title: "Sales Reports", url: "/dashboard/sales-reports", icon: TrendingUp, module: "sales_report" },
+      { title: "Brands", url: "/dashboard/brands", icon: Award, module: "brands" },
       {
         title: "Courier",
         url: "/dashboard/courier",
         icon: Truck,
+        module: "courier",
         subItems: [
           { title: "Steadfast", url: "/dashboard/courier/steadfast" },
           { title: "Pathao", url: "/dashboard/courier/pathao" },
           { title: "Parcel Reports", url: "/dashboard/courier/parcel-reports" },
         ],
       },
-      { title: "Purchase History", url: "/dashboard/purchase-history", icon: History },
+      { title: "Purchase History", url: "/dashboard/purchase-history", icon: History, module: "history" },
       {
         title: "Roles & Permission",
         url: "/dashboard/roles",
         icon: UserCog,
+        module: "roles_and_permission",
         subItems: [
           { title: "Add Role", url: "/dashboard/roles/add" },
           { title: "View Roles", url: "/dashboard/roles" },
         ],
       },
-      { title: "Users", url: "/dashboard/users", icon: Users },
-      { title: "Blocklist", url: "/dashboard/blocklist", icon: Ban },
-      { title: "Messages", url: "/dashboard/messages", icon: MessageCircle },
-      { title: "Settings", url: "/dashboard/settings", icon: Settings },
-      { title: "Login", url: "/auth/v2/login", icon: Fingerprint, newTab: true },
+      { title: "Users", url: "/dashboard/users", icon: Users, module: "users" },
+      { title: "Blocklist", url: "/dashboard/blocklist", icon: Ban, module: "blocklist" },
+      { title: "Messages", url: "/dashboard/messages", icon: MessageCircle, module: "messages" },
+      { title: "Settings", url: "/dashboard/settings", icon: Settings, module: "settings" },
       { title: "Logout", url: "#", icon: LogOut },
     ],
   },
