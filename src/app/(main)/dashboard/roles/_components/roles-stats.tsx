@@ -1,35 +1,44 @@
+"use client";
+
 import { Grid, Key, Shield, Users } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-const stats = [
-  {
-    title: "Total Roles",
-    value: "4",
-    icon: Shield,
-    subtitle: "Active role configurations",
-  },
-  {
-    title: "Permission Slots",
-    value: "24",
-    icon: Key,
-    subtitle: "Available permission types",
-  },
-  {
-    title: "Permission Groups",
-    value: "6",
-    icon: Grid,
-    subtitle: "Organized categories",
-  },
-  {
-    title: "Total Admins",
-    value: "3",
-    icon: Users,
-    subtitle: "Users across all roles",
-  },
-];
+import { useRoles } from "@/hooks/useRoles";
 
 export function RolesStats() {
+  const { roles } = useRoles();
+
+  const totalRoles = roles.length || 0;
+  // Based on the 26 permission items
+  const permissionSlots = 26; 
+
+  const stats = [
+    {
+      title: "Total Roles",
+      value: totalRoles.toString(),
+      icon: Shield,
+      subtitle: "Active role configurations",
+    },
+    {
+      title: "Permission Slots",
+      value: permissionSlots.toString(),
+      icon: Key,
+      subtitle: "Available permission types",
+    },
+    {
+      title: "Permission Groups",
+      value: "6", // Can be dynamic if we group permissions
+      icon: Grid,
+      subtitle: "Organized categories",
+    },
+    {
+      title: "Total Admins",
+      value: roles.filter((r) => r.role_name === "Admin").length.toString(),
+      icon: Users,
+      subtitle: "Users across all roles",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs sm:grid-cols-2 lg:grid-cols-4 dark:*:data-[slot=card]:bg-card">
       {stats.map((stat, i) => (

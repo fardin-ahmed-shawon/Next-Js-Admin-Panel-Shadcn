@@ -22,8 +22,8 @@ import {
   MessageSquare,
   Package,
   Percent,
-  PieChart,
   Settings,
+  Shield,
   ShieldAlert,
   ShoppingCart,
   Star,
@@ -31,6 +31,7 @@ import {
   Ticket,
   Trash,
   Truck,
+  UserX,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -50,11 +51,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageAccess, useRoles } from "@/hooks/useRoles";
 
-// Re-using the same icons mapping for the badges to make it realistic
 const ALL_PERMISSIONS = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "settings", label: "Settings", icon: Settings },
   { id: "products", label: "Products", icon: Package },
   { id: "categories", label: "Categories", icon: List },
   { id: "brands", label: "Brands", icon: Tag },
@@ -70,65 +71,77 @@ const ALL_PERMISSIONS = [
   { id: "discounts", label: "Discounts", icon: Percent },
   { id: "coupons", label: "Coupons", icon: Ticket },
   { id: "courier", label: "Courier", icon: Truck },
-  { id: "invoice", label: "Invoice", icon: FileText },
   { id: "accounts", label: "Accounts", icon: Briefcase },
   { id: "sales_report", label: "Sales Report", icon: BarChart },
-  { id: "purchase_history", label: "Purchase History", icon: History },
+  { id: "history", label: "History", icon: History },
   { id: "customers", label: "Customers", icon: Users },
-  { id: "customer_messages", label: "Customer Messages", icon: MessageCircle },
+  { id: "messages", label: "Messages", icon: MessageCircle },
   { id: "fraud_checker", label: "Fraud Checker", icon: ShieldAlert },
-];
+  { id: "blocklist", label: "Blocklist", icon: UserX },
+  { id: "roles_and_permission", label: "Roles & Permission", icon: Shield },
+  { id: "users", label: "Users", icon: Users },
+  { id: "settings", label: "Settings", icon: Settings },
+] as const;
 
 const TOTAL_PERMISSIONS = ALL_PERMISSIONS.length;
 
-type RoleData = {
-  id: string;
-  name: string;
-  users: number;
-  grantedPermissions: string[]; // array of IDs
-};
-
-const initialRoles: RoleData[] = [
-  {
-    id: "1",
-    name: "Admin",
-    users: 1,
-    grantedPermissions: ALL_PERMISSIONS.map((p) => p.id), // 24 granted
-  },
-  {
-    id: "2",
-    name: "Accountant",
-    users: 1,
-    grantedPermissions: ["dashboard", "settings", "accounts", "sales_report", "purchase_history", "payments"], // 6 granted
-  },
-  {
-    id: "3",
-    name: "Product Manager",
-    users: 1,
-    grantedPermissions: ["dashboard", "settings", "products", "categories", "brands", "inventory"], // 6 granted
-  },
-  {
-    id: "4",
-    name: "Operator",
-    users: 0,
-    grantedPermissions: [], // 0 granted
-  },
-];
-
 export function RolesGrid() {
-  const [roles, setRoles] = React.useState<RoleData[]>(initialRoles);
+  const { roles, loading, error, setRoles } = useRoles();
 
-  const handleDelete = (id: string) => {
-    setRoles((prev) => prev.filter((r) => r.id !== id));
-    toast.success("Role deleted successfully.");
+  const handleDelete = async (id: number) => {
+    // Ideally call API to delete here, then update UI state
+    try {
+      // simulate API delete
+      // await fetch(`/api/roles/${id}`, { method: 'DELETE' });
+      setRoles((prev) => prev.filter((r) => r.id !== id));
+      toast.success("Role deleted successfully.");
+    } catch (error) {
+      toast.error("Failed to delete role.");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-96 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 border border-destructive/20 bg-destructive/10 text-destructive rounded-lg">
+        <p className="font-medium">Error loading roles</p>
+        <p className="text-sm">{error}</p>
+      </div>
+    );
+  }
+
+  if (!roles || roles.length === 0) {
+    return (
+      <div className="p-8 text-center border rounded-lg bg-card text-muted-foreground">
+        <p>No roles found.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
       {roles.map((role) => {
-        const grantedCount = role.grantedPermissions.length;
+        // Compute granted permissions from page_access object (1 = granted, 0 = denied)
+        const grantedPermissionsIds = ALL_PERMISSIONS.filter(
+          (p) => role.page_access && role.page_access[p.id as keyof PageAccess] === 1
+        ).map((p) => p.id);
+
+        const grantedCount = grantedPermissionsIds.length;
         const deniedCount = TOTAL_PERMISSIONS - grantedCount;
-        const firstLetter = role.name.charAt(0).toUpperCase();
+        const firstLetter = role.role_name ? role.role_name.charAt(0).toUpperCase() : "?";
+
+        // Hardcoding users count for visual purposes as API doesn't provide it in the example,
+        // or one could compute it if the API returned it.
+        const usersCount = role.role_name === "Admin" ? 1 : 0; 
 
         return (
           <Card key={role.id} className="flex flex-col">
@@ -138,11 +151,11 @@ export function RolesGrid() {
                   {firstLetter}
                 </div>
                 <div className="space-y-1">
-                  <h3 className="font-semibold leading-none">{role.name}</h3>
+                  <h3 className="font-semibold leading-none">{role.role_name}</h3>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Users className="h-3 w-3" />
-                      {role.users} users
+                      {usersCount} users
                     </span>
                     <span className="flex items-center gap-1">
                       <Key className="h-3 w-3" />
@@ -165,7 +178,7 @@ export function RolesGrid() {
                       variant="outline"
                       size="sm"
                       className="h-8 gap-1.5 px-2.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      disabled={role.name === "Admin"}
+                      disabled={role.role_name === "Admin"}
                     >
                       <Trash className="h-3.5 w-3.5" />
                       <span className="sr-only sm:not-sr-only sm:inline-block">Delete</span>
@@ -175,7 +188,7 @@ export function RolesGrid() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Role</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete the <strong>{role.name}</strong> role? This action cannot be
+                        Are you sure you want to delete the <strong>{role.role_name}</strong> role? This action cannot be
                         undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -207,7 +220,7 @@ export function RolesGrid() {
 
               <div className="flex flex-wrap gap-2">
                 {ALL_PERMISSIONS.map((perm) => {
-                  const isGranted = role.grantedPermissions.includes(perm.id);
+                  const isGranted = grantedPermissionsIds.includes(perm.id);
                   const Icon = perm.icon;
 
                   return (
@@ -280,3 +293,4 @@ function X(props: React.ComponentProps<"svg">) {
     </svg>
   );
 }
+
