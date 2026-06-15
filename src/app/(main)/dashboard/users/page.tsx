@@ -32,7 +32,7 @@ export default function UsersPage() {
         </div>
       </div>
 
-      <UsersStats />
+      <UsersStats users={users} loading={loading} />
       <UsersTable users={users} loading={loading} refetch={refetch} />
     </div>
   );
