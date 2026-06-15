@@ -47,6 +47,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { User } from "@/hooks/useUsers";
+import { useRoles } from "@/hooks/useRoles";
 import { EditUserDialog } from "./edit-user-dialog";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_USERS || "users"}`;
@@ -58,6 +59,7 @@ interface UsersTableProps {
 }
 
 export function UsersTable({ users, loading, refetch }: UsersTableProps) {
+  const { roles, loading: rolesLoading } = useRoles();
   const [activeRoleFilter, setActiveRoleFilter] = React.useState<string>("All Roles");
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -218,11 +220,16 @@ export function UsersTable({ users, loading, refetch }: UsersTableProps) {
                 type="single"
                 value={activeRoleFilter}
               >
-                {["All Roles", "Admin", "Manager", "Staff"].map((filter) => (
-                  <ToggleGroupItem key={filter} value={filter}>
-                    {filter}
-                  </ToggleGroupItem>
-                ))}
+                <ToggleGroupItem value="All Roles">All Roles</ToggleGroupItem>
+                {rolesLoading ? (
+                  <Skeleton className="h-6 w-16 mx-1" />
+                ) : (
+                  roles.map((role) => (
+                    <ToggleGroupItem key={role.id} value={role.role_name}>
+                      {role.role_name}
+                    </ToggleGroupItem>
+                  ))
+                )}
               </ToggleGroup>
             </div>
 
