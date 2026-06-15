@@ -32,54 +32,61 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useRouter } from "next/navigation";
 
 type Message = {
   id: string;
-  name: string;
+  full_name: string;
   subject: string;
   message: string;
   date: string;
+  email?: string;
+  phone?: string;
 };
 
-const initialData: Message[] = [
-  {
-    id: "MSG-1",
-    name: "John Doe",
-    subject: "Product Inquiry",
-    message: "I would like to know more about your premium features.",
-    date: "2026-05-21",
-  },
-  {
-    id: "MSG-2",
-    name: "Jane Smith",
-    subject: "Support Request",
-    message: "I am having trouble logging into my account.",
-    date: "2026-05-20",
-  },
-  {
-    id: "MSG-3",
-    name: "Acme Corp",
-    subject: "Partnership Opportunity",
-    message: "We are interested in integrating your API with our platform.",
-    date: "2026-05-18",
-  },
-  {
-    id: "MSG-4",
-    name: "Alice Johnson",
-    subject: "Feedback",
-    message: "The new UI looks absolutely fantastic, great job!",
-    date: "2026-05-15",
-  },
-];
+interface MessagesTableProps {
+  initialMessages: Message[];
+}
 
-export function MessagesTable() {
-  const [data, setData] = React.useState<Message[]>(initialData);
+export function MessagesTable({ initialMessages }: MessagesTableProps) {
+  const [data, setData] = React.useState<Message[]>(initialMessages);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const router = useRouter();
 
-  const handleDelete = (id: string) => {
-    setData((prev) => prev.filter((msg) => msg.id !== id));
-    toast.success("Message deleted successfully.");
+  const handleDelete = async (id: string) => {
+    try {
+      let apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin';
+      const messageEndpoint = process.env.NEXT_PUBLIC_API_MESSAGE_URL || 'messages';
+      
+      const baseUrl = apiUrl.replace(/\/$/, '');
+      const url = `${baseUrl}/${messageEndpoint}/${id}`;
+
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete message');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setData((prev) => prev.filter((msg) => msg.id !== id));
+        toast.success(result.message || "Message deleted successfully.");
+        router.refresh();
+      } else {
+        throw new Error(result.message || 'Failed to delete message');
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete message");
+    }
   };
 
   const columns: ColumnDef<Message>[] = [
@@ -89,9 +96,9 @@ export function MessagesTable() {
       cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
     },
     {
-      accessorKey: "name",
+      accessorKey: "full_name",
       header: "Name",
-      cell: ({ row }) => <div className="font-medium whitespace-nowrap">{row.getValue("name")}</div>,
+      cell: ({ row }) => <div className="font-medium whitespace-nowrap">{row.getValue("full_name")}</div>,
     },
     {
       accessorKey: "subject",
@@ -134,7 +141,7 @@ export function MessagesTable() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Message</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete this message from {message.name}? This action cannot be undone.
+                  Are you sure you want to delete this message from {message.full_name}? This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -191,10 +198,10 @@ export function MessagesTable() {
             <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search..."
-                value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+                placeholder="Search by name..."
+                value={(table.getColumn("full_name")?.getFilterValue() as string) ?? ""}
                 onChange={(event) => {
-                  table.getColumn("name")?.setFilterValue(event.target.value || undefined);
+                  table.getColumn("full_name")?.setFilterValue(event.target.value);
                   table.setPageIndex(0);
                 }}
                 className="h-8 w-48 rounded-[min(var(--radius-md),12px)] pl-8"
@@ -204,34 +211,34 @@ export function MessagesTable() {
         </div>
 
         {/* Table */}
-        <div className="overflow-hidden">
-          <Table className="**:data-[slot='table-cell']:px-4.5 **:data-[slot='table-head']:px-4.5">
-            <TableHeader className="border-t **:data-[slot='table-head']:h-11 **:data-[slot='table-head']:font-normal **:data-[slot='table-head']:text-foreground **:data-[slot='table-head']:text-sm">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableHead>
-                    );
-                  })}
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  ))}
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody className="**:data-[slot='table-row']:border-border/50 **:data-[slot='table-cell']:py-3 **:data-[slot='table-row']:hover:bg-transparent">
+            <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                  <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-48">
-                    <div className="flex flex-col items-center justify-center gap-2 text-center">
+                  <TableCell colSpan={columns.length} className="h-48 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2">
                       <div className="flex size-14 items-center justify-center rounded-full bg-muted">
                         <MessageSquare className="size-6 text-muted-foreground" />
                       </div>
@@ -248,7 +255,7 @@ export function MessagesTable() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 pb-1">
+        <div className="flex items-center justify-between px-4">
           <div className="flex-1 text-sm text-muted-foreground">
             Showing {table.getFilteredRowModel().rows.length} message(s).
           </div>

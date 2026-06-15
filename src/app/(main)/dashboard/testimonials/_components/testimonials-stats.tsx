@@ -1,38 +1,76 @@
+"use client";
+
 import { CheckCircle2, FileEdit, MessageSquareQuote, Star } from "lucide-react";
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from "react";
 
-const stats = [
-  {
-    title: "Total Testimonials",
-    value: "2",
-    icon: MessageSquareQuote,
-    subtitle: "All customer reviews",
-  },
-  {
-    title: "Average Rating",
-    value: "4.5",
-    icon: Star,
-    subtitle: "Out of 5 stars",
-  },
-  {
-    title: "5-Star Reviews",
-    value: "1",
-    icon: CheckCircle2,
-    subtitle: "Top rated feedback",
-  },
-  {
-    title: "Recent Reviews",
-    value: "2",
-    icon: FileEdit,
-    subtitle: "Added this week",
-  },
-];
+interface Testimonial {
+  id: string;
+  name: string;
+  position: string;
+  photo: string;
+  rating: number;
+  text: string;
+}
 
-export function TestimonialsStats() {
+interface TestimonialsStatsProps {
+  testimonials: Testimonial[];
+}
+
+export function TestimonialsStats({ testimonials }: TestimonialsStatsProps) {
+  const [stats, setStats] = useState({
+    totalTestimonials: "0",
+    averageRating: "0",
+    fiveStarReviews: "0",
+    recentReviews: "0",
+  });
+
+  useEffect(() => {
+    const total = testimonials.length;
+    const average = testimonials.reduce((acc, curr) => acc + curr.rating, 0) / (total || 1);
+    const fiveStar = testimonials.filter(t => t.rating === 5).length;
+    
+    // Recent reviews from last 7 days (if you have created_at field)
+    // For now, showing all as recent since no date field
+    
+    setStats({
+      totalTestimonials: total.toString(),
+      averageRating: average.toFixed(1),
+      fiveStarReviews: fiveStar.toString(),
+      recentReviews: total.toString(),
+    });
+  }, [testimonials]);
+
+  const statCards = [
+    {
+      title: "Total Testimonials",
+      value: stats.totalTestimonials,
+      icon: MessageSquareQuote,
+      subtitle: "All customer reviews",
+    },
+    {
+      title: "Average Rating",
+      value: stats.averageRating,
+      icon: Star,
+      subtitle: "Out of 5 stars",
+    },
+    {
+      title: "5-Star Reviews",
+      value: stats.fiveStarReviews,
+      icon: CheckCircle2,
+      subtitle: "Top rated feedback",
+    },
+    {
+      title: "Recent Reviews",
+      value: stats.recentReviews,
+      icon: FileEdit,
+      subtitle: "Total testimonials",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs sm:grid-cols-2 lg:grid-cols-4 dark:*:data-[slot=card]:bg-card">
-      {stats.map((stat, i) => (
+      {statCards.map((stat, i) => (
         <Card key={i}>
           <CardHeader>
             <CardTitle>

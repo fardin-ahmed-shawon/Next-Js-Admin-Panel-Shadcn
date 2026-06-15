@@ -1,12 +1,10 @@
 "use client";
 
-import type * as React from "react";
-
-import { Ban, PlusCircle } from "lucide-react";
+import React, { useState } from "react";
+import { Ban } from "lucide-react";
 import { toast } from "sonner";
-
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,13 +12,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface AddBlockDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onAddBlock: (data: { block_type: string; block_value: string; reason?: string }) => Promise<void>;
 }
 
-export function AddBlockDialog({ open, onOpenChange }: AddBlockDialogProps) {
-  const handleSubmit = (e: React.FormEvent) => {
+export function AddBlockDialog({ open, onOpenChange, onAddBlock }: AddBlockDialogProps) {
+  const [blockType, setBlockType] = React.useState("phone");
+  const [blockValue, setBlockValue] = React.useState("");
+  const [blockReason, setBlockReason] = React.useState("");
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Block entry added successfully.");
-    onOpenChange(false);
+    
+    if (!blockValue.trim()) {
+      toast.error("Please enter a value to block");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await onAddBlock({
+        block_type: blockType,
+        block_value: blockValue.trim(),
+        reason: blockReason.trim() || undefined,
+      });
+      
+      // Reset form
+      setBlockValue("");
+      setBlockReason("");
+      setBlockType("phone");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -39,7 +64,7 @@ export function AddBlockDialog({ open, onOpenChange }: AddBlockDialogProps) {
               Block Type
             </FieldLabel>
             <FieldContent>
-              <Select defaultValue="Phone Number">
+              <Select value={blockType} onValueChange={setBlockType}>
                 <SelectTrigger
                   id="block-type"
                   className="w-full bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
@@ -47,8 +72,8 @@ export function AddBlockDialog({ open, onOpenChange }: AddBlockDialogProps) {
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Phone Number">Phone Number</SelectItem>
-                  <SelectItem value="IP Address">IP Address</SelectItem>
+                  <SelectItem value="phone">Phone Number</SelectItem>
+                  <SelectItem value="ip">IP Address</SelectItem>
                 </SelectContent>
               </Select>
             </FieldContent>
@@ -61,7 +86,9 @@ export function AddBlockDialog({ open, onOpenChange }: AddBlockDialogProps) {
             <FieldContent>
               <Input
                 id="block-value"
-                placeholder="e.g. 01712345678 or 192.168.1.1"
+                value={blockValue}
+                onChange={(e) => setBlockValue(e.target.value)}
+                placeholder={blockType === "phone" ? "e.g. 01712345678" : "e.g. 192.168.1.1"}
                 className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                 required
               />
@@ -75,6 +102,8 @@ export function AddBlockDialog({ open, onOpenChange }: AddBlockDialogProps) {
             <FieldContent>
               <Input
                 id="block-reason"
+                value={blockReason}
+                onChange={(e) => setBlockReason(e.target.value)}
                 placeholder="e.g. Fraudulent orders, spam calls..."
                 className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
               />
@@ -84,10 +113,11 @@ export function AddBlockDialog({ open, onOpenChange }: AddBlockDialogProps) {
           <div className="pt-4 flex flex-col gap-2">
             <Button
               type="submit"
+              disabled={isLoading}
               className="w-full bg-red-600 hover:bg-red-700 text-white gap-2 font-semibold text-base py-5"
             >
               <Ban className="h-5 w-5" />
-              Block This Entry
+              {isLoading ? "Adding..." : "Block This Entry"}
             </Button>
             <p className="text-center text-xs text-muted-foreground mt-1">
               This will prevent future orders matching this value.

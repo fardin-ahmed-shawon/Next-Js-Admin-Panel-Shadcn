@@ -55,62 +55,134 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import { EditDiscountDialog } from "./edit-discount-dialog";
 
-/* ---- Demo Data ---- */
+// API base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+const DISCOUNT_API_URL = process.env.NEXT_PUBLIC_API_DISCOUNT_URL || "discounts";
 
-const discounts = [
-  {
-    id: "DSC-001",
-    purchaseAmount: 500,
-    discountAmount: 50,
-    type: "Fixed",
-    freeShipping: false,
-    status: "Active",
-  },
-  {
-    id: "DSC-002",
-    purchaseAmount: 1000,
-    discountAmount: 10,
-    type: "Percentage",
-    freeShipping: true,
-    status: "Active",
-  },
-  {
-    id: "DSC-003",
-    purchaseAmount: 2000,
-    discountAmount: 20,
-    type: "Percentage",
-    freeShipping: true,
-    status: "Active",
-  },
-  {
-    id: "DSC-004",
-    purchaseAmount: 300,
-    discountAmount: 0,
-    type: "Fixed",
-    freeShipping: true,
-    status: "Inactive",
-  },
-  {
-    id: "DSC-005",
-    purchaseAmount: 1500,
-    discountAmount: 150,
-    type: "Fixed",
-    freeShipping: false,
-    status: "Active",
-  },
-];
+// Helper functions
+const getFullUrl = (endpoint: string) => {
+  let baseUrl = API_BASE_URL;
+  if (!baseUrl.endsWith('/')) {
+    baseUrl += '/';
+  }
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  return `${baseUrl}${cleanEndpoint}`.replace(/([^:]\/)\/+/g, "$1");
+};
 
-type DiscountRow = (typeof discounts)[0];
+const getDiscountUrl = (path: string = '') => {
+  const discountPath = DISCOUNT_API_URL.replace(/^\/|\/$/g, '');
+  const cleanPath = path.replace(/^\/|\/$/g, '');
+  const fullPath = cleanPath ? `${discountPath}/${cleanPath}` : discountPath;
+  return getFullUrl(fullPath);
+};
 
-/* ---- Columns ---- */
+type DiscountRow = {
+  id: string;
+  purchaseAmount: number;
+  discountAmount: number;
+  type: "Fixed" | "Percentage";
+  freeShipping: boolean;
+  status: "Active" | "Inactive";
+};
 
-const columns: ColumnDef<DiscountRow>[] = [
+interface DiscountsTableProps {
+  refreshTrigger?: number;
+  onDiscountDeleted?: () => void;
+}
+
+/* ---- Row Actions Component ---- */
+// Update the RowActions component to pass onDiscountUpdated
+function RowActions({ row, onDiscountDeleted }: { row: DiscountRow; onDiscountDeleted: () => void }) {
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const url = getDiscountUrl(`${row.id}`);
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete discount");
+      }
+
+      toast.success(`Discount rule ${row.id} deleted successfully.`);
+      onDiscountDeleted();
+      setDeleteOpen(false);
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete discount");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon-sm">
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setEditOpen(true); }}>
+            <Edit className="mr-2 size-4" />
+            Edit Discount
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={(e) => { e.preventDefault(); setDeleteOpen(true); }}
+          >
+            <Trash className="mr-2 size-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Updated EditDiscountDialog with onDiscountUpdated prop */}
+      <EditDiscountDialog 
+        discount={row} 
+        open={editOpen} 
+        onOpenChange={setEditOpen}
+        onDiscountUpdated={onDiscountDeleted}
+      />
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the discount rule <strong>{row.id}</strong>. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+/* ---- Columns Definition ---- */
+const getColumns = (onDiscountDeleted: () => void): ColumnDef<DiscountRow>[] => [
   {
     id: "select",
     header: ({ table }) => (
       <div className="w-10">
         <Checkbox
-          aria-label="Select all discounts"
           checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         />
@@ -119,7 +191,6 @@ const columns: ColumnDef<DiscountRow>[] = [
     cell: ({ row }) => (
       <div className="w-10">
         <Checkbox
-          aria-label={`Select discount ${row.original.id}`}
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
         />
@@ -167,15 +238,13 @@ const columns: ColumnDef<DiscountRow>[] = [
   {
     accessorKey: "freeShipping",
     header: "Perks",
-    cell: ({ row }) => {
-      return row.original.freeShipping ? (
-        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-          Free Shipping
-        </Badge>
-      ) : (
-        <span className="text-muted-foreground text-sm">-</span>
-      );
-    },
+    cell: ({ row }) => row.original.freeShipping ? (
+      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+        Free Shipping
+      </Badge>
+    ) : (
+      <span className="text-muted-foreground text-sm">-</span>
+    ),
   },
   {
     accessorKey: "status",
@@ -183,7 +252,7 @@ const columns: ColumnDef<DiscountRow>[] = [
     cell: ({ row }) => {
       const status = row.original.status;
       return (
-        <Badge variant={status === "Active" ? "default" : status === "Inactive" ? "secondary" : "destructive"}>
+        <Badge variant={status === "Active" ? "default" : "secondary"}>
           {status}
         </Badge>
       );
@@ -193,96 +262,94 @@ const columns: ColumnDef<DiscountRow>[] = [
   {
     id: "actions",
     header: () => <div className="flex w-full justify-end">Actions</div>,
-    cell: ({ row }) => <RowActions row={row.original} />,
+    cell: ({ row }) => <RowActions row={row.original} onDiscountDeleted={onDiscountDeleted} />,
     enableHiding: false,
     enableSorting: false,
   },
 ];
 
-/* ---- Row Actions ---- */
-
-function RowActions({ row }: { row: DiscountRow }) {
-  const [deleteOpen, setDeleteOpen] = React.useState(false);
-  const [editOpen, setEditOpen] = React.useState(false);
-
-  return (
-    <div className="flex justify-end">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm">
-            <MoreHorizontal />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              setEditOpen(true);
-            }}
-          >
-            <Edit className="mr-2 size-4" />
-            Edit Discount
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
-            onSelect={(e) => {
-              e.preventDefault();
-              setDeleteOpen(true);
-            }}
-          >
-            <Trash className="mr-2 size-4" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <EditDiscountDialog discount={row} open={editOpen} onOpenChange={setEditOpen} />
-
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the discount rule <strong>{row.id}</strong>. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                toast.success(`Discount rule ${row.id} deleted successfully.`);
-                setDeleteOpen(false);
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
-}
-
 /* ---- Main Table Component ---- */
-
-export function DiscountsTable() {
+export function DiscountsTable({ refreshTrigger, onDiscountDeleted }: DiscountsTableProps) {
+  const [discounts, setDiscounts] = React.useState<DiscountRow[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
+  const fetchDiscounts = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const url = getDiscountUrl();
+      const response = await fetch(url, {
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const data = await response.json();
+      let discountsData = [];
+      if (data.data) discountsData = data.data;
+      else if (Array.isArray(data)) discountsData = data;
+      else if (data.discounts) discountsData = data.discounts;
+
+      const transformedData = discountsData.map((item: any) => ({
+        id: item.id?.toString() || "",
+        purchaseAmount: item.minimum_subtotal_amount || 0,
+        discountAmount: item.discount_amount || 0,
+        type: item.type === 'percentage' ? 'Percentage' : 'Fixed',
+        freeShipping: item.has_free_shipping === 1 || item.has_free_shipping === true,
+        status: item.status === 'active' ? 'Active' : 'Inactive',
+      }));
+
+      setDiscounts(transformedData);
+    } catch (err) {
+      console.error("Error fetching discounts:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch discounts");
+      toast.error("Failed to fetch discounts");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async (selectedIds: string[]) => {
+    try {
+      const url = getDiscountUrl("bulk-delete");
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+
+      if (!response.ok) throw new Error("Failed to delete discounts");
+
+      toast.success(`${selectedIds.length} discount(s) deleted successfully.`);
+      setRowSelection({});
+      fetchDiscounts();
+      if (onDiscountDeleted) onDiscountDeleted();
+    } catch (error) {
+      console.error("Bulk delete error:", error);
+      toast.error("Failed to delete discounts");
+    }
+  };
+
+  React.useEffect(() => {
+    fetchDiscounts();
+  }, [refreshTrigger]);
+
+  const handleDiscountDeleted = () => {
+    fetchDiscounts();
+    if (onDiscountDeleted) onDiscountDeleted();
+  };
+
+  const columns = getColumns(handleDiscountDeleted);
+  
   const table = useReactTable({
     data: discounts,
     columns,
-    state: {
-      columnFilters,
-      sorting,
-      rowSelection,
-      columnVisibility: { search: false },
-      pagination,
-    },
+    state: { columnFilters, sorting, rowSelection, columnVisibility: { search: false }, pagination },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
@@ -297,6 +364,34 @@ export function DiscountsTable() {
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
   const totalCount = table.getFilteredRowModel().rows.length;
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
+  const selectedIds = table.getFilteredSelectedRowModel().rows.map((row) => row.original.id);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="mb-2 text-muted-foreground">Loading discounts...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="mb-2 text-destructive">Failed to load discounts</div>
+            <Button variant="outline" size="sm" onClick={fetchDiscounts}>
+              Try Again
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -313,7 +408,7 @@ export function DiscountsTable() {
             <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="h-8 w-48 rounded-[min(var(--radius-md),12px)] pl-8 sm:w-64"
+                className="h-8 w-48 pl-8 sm:w-64"
                 placeholder="Search discounts..."
                 value={searchQuery}
                 onChange={(event) => {
@@ -322,24 +417,22 @@ export function DiscountsTable() {
                 }}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Select
-                value={(table.getColumn("status")?.getFilterValue() as string) ?? "all"}
-                onValueChange={(value) => {
-                  table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value);
-                  table.setPageIndex(0);
-                }}
-              >
-                <SelectTrigger className="h-8 w-[130px] rounded-[min(var(--radius-md),12px)]">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              value={(table.getColumn("status")?.getFilterValue() as string) ?? "all"}
+              onValueChange={(value) => {
+                table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value);
+                table.setPageIndex(0);
+              }}
+            >
+              <SelectTrigger className="h-8 w-[130px]">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {selectedCount > 0 && (
             <AlertDialog>
@@ -353,21 +446,12 @@ export function DiscountsTable() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete {selectedCount} selected{" "}
-                    {selectedCount === 1 ? "discount" : "discounts"}. This action cannot be undone.
+                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? "discount" : "discounts"}.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => {
-                      toast.success(
-                        `${selectedCount} ${selectedCount === 1 ? "discount" : "discounts"} deleted successfully.`,
-                      );
-                      table.toggleAllPageRowsSelected(false);
-                    }}
-                  >
+                  <AlertDialogAction onClick={() => handleBulkDelete(selectedIds)}>
                     Delete
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -376,7 +460,6 @@ export function DiscountsTable() {
           )}
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto border-y">
           <Table>
             <TableHeader className="bg-muted/50">
@@ -416,7 +499,6 @@ export function DiscountsTable() {
           </Table>
         </div>
 
-        {/* Pagination */}
         <div className="flex items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows per page</span>
@@ -429,9 +511,7 @@ export function DiscountsTable() {
               </SelectTrigger>
               <SelectContent>
                 {[5, 10, 20, 50].map((size) => (
-                  <SelectItem key={size} value={`${size}`}>
-                    {size}
-                  </SelectItem>
+                  <SelectItem key={size} value={`${size}`}>{size}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -440,36 +520,16 @@ export function DiscountsTable() {
             <span className="text-sm text-muted-foreground">
               Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </span>
-            <Button
-              size="icon-sm"
-              variant="outline"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
+            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
               <ChevronsLeft className="size-4" />
             </Button>
-            <Button
-              size="icon-sm"
-              variant="outline"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
+            <Button size="icon-sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
               <ChevronLeft className="size-4" />
             </Button>
-            <Button
-              size="icon-sm"
-              variant="outline"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
+            <Button size="icon-sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
               <ChevronRight className="size-4" />
             </Button>
-            <Button
-              size="icon-sm"
-              variant="outline"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-            >
+            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
               <ChevronsRight className="size-4" />
             </Button>
           </div>

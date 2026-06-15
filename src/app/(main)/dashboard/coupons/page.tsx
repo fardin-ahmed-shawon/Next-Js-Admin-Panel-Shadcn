@@ -1,8 +1,21 @@
+"use client";
+
+import { useState, useCallback } from "react";
 import { AddCouponDialog } from "./_components/add-coupon-dialog";
 import { CouponsStats } from "./_components/coupons-stats";
 import { CouponsTable } from "./_components/coupons-table";
 
 export default function CouponsPage() {
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleCouponAdded = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  const handleCouponDeleted = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -12,12 +25,12 @@ export default function CouponsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <AddCouponDialog />
+          <AddCouponDialog onCouponAdded={handleCouponAdded} />
         </div>
       </div>
 
-      <CouponsStats />
-      <CouponsTable />
+      <CouponsStats refreshTrigger={refreshTrigger} />
+      <CouponsTable refreshTrigger={refreshTrigger} onCouponDeleted={handleCouponDeleted} />
     </div>
   );
 }

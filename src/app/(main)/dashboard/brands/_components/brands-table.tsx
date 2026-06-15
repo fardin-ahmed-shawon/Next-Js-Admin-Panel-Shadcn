@@ -1,9 +1,6 @@
 "use client";
 
 import * as React from "react";
-
-import Link from "next/link";
-
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -17,13 +14,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
-  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Edit,
-  Eye,
   MoreHorizontal,
   Search,
   Tag,
@@ -42,7 +37,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -56,142 +50,33 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import { EditBrandDialog } from "./edit-brand-dialog";
 
-/* ---- Demo Data ---- */
+type BrandRow = {
+  id: string;
+  name: string;
+  totalProducts: number;
+  logo: string;
+  joinedDate: string;
+};
 
-const brands = [
-  {
-    id: "BRD-001",
-    name: "Nike",
-    totalProducts: 145,
-    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NK",
-    joinedDate: "2024-01-10",
-  },
-  {
-    id: "BRD-002",
-    name: "Adidas",
-    totalProducts: 120,
-    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AD",
-    joinedDate: "2024-02-15",
-  },
-  {
-    id: "BRD-003",
-    name: "Puma",
-    totalProducts: 85,
-    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=PM",
-    joinedDate: "2024-03-20",
-  },
-  {
-    id: "BRD-004",
-    name: "Reebok",
-    totalProducts: 60,
-    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=RB",
-    joinedDate: "2024-04-12",
-  },
-  {
-    id: "BRD-005",
-    name: "Under Armour",
-    totalProducts: 95,
-    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=UA",
-    joinedDate: "2024-05-08",
-  },
-  {
-    id: "BRD-006",
-    name: "New Balance",
-    totalProducts: 45,
-    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NB",
-    joinedDate: "2024-06-14",
-  },
-  {
-    id: "BRD-007",
-    name: "Asics",
-    totalProducts: 55,
-    logo: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AS",
-    joinedDate: "2024-07-22",
-  },
-];
-
-type BrandRow = (typeof brands)[0];
-
-/* ---- Columns ---- */
-
-const columns: ColumnDef<BrandRow>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="w-10">
-        <Checkbox
-          aria-label="Select all brands"
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="w-10">
-        <Checkbox
-          aria-label={`Select brand ${row.original.id}`}
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-        />
-      </div>
-    ),
-    enableHiding: false,
-    enableSorting: false,
-  },
-  {
-    id: "search",
-    accessorFn: (row) => `${row.name} ${row.id}`,
-    filterFn: "includesString",
-    enableHiding: true,
-  },
-  {
-    accessorKey: "status",
-    filterFn: "equals",
-    enableHiding: true,
-  },
-  {
-    accessorKey: "id",
-    header: "ID",
-    cell: ({ row }) => <span className="font-medium text-muted-foreground">{row.original.id}</span>,
-  },
-  {
-    accessorKey: "name",
-    header: "Brand Details",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted p-1">
-          <img src={row.original.logo} alt={row.original.name} className="size-full object-cover rounded-sm" />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <div className="font-medium leading-none text-base">{row.original.name}</div>
-          <div className="text-muted-foreground text-xs">Joined: {row.original.joinedDate}</div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "totalProducts",
-    header: "Total Products",
-    cell: ({ row }) => <span className="tabular-nums font-medium px-4">{row.original.totalProducts}</span>,
-  },
-  {
-    id: "actions",
-    header: () => <div className="flex w-full justify-end">Actions</div>,
-    cell: ({ row }) => <RowActions row={row.original} />,
-    enableHiding: false,
-    enableSorting: false,
-  },
-];
+interface BrandsTableProps {
+  data: BrandRow[];
+  onDelete: (id: string) => Promise<void>;
+  onUpdate: (id: string, formData: FormData) => Promise<boolean>;
+  onRefresh: () => Promise<void>;
+}
 
 /* ---- Row Actions ---- */
-
-function RowActions({ row }: { row: BrandRow }) {
+function RowActions({ row, onDelete, onUpdate }: { row: BrandRow; onDelete: string; onUpdate: (id: string, formData: FormData) => Promise<boolean> }) {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
+
+  const handleDelete = async () => {
+    await onDelete(row.id);
+    setDeleteOpen(false);
+  };
 
   return (
     <div className="flex justify-end">
@@ -225,7 +110,12 @@ function RowActions({ row }: { row: BrandRow }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <EditBrandDialog brand={row} open={editOpen} onOpenChange={setEditOpen} />
+      <EditBrandDialog 
+        brand={row} 
+        open={editOpen} 
+        onOpenChange={setEditOpen}
+        onUpdate={onUpdate}
+      />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
@@ -240,10 +130,7 @@ function RowActions({ row }: { row: BrandRow }) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                toast.success(`Brand ${row.name} deleted successfully.`);
-                setDeleteOpen(false);
-              }}
+              onClick={handleDelete}
             >
               Delete
             </AlertDialogAction>
@@ -255,15 +142,91 @@ function RowActions({ row }: { row: BrandRow }) {
 }
 
 /* ---- Main Table Component ---- */
-
-export function BrandsTable() {
+export function BrandsTable({ data, onDelete, onUpdate, onRefresh }: BrandsTableProps) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
+  const columns: ColumnDef<BrandRow>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <div className="w-10">
+          <Checkbox
+            aria-label="Select all brands"
+            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          />
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className="w-10">
+          <Checkbox
+            aria-label={`Select brand ${row.original.id}`}
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+          />
+        </div>
+      ),
+      enableHiding: false,
+      enableSorting: false,
+    },
+    {
+      id: "search",
+      accessorFn: (row) => `${row.name} ${row.id}`,
+      filterFn: "includesString",
+      enableHiding: true,
+    },
+    {
+      accessorKey: "id",
+      header: "ID",
+      cell: ({ row }) => <span className="font-medium text-muted-foreground">{row.original.id}</span>,
+    },
+    {
+      accessorKey: "name",
+      header: "Brand Details",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted p-1">
+            <img 
+              src={row.original.logo} 
+              alt={row.original.name} 
+              className="size-full object-cover rounded-sm"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://placehold.co/80x80/1a1a2e/e0e0e0?text=${row.original.name.substring(0,2).toUpperCase()}`;
+              }}
+            />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <div className="font-medium leading-none text-base">{row.original.name}</div>
+            <div className="text-muted-foreground text-xs">Joined: {row.original.joinedDate}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "totalProducts",
+      header: "Total Products",
+      cell: ({ row }) => <span className="tabular-nums font-medium px-4">{row.original.totalProducts}</span>,
+    },
+    {
+      id: "actions",
+      header: () => <div className="flex w-full justify-end">Actions</div>,
+      cell: ({ row }) => (
+        <RowActions 
+          row={row.original} 
+          onDelete={onDelete}
+          onUpdate={onUpdate}
+        />
+      ),
+      enableHiding: false,
+      enableSorting: false,
+    },
+  ];
+
   const table = useReactTable({
-    data: brands,
+    data,
     columns,
     state: {
       columnFilters,
@@ -310,6 +273,9 @@ export function BrandsTable() {
                 }}
               />
             </div>
+            <Button variant="outline" size="sm" onClick={onRefresh}>
+              Refresh
+            </Button>
           </div>
         </div>
 

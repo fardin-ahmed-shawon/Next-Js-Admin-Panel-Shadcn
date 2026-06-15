@@ -1,32 +1,36 @@
+import React from "react";
 import { ListFilter, Monitor, PhoneCall, ShieldCheck, ShieldOff } from "lucide-react";
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function BlocklistStats() {
+interface BlocklistStatsProps {
+  data: any[];
+}
+
+export function BlocklistStats({ data }: BlocklistStatsProps) {
   const stats = [
     {
       title: "Total Entries",
-      value: "7",
+      value: data.length.toString(),
       icon: ListFilter,
     },
     {
       title: "Active Blocks",
-      value: "3",
+      value: data.filter(item => item.status === "Active").length.toString(),
       icon: ShieldCheck,
     },
     {
       title: "Inactive",
-      value: "4",
+      value: data.filter(item => item.status === "Inactive").length.toString(),
       icon: ShieldOff,
     },
     {
       title: "Phone Blocks",
-      value: "4",
+      value: data.filter(item => item.type === "Phone").length.toString(),
       icon: PhoneCall,
     },
     {
       title: "IP Blocks",
-      value: "3",
+      value: data.filter(item => item.type === "IP").length.toString(),
       icon: Monitor,
     },
   ];

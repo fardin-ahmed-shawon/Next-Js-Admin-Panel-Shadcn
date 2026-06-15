@@ -1,13 +1,41 @@
 "use client";
 
 import * as React from "react";
-
-import { Image as ImageIcon, Plus, Save, SlidersHorizontal, Trash2, UploadCloud, X } from "lucide-react";
+import { Image as ImageIcon, Loader2, Plus, Save, SlidersHorizontal, Trash2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:8000";
+const SLIDER_API_URL = process.env.NEXT_PUBLIC_API_SLIDER_URL || "sliders";
+
+const getSliderUrl = (path: string = '') => {
+  let baseUrl = API_BASE_URL;
+  if (!baseUrl.endsWith('/')) baseUrl += '/';
+  const sliderPath = SLIDER_API_URL.replace(/^\/|\/$/g, '');
+  const cleanPath = path.replace(/^\/|\/$/g, '');
+  const fullPath = cleanPath ? `${sliderPath}/${cleanPath}` : sliderPath;
+  return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
+};
+
+// Helper function to get full image URL based on your storage structure
+const getFullImageUrl = (imagePath: string) => {
+  if (!imagePath) return "";
+  if (imagePath.startsWith("http")) return imagePath;
+  
+  // Remove any leading slashes
+  const cleanPath = imagePath.replace(/^\/+/, '');
+  
+  // Construct full URL using APP_URL
+  let appUrl = APP_URL;
+  if (!appUrl.endsWith('/')) appUrl += '/';
+  
+  // Your images are in public/img/ directory
+  return `${appUrl}${cleanPath}`;
+};
 
 /* ---- Split Image Upload Component ---- */
 function SplitImageUpload({
@@ -47,6 +75,9 @@ function SplitImageUpload({
     if (f) handleFile(f);
   }
 
+  // Get the image source (preview or full URL)
+  const imageSrc = preview || (defaultImage ? getFullImageUrl(defaultImage) : "");
+
   return (
     <div className="grid md:grid-cols-2 gap-6">
       {/* Upload Box */}
@@ -74,7 +105,7 @@ function SplitImageUpload({
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium">Click or drag & drop</p>
-              <p className="text-xs text-muted-foreground">SVG, PNG, JPG or GIF (max. 5MB)</p>
+              <p className="text-xs text-muted-foreground">SVG, PNG, JPG or GIF (max. 2MB)</p>
             </div>
           </div>
           <input ref={inputRef} id={id} type="file" accept="image/*" className="sr-only" onChange={handleChange} />
@@ -85,7 +116,7 @@ function SplitImageUpload({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <Label className="text-xs">Image Preview</Label>
-          {(preview || defaultImage) && (
+          {imageSrc && (
             <Button
               type="button"
               variant="ghost"
@@ -107,8 +138,8 @@ function SplitImageUpload({
         <div
           className={`relative flex w-full flex-col items-center justify-center rounded-xl border bg-muted/30 overflow-hidden ${aspectRatio}`}
         >
-          {preview || defaultImage ? (
-            <img src={preview || defaultImage} alt="preview" className="size-full object-cover" />
+          {imageSrc ? (
+            <img src={imageSrc} alt="preview" className="size-full object-cover" />
           ) : (
             <div className="flex flex-col items-center text-muted-foreground">
               <ImageIcon className="size-6 mb-2 opacity-20" />
@@ -130,26 +161,67 @@ interface SliderItem {
   file: File | null;
   preview: string;
   defaultImage: string;
+  existingId?: number;
 }
 
 export default function SliderPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [sliders, setSliders] = React.useState<SliderItem[]>([]);
 
-  // Dynamic Sliders State
-  const [sliders, setSliders] = React.useState<SliderItem[]>([
-    {
-      id: uid(),
-      file: null,
-      preview: "",
-      defaultImage: "https://placehold.co/1200x400/0ea5e9/ffffff?text=Slider+1",
-    },
-    {
-      id: uid(),
-      file: null,
-      preview: "",
-      defaultImage: "https://placehold.co/1200x400/8b5cf6/ffffff?text=Slider+2",
-    },
-  ]);
+  // Fetch sliders from API
+  const fetchSliders = async () => {
+    setIsLoading(true);
+    try {
+      const url = getSliderUrl();
+      console.log("Fetching sliders from:", url);
+      
+      const response = await fetch(url, {
+        headers: { 
+          Accept: "application/json", 
+          "Content-Type": "application/json" 
+        },
+      });
+
+      if (!response.ok) throw new Error(`Failed to fetch sliders: ${response.status}`);
+
+      const result = await response.json();
+      console.log("API Response:", result);
+      
+      let slidersData = [];
+      
+      if (result.data && Array.isArray(result.data)) {
+        slidersData = result.data;
+      } else if (Array.isArray(result)) {
+        slidersData = result;
+      } else if (result.sliders && Array.isArray(result.sliders)) {
+        slidersData = result.sliders;
+      }
+
+      console.log(`Found ${slidersData.length} sliders`);
+
+      // Transform API data to component format
+      const transformedData: SliderItem[] = slidersData.map((slider: any) => ({
+        id: uid(),
+        file: null,
+        preview: "",
+        defaultImage: slider.slider_img || "",
+        existingId: slider.id,
+      }));
+
+      console.log("Transformed data:", transformedData);
+      setSliders(transformedData);
+    } catch (error) {
+      console.error("Error fetching sliders:", error);
+      toast.error("Failed to load sliders");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchSliders();
+  }, []);
 
   const handleAddSlider = () => {
     setSliders((prev) => [
@@ -159,11 +231,37 @@ export default function SliderPage() {
         file: null,
         preview: "",
         defaultImage: "",
+        existingId: undefined,
       },
     ]);
   };
 
-  const handleRemoveSlider = (id: string) => {
+  const handleRemoveSlider = async (id: string) => {
+    const slider = sliders.find(s => s.id === id);
+    
+    // If slider has an existing ID, delete it from the server
+    if (slider?.existingId) {
+      try {
+        const url = getSliderUrl(slider.existingId.toString());
+        const response = await fetch(url, {
+          method: "DELETE",
+          headers: { 
+            Accept: "application/json", 
+            "Content-Type": "application/json" 
+          },
+        });
+
+        if (!response.ok) throw new Error("Failed to delete slider");
+        
+        toast.success("Slider deleted successfully");
+        await fetchSliders(); // Refresh the list
+      } catch (error) {
+        console.error("Error deleting slider:", error);
+        toast.error("Failed to delete slider");
+        return;
+      }
+    }
+    
     setSliders((prev) => prev.filter((s) => s.id !== id));
   };
 
@@ -175,16 +273,66 @@ export default function SliderPage() {
     setSliders((prev) => prev.map((s) => (s.id === id ? { ...s, defaultImage: "" } : s)));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Process each slider
+      for (const slider of sliders) {
+        if (slider.file) {
+          // Create form data for image upload
+          const formData = new FormData();
+          formData.append('slider_img', slider.file);
+          
+          if (slider.existingId) {
+            // Update existing slider - use POST with _method PUT for file upload
+            formData.append('_method', 'PUT');
+            const url = getSliderUrl(slider.existingId.toString());
+            const response = await fetch(url, {
+              method: "POST",
+              body: formData,
+            });
+            
+            if (!response.ok) throw new Error("Failed to update slider");
+          } else {
+            // Create new slider
+            const url = getSliderUrl();
+            const response = await fetch(url, {
+              method: "POST",
+              body: formData,
+            });
+            
+            if (!response.ok) throw new Error("Failed to create slider");
+          }
+        }
+      }
+
+      toast.success("Sliders saved successfully");
+      await fetchSliders(); // Refresh the list
+      
+      // Clear file inputs after successful save
+      setSliders(prev => prev.map(slider => ({
+        ...slider,
+        file: null,
+        preview: ""
+      })));
+      
+    } catch (error) {
+      console.error("Error saving sliders:", error);
+      toast.error("Failed to save sliders");
+    } finally {
       setIsSubmitting(false);
-      toast.success("Sliders updated successfully");
-    }, 1000);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full pb-10">
@@ -195,8 +343,17 @@ export default function SliderPage() {
         </div>
 
         <Button onClick={handleSubmit} disabled={isSubmitting}>
-          <Save className="mr-2 size-4" />
-          {isSubmitting ? "Saving..." : "Save Sliders"}
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 size-4" />
+              Save Sliders
+            </>
+          )}
         </Button>
       </div>
 
@@ -211,6 +368,9 @@ export default function SliderPage() {
                   </span>
                   <div>
                     <CardTitle className="text-lg">Slider Image {index + 1}</CardTitle>
+                    {slider.existingId && (
+                      <p className="text-xs text-muted-foreground mt-0.5">ID: {slider.existingId}</p>
+                    )}
                   </div>
                 </div>
                 <Button
@@ -237,6 +397,15 @@ export default function SliderPage() {
             </CardContent>
           </Card>
         ))}
+
+        {sliders.length === 0 && (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <SlidersHorizontal className="size-12 text-muted-foreground mb-4 opacity-50" />
+              <p className="text-muted-foreground text-center">No sliders found. Click the button below to add one.</p>
+            </CardContent>
+          </Card>
+        )}
 
         <Button
           type="button"

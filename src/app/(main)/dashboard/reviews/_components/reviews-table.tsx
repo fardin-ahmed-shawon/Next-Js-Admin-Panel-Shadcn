@@ -56,149 +56,76 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import { EditReviewDialog } from "./edit-review-dialog";
 
-/* ---- Demo Data ---- */
-const initialReviews = [
-  {
-    id: "REV-1001",
-    productId: "PRD-1001",
-    productName: "Classic Cotton T-Shirt",
-    productImage: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=T",
-    customerId: "CUS-1001",
-    customerName: "Arham Khan",
-    customerEmail: "arham@example.com",
-    customerAvatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=AK",
-    rating: 5,
-    text: "The cotton quality is superb! It is super breathable and fits perfectly.",
-    date: "2026-05-20",
-  },
-  {
-    id: "REV-1002",
-    productId: "PRD-1002",
-    productName: "Wireless Bluetooth Earbuds",
-    productImage: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=E",
-    customerId: "CUS-1002",
-    customerName: "Fatima Akter",
-    customerEmail: "fatima@example.com",
-    customerAvatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=FA",
-    rating: 4,
-    text: "Sound quality is very clean and crisp. Bass could be slightly punchier, but battery life is incredible.",
-    date: "2026-05-22",
-  },
-  {
-    id: "REV-1003",
-    productId: "PRD-1003",
-    productName: "Leather Crossbody Bag",
-    productImage: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=B",
-    customerId: "CUS-1003",
-    customerName: "Rahim Uddin",
-    customerEmail: "rahim@example.com",
-    customerAvatar: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=RU",
-    rating: 3,
-    text: "Decent bag, but the strap feels a bit stiff. Plenty of pockets though.",
-    date: "2026-05-21",
-  },
-];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:8000";
+const REVIEW_API_URL = process.env.NEXT_PUBLIC_API_REVIEW_URL || "reviews";
 
-type ReviewRow = (typeof initialReviews)[0];
+const getReviewUrl = (path: string = '') => {
+  let baseUrl = API_BASE_URL;
+  if (!baseUrl.endsWith('/')) baseUrl += '/';
+  const reviewPath = REVIEW_API_URL.replace(/^\/|\/$/g, '');
+  const cleanPath = path.replace(/^\/|\/$/g, '');
+  const fullPath = cleanPath ? `${reviewPath}/${cleanPath}` : reviewPath;
+  return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
+};
 
-/* ---- Columns ---- */
-const columns: ColumnDef<ReviewRow>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="w-10">
-        <Checkbox
-          aria-label="Select all reviews"
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="w-10">
-        <Checkbox
-          aria-label={`Select review ${row.original.id}`}
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-        />
-      </div>
-    ),
-    enableHiding: false,
-    enableSorting: false,
-  },
-  {
-    id: "search",
-    accessorFn: (row) => `${row.productName} ${row.customerName} ${row.text}`,
-    filterFn: "includesString",
-    enableHiding: true,
-  },
-  {
-    accessorKey: "product",
-    header: "Product",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
-          <img src={row.original.productImage} alt={row.original.productName} className="size-full object-cover" />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <div className="font-semibold leading-none text-sm">{row.original.productName}</div>
-          <div className="text-muted-foreground text-xs">{row.original.productId}</div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "customer",
-    header: "Customer",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <Avatar className="size-10 border shadow-sm">
-          <AvatarImage src={row.original.customerAvatar} />
-          <AvatarFallback>{row.original.customerName.substring(0, 2).toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <div className="flex flex-col">
-          <div className="font-semibold leading-none">{row.original.customerName}</div>
-          <div className="text-muted-foreground text-xs mt-1">{row.original.customerEmail}</div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "rating",
-    header: "Rating",
-    cell: ({ row }) => (
-      <div className="flex items-center text-amber-500">
-        {Array.from({ length: row.original.rating }).map((_, i) => (
-          <Star key={i} className="size-4 fill-current" />
-        ))}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "text",
-    header: "Review Preview",
-    cell: ({ row }) => (
-      <div className="text-muted-foreground text-sm line-clamp-2 max-w-[300px]">"{row.original.text}"</div>
-    ),
-  },
-  {
-    accessorKey: "date",
-    header: "Date",
-    cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.date}</span>,
-  },
-  {
-    id: "actions",
-    header: () => <div className="flex w-full justify-end">Actions</div>,
-    cell: ({ row }) => <RowActions row={row.original} />,
-    enableHiding: false,
-    enableSorting: false,
-  },
-];
+const getFullImageUrl = (imagePath: string) => {
+  if (!imagePath) return "";
+  if (imagePath.startsWith("http")) return imagePath;
+  const cleanPath = imagePath.replace(/^\/+/, '');
+  let appUrl = APP_URL;
+  if (!appUrl.endsWith('/')) appUrl += '/';
+  return `${appUrl}${cleanPath}`;
+};
+
+type ReviewRow = {
+  id: number;
+  productId: string;
+  productName: string;
+  productImage: string;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  customerAvatar: string;
+  rating: number;
+  text: string;
+  date: string;
+};
+
+interface ReviewsTableProps {
+  refreshTrigger?: number;
+}
 
 /* ---- Row Actions ---- */
-function RowActions({ row }: { row: ReviewRow }) {
+function RowActions({ row, onRefresh }: { row: ReviewRow; onRefresh: () => void }) {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const url = getReviewUrl(row.id.toString());
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: { 
+          Accept: "application/json", 
+          "Content-Type": "application/json" 
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to delete review");
+      
+      toast.success(`Review deleted successfully.`);
+      onRefresh();
+      setDeleteOpen(false);
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      toast.error("Failed to delete review");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="flex justify-end">
@@ -232,7 +159,7 @@ function RowActions({ row }: { row: ReviewRow }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <EditReviewDialog review={row} open={editOpen} onOpenChange={setEditOpen} />
+      <EditReviewDialog review={row} open={editOpen} onOpenChange={setEditOpen} onRefresh={onRefresh} />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
@@ -247,12 +174,10 @@ function RowActions({ row }: { row: ReviewRow }) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                toast.success(`Review deleted successfully.`);
-                setDeleteOpen(false);
-              }}
+              onClick={handleDelete}
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -262,14 +187,193 @@ function RowActions({ row }: { row: ReviewRow }) {
 }
 
 /* ---- Main Table Component ---- */
-export function ReviewsTable() {
+export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
+  const [reviews, setReviews] = React.useState<ReviewRow[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
+  const fetchReviews = async () => {
+    setIsLoading(true);
+    try {
+      const url = getReviewUrl();
+      console.log("Fetching reviews from:", url);
+      
+      const response = await fetch(url, {
+        headers: { 
+          Accept: "application/json", 
+          "Content-Type": "application/json" 
+        },
+      });
+
+      if (!response.ok) throw new Error(`Failed to fetch reviews: ${response.status}`);
+
+      const result = await response.json();
+      let reviewsData = [];
+      
+      if (result.data && Array.isArray(result.data)) {
+        reviewsData = result.data;
+      } else if (Array.isArray(result)) {
+        reviewsData = result;
+      } else if (result.reviews && Array.isArray(result.reviews)) {
+        reviewsData = result.reviews;
+      }
+
+      console.log(`Found ${reviewsData.length} reviews`);
+
+      const transformedData: ReviewRow[] = reviewsData.map((review: any) => ({
+        id: review.id,
+        productId: `PRD-${review.product_id}`,
+        productName: review.product?.product_short_description || review.product?.title || `Product #${review.product_id}`,
+        productImage: review.product?.product_thumbnail_img || "",
+        customerId: `CUS-${review.customer_id}`,
+        customerName: review.customer?.full_name || `Customer #${review.customer_id}`,
+        customerEmail: review.customer?.email || "",
+        customerAvatar: "",
+        rating: review.ratings,
+        text: review.review_text,
+        date: review.created_at ? new Date(review.created_at).toISOString().split('T')[0] : "",
+      }));
+
+      setReviews(transformedData);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      toast.error("Failed to load reviews");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchReviews();
+  }, [refreshTrigger]);
+
+  const handleBulkDelete = async (selectedIds: number[]) => {
+    try {
+      const url = getReviewUrl("bulk-delete");
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { 
+          Accept: "application/json", 
+          "Content-Type": "application/json" 
+        },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+
+      if (!response.ok) throw new Error("Failed to delete reviews");
+      
+      toast.success(`${selectedIds.length} review(s) deleted successfully.`);
+      setRowSelection({});
+      await fetchReviews();
+    } catch (error) {
+      console.error("Error bulk deleting reviews:", error);
+      toast.error("Failed to delete reviews");
+    }
+  };
+
+  const columns: ColumnDef<ReviewRow>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <div className="w-10">
+          <Checkbox
+            aria-label="Select all reviews"
+            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          />
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className="w-10">
+          <Checkbox
+            aria-label={`Select review ${row.original.id}`}
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+          />
+        </div>
+      ),
+      enableHiding: false,
+      enableSorting: false,
+    },
+    {
+      id: "search",
+      accessorFn: (row) => `${row.productName} ${row.customerName} ${row.customerEmail} ${row.text}`,
+      filterFn: "includesString",
+      enableHiding: true,
+    },
+    {
+      accessorKey: "product",
+      header: "Product",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
+            {row.original.productImage ? (
+              <img src={getFullImageUrl(row.original.productImage)} alt={row.original.productName} className="size-full object-cover" />
+            ) : (
+              <div className="flex size-full items-center justify-center text-muted-foreground">
+                <MessageSquare className="size-4" />
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <div className="font-semibold leading-none text-sm">{row.original.productName}</div>
+            <div className="text-muted-foreground text-xs">{row.original.productId}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "customer",
+      header: "Customer",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          <Avatar className="size-10 border shadow-sm">
+            <AvatarImage src={row.original.customerAvatar} />
+            <AvatarFallback>{row.original.customerName.substring(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <div className="font-semibold leading-none">{row.original.customerName}</div>
+            <div className="text-muted-foreground text-xs mt-0.5">{row.original.customerEmail}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "rating",
+      header: "Rating",
+      cell: ({ row }) => (
+        <div className="flex items-center text-amber-500">
+          {Array.from({ length: row.original.rating }).map((_, i) => (
+            <Star key={i} className="size-4 fill-current" />
+          ))}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "text",
+      header: "Review Preview",
+      cell: ({ row }) => (
+        <div className="text-muted-foreground text-sm line-clamp-2 max-w-[300px]">"{row.original.text}"</div>
+      ),
+    },
+    {
+      accessorKey: "date",
+      header: "Date",
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.date}</span>,
+    },
+    {
+      id: "actions",
+      header: () => <div className="flex w-full justify-end">Actions</div>,
+      cell: ({ row }) => <RowActions row={row.original} onRefresh={fetchReviews} />,
+      enableHiding: false,
+      enableSorting: false,
+    },
+  ];
+
   const table = useReactTable({
-    data: initialReviews,
+    data: reviews,
     columns,
     state: {
       columnFilters,
@@ -292,6 +396,23 @@ export function ReviewsTable() {
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
   const totalCount = table.getFilteredRowModel().rows.length;
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
+  const selectedIds = table.getFilteredSelectedRowModel().rows.map((row) => row.original.id);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-normal text-muted-foreground text-sm">Product Reviews</CardTitle>
+          <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
+            Loading...
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="text-muted-foreground">Loading reviews...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -338,12 +459,7 @@ export function ReviewsTable() {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => {
-                      toast.success(
-                        `${selectedCount} ${selectedCount === 1 ? "review" : "reviews"} deleted successfully.`,
-                      );
-                      table.toggleAllPageRowsSelected(false);
-                    }}
+                    onClick={() => handleBulkDelete(selectedIds)}
                   >
                     Delete
                   </AlertDialogAction>

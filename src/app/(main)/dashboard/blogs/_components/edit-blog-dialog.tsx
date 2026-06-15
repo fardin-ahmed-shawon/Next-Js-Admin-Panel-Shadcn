@@ -18,30 +18,75 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+import type { BlogRow } from "./blogs-table";
+
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+const BLOG_PATH = process.env.NEXT_PUBLIC_API_BLOG_URL;
+const API_URL = `${BASE}/${BLOG_PATH}`;
+
 interface EditBlogDialogProps {
-  blog: {
-    id: string;
-    title: string;
-    description: string;
-    image: string;
-  };
+  blog: BlogRow;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onUpdated: (updated: BlogRow) => void;
 }
 
-export function EditBlogDialog({ blog, open, onOpenChange }: EditBlogDialogProps) {
+export function EditBlogDialog({ blog, open, onOpenChange, onUpdated }: EditBlogDialogProps) {
+  const [title, setTitle] = React.useState(blog.title);
+  const [description, setDescription] = React.useState(blog.description);
+  const [imageFile, setImageFile] = React.useState<File | null>(null);
+  const [imagePreview, setImagePreview] = React.useState<string>(
+    `${BASE?.replace("/api/v1/admin", "")}/${blog.img}`
+  );
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Sync fields when blog prop changes (switching rows)
+  React.useEffect(() => {
+    setTitle(blog.title);
+    setDescription(blog.description);
+    setImageFile(null);
+    setImagePreview(`${BASE?.replace("/api/v1/admin", "")}/${blog.img}`);
+  }, [blog]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      if (imageFile) formData.append("img", imageFile);
+      // Laravel typically needs this for PUT via FormData
+      formData.append("_method", "PUT");
+
+      const res = await fetch(`${API_URL}/${blog.id}`, {
+        method: "POST", // POST + _method=PUT for Laravel FormData
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.message ?? `HTTP ${res.status}`);
+      }
+
+      const json: { success: boolean; data: BlogRow } = await res.json();
+      toast.success("Blog post updated successfully.");
+      onUpdated(json.data);
       onOpenChange(false);
-      toast.success("Blog post updated successfully");
-    }, 1000);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update blog.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -57,23 +102,54 @@ export function EditBlogDialog({ blog, open, onOpenChange }: EditBlogDialogProps
               <Label htmlFor="edit-title">
                 Title <span className="text-destructive">*</span>
               </Label>
-              <Input id="edit-title" defaultValue={blog.title} required />
+              <Input
+                id="edit-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="edit-description">
                 Description <span className="text-destructive">*</span>
               </Label>
-              <Textarea id="edit-description" defaultValue={blog.description} className="min-h-[100px]" required />
+              <Textarea
+                id="edit-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="min-h-[100px]"
+                required
+              />
             </div>
 
             <div className="grid gap-2">
               <Label>Cover Image</Label>
               <div className="flex flex-col items-center gap-4 mb-2 mt-1">
                 <div className="h-32 w-full rounded-lg border overflow-hidden bg-muted p-1">
-                  <img src={blog.image} alt={blog.title} className="size-full object-cover rounded-md" />
+                  <img
+                    src={imagePreview}
+                    alt={title}
+                    className="size-full object-cover rounded-md"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Blog";
+                    }}
+                  />
                 </div>
-                <Button variant="outline" size="sm" type="button">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <UploadCloud className="mr-2 size-4" />
                   Change Cover Image
                 </Button>
@@ -81,7 +157,7 @@ export function EditBlogDialog({ blog, open, onOpenChange }: EditBlogDialogProps
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>

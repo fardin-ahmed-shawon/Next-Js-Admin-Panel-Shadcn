@@ -1,35 +1,43 @@
-import { CheckCircle, Star, Tag, XCircle } from "lucide-react";
+"use client";
 
+import { CheckCircle, Star, Tag, XCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const stats = [
-  {
-    title: "Total Brands",
-    value: "42",
-    icon: Tag,
-    subtitle: "All brands in the system",
-  },
-  {
-    title: "New This Month",
-    value: "5",
-    icon: CheckCircle,
-    subtitle: "Added in the last 30 days",
-  },
-  {
-    title: "Total Products",
-    value: "2,450",
-    icon: Tag,
-    subtitle: "Across all brands",
-  },
-  {
-    title: "Top Tier Brands",
-    value: "12",
-    icon: Star,
-    subtitle: "Highest selling brands",
-  },
-];
+interface BrandsStatsProps {
+  totalBrands: number;
+  newThisMonth: number;
+  totalProducts: number;
+  topTier: number;
+}
 
-export function BrandsStats() {
+export function BrandsStats({ totalBrands, newThisMonth, totalProducts, topTier }: BrandsStatsProps) {
+  const stats = [
+    {
+      title: "Total Brands",
+      value: totalBrands.toString(),
+      icon: Tag,
+      subtitle: "All brands in the system",
+    },
+    {
+      title: "New This Month",
+      value: newThisMonth.toString(),
+      icon: CheckCircle,
+      subtitle: "Added in the last 30 days",
+    },
+    {
+      title: "Total Products",
+      value: totalProducts.toLocaleString(),
+      icon: Tag,
+      subtitle: "Across all brands",
+    },
+    {
+      title: "Top Tier Brands",
+      value: topTier.toString(),
+      icon: Star,
+      subtitle: "Highest selling brands",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs sm:grid-cols-2 lg:grid-cols-4 dark:*:data-[slot=card]:bg-card">
       {stats.map((stat, i) => (

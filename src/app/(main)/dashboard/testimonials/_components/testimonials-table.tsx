@@ -40,7 +40,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -54,180 +53,158 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useRouter } from "next/navigation";
 
 import { EditTestimonialDialog } from "./edit-testimonial-dialog";
 
-/* ---- Demo Data ---- */
-const testimonials = [
-  {
-    id: "TST-1001",
-    name: "John Doe",
-    position: "CEO, Acme Corp",
-    photo: "https://i.pravatar.cc/150?u=1",
-    rating: 5,
-    text: "This is an amazing service! Highly recommended. It completely changed the way we handle our courier tracking.",
-  },
-  {
-    id: "TST-1002",
-    name: "Jane Smith",
-    position: "Marketing Director",
-    photo: "https://i.pravatar.cc/150?u=2",
-    rating: 4,
-    text: "Great experience overall. The integration was seamless and the dashboard is very intuitive.",
-  },
-];
+type Testimonial = {
+  id: string;
+  name: string;
+  position: string;
+  photo: string;
+  rating: number;
+  text: string;
+};
 
-type TestimonialRow = (typeof testimonials)[0];
-
-/* ---- Columns ---- */
-const columns: ColumnDef<TestimonialRow>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="w-10">
-        <Checkbox
-          aria-label="Select all testimonials"
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="w-10">
-        <Checkbox
-          aria-label={`Select testimonial ${row.original.id}`}
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-        />
-      </div>
-    ),
-    enableHiding: false,
-    enableSorting: false,
-  },
-  {
-    id: "search",
-    accessorFn: (row) => `${row.name} ${row.text}`,
-    filterFn: "includesString",
-    enableHiding: true,
-  },
-  {
-    accessorKey: "user",
-    header: "User Details",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <Avatar className="size-10 border shadow-sm">
-          <AvatarImage src={row.original.photo} />
-          <AvatarFallback>{row.original.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <div className="flex flex-col">
-          <div className="font-semibold leading-none">{row.original.name}</div>
-          <div className="text-muted-foreground text-xs mt-1">{row.original.position}</div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "rating",
-    header: "Rating",
-    cell: ({ row }) => (
-      <div className="flex items-center text-amber-500">
-        {Array.from({ length: row.original.rating }).map((_, i) => (
-          <Star key={i} className="size-4 fill-current" />
-        ))}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "text",
-    header: "Testimonial Preview",
-    cell: ({ row }) => (
-      <div className="text-muted-foreground text-sm line-clamp-2 max-w-[350px]">"{row.original.text}"</div>
-    ),
-  },
-  {
-    id: "actions",
-    header: () => <div className="flex w-full justify-end">Actions</div>,
-    cell: ({ row }) => <RowActions row={row.original} />,
-    enableHiding: false,
-    enableSorting: false,
-  },
-];
-
-/* ---- Row Actions ---- */
-function RowActions({ row }: { row: TestimonialRow }) {
-  const [deleteOpen, setDeleteOpen] = React.useState(false);
-  const [editOpen, setEditOpen] = React.useState(false);
-
-  return (
-    <div className="flex justify-end">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm">
-            <MoreHorizontal />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              setEditOpen(true);
-            }}
-          >
-            <Edit className="mr-2 size-4" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
-            onSelect={(e) => {
-              e.preventDefault();
-              setDeleteOpen(true);
-            }}
-          >
-            <Trash className="mr-2 size-4" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <EditTestimonialDialog testimonial={row} open={editOpen} onOpenChange={setEditOpen} />
-
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the testimonial from <strong>{row.name}</strong>. This action cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                toast.success(`Testimonial deleted successfully.`);
-                setDeleteOpen(false);
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
+interface TestimonialsTableProps {
+  initialTestimonials: Testimonial[];
 }
 
-/* ---- Main Table Component ---- */
-export function TestimonialsTable() {
+export function TestimonialsTable({ initialTestimonials }: TestimonialsTableProps) {
+  const [data, setData] = React.useState<Testimonial[]>(initialTestimonials);
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+  const router = useRouter();
+
+  // Update data when initialTestimonials changes (after add/edit/delete)
+  React.useEffect(() => {
+    setData(initialTestimonials);
+  }, [initialTestimonials]);
+
+  const handleDelete = async (id: string) => {
+    try {
+      let apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin';
+      const testimonialEndpoint = process.env.NEXT_PUBLIC_API_TESTIMONIAL_URL || 'testimonials';
+      
+      const baseUrl = apiUrl.replace(/\/$/, '');
+      const url = `${baseUrl}/${testimonialEndpoint}/${id}`;
+
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete testimonial');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setData((prev) => prev.filter((item) => item.id !== id));
+        toast.success(result.message || "Testimonial deleted successfully.");
+        router.refresh();
+      } else {
+        throw new Error(result.message || 'Failed to delete testimonial');
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete testimonial");
+    }
+  };
+
+  const handleBulkDelete = async (selectedIds: string[]) => {
+    for (const id of selectedIds) {
+      await handleDelete(id);
+    }
+  };
+
+  const columns: ColumnDef<Testimonial>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <div className="w-10">
+          <Checkbox
+            aria-label="Select all testimonials"
+            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          />
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className="w-10">
+          <Checkbox
+            aria-label={`Select testimonial ${row.original.id}`}
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+          />
+        </div>
+      ),
+      enableHiding: false,
+      enableSorting: false,
+    },
+    {
+      id: "search",
+      accessorFn: (row) => `${row.name} ${row.text}`,
+      filterFn: "includesString",
+      enableHiding: true,
+    },
+    {
+      accessorKey: "user",
+      header: "User Details",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          <Avatar className="size-10 border shadow-sm">
+            <AvatarImage src={row.original.photo} />
+            <AvatarFallback>{row.original.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <div className="font-semibold leading-none">{row.original.name}</div>
+            <div className="text-muted-foreground text-xs mt-1">{row.original.position}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "rating",
+      header: "Rating",
+      cell: ({ row }) => (
+        <div className="flex items-center text-amber-500">
+          {Array.from({ length: row.original.rating }).map((_, i) => (
+            <Star key={i} className="size-4 fill-current" />
+          ))}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "text",
+      header: "Testimonial Preview",
+      cell: ({ row }) => (
+        <div className="text-muted-foreground text-sm line-clamp-2 max-w-[350px]">"{row.original.text}"</div>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="flex w-full justify-end">Actions</div>,
+      cell: ({ row }) => (
+        <RowActions 
+          row={row.original} 
+          onDelete={() => handleDelete(row.original.id)}
+          onUpdate={() => router.refresh()}
+        />
+      ),
+      enableHiding: false,
+      enableSorting: false,
+    },
+  ];
 
   const table = useReactTable({
-    data: testimonials,
+    data,
     columns,
     state: {
       columnFilters,
@@ -250,6 +227,7 @@ export function TestimonialsTable() {
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
   const totalCount = table.getFilteredRowModel().rows.length;
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
+  const selectedIds = table.getFilteredSelectedRowModel().rows.map(row => row.original.id);
 
   return (
     <Card>
@@ -297,7 +275,7 @@ export function TestimonialsTable() {
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => {
-                      toast.success(`${selectedCount} ${selectedCount === 1 ? "item" : "items"} deleted successfully.`);
+                      handleBulkDelete(selectedIds);
                       table.toggleAllPageRowsSelected(false);
                     }}
                   >
@@ -409,5 +387,75 @@ export function TestimonialsTable() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function RowActions({ row, onDelete, onUpdate }: { row: Testimonial; onDelete: () => void; onUpdate: () => void }) {
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [editOpen, setEditOpen] = React.useState(false);
+
+  return (
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon-sm">
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setEditOpen(true);
+            }}
+          >
+            <Edit className="mr-2 size-4" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={(e) => {
+              e.preventDefault();
+              setDeleteOpen(true);
+            }}
+          >
+            <Trash className="mr-2 size-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <EditTestimonialDialog 
+        testimonial={row} 
+        open={editOpen} 
+        onOpenChange={setEditOpen}
+        onUpdate={onUpdate}
+      />
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the testimonial from <strong>{row.name}</strong>. This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                onDelete();
+                setDeleteOpen(false);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

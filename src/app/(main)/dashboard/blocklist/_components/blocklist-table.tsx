@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-
+import React, { useState } from "react";
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -25,7 +24,6 @@ import {
   PhoneCall,
   RefreshCw,
   Search,
-  ShieldCheck,
   Trash,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -55,66 +53,17 @@ type BlockEntry = {
   value: string;
   reason: string;
   status: "Active" | "Inactive";
+  is_active: boolean;
   blockedAt: string;
   expires: string;
 };
 
-const initialData: BlockEntry[] = [
-  {
-    id: "1",
-    type: "IP",
-    value: "::1",
-    reason: "-",
-    status: "Inactive",
-    blockedAt: "23 Apr 2026\n05:23 AM",
-    expires: "Permanent",
-  },
-  {
-    id: "2",
-    type: "Phone",
-    value: "01111111111",
-    reason: "-",
-    status: "Active",
-    blockedAt: "22 Apr 2026\n11:49 AM",
-    expires: "Permanent",
-  },
-  {
-    id: "3",
-    type: "Phone",
-    value: "0888888",
-    reason: "fraud",
-    status: "Active",
-    blockedAt: "22 Apr 2026\n11:47 AM",
-    expires: "Permanent",
-  },
-  {
-    id: "4",
-    type: "IP",
-    value: "114.129.14.97",
-    reason: "-",
-    status: "Inactive",
-    blockedAt: "09 Apr 2026\n11:48 AM",
-    expires: "Permanent",
-  },
-  {
-    id: "5",
-    type: "Phone",
-    value: "01559907883",
-    reason: "-",
-    status: "Inactive",
-    blockedAt: "09 Apr 2026\n11:13 AM",
-    expires: "Permanent",
-  },
-  {
-    id: "6",
-    type: "Phone",
-    value: "01944667441",
-    reason: "-",
-    status: "Inactive",
-    blockedAt: "09 Apr 2026\n11:12 AM",
-    expires: "Permanent",
-  },
-];
+interface BlocklistTableProps {
+  data: BlockEntry[];
+  onDelete: (id: string) => Promise<void>;
+  onToggleStatus: (id: string, currentStatus: boolean) => Promise<void>;
+  onRefresh: () => Promise<void>;
+}
 
 function exportToExcel(data: BlockEntry[]) {
   const headers = ["ID", "Type", "Blocked Value", "Reason", "Status", "Blocked At", "Expires"];
@@ -139,33 +88,30 @@ function exportToExcel(data: BlockEntry[]) {
   link.download = "blocklist.csv";
   link.click();
   URL.revokeObjectURL(url);
+  toast.success("Export successful");
 }
 
-export function BlocklistTable() {
-  const [data, setData] = React.useState<BlockEntry[]>(initialData);
-  const [activeTypeFilter, setActiveTypeFilter] = React.useState<string>("All Types");
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+export function BlocklistTable({ data, onDelete, onToggleStatus, onRefresh }: BlocklistTableProps) {
+  const [activeTypeFilter, setActiveTypeFilter] = useState<string>("All Types");
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const handleDelete = (id: string) => {
-    setData((prev) => prev.filter((item) => item.id !== id));
-    toast.success("Entry deleted successfully.");
+  const handleToggleStatus = async (id: string, isActive: boolean) => {
+    setUpdatingId(id);
+    await onToggleStatus(id, isActive);
+    setUpdatingId(null);
   };
 
-  const toggleStatus = (id: string) => {
-    setData((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, status: item.status === "Active" ? "Inactive" : "Active" } : item,
-      ),
-    );
-    toast.success("Status updated.");
+  const handleDelete = (id: string) => {
+    onDelete(id);
   };
 
   const columns: ColumnDef<BlockEntry>[] = [
     {
       accessorKey: "id",
       header: "#",
-      cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("id")}</div>,
+      cell: ({ row }) => <div className="text-muted-foreground">{row.index + 1}</div>,
     },
     {
       accessorKey: "type",
@@ -218,12 +164,18 @@ export function BlocklistTable() {
       cell: ({ row }) => {
         const entry = row.original;
         const isActive = entry.status === "Active";
+        const isLoading = updatingId === entry.id;
 
         return (
           <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => toggleStatus(entry.id)}>
-              <RefreshCw className="mr-2 size-4" />
-              {isActive ? "Unblock" : "Re-block"}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleToggleStatus(entry.id, entry.is_active)}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`mr-2 size-4 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? "Updating..." : (isActive ? "Unblock" : "Re-block")}
             </Button>
 
             <AlertDialog>
@@ -287,14 +239,20 @@ export function BlocklistTable() {
           {totalCount > 0 ? `${totalCount} entries` : "No entries"}
         </CardDescription>
         <CardAction>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportToExcel(table.getFilteredRowModel().rows.map((r) => r.original))}
-          >
-            <Download className="mr-2 size-4" />
-            Export
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={onRefresh}>
+              <RefreshCw className="mr-2 size-4" />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportToExcel(table.getFilteredRowModel().rows.map((r) => r.original))}
+            >
+              <Download className="mr-2 size-4" />
+              Export
+            </Button>
+          </div>
         </CardAction>
       </CardHeader>
 
