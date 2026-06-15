@@ -42,6 +42,7 @@ import {
   ShoppingBag,
   ShoppingCart,
   SlidersHorizontal,
+  Sparkles,
   SquareArrowUpRight,
   Star,
   Ticket,
@@ -102,6 +103,7 @@ export const sidebarItems: NavGroup[] = [
         subItems: [
           { title: "Add Product", url: "/dashboard/products/add" },
           { title: "All Products", url: "/dashboard/products" },
+          { title: "Recommendations", url: "/dashboard/products/recommendations", icon: Sparkles },
         ],
       },
       {
