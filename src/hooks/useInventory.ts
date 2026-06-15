@@ -1,3 +1,4 @@
+import { fetchClient } from "@/lib/fetch-client";
 import useSWR from "swr";
 
 export interface InventorySummary {
@@ -64,7 +65,7 @@ interface UseInventoryOptions {
 
 const fetcher = async (url: string) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const res = await fetch(url, {
+  const res = await fetchClient(url, {
     headers: {
       Accept: "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

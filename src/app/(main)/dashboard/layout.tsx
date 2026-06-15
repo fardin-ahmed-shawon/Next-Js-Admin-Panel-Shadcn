@@ -16,6 +16,7 @@ import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { NotificationButton } from "./_components/sidebar/notification-button";
 import { SearchDialog } from "./_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
+import { AuthInitializer } from "@/components/auth-initializer";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
@@ -34,6 +35,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         } as React.CSSProperties
       }
     >
+      <AuthInitializer />
       <AppSidebar variant={variant} collapsible={collapsible} />
       <SidebarInset
         className={cn(

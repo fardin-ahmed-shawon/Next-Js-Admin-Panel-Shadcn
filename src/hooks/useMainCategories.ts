@@ -1,3 +1,4 @@
+import { fetchClient } from "@/lib/fetch-client";
 import { useEffect, useState } from "react";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_MAIN_CATEGORIES_URL || ""}`;
@@ -22,7 +23,7 @@ function useMainCategories() {
   useEffect(() => {
     const fetchMainCategories = async () => {
       try {
-        const res = await fetch(API_URL);
+        const res = await fetchClient(API_URL);
         if (!res.ok) throw new Error("Failed to fetch main categories");
         const result = await res.json();
         // The Laravel API wraps the categories in a 'data' array

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Role } from "./useRoles";
+import { fetchClient } from "@/lib/fetch-client";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_USERS || "users"}`;
 
@@ -31,7 +32,7 @@ export function useUsers() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch(API_URL);
+      const res = await fetchClient(API_URL);
       if (!res.ok) throw new Error("Failed to fetch users");
       const result: UsersApiResponse = await res.json();
 

@@ -1,3 +1,4 @@
+import { fetchClient } from "@/lib/fetch-client";
 import { useEffect, useState, useCallback } from "react";
 import { Product } from "./useProducts";
 
@@ -13,7 +14,7 @@ function useProduct(id: string) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}product/${id}`, {
+      const res = await fetchClient(`${API_BASE_URL}product/${id}`, {
         headers: {
           "Accept": "application/json",
         },

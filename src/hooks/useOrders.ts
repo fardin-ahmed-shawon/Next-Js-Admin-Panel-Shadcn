@@ -1,8 +1,9 @@
+import { fetchClient } from "@/lib/fetch-client";
 import useSWR from "swr";
 
 const fetcher = async (url: string) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const res = await fetch(url, {
+  const res = await fetchClient(url, {
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

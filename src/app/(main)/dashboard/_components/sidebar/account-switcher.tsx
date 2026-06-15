@@ -14,6 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn, getInitials } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 export function AccountSwitcher({
   users,
@@ -26,7 +28,14 @@ export function AccountSwitcher({
     readonly role: string;
   }>;
 }) {
+  const { logout } = useAuth();
+  const router = useRouter();
   const [activeUser, setActiveUser] = useState(users[0]);
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/auth/v2/login");
+  };
 
   if (!activeUser) {
     return null;
@@ -84,7 +93,7 @@ export function AccountSwitcher({
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>
           <LogOut />
           Log out
         </DropdownMenuItem>

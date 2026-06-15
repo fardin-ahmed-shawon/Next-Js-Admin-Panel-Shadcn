@@ -1,3 +1,4 @@
+import { fetchClient } from "@/lib/fetch-client";
 import { useEffect, useState, useCallback } from "react";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}products`;
@@ -63,7 +64,7 @@ function useProducts(options: FetchProductsOptions = {}) {
         url.searchParams.append("status", currentOptions.status);
       }
 
-      const res = await fetch(url.toString());
+      const res = await fetchClient(url.toString());
       if (!res.ok) throw new Error("Failed to fetch products");
       
       const result = await res.json();
