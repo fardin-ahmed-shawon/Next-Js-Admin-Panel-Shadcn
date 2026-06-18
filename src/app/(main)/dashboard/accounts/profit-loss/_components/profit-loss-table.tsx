@@ -40,155 +40,20 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import useProfitLoss from "@/hooks/useProfitLoss";
 
-/* ---- Demo Data ---- */
+/* ---- Types ---- */
 
-type ProfitLossItem = {
-  id: string;
+export type ProfitLossItem = {
+  month_key: string;
   month: string;
-  year: string;
   revenue: number;
   cogs: number;
   expenses: number;
-  netProfit: number;
+  net_profit: number;
   margin: number;
-  status: "Profit" | "Loss";
+  status?: "Profit" | "Loss";
 };
-
-const mockData: ProfitLossItem[] = [
-  {
-    id: "PL-01",
-    month: "January",
-    year: "2026",
-    revenue: 1800000,
-    cogs: 450000,
-    expenses: 650000,
-    netProfit: 700000,
-    margin: 38.8,
-    status: "Profit",
-  },
-  {
-    id: "PL-02",
-    month: "February",
-    year: "2026",
-    revenue: 1900000,
-    cogs: 475000,
-    expenses: 725000,
-    netProfit: 700000,
-    margin: 36.8,
-    status: "Profit",
-  },
-  {
-    id: "PL-03",
-    month: "March",
-    year: "2026",
-    revenue: 2100000,
-    cogs: 525000,
-    expenses: 775000,
-    netProfit: 800000,
-    margin: 38.0,
-    status: "Profit",
-  },
-  {
-    id: "PL-04",
-    month: "April",
-    year: "2026",
-    revenue: 1950000,
-    cogs: 487500,
-    expenses: 762500,
-    netProfit: 700000,
-    margin: 35.8,
-    status: "Profit",
-  },
-  {
-    id: "PL-05",
-    month: "May",
-    year: "2026",
-    revenue: 2200000,
-    cogs: 550000,
-    expenses: 850000,
-    netProfit: 800000,
-    margin: 36.3,
-    status: "Profit",
-  },
-  {
-    id: "PL-06",
-    month: "June",
-    year: "2026",
-    revenue: 2050000,
-    cogs: 512500,
-    expenses: 1837500,
-    netProfit: -300000,
-    margin: -14.6,
-    status: "Loss",
-  },
-  {
-    id: "PL-07",
-    month: "July",
-    year: "2026",
-    revenue: 2400000,
-    cogs: 600000,
-    expenses: 900000,
-    netProfit: 900000,
-    margin: 37.5,
-    status: "Profit",
-  },
-  {
-    id: "PL-08",
-    month: "August",
-    year: "2026",
-    revenue: 2500000,
-    cogs: 625000,
-    expenses: 825000,
-    netProfit: 1050000,
-    margin: 42.0,
-    status: "Profit",
-  },
-  {
-    id: "PL-09",
-    month: "September",
-    year: "2026",
-    revenue: 2300000,
-    cogs: 575000,
-    expenses: 725000,
-    netProfit: 1000000,
-    margin: 43.4,
-    status: "Profit",
-  },
-  {
-    id: "PL-10",
-    month: "October",
-    year: "2026",
-    revenue: 2600000,
-    cogs: 650000,
-    expenses: 900000,
-    netProfit: 1050000,
-    margin: 40.3,
-    status: "Profit",
-  },
-  {
-    id: "PL-11",
-    month: "November",
-    year: "2026",
-    revenue: 2750000,
-    cogs: 687500,
-    expenses: 912500,
-    netProfit: 1150000,
-    margin: 41.8,
-    status: "Profit",
-  },
-  {
-    id: "PL-12",
-    month: "December",
-    year: "2026",
-    revenue: 2900000,
-    cogs: 725000,
-    expenses: 975000,
-    netProfit: 1200000,
-    margin: 41.3,
-    status: "Profit",
-  },
-];
 
 type PLFilter = "All" | "Profit" | "Loss";
 const plFilters: PLFilter[] = ["All", "Profit", "Loss"];
@@ -198,7 +63,7 @@ const plFilters: PLFilter[] = ["All", "Profit", "Loss"];
 const columns: ColumnDef<ProfitLossItem>[] = [
   {
     id: "search",
-    accessorFn: (row) => `${row.month} ${row.year}`,
+    accessorFn: (row) => `${row.month} ${row.month_key}`,
     filterFn: "includesString",
     enableHiding: true,
   },
@@ -212,7 +77,7 @@ const columns: ColumnDef<ProfitLossItem>[] = [
     header: "Month",
     cell: ({ row }) => (
       <span className="font-medium">
-        {row.original.month} {row.original.year}
+        {row.original.month}
       </span>
     ),
   },
@@ -221,7 +86,7 @@ const columns: ColumnDef<ProfitLossItem>[] = [
     header: "Revenue",
     cell: ({ row }) => (
       <span className="tabular-nums font-medium text-emerald-600 dark:text-emerald-500">
-        ৳{row.original.revenue.toLocaleString()}
+        ৳{Number(row.original.revenue || 0).toLocaleString()}
       </span>
     ),
   },
@@ -230,7 +95,7 @@ const columns: ColumnDef<ProfitLossItem>[] = [
     header: "COGS",
     cell: ({ row }) => (
       <span className="tabular-nums font-medium text-amber-600 dark:text-amber-500">
-        ৳{row.original.cogs.toLocaleString()}
+        ৳{Number(row.original.cogs || 0).toLocaleString()}
       </span>
     ),
   },
@@ -238,14 +103,14 @@ const columns: ColumnDef<ProfitLossItem>[] = [
     accessorKey: "expenses",
     header: "Expenses",
     cell: ({ row }) => (
-      <span className="tabular-nums font-medium text-destructive">৳{row.original.expenses.toLocaleString()}</span>
+      <span className="tabular-nums font-medium text-destructive">৳{Number(row.original.expenses || 0).toLocaleString()}</span>
     ),
   },
   {
-    accessorKey: "netProfit",
+    accessorKey: "net_profit",
     header: "Net Profit / Loss",
     cell: ({ row }) => {
-      const val = row.original.netProfit;
+      const val = Number(row.original.net_profit || 0);
       const isLoss = val < 0;
       return (
         <span
@@ -260,7 +125,7 @@ const columns: ColumnDef<ProfitLossItem>[] = [
     accessorKey: "margin",
     header: "Margin (%)",
     cell: ({ row }) => {
-      const val = row.original.margin;
+      const val = Number(row.original.margin || 0);
       return (
         <span
           className={`tabular-nums font-medium ${val < 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-500"}`}
@@ -274,7 +139,8 @@ const columns: ColumnDef<ProfitLossItem>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const s = row.original.status;
+      const isLoss = Number(row.original.net_profit || 0) < 0;
+      const s = isLoss ? "Loss" : "Profit";
       return <Badge variant={s === "Profit" ? "default" : "destructive"}>{s}</Badge>;
     },
   },
@@ -283,14 +149,22 @@ const columns: ColumnDef<ProfitLossItem>[] = [
 /* ---- CSV Export ---- */
 
 function exportToExcel(data: ProfitLossItem[]) {
-  const headers = ["Month", "Year", "Revenue", "COGS", "Expenses", "Net Profit", "Margin", "Status"];
+  const headers = ["Month", "Revenue", "COGS", "Expenses", "Net Profit", "Margin", "Status"];
   const csvRows = [
     headers.join(","),
-    ...data.map((row) =>
-      [row.month, row.year, row.revenue, row.cogs, row.expenses, row.netProfit, `"${row.margin}%"`, row.status].join(
-        ",",
-      ),
-    ),
+    ...data.map((row) => {
+      const isLoss = Number(row.original.net_profit || 0) < 0;
+      const s = isLoss ? "Loss" : "Profit";
+      return [
+        `"${row.month}"`,
+        row.revenue,
+        row.cogs,
+        row.expenses,
+        row.net_profit,
+        `"${row.margin}%"`,
+        s,
+      ].join(",");
+    }),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -304,13 +178,22 @@ function exportToExcel(data: ProfitLossItem[]) {
 /* ---- Main Table Component ---- */
 
 export function ProfitLossTable() {
+  const { profitLossData, isLoading } = useProfitLoss();
+
+  const formattedData = React.useMemo(() => {
+    return profitLossData.map((item: any) => ({
+      ...item,
+      status: Number(item.net_profit) < 0 ? "Loss" : "Profit",
+    }));
+  }, [profitLossData]);
+
   const [activeFilter, setActiveFilter] = React.useState<PLFilter>("All");
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   const table = useReactTable({
-    data: mockData,
+    data: formattedData || [],
     columns,
     state: {
       columnFilters,
@@ -318,7 +201,7 @@ export function ProfitLossTable() {
       columnVisibility: { search: false, status: false },
       pagination,
     },
-    getRowId: (row) => row.id,
+    getRowId: (row) => row.month_key,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
@@ -432,7 +315,13 @@ export function ProfitLossTable() {
               ))}
             </TableHeader>
             <TableBody className="**:data-[slot='table-row']:border-border/50 **:data-[slot='table-cell']:py-3">
-              {table.getRowModel().rows.length ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-48 text-center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
