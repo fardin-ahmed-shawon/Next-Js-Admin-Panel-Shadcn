@@ -19,9 +19,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
-const BLOG_PATH = process.env.NEXT_PUBLIC_API_BLOG_URL;
-const API_URL = `${BASE}/${BLOG_PATH}`;
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+const BLOG_PATH = process.env.NEXT_PUBLIC_API_BLOG_URL || "blogs";
+const API_URL = `${BASE}${BLOG_PATH}`;
 
 export function AddBlogDialog({ onCreated }: { onCreated?: () => void }) {
   const [open, setOpen] = React.useState(false);

@@ -20,9 +20,18 @@ import { Textarea } from "@/components/ui/textarea";
 
 import type { BlogRow } from "./blogs-table";
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
-const BLOG_PATH = process.env.NEXT_PUBLIC_API_BLOG_URL;
-const API_URL = `${BASE}/${BLOG_PATH}`;
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+const BLOG_PATH = process.env.NEXT_PUBLIC_API_BLOG_URL || "blogs";
+const API_URL = `${BASE}${BLOG_PATH}`;
+
+const getImageUrl = (path: string | null) => {
+  if (!path) return "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Blog";
+  if (path.startsWith("http")) return path;
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  return `${cleanBase}${cleanPath}`;
+};
 
 interface EditBlogDialogProps {
   blog: BlogRow;
@@ -35,9 +44,7 @@ export function EditBlogDialog({ blog, open, onOpenChange, onUpdated }: EditBlog
   const [title, setTitle] = React.useState(blog.title);
   const [description, setDescription] = React.useState(blog.description);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
-  const [imagePreview, setImagePreview] = React.useState<string>(
-    `${BASE?.replace("/api/v1/admin", "")}/${blog.img}`
-  );
+  const [imagePreview, setImagePreview] = React.useState<string>(getImageUrl(blog.img));
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -46,7 +53,7 @@ export function EditBlogDialog({ blog, open, onOpenChange, onUpdated }: EditBlog
     setTitle(blog.title);
     setDescription(blog.description);
     setImageFile(null);
-    setImagePreview(`${BASE?.replace("/api/v1/admin", "")}/${blog.img}`);
+    setImagePreview(getImageUrl(blog.img));
   }, [blog]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {

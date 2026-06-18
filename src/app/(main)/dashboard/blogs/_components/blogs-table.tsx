@@ -65,10 +65,17 @@ export interface BlogRow {
   updated_at: string;
 }
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
-const BLOG_PATH = process.env.NEXT_PUBLIC_API_BLOG_URL;
-const API_URL = `${BASE}/${BLOG_PATH}`;
-const STORAGE_BASE = BASE?.replace("/api/v1/admin", "");
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+const BLOG_PATH = process.env.NEXT_PUBLIC_API_BLOG_URL || "blogs";
+const API_URL = `${BASE}${BLOG_PATH}`;
+const getImageUrl = (path: string | null) => {
+  if (!path) return "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Blog";
+  if (path.startsWith("http")) return path;
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  return `${cleanBase}${cleanPath}`;
+};
 
 /* ---- Columns ---- */
 
@@ -123,7 +130,7 @@ function getColumns(
         <div className="flex items-center gap-4">
           <div className="h-12 w-20 shrink-0 overflow-hidden rounded-md border bg-muted p-0.5">
             <img
-              src={`${STORAGE_BASE}/${row.original.img}`}
+              src={getImageUrl(row.original.img)}
               alt={row.original.title}
               className="size-full object-cover rounded-sm"
               onError={(e) => {

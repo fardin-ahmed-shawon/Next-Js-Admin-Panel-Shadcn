@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { AddBlogDialog } from "./_components/add-blog-dialog";
-import { BlogsStats } from "./_components/blogs-stats";
+
 import { BlogsTable } from "./_components/blogs-table";
 
 export default function BlogsPage() {
@@ -23,7 +23,7 @@ export default function BlogsPage() {
         </div>
       </div>
 
-      <BlogsStats key={refreshKey} />
+
       <BlogsTable key={`table-${refreshKey}`} onDeleted={handleRefresh} />
     </div>
   );

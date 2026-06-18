@@ -7,9 +7,9 @@ import { Calendar, Eye, FileText, ThumbsUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
-const BLOG_PATH = process.env.NEXT_PUBLIC_API_BLOG_URL;
-const API_URL = `${BASE}/${BLOG_PATH}`;
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+const BLOG_PATH = process.env.NEXT_PUBLIC_API_BLOG_URL || "blogs";
+const API_URL = `${BASE}${BLOG_PATH}`;
 
 interface BlogRow {
   id: number;
