@@ -13,14 +13,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { fetchClient } from "@/lib/fetch-client";
 
 export type CategoryData = {
-  id?: string;
-  name: string;
-  description: string;
-  status: "Active" | "Inactive";
+  id?: number;
+  title: string;
 };
 
 interface CategoryDialogProps {
@@ -28,38 +25,76 @@ interface CategoryDialogProps {
   onOpenChange: (open: boolean) => void;
   initialData?: CategoryData | null;
   mode: "add" | "edit";
+  onSuccess?: () => void;
 }
 
-export function CategoryDialog({ open, onOpenChange, initialData, mode }: CategoryDialogProps) {
+export function CategoryDialog({ open, onOpenChange, initialData, mode, onSuccess }: CategoryDialogProps) {
   const [formData, setFormData] = React.useState<CategoryData>({
-    name: "",
-    description: "",
-    status: "Active",
+    title: "",
   });
+  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
       if (mode === "edit" && initialData) {
-        setFormData(initialData);
+        setFormData({
+          title: initialData.title,
+        });
       } else {
         setFormData({
-          name: "",
-          description: "",
-          status: "Active",
+          title: "",
         });
       }
     }
   }, [open, mode, initialData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) {
-      toast.error("Category name is required.");
+    if (!formData.title) {
+      toast.error("Category title is required.");
       return;
     }
 
-    toast.success(`Expense Category successfully ${mode === "add" ? "added" : "updated"}!`);
-    onOpenChange(false);
+    setLoading(true);
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+      const endpoint = process.env.NEXT_PUBLIC_API_EXPENSE_CATEGORIES_URL || "expense-categories";
+      
+      let url = `${baseUrl}${endpoint}`;
+      let method = "POST";
+
+      if (mode === "edit" && initialData?.id) {
+        url = `${url}/${initialData.id}`;
+        method = "PUT";
+      }
+
+      const res = await fetchClient(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: formData.title,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Something went wrong");
+      }
+
+      toast.success(data.message || `Expense Category successfully ${mode === "add" ? "added" : "updated"}!`);
+      if (onSuccess) {
+        onSuccess();
+      }
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save expense category");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,46 +110,23 @@ export function CategoryDialog({ open, onOpenChange, initialData, mode }: Catego
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Category Name</Label>
+            <Label htmlFor="title">Category Title</Label>
             <Input
-              id="name"
+              id="title"
               placeholder="e.g. Office Rent"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              disabled={loading}
             />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea
-              id="description"
-              placeholder="What kind of expenses go here?"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(val: "Active" | "Inactive") => setFormData({ ...formData, status: val })}
-            >
-              <SelectTrigger id="status">
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <DialogFooter className="mt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit">{mode === "add" ? "Create Category" : "Save Changes"}</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Saving..." : mode === "add" ? "Create Category" : "Save Changes"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

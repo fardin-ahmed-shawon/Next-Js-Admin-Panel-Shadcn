@@ -14,14 +14,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+
+import useExpenseCategories from "@/hooks/useExpenseCategories";
+import { fetchClient } from "@/lib/fetch-client";
 
 export type ExpenseData = {
-  id?: string;
+  id?: number;
   title: string;
-  category: string;
-  amount: string | number;
-  date: string;
-  status: "Paid" | "Pending";
+  expense_category_id: number | "";
+  amount: number | "";
+  description: string;
 };
 
 interface ExpenseDialogProps {
@@ -29,42 +32,92 @@ interface ExpenseDialogProps {
   onOpenChange: (open: boolean) => void;
   initialData?: ExpenseData | null;
   mode: "add" | "edit";
+  onSuccess?: () => void;
 }
 
-export function ExpenseDialog({ open, onOpenChange, initialData, mode }: ExpenseDialogProps) {
+export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess }: ExpenseDialogProps) {
+  const { expenseCategories } = useExpenseCategories();
+
   const [formData, setFormData] = React.useState<ExpenseData>({
     title: "",
-    category: "",
+    expense_category_id: "",
     amount: "",
-    date: new Date().toISOString().split("T")[0],
-    status: "Paid",
+    description: "",
   });
+  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
       if (mode === "edit" && initialData) {
-        setFormData(initialData);
+        setFormData({
+          title: initialData.title || "",
+          expense_category_id: initialData.expense_category_id || "",
+          amount: initialData.amount || "",
+          description: initialData.description || "",
+        });
       } else {
         setFormData({
           title: "",
-          category: "",
+          expense_category_id: "",
           amount: "",
-          date: new Date().toISOString().split("T")[0],
-          status: "Paid",
+          description: "",
         });
       }
     }
   }, [open, mode, initialData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.category || !formData.amount) {
+    if (!formData.title || !formData.expense_category_id || formData.amount === "") {
       toast.error("Please fill in all required fields.");
       return;
     }
 
-    toast.success(`Expense successfully ${mode === "add" ? "added" : "updated"}!`);
-    onOpenChange(false);
+    setLoading(true);
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+      const endpoint = process.env.NEXT_PUBLIC_API_EXPENSES_URL || "expenses";
+      
+      let url = `${baseUrl}${endpoint}`;
+      let method = "POST";
+
+      if (mode === "edit" && initialData?.id) {
+        url = `${url}/${initialData.id}`;
+        method = "PUT";
+      }
+
+      const payload = {
+        title: formData.title,
+        expense_category_id: Number(formData.expense_category_id),
+        amount: Number(formData.amount),
+        description: formData.description || null,
+      };
+
+      const res = await fetchClient(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Something went wrong");
+      }
+
+      toast.success(data.message || `Expense successfully ${mode === "add" ? "added" : "updated"}!`);
+      if (onSuccess) {
+        onSuccess();
+      }
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save expense");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -78,76 +131,68 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode }: Expense
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="title">Title / Description</Label>
+            <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
             <Input
               id="title"
               placeholder="e.g. November Headquarters Rent"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              disabled={loading}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="category">Category</Label>
-              <Select value={formData.category} onValueChange={(val) => setFormData({ ...formData, category: val })}>
+              <Label htmlFor="category">Category <span className="text-destructive">*</span></Label>
+              <Select
+                value={formData.expense_category_id.toString()}
+                onValueChange={(val) => setFormData({ ...formData, expense_category_id: val })}
+                disabled={loading}
+              >
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Office Rent">Office Rent</SelectItem>
-                  <SelectItem value="Utilities">Utilities</SelectItem>
-                  <SelectItem value="Marketing">Marketing</SelectItem>
-                  <SelectItem value="Equipment">Equipment</SelectItem>
-                  <SelectItem value="Salaries">Salaries</SelectItem>
+                  {expenseCategories.map((cat: any) => (
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                      {cat.title}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(val: "Paid" | "Pending") => setFormData({ ...formData, status: val })}
-              >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Paid">Paid</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="amount">Amount (৳)</Label>
+              <Label htmlFor="amount">Amount (৳) <span className="text-destructive">*</span></Label>
               <Input
                 id="amount"
                 type="number"
                 placeholder="0.00"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                disabled={loading}
               />
             </div>
           </div>
 
+          <div className="grid gap-2">
+            <Label htmlFor="description">Description (Optional)</Label>
+            <Textarea
+              id="description"
+              placeholder="Provide any additional details here..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              disabled={loading}
+            />
+          </div>
+
           <DialogFooter className="mt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit">{mode === "add" ? "Save Expense" : "Save Changes"}</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Saving..." : mode === "add" ? "Save Expense" : "Save Changes"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

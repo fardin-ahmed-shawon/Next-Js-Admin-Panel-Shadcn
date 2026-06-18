@@ -29,7 +29,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -53,58 +52,22 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import { type ExpenseData, ExpenseDialog } from "./expense-dialog";
+import useExpenses from "@/hooks/useExpenses";
+import useExpenseCategories from "@/hooks/useExpenseCategories";
+import { fetchClient } from "@/lib/fetch-client";
 
-/* ---- Demo Data ---- */
+/* ---- Types ---- */
 
-type ExpenseItem = {
-  id: string;
-  date: string;
-  category: string;
+export type ExpenseItem = {
+  id: number;
   title: string;
+  expense_category_id: number;
   amount: number;
-  status: "Paid" | "Pending";
+  description: string | null;
+  created_at?: string;
 };
-
-const mockData: ExpenseItem[] = [
-  {
-    id: "EXP-001",
-    date: "10/24/2026",
-    category: "Office Rent",
-    title: "November Headquarters Rent",
-    amount: 150000,
-    status: "Paid",
-  },
-  {
-    id: "EXP-002",
-    date: "10/23/2026",
-    category: "Utilities",
-    title: "Electricity Bill",
-    amount: 15000,
-    status: "Paid",
-  },
-  {
-    id: "EXP-003",
-    date: "10/22/2026",
-    category: "Marketing",
-    title: "Facebook Ad Campaign",
-    amount: 50000,
-    status: "Pending",
-  },
-  {
-    id: "EXP-004",
-    date: "10/21/2026",
-    category: "Equipment",
-    title: "New Office Laptops",
-    amount: 120000,
-    status: "Paid",
-  },
-];
-
-type ExpenseFilter = "All" | "Paid" | "Pending";
-const expenseFilters: ExpenseFilter[] = ["All", "Paid", "Pending"];
 
 /* ---- Columns ---- */
 
@@ -134,18 +97,8 @@ const columns: ColumnDef<ExpenseItem>[] = [
   },
   {
     id: "search",
-    accessorFn: (row) => `${row.title} ${row.category} ${row.id}`,
+    accessorFn: (row) => `${row.title} ${row.id}`,
     filterFn: "includesString",
-    enableHiding: true,
-  },
-  {
-    accessorKey: "status",
-    filterFn: "equals",
-    enableHiding: true,
-  },
-  {
-    accessorKey: "category",
-    filterFn: "equals",
     enableHiding: true,
   },
   {
@@ -154,14 +107,22 @@ const columns: ColumnDef<ExpenseItem>[] = [
     cell: ({ row }) => <span className="font-medium text-muted-foreground">{row.original.id}</span>,
   },
   {
-    accessorKey: "date",
+    accessorKey: "created_at",
     header: "Date",
-    cell: ({ row }) => <span className="text-muted-foreground tabular-nums">{row.original.date}</span>,
+    cell: ({ row }) => {
+      const dateStr = row.original.created_at;
+      return <span className="text-muted-foreground tabular-nums">{dateStr ? new Date(dateStr).toLocaleDateString() : "N/A"}</span>;
+    },
   },
   {
-    accessorKey: "category",
+    accessorKey: "expense_category_id",
     header: "Category",
-    cell: ({ row }) => <span className="font-medium">{row.original.category}</span>,
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as any;
+      const categories = meta?.categories || [];
+      const category = categories.find((c: any) => c.id === row.original.expense_category_id);
+      return <span className="font-medium">{category ? category.title : `ID: ${row.original.expense_category_id}`}</span>;
+    },
   },
   {
     accessorKey: "title",
@@ -172,16 +133,8 @@ const columns: ColumnDef<ExpenseItem>[] = [
     accessorKey: "amount",
     header: "Amount",
     cell: ({ row }) => (
-      <span className="tabular-nums font-medium text-destructive">৳{row.original.amount.toLocaleString()}</span>
+      <span className="tabular-nums font-medium text-destructive">৳{Number(row.original.amount).toLocaleString()}</span>
     ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const s = row.original.status;
-      return <Badge variant={s === "Paid" ? "default" : "secondary"}>{s}</Badge>;
-    },
   },
   {
     id: "actions",
@@ -207,7 +160,7 @@ const columns: ColumnDef<ExpenseItem>[] = [
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
-                onClick={() => toast.success(`Expense ${row.original.id} deleted.`)}
+                onClick={() => meta?.onDelete(row.original.id)}
               >
                 <Trash className="mr-2 size-4" />
                 Delete
@@ -222,27 +175,12 @@ const columns: ColumnDef<ExpenseItem>[] = [
   },
 ];
 
-/* ---- CSV Export ---- */
-
-function exportToExcel(data: ExpenseItem[]) {
-  const headers = ["Expense ID", "Date", "Category", "Title", "Amount", "Status"];
-  const csvRows = [
-    headers.join(","),
-    ...data.map((row) => [row.id, row.date, `"${row.category}"`, `"${row.title}"`, row.amount, row.status].join(",")),
-  ];
-  const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "expenses.csv";
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 /* ---- Main Table Component ---- */
 
 export function ExpensesTable() {
-  const [activeFilter, setActiveFilter] = React.useState<ExpenseFilter>("All");
+  const { expenses, isLoading, mutate } = useExpenses();
+  const { expenseCategories } = useExpenseCategories();
+
   const [rowSelection, setRowSelection] = React.useState({});
   const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -251,30 +189,104 @@ export function ExpensesTable() {
 
   const [editData, setEditData] = React.useState<ExpenseData | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [isDeletingBulk, setIsDeletingBulk] = React.useState(false);
 
   const handleEdit = (expense: ExpenseItem) => {
     setEditData({
       id: expense.id,
       title: expense.title,
-      category: expense.category,
+      expense_category_id: expense.expense_category_id,
       amount: expense.amount,
-      date: expense.date,
-      status: expense.status,
+      description: expense.description || "",
     });
     setDialogOpen(true);
   };
 
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this expense?")) return;
+    
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+      const endpoint = process.env.NEXT_PUBLIC_API_EXPENSES_URL || "expenses";
+      const res = await fetchClient(`${baseUrl}${endpoint}/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to delete");
+      }
+      toast.success(data.message || "Expense deleted successfully");
+      mutate();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setIsDeletingBulk(true);
+    const selectedRows = table.getSelectedRowModel().rows;
+    let deletedCount = 0;
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+      const endpoint = process.env.NEXT_PUBLIC_API_EXPENSES_URL || "expenses";
+
+      for (const row of selectedRows) {
+        const id = row.original.id;
+        const res = await fetchClient(`${baseUrl}${endpoint}/${id}`, {
+          method: "DELETE",
+        });
+        if (res.ok) deletedCount++;
+      }
+      toast.success(`Successfully deleted ${deletedCount} expenses.`);
+      setRowSelection({});
+      mutate();
+    } catch (error: any) {
+      toast.error("An error occurred during bulk deletion");
+    } finally {
+      setIsDeletingBulk(false);
+      setBulkDeleteOpen(false);
+    }
+  };
+
+  const exportToExcel = (data: ExpenseItem[]) => {
+    const headers = ["Expense ID", "Date", "Category", "Title", "Amount", "Description"];
+    const csvRows = [
+      headers.join(","),
+      ...data.map((row) => {
+        const cat = expenseCategories.find((c: any) => c.id === row.expense_category_id);
+        const catName = cat ? cat.title : `ID: ${row.expense_category_id}`;
+        return [
+          row.id,
+          row.created_at ? new Date(row.created_at).toLocaleDateString() : "",
+          `"${catName}"`,
+          `"${row.title}"`,
+          row.amount,
+          `"${row.description || ""}"`
+        ].join(",");
+      }),
+    ];
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "expenses.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const table = useReactTable({
-    data: mockData,
+    data: expenses || [],
     columns,
     state: {
       rowSelection,
       columnFilters,
       sorting,
-      columnVisibility: { search: false, status: false, category: false },
+      columnVisibility: { search: false },
       pagination,
     },
-    getRowId: (row) => row.id,
+    getRowId: (row) => String(row.id),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
@@ -286,6 +298,8 @@ export function ExpensesTable() {
     getSortedRowModel: getSortedRowModel(),
     meta: {
       onEdit: handleEdit,
+      onDelete: handleDelete,
+      categories: expenseCategories,
     },
   });
 
@@ -293,13 +307,12 @@ export function ExpensesTable() {
   const selectedCount = table.getSelectedRowModel().rows.length;
   const totalCount = table.getFilteredRowModel().rows.length;
 
-  const filterLabel = activeFilter === "All" ? "All Expenses" : `${activeFilter} Expenses`;
   const countDescription = selectedCount > 0 ? `${selectedCount} of ${totalCount} selected` : `${totalCount} records`;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-normal text-muted-foreground text-sm">{filterLabel}</CardTitle>
+        <CardTitle className="font-normal text-muted-foreground text-sm">All Expenses</CardTitle>
         <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
           {countDescription}
         </CardDescription>
@@ -330,28 +343,6 @@ export function ExpensesTable() {
                 }}
               />
             </div>
-
-            <ToggleGroup
-              className="bg-muted p-0.75 text-muted-foreground **:data-[slot=toggle-group-item]:rounded-md **:data-[slot=toggle-group-item]:border **:data-[slot=toggle-group-item]:border-transparent **:data-[slot=toggle-group-item]:text-foreground/60 **:data-[slot=toggle-group-item]:hover:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:bg-background [&_[data-slot=toggle-group-item][data-state=on]]:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:shadow-sm dark:[&_[data-slot=toggle-group-item][data-state=on]]:border-input dark:[&_[data-slot=toggle-group-item][data-state=on]]:bg-input/30"
-              onValueChange={(value) => {
-                if (!value) return;
-                const filter = value as ExpenseFilter;
-                setActiveFilter(filter);
-                table.getColumn("status")?.setFilterValue(filter === "All" ? undefined : filter);
-                table.setPageIndex(0);
-                setRowSelection({});
-              }}
-              size="sm"
-              spacing={1}
-              type="single"
-              value={activeFilter}
-            >
-              {expenseFilters.map((filter) => (
-                <ToggleGroupItem key={filter} value={filter}>
-                  {filter}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
           </div>
 
           <div className="flex items-center gap-2">
@@ -409,17 +400,14 @@ export function ExpensesTable() {
                   </DialogDescription>
                   <DialogFooter>
                     <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
+                      <Button variant="outline" disabled={isDeletingBulk}>Cancel</Button>
                     </DialogClose>
                     <Button
                       variant="destructive"
-                      onClick={() => {
-                        toast.success(`${selectedCount} record(s) deleted.`);
-                        setRowSelection({});
-                        setBulkDeleteOpen(false);
-                      }}
+                      disabled={isDeletingBulk}
+                      onClick={handleBulkDelete}
                     >
-                      Delete
+                      {isDeletingBulk ? "Deleting..." : "Delete"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -443,7 +431,13 @@ export function ExpensesTable() {
               ))}
             </TableHeader>
             <TableBody className="**:data-[slot='table-row']:border-border/50 **:data-[slot='table-cell']:py-3">
-              {table.getRowModel().rows.length ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-48 text-center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                     {row.getVisibleCells().map((cell) => (
@@ -533,7 +527,7 @@ export function ExpensesTable() {
         </div>
       </CardContent>
 
-      <ExpenseDialog open={dialogOpen} onOpenChange={setDialogOpen} initialData={editData} mode="edit" />
+      <ExpenseDialog open={dialogOpen} onOpenChange={setDialogOpen} initialData={editData} mode="edit" onSuccess={() => mutate()} />
     </Card>
   );
 }
