@@ -43,111 +43,21 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import useDueCollection from "@/hooks/useDueCollection";
 
-/* ---- Demo Data ---- */
+/* ---- Types ---- */
 
-type DueItem = {
-  id: string;
-  orderId: string;
-  customerName: string;
-  customerPhone: string;
-  totalAmount: number;
-  paidAmount: number;
-  dueAmount: number;
+export type DueItem = {
+  order_id: string;
   date: string;
-  status: "Unpaid" | "Partially Paid";
+  created_at: string;
+  customer_name: string;
+  customer_phone: string;
+  total_amount: number;
+  paid_amount: string | number;
+  due_amount: string | number;
+  status?: string;
 };
-
-const mockData: DueItem[] = [
-  {
-    id: "DUE-01",
-    orderId: "ORD-2602",
-    customerName: "Arham Khan",
-    customerPhone: "+880 1711-234567",
-    totalAmount: 2300,
-    paidAmount: 0,
-    dueAmount: 2300,
-    date: "2026-05-18",
-    status: "Unpaid",
-  },
-  {
-    id: "DUE-02",
-    orderId: "ORD-2604",
-    customerName: "Imran Haque",
-    customerPhone: "+880 1817-890123",
-    totalAmount: 5800,
-    paidAmount: 2000,
-    dueAmount: 3800,
-    date: "2026-05-17",
-    status: "Partially Paid",
-  },
-  {
-    id: "DUE-03",
-    orderId: "ORD-2608",
-    customerName: "Kamal Hossain",
-    customerPhone: "+880 1721-234567",
-    totalAmount: 950,
-    paidAmount: 0,
-    dueAmount: 950,
-    date: "2026-05-15",
-    status: "Unpaid",
-  },
-  {
-    id: "DUE-04",
-    orderId: "ORD-2609",
-    customerName: "Rahim Uddin",
-    customerPhone: "+880 1913-456789",
-    totalAmount: 1800,
-    paidAmount: 0,
-    dueAmount: 1800,
-    date: "2026-05-14",
-    status: "Unpaid",
-  },
-  {
-    id: "DUE-05",
-    orderId: "ORD-2611",
-    customerName: "Sadia Rahman",
-    customerPhone: "+880 1716-789012",
-    totalAmount: 2100,
-    paidAmount: 1000,
-    dueAmount: 1100,
-    date: "2026-05-13",
-    status: "Partially Paid",
-  },
-  {
-    id: "DUE-06",
-    orderId: "ORD-2612",
-    customerName: "Rafiq Islam",
-    customerPhone: "+880 1619-012345",
-    totalAmount: 480,
-    paidAmount: 0,
-    dueAmount: 480,
-    date: "2026-05-01",
-    status: "Unpaid",
-  },
-  {
-    id: "DUE-07",
-    orderId: "ORD-2615",
-    customerName: "Shahid Mia",
-    customerPhone: "+880 1913-456789",
-    totalAmount: 2800,
-    paidAmount: 0,
-    dueAmount: 2800,
-    date: "2026-03-15",
-    status: "Unpaid",
-  },
-  {
-    id: "DUE-08",
-    orderId: "ORD-2624",
-    customerName: "Karim Uddin",
-    customerPhone: "+880 1515-111222",
-    totalAmount: 1100,
-    paidAmount: 0,
-    dueAmount: 1100,
-    date: "2026-05-22",
-    status: "Unpaid",
-  },
-];
 
 type DueFilter = "All" | "Unpaid" | "Partially Paid";
 const filters: DueFilter[] = ["All", "Unpaid", "Partially Paid"];
@@ -156,8 +66,19 @@ const filters: DueFilter[] = ["All", "Unpaid", "Partially Paid"];
 
 const columns: ColumnDef<DueItem>[] = [
   {
+    id: "sl_no",
+    header: "SL No",
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as any;
+      const pageIndex = meta?.pageIndex || 0;
+      const pageSize = meta?.pageSize || 10;
+      return <span className="text-muted-foreground">{pageIndex * pageSize + row.index + 1}</span>;
+    },
+    enableHiding: false,
+  },
+  {
     id: "search",
-    accessorFn: (row) => `${row.orderId} ${row.customerName} ${row.customerPhone}`,
+    accessorFn: (row) => `${row.order_id} ${row.customer_name} ${row.customer_phone}`,
     filterFn: "includesString",
     enableHiding: true,
   },
@@ -167,9 +88,9 @@ const columns: ColumnDef<DueItem>[] = [
     enableHiding: true,
   },
   {
-    accessorKey: "orderId",
+    accessorKey: "order_id",
     header: "Order ID",
-    cell: ({ row }) => <span className="font-medium text-muted-foreground">{row.original.orderId}</span>,
+    cell: ({ row }) => <span className="font-medium text-muted-foreground">{row.original.order_id}</span>,
   },
   {
     accessorKey: "date",
@@ -177,35 +98,35 @@ const columns: ColumnDef<DueItem>[] = [
     cell: ({ row }) => <span className="text-muted-foreground">{row.original.date}</span>,
   },
   {
-    accessorKey: "customerName",
+    accessorKey: "customer_name",
     header: "Customer",
     cell: ({ row }) => (
       <div className="flex flex-col">
-        <span className="font-medium">{row.original.customerName}</span>
-        <span className="text-xs text-muted-foreground">{row.original.customerPhone}</span>
+        <span className="font-medium">{row.original.customer_name}</span>
+        <span className="text-xs text-muted-foreground">{row.original.customer_phone}</span>
       </div>
     ),
   },
   {
-    accessorKey: "totalAmount",
+    accessorKey: "total_amount",
     header: "Total Amount",
-    cell: ({ row }) => <span className="tabular-nums">৳{row.original.totalAmount.toLocaleString()}</span>,
+    cell: ({ row }) => <span className="tabular-nums">৳{Number(row.original.total_amount || 0).toLocaleString()}</span>,
   },
   {
-    accessorKey: "paidAmount",
+    accessorKey: "paid_amount",
     header: "Paid Amount",
     cell: ({ row }) => (
       <span className="tabular-nums text-emerald-600 dark:text-emerald-500">
-        ৳{row.original.paidAmount.toLocaleString()}
+        ৳{Number(row.original.paid_amount || 0).toLocaleString()}
       </span>
     ),
   },
   {
-    accessorKey: "dueAmount",
+    accessorKey: "due_amount",
     header: "Due Amount",
     cell: ({ row }) => (
       <span className="tabular-nums font-bold text-amber-600 dark:text-amber-500">
-        ৳{row.original.dueAmount.toLocaleString()}
+        ৳{Number(row.original.due_amount || 0).toLocaleString()}
       </span>
     ),
   },
@@ -230,11 +151,11 @@ const columns: ColumnDef<DueItem>[] = [
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => toast.success(`Payment prompt sent to ${row.original.customerPhone}`)}>
+              <DropdownMenuItem onClick={() => toast.success(`Payment prompt sent to ${row.original.customer_phone}`)}>
                 Send Reminder
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => toast.success(`Payment received for ${row.original.orderId}`)}>
+              <DropdownMenuItem onClick={() => toast.success(`Payment received for ${row.original.order_id}`)}>
                 <HandCoins className="mr-2 size-4" />
                 Add Payment
               </DropdownMenuItem>
@@ -263,13 +184,13 @@ function exportToExcel(data: DueItem[]) {
     headers.join(","),
     ...data.map((row) =>
       [
-        row.orderId,
+        row.order_id,
         row.date,
-        `"${row.customerName}"`,
-        row.customerPhone,
-        row.totalAmount,
-        row.paidAmount,
-        row.dueAmount,
+        `"${row.customer_name}"`,
+        row.customer_phone,
+        row.total_amount,
+        row.paid_amount,
+        row.due_amount,
         row.status,
       ].join(","),
     ),
@@ -286,13 +207,22 @@ function exportToExcel(data: DueItem[]) {
 /* ---- Main Table Component ---- */
 
 export function DueTable() {
+  const { dues, isLoading } = useDueCollection();
+
+  const formattedData = React.useMemo(() => {
+    return dues.map((item: any) => ({
+      ...item,
+      status: Number(item.paid_amount) > 0 ? "Partially Paid" : "Unpaid",
+    }));
+  }, [dues]);
+
   const [activeFilter, setActiveFilter] = React.useState<DueFilter>("All");
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   const table = useReactTable({
-    data: mockData,
+    data: formattedData || [],
     columns,
     state: {
       columnFilters,
@@ -300,7 +230,7 @@ export function DueTable() {
       columnVisibility: { search: false, status: false },
       pagination,
     },
-    getRowId: (row) => row.id,
+    getRowId: (row) => row.order_id,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
@@ -308,6 +238,10 @@ export function DueTable() {
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    meta: {
+      pageIndex: pagination.pageIndex,
+      pageSize: pagination.pageSize,
+    },
   });
 
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
@@ -414,7 +348,13 @@ export function DueTable() {
               ))}
             </TableHeader>
             <TableBody className="**:data-[slot='table-row']:border-border/50 **:data-[slot='table-cell']:py-3">
-              {table.getRowModel().rows.length ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-48 text-center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
