@@ -76,7 +76,14 @@ export default function BlocklistPage() {
           minute: '2-digit',
           hour12: true
         }).replace(',', '\n'),
-        expires: item.expires_at ? new Date(item.expires_at).toLocaleDateString() : "Permanent",
+        expires: item.expires_at ? new Date(item.expires_at).toLocaleString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        }).replace(',', '\n') : "Permanent",
       }));
       
       setBlocklistData(formattedData);
@@ -121,8 +128,10 @@ export default function BlocklistPage() {
     }
   };
 
+
+
   // Add new block entry
-  const handleAddBlock = async (newBlock: { block_type: string; block_value: string; reason?: string }) => {
+  const handleAddBlock = async (newBlock: { block_type: string; block_value: string; reason?: string; expires_at?: string }) => {
     try {
       const response = await fetch(API_URL, {
         method: 'POST',

@@ -43,6 +43,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -173,7 +174,7 @@ export function BlocklistTable({ data, onDelete, onToggleStatus, onRefresh }: Bl
     {
       accessorKey: "expires",
       header: "Expires",
-      cell: ({ row }) => <Badge variant="outline">{row.getValue("expires")}</Badge>,
+      cell: ({ row }) => <Badge variant="outline" className="bg-slate-100 text-slate-600 border-transparent font-medium hover:bg-slate-100 whitespace-pre-line leading-tight text-center">{row.getValue("expires")}</Badge>,
     },
     {
       id: "actions",
@@ -370,22 +371,18 @@ export function BlocklistTable({ data, onDelete, onToggleStatus, onRefresh }: Bl
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className="border-slate-100 hover:bg-slate-50/50">
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                      <TableCell key={cell.id} className="py-4 font-medium text-slate-600">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-48">
-                    <div className="flex flex-col items-center justify-center gap-2 text-center">
-                      <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-                        <Ban className="size-6 text-muted-foreground" />
-                      </div>
-                      <p className="text-sm font-medium">No blocked entries found</p>
-                      <p className="text-xs text-muted-foreground">Try adjusting your search or filter.</p>
-                    </div>
+                  <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                    No block entries found.
                   </TableCell>
                 </TableRow>
               )}
