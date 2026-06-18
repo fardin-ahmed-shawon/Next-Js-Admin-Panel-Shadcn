@@ -14,9 +14,11 @@ export default function BlocklistPage() {
   const [loading, setLoading] = React.useState(true);
 
   // Use environment variables
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin/';
   const BLOCK_LIST_URL = process.env.NEXT_PUBLIC_API_BLOCK_LIST_URL || 'block-list';
-  const API_URL = `${API_BASE_URL}/${BLOCK_LIST_URL}`;
+  const cleanBase = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+  const cleanPath = BLOCK_LIST_URL.startsWith('/') ? BLOCK_LIST_URL.slice(1) : BLOCK_LIST_URL;
+  const API_URL = `${cleanBase}${cleanPath}`;
 
   // Fetch all blocklist entries
   const fetchBlocklist = async () => {
@@ -87,14 +89,15 @@ export default function BlocklistPage() {
     }
   };
 
+
+
   // Toggle status (Unblock/Re-block)
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
     try {
-      // Toggle the is_active value
       const newStatus = !currentStatus;
       
       const response = await fetch(`${API_URL}/${id}`, {
-        method: 'PUT', // or PATCH depending on your Laravel route
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -107,8 +110,8 @@ export default function BlocklistPage() {
       const result = await response.json();
       
       if (result.success) {
-        toast.success(newStatus ? "Entry unblocked successfully." : "Entry re-blocked successfully.");
-        await fetchBlocklist(); // Refresh the list
+        toast.success(newStatus ? "Entry re-blocked successfully." : "Entry unblocked successfully.");
+        await fetchBlocklist();
       } else {
         toast.error(result.message || "Failed to update status");
       }

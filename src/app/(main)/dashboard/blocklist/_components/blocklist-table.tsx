@@ -15,6 +15,7 @@ import {
 import {
   ArrowUpDown,
   Ban,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -24,7 +25,10 @@ import {
   PhoneCall,
   RefreshCw,
   Search,
+  ShieldCheck,
+  ShieldOff,
   Trash,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -141,7 +145,20 @@ export function BlocklistTable({ data, onDelete, onToggleStatus, onRefresh }: Bl
       header: "Status",
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
-        return <Badge variant={status === "Active" ? "default" : "outline"}>{status}</Badge>;
+        if (status === "Active") {
+          return (
+            <Badge variant="outline" className="bg-emerald-100/80 text-emerald-700 hover:bg-emerald-100/80 border-transparent rounded-full px-3 py-1 font-semibold">
+              <CheckCircle2 className="mr-1.5 size-3.5" />
+              {status}
+            </Badge>
+          );
+        }
+        return (
+          <Badge variant="outline" className="bg-red-100/80 text-red-700 hover:bg-red-100/80 border-transparent rounded-full px-3 py-1 font-semibold">
+            <XCircle className="mr-1.5 size-3.5" />
+            {status}
+          </Badge>
+        );
       },
     },
     {
@@ -169,19 +186,31 @@ export function BlocklistTable({ data, onDelete, onToggleStatus, onRefresh }: Bl
         return (
           <div className="flex justify-end gap-2">
             <Button 
-              variant="outline" 
+              className={isActive 
+                ? "bg-amber-100/80 text-amber-700 hover:bg-amber-200 border-transparent shadow-none font-semibold px-3" 
+                : "bg-emerald-100/80 text-emerald-700 hover:bg-emerald-200 border-transparent shadow-none font-semibold px-3"
+              }
+              variant="outline"
               size="sm" 
               onClick={() => handleToggleStatus(entry.id, entry.is_active)}
               disabled={isLoading}
             >
-              <RefreshCw className={`mr-2 size-4 ${isLoading ? 'animate-spin' : ''}`} />
-              {isLoading ? "Updating..." : (isActive ? "Unblock" : "Re-block")}
+              {isActive ? (
+                <ShieldOff className={`mr-1.5 size-4 ${isLoading ? 'animate-pulse' : ''}`} />
+              ) : (
+                <ShieldCheck className={`mr-1.5 size-4 ${isLoading ? 'animate-pulse' : ''}`} />
+              )}
+              {isLoading ? "Wait..." : (isActive ? "Unblock" : "Re-block")}
             </Button>
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
-                  <Trash className="mr-2 size-4" />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="bg-red-100/80 text-red-700 hover:bg-red-200 hover:text-red-800 border-transparent shadow-none font-semibold px-3"
+                >
+                  <Trash className="mr-1.5 size-4" />
                   Delete
                 </Button>
               </AlertDialogTrigger>
