@@ -68,53 +68,6 @@ type RevenueItem = {
   paymentStatus: "Full Paid" | "Partially Paid" | "Refund";
 };
 
-const mockData: RevenueItem[] = [
-  {
-    id: "REV-001",
-    transactionId: "TRX-A892B1",
-    orderId: "ORD-2026-100",
-    accountNo: "ACC-5912",
-    customer: "Nusrat Jahan",
-    method: "bKash",
-    amount: 15500,
-    date: "10/24/2026",
-    paymentStatus: "Full Paid",
-  },
-  {
-    id: "REV-002",
-    transactionId: "TRX-C349D8",
-    orderId: "ORD-2026-101",
-    accountNo: "ACC-8374",
-    customer: "Arham Khan",
-    method: "Nagad",
-    amount: 500,
-    date: "10/23/2026",
-    paymentStatus: "Partially Paid",
-  },
-  {
-    id: "REV-003",
-    transactionId: "TRX-E102F5",
-    orderId: "ORD-2026-102",
-    accountNo: "ACC-1093",
-    customer: "Maliha Sultana",
-    method: "Bank Transfer",
-    amount: 100000,
-    date: "10/22/2026",
-    paymentStatus: "Full Paid",
-  },
-  {
-    id: "REV-004",
-    transactionId: "TRX-G771H9",
-    orderId: "ORD-2026-103",
-    accountNo: "ACC-2941",
-    customer: "Imran Haque",
-    method: "Cash",
-    amount: 2500,
-    date: "10/21/2026",
-    paymentStatus: "Refund",
-  },
-];
-
 type RevenueFilter = "All" | "Full Paid" | "Partially Paid" | "Refund";
 const revenueFilters: RevenueFilter[] = ["All", "Full Paid", "Partially Paid", "Refund"];
 
@@ -286,30 +239,61 @@ function exportToExcel(data: RevenueItem[]) {
 
 /* ---- Main Table Component ---- */
 
-export function RevenueTable() {
-  const [activeFilter, setActiveFilter] = React.useState<RevenueFilter>("All");
+export function RevenueTable({
+  data,
+  totalCount,
+  pageIndex,
+  pageSize,
+  setPageIndex,
+  setPageSize,
+  filter,
+  setFilter,
+  loading
+}: {
+  data: RevenueItem[];
+  totalCount: number;
+  pageIndex: number;
+  pageSize: number;
+  setPageIndex: (index: number) => void;
+  setPageSize: (size: number) => void;
+  filter: string;
+  setFilter: (f: string) => void;
+  loading: boolean;
+}) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+
+  const pageCount = Math.ceil(totalCount / pageSize);
 
   const table = useReactTable({
-    data: mockData,
+    data,
     columns,
+    pageCount,
     state: {
       rowSelection,
       columnFilters,
       sorting,
       columnVisibility: { search: false, paymentStatus: false, method: false },
-      pagination,
+      pagination: { pageIndex, pageSize },
     },
+    manualPagination: true,
     getRowId: (row) => row.id,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
-    onPaginationChange: setPagination,
+    onPaginationChange: (updater) => {
+      if (typeof updater === "function") {
+        const newPagination = updater({ pageIndex, pageSize });
+        setPageIndex(newPagination.pageIndex);
+        setPageSize(newPagination.pageSize);
+      } else {
+        setPageIndex(updater.pageIndex);
+        setPageSize(updater.pageSize);
+      }
+    },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -318,9 +302,8 @@ export function RevenueTable() {
 
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
   const selectedCount = table.getSelectedRowModel().rows.length;
-  const totalCount = table.getFilteredRowModel().rows.length;
 
-  const filterLabel = activeFilter === "All" ? "All Revenue" : `${activeFilter} Revenue`;
+  const filterLabel = filter === "All" ? "All Revenue" : `${filter} Revenue`;
   const countDescription = selectedCount > 0 ? `${selectedCount} of ${totalCount} selected` : `${totalCount} records`;
 
   return (
@@ -362,20 +345,18 @@ export function RevenueTable() {
               className="bg-muted p-0.75 text-muted-foreground **:data-[slot=toggle-group-item]:rounded-md **:data-[slot=toggle-group-item]:border **:data-[slot=toggle-group-item]:border-transparent **:data-[slot=toggle-group-item]:text-foreground/60 **:data-[slot=toggle-group-item]:hover:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:bg-background [&_[data-slot=toggle-group-item][data-state=on]]:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:shadow-sm dark:[&_[data-slot=toggle-group-item][data-state=on]]:border-input dark:[&_[data-slot=toggle-group-item][data-state=on]]:bg-input/30"
               onValueChange={(value) => {
                 if (!value) return;
-                const filter = value as RevenueFilter;
-                setActiveFilter(filter);
-                table.getColumn("paymentStatus")?.setFilterValue(filter === "All" ? undefined : filter);
-                table.setPageIndex(0);
+                setFilter(value);
+                setPageIndex(0);
                 setRowSelection({});
               }}
               size="sm"
               spacing={1}
               type="single"
-              value={activeFilter}
+              value={filter}
             >
-              {revenueFilters.map((filter) => (
-                <ToggleGroupItem key={filter} value={filter}>
-                  {filter}
+              {revenueFilters.map((f) => (
+                <ToggleGroupItem key={f} value={f}>
+                  {f}
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
@@ -486,8 +467,14 @@ export function RevenueTable() {
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-3 py-8">
-                      <Archive className="size-6 text-muted-foreground" />
-                      <p className="text-sm font-medium text-muted-foreground">No revenue records found</p>
+                      {loading ? (
+                        <p className="text-sm font-medium text-muted-foreground">Loading...</p>
+                      ) : (
+                        <>
+                          <Archive className="size-6 text-muted-foreground" />
+                          <p className="text-sm font-medium text-muted-foreground">No revenue records found</p>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -501,8 +488,11 @@ export function RevenueTable() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows per page</span>
             <Select
-              value={`${pagination.pageSize}`}
-              onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}
+              value={`${pageSize}`}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setPageIndex(0);
+              }}
             >
               <SelectTrigger className="h-8 w-[70px]">
                 <SelectValue />

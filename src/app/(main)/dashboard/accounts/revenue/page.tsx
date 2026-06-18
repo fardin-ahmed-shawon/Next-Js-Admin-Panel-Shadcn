@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
-import { RevenueStats } from "./_components/revenue-stats";
-import { RevenueTable } from "./_components/revenue-table";
+import { RevenueDashboard } from "./_components/revenue-dashboard";
 
 export const metadata: Metadata = {
   title: "Revenue",
@@ -20,8 +19,7 @@ export default function AccountsRevenuePage() {
         </div>
       </div>
 
-      <RevenueStats />
-      <RevenueTable />
+      <RevenueDashboard />
     </div>
   );
 }
