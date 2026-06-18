@@ -40,158 +40,19 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import useAccountStatements from "@/hooks/useAccountStatements";
 
-/* ---- Demo Data ---- */
+/* ---- Types ---- */
 
-type StatementItem = {
-  id: string;
+export type StatementItem = {
   date: string;
-  time: string;
-  transactionId: string;
-  type: "Revenue" | "Expense" | "COGS";
+  trx_id: string | null;
+  type: "Revenue" | "Expense" | "COGS" | string;
   details: string;
-  amountIn: number;
-  amountOut: number;
+  credit: number;
+  debit: number;
   balance: number;
 };
-
-// Start Balance: 2,450,000
-const mockData: StatementItem[] = (
-  [
-    {
-      id: "ST-01",
-      date: "05/18/2026",
-      time: "09:00 AM",
-      transactionId: "TRX-101",
-      type: "Revenue" as const,
-      details: "Order Payment - Nusrat Jahan",
-      amountIn: 4100,
-      amountOut: 0,
-      balance: 2454100,
-    },
-    {
-      id: "ST-02",
-      date: "05/18/2026",
-      time: "10:15 AM",
-      transactionId: "TRX-102",
-      type: "Revenue" as const,
-      details: "Order Payment - Maliha Sultana",
-      amountIn: 1450,
-      amountOut: 0,
-      balance: 2455550,
-    },
-    {
-      id: "ST-03",
-      date: "05/18/2026",
-      time: "11:30 AM",
-      transactionId: "EXP-501",
-      type: "Expense" as const,
-      details: "Office Supplies - Stationery",
-      amountIn: 0,
-      amountOut: 1200,
-      balance: 2454350,
-    },
-    {
-      id: "ST-04",
-      date: "05/18/2026",
-      time: "01:00 PM",
-      transactionId: "CGS-901",
-      type: "COGS" as const,
-      details: "Supplier Payment - Electronics",
-      amountIn: 0,
-      amountOut: 15000,
-      balance: 2439350,
-    },
-    {
-      id: "ST-05",
-      date: "05/19/2026",
-      time: "10:25 AM",
-      transactionId: "TRX-103",
-      type: "Revenue" as const,
-      details: "Order Payment - Arham Khan",
-      amountIn: 2300,
-      amountOut: 0,
-      balance: 2441650,
-    },
-    {
-      id: "ST-06",
-      date: "05/19/2026",
-      time: "02:20 PM",
-      transactionId: "EXP-502",
-      type: "Expense" as const,
-      details: "Utility Bill - Internet",
-      amountIn: 0,
-      amountOut: 3500,
-      balance: 2438150,
-    },
-    {
-      id: "ST-07",
-      date: "05/20/2026",
-      time: "09:15 AM",
-      transactionId: "TRX-104",
-      type: "Revenue" as const,
-      details: "Order Payment - Karim Uddin",
-      amountIn: 3200,
-      amountOut: 0,
-      balance: 2441350,
-    },
-    {
-      id: "ST-08",
-      date: "05/20/2026",
-      time: "11:00 AM",
-      transactionId: "TRX-105",
-      type: "Revenue" as const,
-      details: "Order Payment - Samira Ahmed",
-      amountIn: 8500,
-      amountOut: 0,
-      balance: 2449850,
-    },
-    {
-      id: "ST-09",
-      date: "05/21/2026",
-      time: "10:00 AM",
-      transactionId: "CGS-902",
-      type: "COGS" as const,
-      details: "Supplier Payment - Clothing",
-      amountIn: 0,
-      amountOut: 25000,
-      balance: 2424850,
-    },
-    {
-      id: "ST-10",
-      date: "05/21/2026",
-      time: "03:45 PM",
-      transactionId: "EXP-503",
-      type: "Expense" as const,
-      details: "Marketing - Facebook Ads",
-      amountIn: 0,
-      amountOut: 10000,
-      balance: 2414850,
-    },
-    {
-      id: "ST-11",
-      date: "05/22/2026",
-      time: "11:10 AM",
-      transactionId: "TRX-106",
-      type: "Revenue" as const,
-      details: "Order Payment - Arham Khan",
-      amountIn: 450,
-      amountOut: 0,
-      balance: 2415300,
-    },
-    {
-      id: "ST-12",
-      date: "05/23/2026",
-      time: "10:05 AM",
-      transactionId: "TRX-107",
-      type: "Revenue" as const,
-      details: "Order Payment - Rafiq Islam",
-      amountIn: 5400,
-      amountOut: 0,
-      balance: 2420700,
-    },
-  ] as StatementItem[]
-).reverse(); // Reverse so newest is at the top like a typical ledger
 
 type StatementFilter = "All" | "Revenue" | "Expense" | "COGS";
 const filters: StatementFilter[] = ["All", "Revenue", "Expense", "COGS"];
@@ -200,8 +61,19 @@ const filters: StatementFilter[] = ["All", "Revenue", "Expense", "COGS"];
 
 const columns: ColumnDef<StatementItem>[] = [
   {
+    id: "sl_no",
+    header: "SL No",
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as any;
+      const pageIndex = meta?.pageIndex || 0;
+      const pageSize = meta?.pageSize || 10;
+      return <span className="text-muted-foreground">{pageIndex * pageSize + row.index + 1}</span>;
+    },
+    enableHiding: false,
+  },
+  {
     id: "search",
-    accessorFn: (row) => `${row.transactionId} ${row.details}`,
+    accessorFn: (row) => `${row.trx_id || ""} ${row.details}`,
     filterFn: "includesString",
     enableHiding: true,
   },
@@ -213,17 +85,21 @@ const columns: ColumnDef<StatementItem>[] = [
   {
     accessorKey: "date",
     header: "Date & Time",
-    cell: ({ row }) => (
-      <div className="flex flex-col">
-        <span className="font-medium">{row.original.date}</span>
-        <span className="text-xs text-muted-foreground">{row.original.time}</span>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const dt = row.original.date;
+      const [datePart, timePart] = dt ? dt.split(" ") : ["", ""];
+      return (
+        <div className="flex flex-col">
+          <span className="font-medium">{datePart}</span>
+          <span className="text-xs text-muted-foreground">{timePart}</span>
+        </div>
+      );
+    },
   },
   {
-    accessorKey: "transactionId",
+    accessorKey: "trx_id",
     header: "Transaction ID",
-    cell: ({ row }) => <span className="text-muted-foreground">{row.original.transactionId}</span>,
+    cell: ({ row }) => <span className="text-muted-foreground">{row.original.trx_id || "-"}</span>,
   },
   {
     accessorKey: "details",
@@ -250,14 +126,14 @@ const columns: ColumnDef<StatementItem>[] = [
     },
   },
   {
-    accessorKey: "amountIn",
+    accessorKey: "credit",
     header: () => (
       <div className="text-right flex items-center justify-end">
         <ArrowDownRight className="mr-1 size-3 text-emerald-500" /> In (Credit)
       </div>
     ),
     cell: ({ row }) => {
-      const val = row.original.amountIn;
+      const val = Number(row.original.credit || 0);
       return (
         <div className="text-right tabular-nums font-medium text-emerald-600 dark:text-emerald-500">
           {val > 0 ? `৳${val.toLocaleString()}` : "-"}
@@ -266,14 +142,14 @@ const columns: ColumnDef<StatementItem>[] = [
     },
   },
   {
-    accessorKey: "amountOut",
+    accessorKey: "debit",
     header: () => (
       <div className="text-right flex items-center justify-end">
         <ArrowUpRight className="mr-1 size-3 text-destructive" /> Out (Debit)
       </div>
     ),
     cell: ({ row }) => {
-      const val = row.original.amountOut;
+      const val = Number(row.original.debit || 0);
       return (
         <div className="text-right tabular-nums font-medium text-destructive">
           {val > 0 ? `৳${val.toLocaleString()}` : "-"}
@@ -285,7 +161,7 @@ const columns: ColumnDef<StatementItem>[] = [
     accessorKey: "balance",
     header: () => <div className="text-right font-bold">Balance</div>,
     cell: ({ row }) => (
-      <div className="text-right tabular-nums font-bold">৳{row.original.balance.toLocaleString()}</div>
+      <div className="text-right tabular-nums font-bold">৳{Number(row.original.balance || 0).toLocaleString()}</div>
     ),
   },
 ];
@@ -293,18 +169,17 @@ const columns: ColumnDef<StatementItem>[] = [
 /* ---- CSV Export ---- */
 
 function exportToExcel(data: StatementItem[]) {
-  const headers = ["Date", "Time", "Transaction ID", "Type", "Details", "Amount In", "Amount Out", "Balance"];
+  const headers = ["Date", "Transaction ID", "Type", "Details", "Amount In (Credit)", "Amount Out (Debit)", "Balance"];
   const csvRows = [
     headers.join(","),
     ...data.map((row) =>
       [
         row.date,
-        row.time,
-        row.transactionId,
+        row.trx_id || "",
         row.type,
         `"${row.details}"`,
-        row.amountIn,
-        row.amountOut,
+        row.credit,
+        row.debit,
         row.balance,
       ].join(","),
     ),
@@ -321,13 +196,15 @@ function exportToExcel(data: StatementItem[]) {
 /* ---- Main Table Component ---- */
 
 export function StatementTable() {
+  const { statements, isLoading } = useAccountStatements();
+
   const [activeFilter, setActiveFilter] = React.useState<StatementFilter>("All");
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   const table = useReactTable({
-    data: mockData,
+    data: statements || [],
     columns,
     state: {
       columnFilters,
@@ -335,7 +212,7 @@ export function StatementTable() {
       columnVisibility: { search: false, type: false },
       pagination,
     },
-    getRowId: (row) => row.id,
+    getRowId: (row, i) => `${row.trx_id}-${i}`,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
@@ -343,6 +220,10 @@ export function StatementTable() {
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    meta: {
+      pageIndex: pagination.pageIndex,
+      pageSize: pagination.pageSize,
+    },
   });
 
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
@@ -449,7 +330,13 @@ export function StatementTable() {
               ))}
             </TableHeader>
             <TableBody className="**:data-[slot='table-row']:border-border/50 **:data-[slot='table-cell']:py-3">
-              {table.getRowModel().rows.length ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-48 text-center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (

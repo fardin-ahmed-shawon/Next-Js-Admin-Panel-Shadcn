@@ -1,39 +1,44 @@
+"use client";
+
 import { ArrowDownRight, ArrowUpRight, HandCoins, Landmark } from "lucide-react";
 
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-const stats = [
-  {
-    title: "Starting Balance",
-    value: "৳2,450,000",
-    subtitle: "At the start of period",
-    icon: Landmark,
-    valueClass: "text-muted-foreground",
-  },
-  {
-    title: "Total In",
-    value: "৳1,800,000",
-    subtitle: "Total received",
-    icon: ArrowDownRight,
-    valueClass: "text-emerald-600 dark:text-emerald-500",
-  },
-  {
-    title: "Total Out",
-    value: "৳1,100,000",
-    subtitle: "Total spent (Expenses + COGS)",
-    icon: ArrowUpRight,
-    valueClass: "text-destructive",
-  },
-  {
-    title: "Ending Balance",
-    value: "৳3,150,000",
-    subtitle: "At the end of period",
-    icon: HandCoins,
-    valueClass: "text-foreground font-bold",
-  },
-];
+import useAccountStatements from "@/hooks/useAccountStatements";
 
 export function StatementStats() {
+  const { summary, isLoading } = useAccountStatements();
+
+  const stats = [
+    {
+      title: "Starting Balance",
+      value: isLoading ? "..." : `৳${Number(summary.starting_balance || 0).toLocaleString()}`,
+      subtitle: "At the start of period",
+      icon: Landmark,
+      valueClass: "text-muted-foreground",
+    },
+    {
+      title: "Total In",
+      value: isLoading ? "..." : `৳${Number(summary.total_in || 0).toLocaleString()}`,
+      subtitle: "Total received",
+      icon: ArrowDownRight,
+      valueClass: "text-emerald-600 dark:text-emerald-500",
+    },
+    {
+      title: "Total Out",
+      value: isLoading ? "..." : `৳${Number(summary.total_out || 0).toLocaleString()}`,
+      subtitle: "Total spent (Expenses + COGS)",
+      icon: ArrowUpRight,
+      valueClass: "text-destructive",
+    },
+    {
+      title: "Ending Balance",
+      value: isLoading ? "..." : `৳${Number(summary.ending_balance || 0).toLocaleString()}`,
+      subtitle: "At the end of period",
+      icon: HandCoins,
+      valueClass: "text-foreground font-bold",
+    },
+  ];
+
   return (
     <div className="overflow-hidden rounded-xl bg-card shadow-xs ring-1 ring-foreground/10">
       <div className="grid grid-cols-2 *:data-[slot=card]:rounded-none *:data-[slot=card]:ring-0 [&>*]:border-b [&>*:nth-child(odd)]:border-r md:grid-cols-4 md:[&>*]:border-b-0 md:[&>*:not(:last-child)]:border-r md:[&>*:last-child]:border-r-0">
