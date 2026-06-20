@@ -48,16 +48,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const activeOrders = [
-  { phone: "017000000002", invoice: "ORD-1714614785", total: "৳1,000", date: "May 14, 2024", status: "Active" },
-  { phone: "017000000004", invoice: "ORD-1714614787", total: "৳0", date: "May 16, 2024", status: "Active" },
-  { phone: "017000000006", invoice: "ORD-1714614789", total: "৳2,500", date: "May 18, 2024", status: "Active" },
-  { phone: "017000000008", invoice: "ORD-1714614791", total: "৳1,200", date: "May 20, 2024", status: "Active" },
-  { phone: "017000000010", invoice: "ORD-1714614793", total: "৳4,500", date: "May 22, 2024", status: "Active" },
-  { phone: "017000000012", invoice: "ORD-1714614795", total: "৳9,000", date: "May 24, 2024", status: "Active" },
-];
+import { useAdminDashboard } from "@/hooks/useAdminDashboard";
+import { Skeleton } from "@/components/ui/skeleton";
 
-type OrderRow = (typeof activeOrders)[0];
+export type OrderRow = {
+  phone: string;
+  invoice: string;
+  total: string;
+  date: string;
+  status: string;
+};
 
 const columns: ColumnDef<OrderRow>[] = [
   {
@@ -147,6 +147,19 @@ function exportToExcel(data: OrderRow[]) {
 }
 
 export function DokanxActiveOrders() {
+  const { data, isLoading } = useAdminDashboard();
+  
+  const activeOrders = React.useMemo(() => {
+    if (!data?.lists?.active) return [];
+    return data.lists.active.map((order) => ({
+      phone: order.customer_phone || "N/A",
+      invoice: order.order_no,
+      total: `৳${order.grand_total_amount?.toLocaleString() ?? 0}`,
+      date: new Date(order.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
+      status: order.order_status,
+    }));
+  }, [data?.lists?.active]);
+
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({
@@ -274,7 +287,13 @@ export function DokanxActiveOrders() {
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows.length ? (
+              {isLoading ? (
+                 <TableRow>
+                   <TableCell colSpan={5} className="h-24 text-center">
+                     <Skeleton className="h-8 w-full" />
+                   </TableCell>
+                 </TableRow>
+              ) : table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (

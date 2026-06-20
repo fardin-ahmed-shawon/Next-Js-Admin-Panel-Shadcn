@@ -51,16 +51,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const pendingOrders = [
-  { phone: "017000000001", invoice: "ORD-1714614784", total: "৳0", date: "May 13, 2024", status: "Pending" },
-  { phone: "017000000003", invoice: "ORD-1714614786", total: "৳1,000", date: "May 15, 2024", status: "Pending" },
-  { phone: "017000000005", invoice: "ORD-1714614788", total: "৳500", date: "May 17, 2024", status: "Pending" },
-  { phone: "017000000007", invoice: "ORD-1714614790", total: "৳3,000", date: "May 19, 2024", status: "Pending" },
-  { phone: "017000000009", invoice: "ORD-1714614792", total: "৳800", date: "May 21, 2024", status: "Pending" },
-  { phone: "017000000011", invoice: "ORD-1714614794", total: "৳600", date: "May 23, 2024", status: "Pending" },
-];
+import { useAdminDashboard } from "@/hooks/useAdminDashboard";
+import { Skeleton } from "@/components/ui/skeleton";
 
-type OrderRow = (typeof pendingOrders)[0];
+export type OrderRow = {
+  phone: string;
+  invoice: string;
+  total: string;
+  date: string;
+  status: string;
+};
 
 const columns: ColumnDef<OrderRow>[] = [
   {
@@ -163,6 +163,19 @@ function exportToExcel(data: OrderRow[]) {
 }
 
 export function DokanxPendingOrders() {
+  const { data, isLoading } = useAdminDashboard();
+  
+  const pendingOrders = React.useMemo(() => {
+    if (!data?.lists?.pending) return [];
+    return data.lists.pending.map((order) => ({
+      phone: order.customer_phone || "N/A",
+      invoice: order.order_no,
+      total: `৳${order.grand_total_amount?.toLocaleString() ?? 0}`,
+      date: new Date(order.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
+      status: order.order_status,
+    }));
+  }, [data?.lists?.pending]);
+
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({
@@ -290,7 +303,13 @@ export function DokanxPendingOrders() {
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows.length ? (
+              {isLoading ? (
+                 <TableRow>
+                   <TableCell colSpan={5} className="h-24 text-center">
+                     <Skeleton className="h-8 w-full" />
+                   </TableCell>
+                 </TableRow>
+              ) : table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
