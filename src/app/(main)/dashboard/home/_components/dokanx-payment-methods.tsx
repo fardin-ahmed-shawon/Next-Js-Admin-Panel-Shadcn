@@ -86,7 +86,7 @@ export function DokanxPaymentMethods() {
   const { data, isLoading } = useAdminDashboard();
   
   const paymentTrends = data?.payment_trends;
-  const methods = paymentTrends?.methods || {};
+  const methods: Record<string, string | number> = paymentTrends?.methods || {};
   const totalProcessing = paymentTrends?.total_processing || 0;
 
   const calculatePercentage = (value: string | number) => {

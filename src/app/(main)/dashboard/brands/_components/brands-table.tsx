@@ -69,7 +69,7 @@ interface BrandsTableProps {
 }
 
 /* ---- Row Actions ---- */
-function RowActions({ row, onDelete, onUpdate }: { row: BrandRow; onDelete: string; onUpdate: (id: string, formData: FormData) => Promise<boolean> }) {
+function RowActions({ row, onDelete, onUpdate }: { row: BrandRow; onDelete: (id: string) => Promise<void>; onUpdate: (id: string, formData: FormData) => Promise<boolean> }) {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
 

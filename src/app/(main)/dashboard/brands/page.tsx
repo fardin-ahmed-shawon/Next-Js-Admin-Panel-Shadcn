@@ -45,7 +45,7 @@ export default function BrandsPage() {
         setStats({
           total: formattedData.length,
           newThisMonth: formattedData.length,
-          totalProducts: formattedData.reduce((sum, brand) => sum + brand.totalProducts, 0),
+          totalProducts: formattedData.reduce((sum: number, brand: any) => sum + brand.totalProducts, 0),
           topTier: Math.ceil(formattedData.length * 0.3),
         });
       }
@@ -112,6 +112,36 @@ export default function BrandsPage() {
     }
   };
 
+  // Add brand
+  const handleAddBrand = async (formData: FormData) => {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success("Brand added successfully");
+        await fetchBrands();
+        return true;
+      } else {
+        if (result.errors) {
+          const errors = Object.values(result.errors).flat();
+          toast.error(errors.join(', '));
+        } else {
+          toast.error(result.message || "Failed to add brand");
+        }
+        return false;
+      }
+    } catch (error) {
+      console.error('Add error:', error);
+      toast.error("Failed to add brand");
+      return false;
+    }
+  };
+
   React.useEffect(() => {
     fetchBrands();
   }, []);
@@ -146,10 +176,7 @@ export default function BrandsPage() {
           <AddBrandDialog 
             open={isAddOpen} 
             onOpenChange={setIsAddOpen}
-            onAddBrand={() => {
-              fetchBrands();
-              setIsAddOpen(false);
-            }}
+            onAddBrand={handleAddBrand}
           />
         </div>
       </div>

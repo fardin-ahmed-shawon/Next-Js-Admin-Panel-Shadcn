@@ -315,7 +315,7 @@ export default function EditRolePage() {
         throw new Error("Failed to delete role.");
       }
 
-      setRoles((prev) => prev.filter((r) => r.id !== roleId));
+      setRoles((prev) => prev.filter((r) => String(r.id) !== roleId));
       toast.success("Role deleted successfully.");
       router.push("/dashboard/roles");
     } catch (error) {

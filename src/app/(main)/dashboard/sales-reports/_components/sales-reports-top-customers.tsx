@@ -166,7 +166,7 @@ export function SalesReportsTopCustomers({ data: _unused }: { data: OrderRow[] }
     const ranked = [...customers]
       .filter((c: any) => c.parcel_history?.total_spent > 0)
       .sort((a: any, b: any) => (b.parcel_history?.total_spent || 0) - (a.parcel_history?.total_spent || 0))
-      .map((c: any, idx: number) => {
+      .map((c: any, idx: number): CustomerRow => {
         return {
           name: c.full_name,
           phone: c.phone || "",

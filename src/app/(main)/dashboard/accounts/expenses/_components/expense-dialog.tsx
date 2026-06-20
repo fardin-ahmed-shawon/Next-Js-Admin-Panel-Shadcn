@@ -146,7 +146,7 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess
               <Label htmlFor="category">Category <span className="text-destructive">*</span></Label>
               <Select
                 value={formData.expense_category_id.toString()}
-                onValueChange={(val) => setFormData({ ...formData, expense_category_id: val })}
+                onValueChange={(val) => setFormData({ ...formData, expense_category_id: Number(val) })}
                 disabled={loading}
               >
                 <SelectTrigger id="category">
@@ -169,7 +169,7 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess
                 type="number"
                 placeholder="0.00"
                 value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value === "" ? "" : Number(e.target.value) })}
                 disabled={loading}
               />
             </div>

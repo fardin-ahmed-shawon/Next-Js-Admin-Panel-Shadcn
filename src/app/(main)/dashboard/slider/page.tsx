@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "";
 const SLIDER_API_URL = process.env.NEXT_PUBLIC_API_SLIDER_URL || "sliders";
 
 const getSliderUrl = (path: string = '') => {

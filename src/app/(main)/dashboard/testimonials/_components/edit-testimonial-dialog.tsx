@@ -39,6 +39,7 @@ export function EditTestimonialDialog({
     position: "",
     rating: "5",
     text: "",
+    photo: "",
   });
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +51,7 @@ export function EditTestimonialDialog({
         position: testimonial.position || "",
         rating: String(testimonial.rating || 5),
         text: testimonial.text || "",
+        photo: testimonial.photo || "",
       });
       setImagePreview(testimonial.photo || null);
     }

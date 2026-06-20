@@ -153,7 +153,7 @@ function exportToExcel(data: ProfitLossItem[]) {
   const csvRows = [
     headers.join(","),
     ...data.map((row) => {
-      const isLoss = Number(row.original.net_profit || 0) < 0;
+      const isLoss = Number(row.net_profit || 0) < 0;
       const s = isLoss ? "Loss" : "Profit";
       return [
         `"${row.month}"`,
