@@ -244,7 +244,7 @@ export default function EditOrderPage() {
   const [discountType, setDiscountType] = React.useState("fixed");
   const [discountValue, setDiscountValue] = React.useState("");
   const [orderNote, setOrderNote] = React.useState("");
-  const [orderStatus, setOrderStatus] = React.useState("pending");
+  const [orderStatus, setOrderStatus] = React.useState("Pending");
 
   const searchRef = React.useRef<HTMLDivElement>(null);
   const customerSearchRef = React.useRef<HTMLDivElement>(null);
@@ -261,7 +261,7 @@ export default function EditOrderPage() {
     setPaymentMethod("cod");
     setPaymentStatus("unpaid");
     setPaidAmount("");
-    setOrderStatus("pending");
+    setOrderStatus("Pending");
 
     setCart([{ product: productCatalogue[0], quantity: 1, color: "Black", size: "M" }]);
   }, [id]);
@@ -351,7 +351,7 @@ export default function EditOrderPage() {
     setDiscountType("fixed");
     setDiscountValue("");
     setOrderNote("");
-    setOrderStatus("pending");
+    setOrderStatus("Pending");
     toast.info("Form has been cleared.");
   }
 
@@ -836,20 +836,20 @@ export default function EditOrderPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="ready-to-ship">Ready To Ship</SelectItem>
-                  <SelectItem value="in-courier">In-Courier</SelectItem>
-                  <SelectItem value="ship-later">Ship Later</SelectItem>
-                  <SelectItem value="hold">Hold</SelectItem>
-                  <SelectItem value="returned">Returned</SelectItem>
-                  <SelectItem value="pre-order">Pre-Order</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                  <SelectItem value="missing">Missing</SelectItem>
-                  <SelectItem value="lost">Lost</SelectItem>
-                  <SelectItem value="fake">Fake</SelectItem>
-                  <SelectItem value="trash">Trash</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Confirmed">Confirmed</SelectItem>
+                  <SelectItem value="Ready To Ship">Ready To Ship</SelectItem>
+                  <SelectItem value="In-Courier">In-Courier</SelectItem>
+                  <SelectItem value="Ship Later">Ship Later</SelectItem>
+                  <SelectItem value="Hold">Hold</SelectItem>
+                  <SelectItem value="Returned">Returned</SelectItem>
+                  <SelectItem value="Pre-Order">Pre-Order</SelectItem>
+                  <SelectItem value="Delivered">Delivered</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  <SelectItem value="Missing">Missing</SelectItem>
+                  <SelectItem value="Lost">Lost</SelectItem>
+                  <SelectItem value="Fake">Fake</SelectItem>
+                  <SelectItem value="Trash">Trash</SelectItem>
                 </SelectContent>
               </Select>
               <div className="space-y-2">

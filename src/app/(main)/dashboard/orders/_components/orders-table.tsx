@@ -17,6 +17,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import useSWR, { mutate } from "swr";
+import { fetchClient } from "@/lib/fetch-client";
 import {
   ArrowUpDown,
   Ban,
@@ -72,9 +73,12 @@ import { UpdatePaymentModal } from "./update-payment-modal";
 const orderStatuses = [
   "All",
   "Pending",
-  "Hold",
+  "Confirmed",
+  "Ready To Ship",
+  "In-Courier",
   "Ship Later",
-  "Partially Delivered",
+  "Hold",
+  "Returned",
   "Pre-Order",
   "Delivered",
   "Cancelled",
@@ -115,8 +119,8 @@ export interface OrderRow {
 /* ---- Status badge colors ---- */
 
 function orderStatusVariant(s: string): "default" | "secondary" | "outline" | "destructive" {
-  if (["Delivered"].includes(s)) return "default";
-  if (["Cancelled", "Fake", "Trash", "Lost"].includes(s)) return "destructive";
+  if (["Delivered", "Ready To Ship", "In-Courier"].includes(s)) return "default";
+  if (["Cancelled", "Fake", "Trash", "Lost", "Returned"].includes(s)) return "destructive";
   if (["Pending", "Hold", "Ship Later", "Missing"].includes(s)) return "outline";
   return "secondary";
 }
@@ -153,10 +157,15 @@ function PaymentStatusCell({ row }: { row: any }) {
           } else {
             const toastId = toast.loading(`Updating payment...`);
             try {
-              const res = await fetch(`${getApiBaseUrl()}orders/${row.original.id}`, {
-                method: "PUT",
+              const payload: Record<string, unknown> = { payment_status: val };
+              // When marking as Full Paid, send the grand total as the paid amount
+              if (val === "Full Paid") {
+                payload.paid_amount = Number(row.original.total ?? 0);
+              }
+              const res = await fetchClient(`${getApiBaseUrl()}orders/${row.original.id}`, {
+                method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ payment_status: val }),
+                body: JSON.stringify(payload),
               });
               if (!res.ok) throw new Error();
               toast.success(`Order ${row.original.id} payment → ${val}`, { id: toastId });
@@ -350,16 +359,16 @@ const columns: ColumnDef<OrderRow>[] = [
         onValueChange={async (val) => {
           const toastId = toast.loading("Updating status...");
           try {
-             const res = await fetch(`${getApiBaseUrl()}orders/${row.original.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ order_status: val }),
-              });
-              if (!res.ok) throw new Error();
-              toast.success(`Order ${row.original.id} status → ${val}`, { id: toastId });
-              invalidateOrders();
+            const res = await fetchClient(`${getApiBaseUrl()}orders/${row.original.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ order_status: val }),
+            });
+            if (!res.ok) throw new Error();
+            toast.success(`Order ${row.original.id} status → ${val}`, { id: toastId });
+            invalidateOrders();
           } catch (e) {
-             toast.error("Failed to update status", { id: toastId });
+            toast.error("Failed to update status", { id: toastId });
           }
         }}
       >

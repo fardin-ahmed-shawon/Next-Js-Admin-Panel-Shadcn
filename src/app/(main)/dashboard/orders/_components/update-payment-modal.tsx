@@ -5,6 +5,8 @@ import * as React from "react";
 import { CreditCard } from "lucide-react";
 import { toast } from "sonner";
 
+import { fetchClient } from "@/lib/fetch-client";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -66,8 +68,8 @@ export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, 
     setIsSaving(true);
     try {
       const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-      const res = await fetch(`${getApiBaseUrl()}orders/${order.id}`, {
-        method: "PUT",
+      const res = await fetchClient(`${getApiBaseUrl()}orders/${order.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           payment_status: status,
