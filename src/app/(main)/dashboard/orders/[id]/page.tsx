@@ -382,18 +382,32 @@ export default function OrderDetailPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => toast.success("A4 invoice generated.")}
+              asChild
             >
-              <FileText className="mr-2 size-4" />
-              Invoice
+              <Link href={`/invoice/${order.order_no}`} target="_blank" rel="noopener noreferrer">
+                <FileText className="mr-2 size-4" />
+                Invoice
+              </Link>
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => toast.success("Parcel label generated.")}
+              asChild
             >
-              <Printer className="mr-2 size-4" />
-              Label
+              <Link href={`/invoice/${order.order_no}/pos`} target="_blank" rel="noopener noreferrer">
+                <Printer className="mr-2 size-4" />
+                POS
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+            >
+              <Link href={`/invoice/${order.order_no}/label`} target="_blank" rel="noopener noreferrer">
+                <Truck className="mr-2 size-4" />
+                Label
+              </Link>
             </Button>
             <Button variant="secondary" size="sm" asChild>
               <Link href={`/dashboard/orders/${id}/edit`}>

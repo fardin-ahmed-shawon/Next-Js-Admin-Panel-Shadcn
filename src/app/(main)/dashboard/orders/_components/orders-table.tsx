@@ -425,28 +425,34 @@ const columns: ColumnDef<OrderRow>[] = [
           variant="outline"
           size="icon-sm"
           className="h-8 w-8 border-muted-foreground/30 text-muted-foreground"
-          onClick={() => toast.success(`A4 Invoice generated for ${row.original.id}`)}
           title="Regular A4"
+          asChild
         >
-          <FileText className="size-4" />
+          <Link href={`/invoice/${row.original.id}`} target="_blank" rel="noopener noreferrer">
+            <FileText className="size-4" />
+          </Link>
         </Button>
         <Button
           variant="outline"
           size="icon-sm"
           className="h-8 w-8 border-muted-foreground/30 text-muted-foreground"
-          onClick={() => toast.success(`POS Invoice generated for ${row.original.id}`)}
           title="POS Receipt"
+          asChild
         >
-          <Printer className="size-4" />
+          <Link href={`/invoice/${row.original.id}/pos`} target="_blank" rel="noopener noreferrer">
+            <Printer className="size-4" />
+          </Link>
         </Button>
         <Button
           variant="outline"
           size="icon-sm"
           className="h-8 w-8 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
-          onClick={() => toast.success(`Parcel Invoice generated for ${row.original.id}`)}
-          title="Parcel Invoice"
+          title="Courier Label"
+          asChild
         >
-          <Truck className="size-4" />
+          <Link href={`/invoice/${row.original.id}/label`} target="_blank" rel="noopener noreferrer">
+            <Truck className="size-4" />
+          </Link>
         </Button>
       </div>
     ),

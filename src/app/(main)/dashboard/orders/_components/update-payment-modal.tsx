@@ -47,8 +47,6 @@ export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, 
   };
 
   // Form state
-  const [accountNumber, setAccountNumber] = React.useState("");
-  const [transactionId, setTransactionId] = React.useState("");
   const [newPaidAmount, setNewPaidAmount] = React.useState<number | "">("");
   const [status, setStatus] = React.useState(order.paymentStatus);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -56,8 +54,6 @@ export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, 
   // Sync state when open
   React.useEffect(() => {
     if (open) {
-      setAccountNumber("");
-      setTransactionId("");
       setNewPaidAmount("");
       setStatus(order.paymentStatus);
     }
@@ -125,10 +121,6 @@ export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, 
             onStatusChange={setStatus}
             paidAmount={newPaidAmount}
             onPaidAmountChange={setNewPaidAmount}
-            accountNumber={accountNumber}
-            onAccountNumberChange={setAccountNumber}
-            transactionId={transactionId}
-            onTransactionIdChange={setTransactionId}
           />
         </div>
 

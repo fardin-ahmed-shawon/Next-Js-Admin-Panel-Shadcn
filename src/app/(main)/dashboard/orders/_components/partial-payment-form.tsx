@@ -13,10 +13,6 @@ export interface PartialPaymentFormProps {
   onStatusChange: (status: string) => void;
   paidAmount: number | "";
   onPaidAmountChange: (amount: number | "") => void;
-  accountNumber?: string;
-  onAccountNumberChange?: (acc: string) => void;
-  transactionId: string;
-  onTransactionIdChange: (txn: string) => void;
   paymentMethod?: string;
 }
 
@@ -27,10 +23,6 @@ export function PartialPaymentForm({
   onStatusChange,
   paidAmount,
   onPaidAmountChange,
-  accountNumber,
-  onAccountNumberChange,
-  transactionId,
-  onTransactionIdChange,
   paymentMethod,
 }: PartialPaymentFormProps) {
   const paymentInput = typeof paidAmount === "number" ? paidAmount : 0;
@@ -64,33 +56,6 @@ export function PartialPaymentForm({
 
   return (
     <div className="space-y-4">
-      {onAccountNumberChange !== undefined && paymentMethod !== "cod" && (
-        <Field>
-          <FieldLabel htmlFor="account">Account / Mobile Number</FieldLabel>
-          <FieldContent>
-            <Input
-              id="account"
-              placeholder="017XXXXXXXX"
-              value={accountNumber}
-              onChange={(e) => onAccountNumberChange(e.target.value)}
-            />
-          </FieldContent>
-        </Field>
-      )}
-
-      {paymentMethod !== "cod" && (
-        <Field>
-          <FieldLabel htmlFor="txnid">Transaction ID</FieldLabel>
-          <FieldContent>
-            <Input
-              id="txnid"
-              placeholder="TXN123456"
-              value={transactionId}
-              onChange={(e) => onTransactionIdChange(e.target.value)}
-            />
-          </FieldContent>
-        </Field>
-      )}
 
       <Field>
         <FieldLabel htmlFor="paidAmt">Paid Amount</FieldLabel>

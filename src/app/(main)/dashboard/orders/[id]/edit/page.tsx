@@ -32,186 +32,128 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
 import { PartialPaymentForm } from "../../_components/partial-payment-form";
-// Re-using locations from create order
+import { useOrderDetail } from "@/hooks/useOrderDetail";
 import { districts, divisions, thanas } from "../../create/_components/bd-locations";
+import { fetchClient } from "@/lib/fetch-client";
 
-/* ---- catalogue ---- */
-
-const colorOptions = [
-  "Red",
-  "Blue",
-  "Green",
-  "Black",
-  "White",
-  "Yellow",
-  "Pink",
-  "Purple",
-  "Orange",
-  "Navy",
-  "Maroon",
-  "Gray",
-];
-const sizeOptions = [
-  "XS",
-  "S",
-  "M",
-  "L",
-  "XL",
-  "XXL",
-  "3XL",
-  "28",
-  "30",
-  "32",
-  "34",
-  "36",
-  "38",
-  "40",
-  "42",
-  "Free Size",
-];
-
-const productCatalogue = [
-  {
-    id: "PRD-001",
-    name: "Premium Cotton T-Shirt",
-    sku: "SKU-001",
-    price: 850,
-    stock: 124,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=TS",
-    category: "Clothing",
-  },
-  {
-    id: "PRD-002",
-    name: "Slim Fit Denim Jeans",
-    sku: "SKU-002",
-    price: 1450,
-    stock: 67,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=DJ",
-    category: "Clothing",
-  },
-  {
-    id: "PRD-003",
-    name: "Wireless Bluetooth Earbuds",
-    sku: "SKU-003",
-    price: 2200,
-    stock: 42,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=BE",
-    category: "Electronics",
-  },
-  {
-    id: "PRD-004",
-    name: "Leather Crossbody Bag",
-    sku: "SKU-004",
-    price: 3100,
-    stock: 18,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=CB",
-    category: "Accessories",
-  },
-  {
-    id: "PRD-005",
-    name: "Running Sneakers Pro",
-    sku: "SKU-005",
-    price: 2800,
-    stock: 55,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=RS",
-    category: "Footwear",
-  },
-  {
-    id: "PRD-006",
-    name: "Organic Face Moisturizer",
-    sku: "SKU-006",
-    price: 650,
-    stock: 200,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=FM",
-    category: "Beauty",
-  },
-  {
-    id: "PRD-007",
-    name: "Stainless Steel Water Bottle",
-    sku: "SKU-007",
-    price: 480,
-    stock: 310,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=WB",
-    category: "Home",
-  },
-  {
-    id: "PRD-008",
-    name: "Smart Fitness Watch",
-    sku: "SKU-008",
-    price: 4500,
-    stock: 29,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=FW",
-    category: "Electronics",
-  },
-  {
-    id: "PRD-009",
-    name: "Classic Polo Shirt",
-    sku: "SKU-009",
-    price: 950,
-    stock: 88,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=PS",
-    category: "Clothing",
-  },
-  {
-    id: "PRD-010",
-    name: "Minimalist Desk Lamp",
-    sku: "SKU-010",
-    price: 1200,
-    stock: 45,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=DL",
-    category: "Home",
-  },
-  {
-    id: "PRD-010",
-    name: "Minimalist Desk Lamp",
-    sku: "SKU-010",
-    price: 1200,
-    stock: 45,
-    image: "https://placehold.co/80x80/1a1a2e/e0e0e0?text=DL",
-    category: "Home",
-  },
-];
-
-const mockCustomers = [
-  {
-    id: "CUST-001",
-    name: "Arham Khan",
-    phone: "+880 1711-234567",
-    email: "arham@example.com",
-    address: "House 12, Road 5, Banani",
-    division: "Dhaka",
-    district: "Dhaka",
-    thana: "Banani",
-  },
-  {
-    id: "CUST-002",
-    name: "Nusrat Jahan",
-    phone: "+880 1614-567890",
-    email: "nusrat@example.com",
-    address: "Flat 4B, Green Tower, Dhanmondi",
-    division: "Dhaka",
-    district: "Dhaka",
-    thana: "Dhanmondi",
-  },
-  {
-    id: "CUST-003",
-    name: "Maliha Sultana",
-    phone: "+880 1918-901234",
-    email: "maliha@example.com",
-    address: "24/A, South Surma",
-    division: "Sylhet",
-    district: "Sylhet",
-    thana: "South Surma",
-  },
-];
-
-type CatalogueProduct = (typeof productCatalogue)[0];
+import useProducts, { Product } from "@/hooks/useProducts";
+import useSWR from "swr";
 
 interface CartItem {
-  product: CatalogueProduct;
+  product: Product;
   quantity: number;
   color: string;
   size: string;
+}
+
+const fetcher = async (url: string) => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) throw new Error("Failed to fetch");
+  const json = await res.json();
+  return json.data || [];
+};
+
+const getImageUrl = (path: string | null) => {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+  return `${baseUrl}${path}`;
+};
+
+function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem }: any) {
+  const { data: sizesRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_SIZES || "product-sizes"}?product_id=${item.product.id}`, fetcher);
+  const { data: colorsRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_COLORS || "product-colors"}?product_id=${item.product.id}`, fetcher);
+  const { data: variantsRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_VARIANTS || "product-variants"}?product_id=${item.product.id}`, fetcher);
+
+  const sizes = Array.isArray(sizesRes) ? sizesRes : [];
+  const colors = Array.isArray(colorsRes) ? colorsRes : [];
+  const variants = Array.isArray(variantsRes) ? variantsRes : [];
+
+  const requiresVariant = sizes.length > 0 || colors.length > 0;
+  let isValidVariant = true;
+
+  if (requiresVariant && (item.size || item.color)) {
+    const selectedSizeId = sizes.find((s: any) => s.size === item.size)?.id || null;
+    const selectedColorId = colors.find((c: any) => c.color === item.color)?.id || null;
+    
+    isValidVariant = variants.some((v: any) => v.size_id === selectedSizeId && v.color_id === selectedColorId);
+  }
+
+  return (
+    <div className="rounded-lg border p-3 transition-colors hover:bg-muted/30">
+      <div className="flex items-center gap-3">
+        <div className="size-12 shrink-0 overflow-hidden rounded-md border bg-muted">
+          <img src={getImageUrl(item.product.product_thumbnail_img)} alt={item.product.title} className="size-full object-cover" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{item.product.title}</p>
+          <p className="text-xs text-muted-foreground">
+            {item.product.sku || "N/A"} · ৳{item.product.selling_price.toLocaleString()} each
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, -1)}>
+            <Minus className="size-3" />
+          </Button>
+          <span className="w-8 text-center text-sm font-medium tabular-nums">{item.quantity}</span>
+          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, 1)}>
+            <Plus className="size-3" />
+          </Button>
+        </div>
+        <span className="w-20 text-right text-sm font-semibold tabular-nums">
+          ৳{(item.product.selling_price * item.quantity).toLocaleString()}
+        </span>
+        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id)}>
+          <X className="size-4 text-muted-foreground" />
+        </Button>
+      </div>
+
+      {requiresVariant && (
+        <div className="mt-2 flex flex-col gap-2 pl-15">
+          <div className="flex items-center gap-3">
+            {colors.length > 0 && (
+              <Select value={item.color} onValueChange={(v) => updateCartItem(item.product.id, "color", v)}>
+                <SelectTrigger className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}>
+                  <SelectValue placeholder="Color" />
+                </SelectTrigger>
+                <SelectContent>
+                  {colors.map((c: any) => (
+                    <SelectItem key={c.id} value={c.color}>
+                      {c.color}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {sizes.length > 0 && (
+              <Select value={item.size} onValueChange={(v) => updateCartItem(item.product.id, "size", v)}>
+                <SelectTrigger className={`h-7 w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}>
+                  <SelectValue placeholder="Size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sizes.map((s: any) => (
+                    <SelectItem key={s.id} value={s.size}>
+                      {s.size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          {!isValidVariant && (item.color || item.size) && (
+            <span className="text-[10px] text-destructive font-medium">Selected combination is out of stock or unavailable.</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function EditOrderPage() {
@@ -219,10 +161,50 @@ export default function EditOrderPage() {
   const router = useRouter();
 
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = React.useState("");
   const [searchFocused, setSearchFocused] = React.useState(false);
 
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const { data: productsData } = useProducts({ search: debouncedSearchQuery });
+  const filteredProducts = productsData?.data || [];
+
   const [customerSearchQuery, setCustomerSearchQuery] = React.useState("");
+  const [debouncedCustomerSearch, setDebouncedCustomerSearch] = React.useState("");
   const [customerSearchFocused, setCustomerSearchFocused] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedCustomerSearch(customerSearchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [customerSearchQuery]);
+
+  const [customersData, setCustomersData] = React.useState<any[]>([]);
+  React.useEffect(() => {
+    async function fetchCustomers() {
+      try {
+        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_CUSTOMERS || "customers"}`;
+        const res = await fetchClient(url);
+        if (res.ok) {
+          const json = await res.json();
+          setCustomersData(json.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch customers", err);
+      }
+    }
+    fetchCustomers();
+  }, []);
+
+  const filteredCustomers = React.useMemo(() => {
+    if (!debouncedCustomerSearch.trim()) return [];
+    const q = debouncedCustomerSearch.toLowerCase();
+    return customersData.filter(
+      (c) => c.full_name?.toLowerCase().includes(q) || c.phone?.includes(q) || c.email?.toLowerCase().includes(q),
+    );
+  }, [debouncedCustomerSearch, customersData]);
 
   // States
   const [cart, setCart] = React.useState<CartItem[]>([]);
@@ -238,7 +220,6 @@ export default function EditOrderPage() {
 
   const [paymentMethod, setPaymentMethod] = React.useState("cod");
   const [paymentStatus, setPaymentStatus] = React.useState("unpaid");
-  const [transactionId, setTransactionId] = React.useState("");
   const [paidAmount, setPaidAmount] = React.useState<number | "">("");
 
   const [discountType, setDiscountType] = React.useState("fixed");
@@ -249,43 +230,61 @@ export default function EditOrderPage() {
   const searchRef = React.useRef<HTMLDivElement>(null);
   const customerSearchRef = React.useRef<HTMLDivElement>(null);
 
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const { data: order, isLoading } = useOrderDetail(id ?? null);
+
   React.useEffect(() => {
-    // Populate form with mock data
-    setCustomerName("Mock Customer");
-    setCustomerPhone("+880 1711-234567");
-    setShippingAddress("123 Dhanmondi, Dhaka-1205"); 
-    setDivision("Dhaka");
-    setDistrict("Dhaka");
-    setThana("Dhanmondi");
+    if (order) {
+      setCustomerName(order.customer_full_name || "");
+      setCustomerEmail(order.customer_email || "");
+      setCustomerPhone(order.customer_phone || "");
+      
+      setShippingAddress(order.customer_shipping_address || "");
+      setShippingMethod(order.shipping_area === "Outside Dhaka" ? "outside-dhaka" : "inside-dhaka");
 
-    setPaymentMethod("cod");
-    setPaymentStatus("unpaid");
-    setPaidAmount("");
-    setOrderStatus("Pending");
+      // We don't parse the exact division/district/thana since it's a single string in the DB, 
+      // but they can type new ones if they want, or we just leave the select empty.
+      
+      const paymentStat = order.payment_status?.toLowerCase();
+      setPaymentStatus(paymentStat === "paid" || paymentStat === "full paid" ? "full paid" : paymentStat === "unpaid" ? "unpaid" : "partial");
+      
+      const p = order.payments?.[0];
+      const pMethod = p?.payment_method?.toLowerCase() || "cod";
+      setPaymentMethod(pMethod.includes("bkash") ? "bkash" : pMethod.includes("nagad") ? "nagad" : pMethod.includes("rocket") ? "rocket" : pMethod.includes("bank") ? "bank" : pMethod.includes("card") ? "card" : "cod");
+      
+      const totalPaid = order.payments?.reduce((s: number, pm: any) => s + Number(pm.paid_amount || 0), 0) || 0;
+      setPaidAmount(totalPaid > 0 ? totalPaid : "");
 
-    setCart([{ product: productCatalogue[0], quantity: 1, color: "Black", size: "M" }]);
-  }, [id]);
+      setOrderStatus(order.order_status || "Pending");
+      setOrderNote(order.order_note || "");
+      setDiscountValue(order.discount_amount?.toString() || "");
+      setDiscountType("fixed");
 
-  const filteredProducts = React.useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase();
-    return productCatalogue.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.id.toLowerCase().includes(q),
-    );
-  }, [searchQuery]);
-
-  const filteredCustomers = React.useMemo(() => {
-    if (!customerSearchQuery.trim()) return [];
-    const q = customerSearchQuery.toLowerCase();
-    return mockCustomers.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.email.toLowerCase().includes(q),
-    );
-  }, [customerSearchQuery]);
+      if (order.ordered_products) {
+        const mappedCart = order.ordered_products.map((op: any) => ({
+          product: {
+            id: op.product_id || Math.random(),
+            title: op.product?.title || "Unknown Product",
+            sku: op.product?.sku || "",
+            selling_price: Number(op.unit_price) || 0,
+            available_stock: op.product?.available_stock || 0,
+            product_thumbnail_img: op.product?.product_thumbnail_img ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/"}${op.product.product_thumbnail_img.startsWith("/") ? op.product.product_thumbnail_img.slice(1) : op.product.product_thumbnail_img}` : "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NA",
+            status: 'Active',
+            regular_price: Number(op.unit_price) || 0,
+          },
+          quantity: op.qty,
+          color: op.color_label || "",
+          size: op.size_label || ""
+        }));
+        setCart(mappedCart);
+      }
+    }
+  }, [order]);
 
   const availableDistricts = division ? districts[division] || [] : [];
   const availableThanas = district ? thanas[district] || [] : [];
 
-  function addToCart(product: CatalogueProduct) {
+  function addToCart(product: Product) {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
@@ -293,10 +292,10 @@ export default function EditOrderPage() {
     });
     setSearchQuery("");
     setSearchFocused(false);
-    toast.success(`${product.name} added to order.`);
+    toast.success(`${product.title} added to order.`);
   }
 
-  function updateQuantity(productId: string, delta: number) {
+  function updateQuantity(productId: number, delta: number) {
     setCart((prev) =>
       prev
         .map((i) => (i.product.id === productId ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i))
@@ -304,16 +303,16 @@ export default function EditOrderPage() {
     );
   }
 
-  function removeFromCart(productId: string) {
+  function removeFromCart(productId: number) {
     setCart((prev) => prev.filter((i) => i.product.id !== productId));
   }
 
-  function updateCartItem(productId: string, field: "color" | "size", value: string) {
+  function updateCartItem(productId: number, field: "color" | "size", value: string) {
     setCart((prev) => prev.map((i) => (i.product.id === productId ? { ...i, [field]: value } : i)));
   }
 
-  function selectCustomer(customer: (typeof mockCustomers)[0]) {
-    setCustomerName(customer.name);
+  function selectCustomer(customer: any) {
+    setCustomerName(customer.full_name || customer.name);
     setCustomerEmail(customer.email);
     setCustomerPhone(customer.phone);
     setShippingAddress(customer.address);
@@ -325,7 +324,7 @@ export default function EditOrderPage() {
     toast.success("Customer details loaded.");
   }
 
-  const subtotal = cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+  const subtotal = cart.reduce((sum, i) => sum + i.product.selling_price * i.quantity, 0);
   const shippingCost = shippingMethod === "outside-dhaka" ? 150 : shippingMethod === "inside-dhaka" ? 70 : 0;
   const discountAmount =
     discountType === "percentage"
@@ -346,7 +345,6 @@ export default function EditOrderPage() {
     setShippingMethod("inside-dhaka");
     setPaymentMethod("cod");
     setPaymentStatus("unpaid");
-    setTransactionId("");
     setPaidAmount("");
     setDiscountType("fixed");
     setDiscountValue("");
@@ -355,11 +353,7 @@ export default function EditOrderPage() {
     toast.info("Form has been cleared.");
   }
 
-  function handleSaveOrder() {
-    if (cart.length === 0) {
-      toast.error("Please add at least one product.");
-      return;
-    }
+  async function handleSaveOrder() {
     if (!customerName.trim()) {
       toast.error("Customer name is required.");
       return;
@@ -372,8 +366,55 @@ export default function EditOrderPage() {
       toast.error("Shipping address is required.");
       return;
     }
-    toast.success(`Order ${id} updated successfully! Total: ৳${total.toLocaleString()}`);
-    router.push(`/dashboard/orders/${id}`);
+
+    const payload = {
+      customer_full_name: customerName,
+      customer_phone: customerPhone,
+      customer_email: customerEmail,
+      customer_shipping_address: shippingAddress,
+      shipping_area: shippingMethod === "inside-dhaka" ? "Inside Dhaka" : "Outside Dhaka",
+      subtotal_amount: subtotal,
+      discount_amount: discountAmount,
+      shipping_charge: shippingCost,
+      grand_total_amount: total,
+      order_status: orderStatus,
+      order_note: orderNote,
+      payment_method: paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod === "bkash" ? "bKash" : paymentMethod === "nagad" ? "Nagad" : paymentMethod === "rocket" ? "Rocket" : paymentMethod === "bank" ? "Bank Transfer" : "Card Payment",
+      paid_amount: Number(paidAmount) || 0,
+      payment_status: paymentStatus === "unpaid" ? "Unpaid" : paymentStatus === "full paid" || paymentStatus === "paid" ? "Full Paid" : "Partially Paid",
+      products: cart.map((item) => ({
+        product_id: item.product.id,
+        qty: item.quantity,
+        unit_price: item.product.selling_price,
+        ...(item.size ? { size_label: item.size } : {}),
+        ...(item.color ? { color_label: item.color } : {}),
+      })),
+    };
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}orders/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (res.ok && json.status) {
+        toast.success(json.message || `Order ${id} updated successfully!`);
+        router.push(`/dashboard/orders/${id}`);
+      } else {
+        toast.error(json.error || json.message || "Failed to update order.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("An error occurred while updating the order.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   React.useEffect(() => {
@@ -386,8 +427,18 @@ export default function EditOrderPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Mock check for missing order
-  if (!id) {
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-24 text-muted-foreground">
+        <RefreshCw className="size-6 animate-spin" />
+        <p>Loading order details...</p>
+      </div>
+    );
+  }
+
+  // Check for missing order
+  if (!order && !isLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-24">
         <p className="text-lg font-medium">Order not found</p>
@@ -419,13 +470,13 @@ export default function EditOrderPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={resetForm}>
+          <Button variant="outline" size="sm" onClick={resetForm} disabled={isSubmitting}>
             <RefreshCw className="mr-2 size-4" />
             Clear Form
           </Button>
-          <Button size="sm" onClick={handleSaveOrder}>
+          <Button size="sm" onClick={handleSaveOrder} disabled={isSubmitting}>
             <Save className="mr-2 size-4" />
-            Save Changes
+            {isSubmitting ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>
@@ -464,16 +515,16 @@ export default function EditOrderPage() {
                           onClick={() => addToCart(p)}
                         >
                           <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
-                            <img src={p.image} alt={p.name} className="size-full object-cover" />
+                            <img src={getImageUrl(p.product_thumbnail_img)} alt={p.title} className="size-full object-cover" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{p.name}</p>
+                            <p className="text-sm font-medium truncate">{p.title}</p>
                             <p className="text-xs text-muted-foreground">
-                              {p.sku} · Stock: {p.stock}
+                              {p.sku || "N/A"} · Stock: {p.available_stock}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-sm font-semibold tabular-nums">৳{p.price.toLocaleString()}</span>
+                            <span className="text-sm font-semibold tabular-nums">৳{p.selling_price.toLocaleString()}</span>
                             {inCart && (
                               <Badge variant="secondary" className="text-[10px]">
                                 ×{inCart.quantity}
@@ -498,61 +549,13 @@ export default function EditOrderPage() {
               ) : (
                 <div className="flex flex-col gap-3">
                   {cart.map((item) => (
-                    <div key={item.product.id} className="rounded-lg border p-3 transition-colors hover:bg-muted/30">
-                      <div className="flex items-center gap-3">
-                        <div className="size-12 shrink-0 overflow-hidden rounded-md border bg-muted">
-                          <img src={item.product.image} alt={item.product.name} className="size-full object-cover" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{item.product.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.product.sku} · ৳{item.product.price.toLocaleString()} each
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, -1)}>
-                            <Minus className="size-3" />
-                          </Button>
-                          <span className="w-8 text-center text-sm font-medium tabular-nums">{item.quantity}</span>
-                          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, 1)}>
-                            <Plus className="size-3" />
-                          </Button>
-                        </div>
-                        <span className="w-20 text-right text-sm font-semibold tabular-nums">
-                          ৳{(item.product.price * item.quantity).toLocaleString()}
-                        </span>
-                        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id)}>
-                          <X className="size-4 text-muted-foreground" />
-                        </Button>
-                      </div>
-                      {/* Color & Size */}
-                      <div className="mt-2 flex items-center gap-3 pl-15">
-                        <Select value={item.color} onValueChange={(v) => updateCartItem(item.product.id, "color", v)}>
-                          <SelectTrigger className="h-7 w-28 text-xs">
-                            <SelectValue placeholder="Color" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {colorOptions.map((c) => (
-                              <SelectItem key={c} value={c}>
-                                {c}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Select value={item.size} onValueChange={(v) => updateCartItem(item.product.id, "size", v)}>
-                          <SelectTrigger className="h-7 w-28 text-xs">
-                            <SelectValue placeholder="Size" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {sizeOptions.map((s) => (
-                              <SelectItem key={s} value={s}>
-                                {s}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+                    <CartItemRow
+                      key={item.product.id}
+                      item={item}
+                      updateQuantity={updateQuantity}
+                      removeFromCart={removeFromCart}
+                      updateCartItem={updateCartItem}
+                    />
                   ))}
                   <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2">
                     <span className="text-sm text-muted-foreground">
@@ -780,8 +783,6 @@ export default function EditOrderPage() {
                   onStatusChange={setPaymentStatus}
                   paidAmount={paidAmount}
                   onPaidAmountChange={setPaidAmount}
-                  transactionId={transactionId}
-                  onTransactionIdChange={setTransactionId}
                   paymentMethod={paymentMethod}
                 />
               </div>
@@ -892,9 +893,9 @@ export default function EditOrderPage() {
                 <span className="font-semibold">Total</span>
                 <span className="font-bold tabular-nums text-primary">৳{total.toLocaleString()}</span>
               </div>
-              <Button className="w-full mt-2" onClick={handleSaveOrder}>
+              <Button className="w-full mt-2" onClick={handleSaveOrder} disabled={isSubmitting}>
                 <Save className="mr-2 size-4" />
-                Save Changes
+                {isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
             </CardContent>
           </Card>

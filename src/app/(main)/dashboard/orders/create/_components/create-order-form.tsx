@@ -210,7 +210,6 @@ export function CreateOrderForm() {
 
   const [paymentMethod, setPaymentMethod] = React.useState("cod");
   const [paymentStatus, setPaymentStatus] = React.useState("unpaid");
-  const [transactionId, setTransactionId] = React.useState("");
   const [paidAmount, setPaidAmount] = React.useState<number | "">("");
 
   const [discountType, setDiscountType] = React.useState("fixed");
@@ -297,7 +296,6 @@ export function CreateOrderForm() {
     setShippingMethod("inside-dhaka");
     setPaymentMethod("cod");
     setPaymentStatus("unpaid");
-    setTransactionId("");
     setPaidAmount("");
     setDiscountType("fixed");
     setDiscountValue("");
@@ -738,8 +736,6 @@ export function CreateOrderForm() {
                   onStatusChange={setPaymentStatus}
                   paidAmount={paidAmount}
                   onPaidAmountChange={setPaidAmount}
-                  transactionId={transactionId}
-                  onTransactionIdChange={setTransactionId}
                   paymentMethod={paymentMethod}
                 />
               </div>
