@@ -80,13 +80,23 @@ const NavItemExpanded = ({
             <SidebarMenuSub>
               {item.subItems.map((subItem) => (
                 <SidebarMenuSubItem key={subItem.title}>
-                  <SidebarMenuSubButton aria-disabled={subItem.comingSoon} isActive={isActive(subItem.url)} asChild>
-                    <Link prefetch={false} href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
+                  {subItem.comingSoon ? (
+                    <SidebarMenuSubButton 
+                      className="cursor-not-allowed opacity-60 hover:bg-transparent select-none" 
+                      isActive={false}
+                    >
                       {subItem.icon && <subItem.icon />}
                       <span>{subItem.title}</span>
-                      {subItem.comingSoon && <IsComingSoon />}
-                    </Link>
-                  </SidebarMenuSubButton>
+                      <IsComingSoon />
+                    </SidebarMenuSubButton>
+                  ) : (
+                    <SidebarMenuSubButton aria-disabled={subItem.comingSoon} isActive={isActive(subItem.url)} asChild>
+                      <Link prefetch={false} href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
+                        {subItem.icon && <subItem.icon />}
+                        <span>{subItem.title}</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  )}
                 </SidebarMenuSubItem>
               ))}
             </SidebarMenuSub>
@@ -120,20 +130,30 @@ const NavItemCollapsed = ({
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-50 space-y-1" side="right" align="start">
           {item.subItems?.map((subItem) => (
-            <DropdownMenuItem key={subItem.title} asChild>
-              <SidebarMenuSubButton
-                key={subItem.title}
-                asChild
-                className="focus-visible:ring-0"
-                aria-disabled={subItem.comingSoon}
-                isActive={isActive(subItem.url)}
-              >
-                <Link prefetch={false} href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
+            <DropdownMenuItem key={subItem.title} asChild={!subItem.comingSoon}>
+              {subItem.comingSoon ? (
+                <SidebarMenuSubButton
+                  className="focus-visible:ring-0 cursor-not-allowed opacity-60 hover:bg-transparent select-none"
+                  isActive={false}
+                >
                   {subItem.icon && <subItem.icon className="[&>svg]:text-sidebar-foreground" />}
                   <span>{subItem.title}</span>
-                  {subItem.comingSoon && <IsComingSoon />}
-                </Link>
-              </SidebarMenuSubButton>
+                  <IsComingSoon />
+                </SidebarMenuSubButton>
+              ) : (
+                <SidebarMenuSubButton
+                  key={subItem.title}
+                  asChild
+                  className="focus-visible:ring-0"
+                  aria-disabled={subItem.comingSoon}
+                  isActive={isActive(subItem.url)}
+                >
+                  <Link prefetch={false} href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
+                    {subItem.icon && <subItem.icon className="[&>svg]:text-sidebar-foreground" />}
+                    <span>{subItem.title}</span>
+                  </Link>
+                </SidebarMenuSubButton>
+              )}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
