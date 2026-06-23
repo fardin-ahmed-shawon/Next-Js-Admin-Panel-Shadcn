@@ -210,7 +210,7 @@ export const sidebarItems: NavGroup[] = [
         module: "employee_management",
         subItems: [
           { title: "Assign Orders", url: "/dashboard/employee-management/assign-orders" },
-          { title: "Employee Reports", url: "/dashboard/employee-management/reports" },
+          { title: "Employee Reports", url: "/dashboard/reports/employee" },
         ],
       },
       { title: "Blocklist", url: "/dashboard/blocklist", icon: Ban, module: "blocklist" },
