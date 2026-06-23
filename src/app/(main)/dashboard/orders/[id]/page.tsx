@@ -425,7 +425,25 @@ export default function OrderDetailPage() {
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Send to Courier</DropdownMenuLabel>
                   <DropdownMenuItem
-                    onClick={() => toast.success("Sent to Steadfast!")}
+                    onClick={async () => {
+                      const toastId = toast.loading("Sending order to Steadfast...");
+                      try {
+                        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                        const res = await fetchClient(`${baseUrl}steadfast-parcels/${order.order_no}`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                        });
+                        
+                        if (!res.ok) {
+                          const err = await res.json().catch(() => ({}));
+                          throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
+                        }
+                        
+                        toast.success("Order sent to Steadfast successfully!", { id: toastId });
+                      } catch (e: any) {
+                        toast.error(e?.message || "Something went wrong.", { id: toastId });
+                      }
+                    }}
                   >
                     <Truck className="mr-2 size-4" />
                     Steadfast

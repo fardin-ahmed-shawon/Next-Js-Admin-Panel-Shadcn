@@ -400,7 +400,23 @@ const columns: ColumnDef<OrderRow>[] = [
         <Button
           size="sm"
           className="h-7 bg-[#00b074] hover:bg-[#00b074]/90 text-white text-[11px] px-2 justify-start font-medium"
-          onClick={() => toast.success(`Order ${row.original.id} sent to Steadfast`)}
+          onClick={async () => {
+            const toastId = toast.loading(`Sending Order ${row.original.id} to Steadfast...`);
+            try {
+              const res = await fetchClient(`${getApiBaseUrl()}steadfast-parcels/${row.original.id}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              });
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
+              }
+              toast.success(`Order ${row.original.id} sent to Steadfast`, { id: toastId });
+              invalidateOrders();
+            } catch (err: any) {
+              toast.error(err?.message || "Something went wrong.", { id: toastId });
+            }
+          }}
         >
           <Truck className="mr-1.5 size-3.5" /> Steadfast
         </Button>
