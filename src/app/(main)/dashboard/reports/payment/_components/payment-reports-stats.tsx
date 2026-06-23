@@ -1,8 +1,12 @@
 import { Banknote, FileText, Wallet } from "lucide-react";
-
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { PaymentReportSummary } from "@/hooks/usePaymentReports";
 
-export function PaymentsStats({ summary }: { summary: any }) {
+interface PaymentReportsStatsProps {
+  summary?: PaymentReportSummary;
+}
+
+export function PaymentReportsStats({ summary }: PaymentReportsStatsProps) {
   const totalPaid = Number(summary?.total_paid_amount || 0);
   const totalTransactions = Number(summary?.total_transactions || 0);
 
@@ -21,8 +25,8 @@ export function PaymentsStats({ summary }: { summary: any }) {
     },
   ];
 
-  const breakdowns = (summary?.payment_methods_breakdown || []).map((b: any) => ({
-    title: b.payment_method,
+  const breakdowns = (summary?.payment_methods_breakdown || []).map((b) => ({
+    title: b.payment_method || "Unknown Method",
     value: `৳${Number(b.total || 0).toLocaleString()}`,
     subtitle: `${b.count} transactions`,
     icon: Banknote,

@@ -131,12 +131,7 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/customers",
         icon: Users,
         module: "customers",
-        subItems: [
-          { title: "All Customers", url: "/dashboard/customers" },
-          { title: "Customer Report", url: "/dashboard/customers/report" },
-        ],
       },
-      { title: "Payments", url: "/dashboard/payments", icon: Banknote, module: "payments" },
       {
         title: "Accounts",
         url: "/dashboard/accounts",
@@ -167,13 +162,13 @@ export const sidebarItems: NavGroup[] = [
         icon: BookOpenText,
         module: "blogs",
       },
-      { title: "Sales Reports", url: "/dashboard/sales-reports", icon: TrendingUp, module: "sales_report" },
       {
         title: "Reports",
         url: "/dashboard/reports",
-        icon: ClipboardList,
+        icon: TrendingUp,
         module: "reports",
         subItems: [
+          { title: "Dashboard", url: "/dashboard/reports/dashboard" },
           { title: "Product Report", url: "/dashboard/reports/product" },
           { title: "Order Report", url: "/dashboard/reports/order" },
           { title: "Customer Report", url: "/dashboard/reports/customer" },
