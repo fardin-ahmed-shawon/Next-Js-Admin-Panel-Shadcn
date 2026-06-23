@@ -3,6 +3,7 @@ import { SteadfastStats } from "./_components/steadfast-stats";
 import { SteadfastTable } from "./_components/steadfast-table";
 import { ReturnsTable } from "./_components/returns-table";
 import { PaymentsTable } from "./_components/payments-table";
+import { ReturnedParcelsTable } from "./_components/returned-parcels-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SteadfastPage() {
@@ -26,11 +27,15 @@ export default function SteadfastPage() {
       <Tabs defaultValue="parcels" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="parcels">Parcels</TabsTrigger>
+          <TabsTrigger value="returned-parcels">Returned Parcels</TabsTrigger>
           <TabsTrigger value="returns">Return Requests</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
         <TabsContent value="parcels" className="mt-0">
           <SteadfastTable />
+        </TabsContent>
+        <TabsContent value="returned-parcels" className="mt-0">
+          <ReturnedParcelsTable />
         </TabsContent>
         <TabsContent value="returns" className="mt-0">
           <ReturnsTable />

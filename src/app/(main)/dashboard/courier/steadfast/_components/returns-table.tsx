@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Loader2, Package, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,7 +18,7 @@ export function ReturnsTable() {
   const filteredData = data.filter((item: any) => {
     if (!searchInput) return true;
     const search = searchInput.toLowerCase();
-    return (item.invoice || "").toLowerCase().includes(search) || (item.tracking_code || "").toLowerCase().includes(search);
+    return (item.consignment?.invoice || "").toLowerCase().includes(search) || (item.consignment?.tracking_code || "").toLowerCase().includes(search);
   });
 
   return (
@@ -47,8 +48,10 @@ export function ReturnsTable() {
             <TableHeader className="border-t h-11 text-sm text-foreground">
               <TableRow>
                 <TableHead>Invoice</TableHead>
-                <TableHead>Tracking Code</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Tracking</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Parcel Status</TableHead>
+                <TableHead>Return Status</TableHead>
                 <TableHead>Reason</TableHead>
                 <TableHead>Created At</TableHead>
               </TableRow>
@@ -65,11 +68,22 @@ export function ReturnsTable() {
                 </TableRow>
               ) : filteredData.length ? (
                 filteredData.map((row: any, i: number) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium">{row.invoice || "N/A"}</TableCell>
-                    <TableCell>{row.tracking_code || "N/A"}</TableCell>
-                    <TableCell className="capitalize">{row.status || "Unknown"}</TableCell>
-                    <TableCell>{row.reason || "—"}</TableCell>
+                  <TableRow key={row.id || i}>
+                    <TableCell className="font-medium">{row.consignment?.invoice || "N/A"}</TableCell>
+                    <TableCell>{row.consignment?.tracking_code || "N/A"}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium text-sm leading-none">{row.consignment?.recipient_name || "N/A"}</span>
+                        <span className="text-muted-foreground text-xs">{row.consignment?.recipient_phone}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="capitalize">{row.consignment?.status ? row.consignment.status.replace(/_/g, " ") : "Unknown"}</TableCell>
+                    <TableCell>
+                      <Badge variant={row.status === "pending" ? "outline" : row.status === "approved" ? "default" : "secondary"} className="capitalize">
+                        {row.status || "Unknown"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate" title={row.reason}>{row.reason || "—"}</TableCell>
                     <TableCell>{row.created_at ? new Date(row.created_at).toLocaleDateString() : "—"}</TableCell>
                   </TableRow>
                 ))

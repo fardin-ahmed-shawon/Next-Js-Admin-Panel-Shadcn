@@ -288,7 +288,7 @@ function RowActions({ row }: { row: ParcelRow }) {
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleReturnRequest} className="text-red-600 cursor-pointer">
             <Package className="mr-2 h-4 w-4" />
-            Create Return
+            Send Return Request
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
