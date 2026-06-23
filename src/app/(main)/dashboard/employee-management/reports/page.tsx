@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Search, Users, Trophy, TrendingUp, PackageCheck, ListTodo } from "lucide-react";
+import { Loader2, Search, Users, Trophy, TrendingUp, PackageCheck, ListTodo, Coins } from "lucide-react";
 import {
   type ColumnDef,
   type ColumnFiltersState,
