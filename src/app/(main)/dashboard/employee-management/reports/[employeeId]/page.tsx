@@ -16,7 +16,9 @@ import {
   ArrowUpDown,
   PackageCheck,
   Coins,
-  ShoppingBag as OrderIcon
+  ShoppingBag as OrderIcon,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { format } from "date-fns";
 import { 
@@ -99,10 +101,11 @@ export default function EmployeeReportDetailsPage() {
 
   // Aggregate stats for this employee
   const stats = React.useMemo(() => {
-    if (!employeeData) return { totalAssigned: 0, delivered: 0, collectedRevenue: 0, itemsHandled: 0 };
+    if (!employeeData) return { totalAssigned: 0, delivered: 0, collectedRevenue: 0, totalDue: 0, itemsHandled: 0 };
 
     let delivered = 0;
     let collectedRevenue = 0;
+    let totalDue = 0;
     let itemsHandled = 0;
 
     employeeData.orders.forEach((order) => {
@@ -113,6 +116,7 @@ export default function EmployeeReportDetailsPage() {
 
       const paidSum = order.payments?.reduce((sum, p) => sum + Number(p.paid_amount || 0), 0) || 0;
       collectedRevenue += paidSum;
+      totalDue += Math.max(0, Number(order.grand_total_amount || 0) - paidSum);
 
       order.ordered_products?.forEach((product) => {
         itemsHandled += product.qty;
@@ -123,9 +127,20 @@ export default function EmployeeReportDetailsPage() {
       totalAssigned: employeeData.orders.length,
       delivered,
       collectedRevenue,
+      totalDue,
       itemsHandled,
     };
   }, [employeeData]);
+
+  // Expanded rows state
+  const [expandedOrders, setExpandedOrders] = React.useState<Record<string, boolean>>({});
+
+  const toggleExpand = (orderNo: string) => {
+    setExpandedOrders((prev) => ({
+      ...prev,
+      [orderNo]: !prev[orderNo],
+    }));
+  };
 
   // Table setup
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -188,6 +203,25 @@ export default function EmployeeReportDetailsPage() {
   const columns = React.useMemo<ColumnDef<EmployeeReportOrder>[]>(
     () => [
       {
+        id: "expander",
+        header: "",
+        cell: ({ row }) => {
+          const isExpanded = !!expandedOrders[row.original.order_no];
+          return (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleExpand(row.original.order_no);
+              }}
+            >
+              {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+            </Button>
+          );
+        },
+      },
+      {
         id: "search",
         accessorFn: (row) => `${row.order_no}`,
         filterFn: "includesString",
@@ -232,8 +266,17 @@ export default function EmployeeReportDetailsPage() {
           return <span className="font-semibold text-emerald-600">৳{paidSum.toLocaleString()}</span>;
         },
       },
+      {
+        id: "due_amount",
+        header: "Due Amount",
+        cell: ({ row }) => {
+          const paidSum = row.original.payments?.reduce((sum, p) => sum + Number(p.paid_amount || 0), 0) || 0;
+          const due = Math.max(0, Number(row.original.grand_total_amount || 0) - paidSum);
+          return <span className="font-semibold text-red-600">৳{due.toLocaleString()}</span>;
+        },
+      },
     ],
-    []
+    [expandedOrders]
   );
 
   const table = useReactTable({
@@ -307,6 +350,13 @@ export default function EmployeeReportDetailsPage() {
       color: "text-primary",
     },
     {
+      title: "Due Amount",
+      value: `৳${stats.totalDue.toLocaleString()}`,
+      icon: Coins,
+      subtitle: "Accumulated due amount",
+      color: "text-red-600",
+    },
+    {
       title: "Items Handled",
       value: stats.itemsHandled.toString(),
       icon: Package,
@@ -350,7 +400,7 @@ export default function EmployeeReportDetailsPage() {
       </div>
 
       {/* Summary Stats Cards Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs dark:*:data-[slot=card]:bg-card">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs dark:*:data-[slot=card]:bg-card">
         {summaryStats.map((stat, i) => (
           <Card key={i}>
             <CardHeader>
@@ -422,13 +472,92 @@ export default function EmployeeReportDetailsPage() {
               </TableHeader>
               <TableBody>
                 {table.getRowModel().rows.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))
+                  table.getRowModel().rows.map((row) => {
+                    const isExpanded = !!expandedOrders[row.original.order_no];
+                    return (
+                      <React.Fragment key={row.id}>
+                        <TableRow 
+                          className="hover:bg-muted/50 cursor-pointer"
+                          onClick={() => toggleExpand(row.original.order_no)}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                          ))}
+                        </TableRow>
+                        {isExpanded && (
+                          <TableRow className="bg-muted/30">
+                            <TableCell colSpan={columns.length} className="p-4 border-t border-b">
+                              <div className="flex flex-col gap-6 pl-10 pr-4 py-2">
+                                {/* Products Sub-table */}
+                                <div className="space-y-2">
+                                  <h4 className="text-xs font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5">
+                                    <Package className="size-3.5" /> Items ({row.original.ordered_products?.length || 0})
+                                  </h4>
+                                  {row.original.ordered_products && row.original.ordered_products.length > 0 ? (
+                                    <div className="rounded-md border bg-background overflow-hidden max-w-2xl">
+                                      <Table>
+                                        <TableHeader className="bg-muted/40">
+                                          <TableRow>
+                                            <TableHead className="py-2 text-xs font-semibold">Product Name</TableHead>
+                                            <TableHead className="py-2 text-xs font-semibold text-right w-[80px]">Qty</TableHead>
+                                            <TableHead className="py-2 text-xs font-semibold text-right w-[120px]">Unit Price</TableHead>
+                                            <TableHead className="py-2 text-xs font-semibold text-right w-[120px]">Total</TableHead>
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {row.original.ordered_products.map((p, idx) => (
+                                            <TableRow key={idx}>
+                                              <TableCell className="py-2 text-xs font-medium">{p.product_name || "Unknown Product"}</TableCell>
+                                              <TableCell className="py-2 text-xs text-right font-medium">{p.qty}</TableCell>
+                                              <TableCell className="py-2 text-xs text-right">৳{p.unit_price.toLocaleString()}</TableCell>
+                                              <TableCell className="py-2 text-xs text-right font-semibold">৳{(p.qty * p.unit_price).toLocaleString()}</TableCell>
+                                            </TableRow>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-muted-foreground italic pl-2">No product list found.</p>
+                                  )}
+                                </div>
+
+                                {/* Payments history */}
+                                <div className="space-y-2">
+                                  <h4 className="text-xs font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5">
+                                    <Coins className="size-3.5" /> Payments History
+                                  </h4>
+                                  {row.original.payments && row.original.payments.length > 0 ? (
+                                    <div className="rounded-md border bg-background overflow-hidden max-w-2xl">
+                                      <Table>
+                                        <TableHeader className="bg-muted/40">
+                                          <TableRow>
+                                            <TableHead className="py-2 text-xs font-semibold">Method</TableHead>
+                                            <TableHead className="py-2 text-xs font-semibold">Transaction ID</TableHead>
+                                            <TableHead className="py-2 text-xs font-semibold text-right w-[150px]">Paid Amount</TableHead>
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {row.original.payments.map((p, idx) => (
+                                            <TableRow key={idx}>
+                                              <TableCell className="py-2 text-xs font-medium capitalize">{p.payment_method}</TableCell>
+                                              <TableCell className="py-2 text-xs text-muted-foreground font-mono">{p.transaction_id || "N/A"}</TableCell>
+                                              <TableCell className="py-2 text-xs text-right font-semibold text-emerald-600">৳{p.paid_amount.toLocaleString()}</TableCell>
+                                            </TableRow>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-muted-foreground italic pl-2">No payment transaction records found.</p>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
                 ) : (
                   <TableRow>
                     <TableCell colSpan={columns.length} className="h-48">

@@ -74,6 +74,7 @@ interface EmployeeReportAggregatedData {
   trash: number;
   totalItems: number;
   totalRevenue: number;
+  totalDue: number;
   rawReport: EmployeeReportData;
 }
 
@@ -119,6 +120,7 @@ export default function EmployeeReportsPage() {
         let trash = 0;
         let totalItems = 0;
         let totalRevenue = 0;
+        let totalDue = 0;
 
         report.orders.forEach((order) => {
           const statusLower = order.order_status?.toLowerCase().replace(/[\s-]/g, "") || "";
@@ -140,6 +142,7 @@ export default function EmployeeReportsPage() {
 
           const paidSum = order.payments?.reduce((sum, p) => sum + Number(p.paid_amount || 0), 0) || 0;
           totalRevenue += paidSum;
+          totalDue += Math.max(0, Number(order.grand_total_amount || 0) - paidSum);
 
           order.ordered_products?.forEach((product) => {
             totalItems += product.qty;
@@ -168,6 +171,7 @@ export default function EmployeeReportsPage() {
           trash,
           totalItems,
           totalRevenue,
+          totalDue,
           rawReport: report,
         } as EmployeeReportAggregatedData;
       })
@@ -182,9 +186,10 @@ export default function EmployeeReportsPage() {
         acc.totalAssigned += curr.totalAssigned;
         acc.totalDelivered += curr.delivered;
         acc.totalRevenue += curr.totalRevenue;
+        acc.totalDue += curr.totalDue;
         return acc;
       },
-      { totalAssigned: 0, totalDelivered: 0, totalRevenue: 0 }
+      { totalAssigned: 0, totalDelivered: 0, totalRevenue: 0, totalDue: 0 }
     );
   }, [reportData]);
 
@@ -393,6 +398,14 @@ export default function EmployeeReportsPage() {
       },
     },
     {
+      accessorKey: "totalDue",
+      header: "Due Amount",
+      cell: ({ row }) => {
+        const amount = parseFloat(row.getValue("totalDue"));
+        return <span className="font-semibold text-red-600">৳{amount.toLocaleString()}</span>;
+      },
+    },
+    {
       accessorKey: "totalItems",
       header: "Items Handled",
       cell: ({ row }) => {
@@ -483,7 +496,7 @@ export default function EmployeeReportsPage() {
       </div>
 
       {/* Top Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card className="bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -516,6 +529,17 @@ export default function EmployeeReportsPage() {
           <CardContent>
             <div className="text-2xl font-bold">৳{globalStats.totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Total order value handled</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm font-medium">Workforce Due</CardTitle>
+            <Coins className="size-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">৳{globalStats.totalDue.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Total outstanding due</p>
           </CardContent>
         </Card>
 
