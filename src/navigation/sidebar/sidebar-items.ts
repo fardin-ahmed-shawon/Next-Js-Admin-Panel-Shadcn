@@ -168,6 +168,22 @@ export const sidebarItems: NavGroup[] = [
         module: "blogs",
       },
       { title: "Sales Reports", url: "/dashboard/sales-reports", icon: TrendingUp, module: "sales_report" },
+      {
+        title: "Reports",
+        url: "/dashboard/reports",
+        icon: ClipboardList,
+        module: "reports",
+        subItems: [
+          { title: "Product Report", url: "/dashboard/reports/product" },
+          { title: "Order Report", url: "/dashboard/reports/order" },
+          { title: "Customer Report", url: "/dashboard/reports/customer" },
+          { title: "Employee Report", url: "/dashboard/reports/employee" },
+          { title: "Inventory Report", url: "/dashboard/reports/inventory" },
+          { title: "Payment Report", url: "/dashboard/reports/payment" },
+          { title: "Courier Report", url: "/dashboard/reports/courier" },
+          { title: "Parcel Report", url: "/dashboard/reports/parcel" },
+        ],
+      },
       { title: "Brands", url: "/dashboard/brands", icon: Award, module: "brands" },
       {
         title: "Courier",
