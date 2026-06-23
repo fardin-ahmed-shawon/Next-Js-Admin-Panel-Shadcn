@@ -57,6 +57,7 @@ type ParcelRow = {
   consignment_id: number;
   tracking_code: string;
   status: string;
+  parcel_status: string;
   created_at: string;
   order: {
     customer_full_name: string;
@@ -167,10 +168,31 @@ const columns: ColumnDef<ParcelRow>[] = [
     },
   },
   {
-    accessorKey: "status",
-    header: "Status",
+    accessorKey: "orderStatus",
+    header: "Order Status",
     cell: ({ row }) => {
-      const status = row.original.status || "pending";
+      const status = row.original.order?.order_status || "Unknown";
+      return (
+        <Badge
+          variant="outline"
+          className={
+            status === "Delivered"
+              ? "border-green-500 text-green-600"
+              : status === "Cancelled" || status === "Returned"
+                ? "border-red-500 text-red-600"
+                : "border-blue-500 text-blue-600"
+          }
+        >
+          {status}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "parcelStatus",
+    header: "Parcel Status",
+    cell: ({ row }) => {
+      const status = row.original.parcel_status || row.original.status || "pending";
       return (
         <Badge
           variant="outline"
