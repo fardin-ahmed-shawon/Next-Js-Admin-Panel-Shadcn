@@ -33,7 +33,8 @@ export function useSteadfastParcels(params?: UseSteadfastParcelsParams) {
   if (params?.search) searchParams.append("search", params.search);
 
   const queryString = searchParams.toString() ? `?${searchParams.toString()}` : "";
-  const url = `${baseUrl}steadfast-parcels${queryString}`;
+  const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+  const url = `${baseUrl}${endpoint}${queryString}`;
 
   const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
     revalidateOnFocus: false,

@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { toast } from "sonner";
+import { fetchClient } from "@/lib/fetch-client";
 
 import {
   type ColumnDef,
@@ -199,6 +201,48 @@ const columns: ColumnDef<ParcelRow>[] = [
 ];
 
 function RowActions({ row }: { row: ParcelRow }) {
+  const handleCheckStatus = async () => {
+    const toastId = toast.loading("Checking parcel status...");
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+      const res = await fetchClient(`${baseUrl}${endpoint}/${row.order_no}/status`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || err?.message || "Failed to fetch status.");
+      }
+      const data = await res.json();
+      const statusText = data?.data?.delivery_status || "Unknown";
+      toast.success(`Current Status: ${statusText.replace(/_/g, " ").toUpperCase()}`, { id: toastId });
+    } catch (e: any) {
+      toast.error(e?.message || "Something went wrong.", { id: toastId });
+    }
+  };
+
+  const handleReturnRequest = async () => {
+    if (!confirm("Are you sure you want to create a return request for this parcel?")) return;
+    const toastId = toast.loading("Creating return request...");
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+      const res = await fetchClient(`${baseUrl}${endpoint}/${row.order_no}/return`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Requested from Admin Panel" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || err?.message || "Failed to create return request.");
+      }
+      toast.success("Return request created successfully!", { id: toastId });
+    } catch (e: any) {
+      toast.error(e?.message || "Something went wrong.", { id: toastId });
+    }
+  };
+
   return (
     <div className="flex w-full justify-end">
       <DropdownMenu>
@@ -209,11 +253,20 @@ function RowActions({ row }: { row: ParcelRow }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuItem onClick={handleCheckStatus} className="cursor-pointer">
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Check Status
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/orders/${row.order_no}`}>
               <Eye className="mr-2 h-4 w-4" />
               View Order
             </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleReturnRequest} className="text-red-600 cursor-pointer">
+            <Package className="mr-2 h-4 w-4" />
+            Create Return
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -243,9 +296,9 @@ export function SteadfastTable() {
     search: debouncedSearch || undefined,
   });
 
-  const parcelsData = apiData?.data || [];
-  const meta = apiData?.meta || {};
-  const totalCount = meta?.total || 0;
+  const parcelsData = Array.isArray(apiData?.data?.data) ? apiData.data.data : (Array.isArray(apiData?.data) ? apiData.data : []);
+  const meta = apiData?.data || {};
+  const totalCount = meta?.total || parcelsData.length || 0;
   const pageCount = meta?.last_page || 1;
 
   const table = useReactTable({

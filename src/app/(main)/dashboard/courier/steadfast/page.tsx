@@ -1,6 +1,9 @@
 import { ApiSetupDialog } from "./_components/api-setup-dialog";
 import { SteadfastStats } from "./_components/steadfast-stats";
 import { SteadfastTable } from "./_components/steadfast-table";
+import { ReturnsTable } from "./_components/returns-table";
+import { PaymentsTable } from "./_components/payments-table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SteadfastPage() {
   return (
@@ -19,7 +22,23 @@ export default function SteadfastPage() {
       </div>
 
       <SteadfastStats />
-      <SteadfastTable />
+
+      <Tabs defaultValue="parcels" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="parcels">Parcels</TabsTrigger>
+          <TabsTrigger value="returns">Return Requests</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
+        </TabsList>
+        <TabsContent value="parcels" className="mt-0">
+          <SteadfastTable />
+        </TabsContent>
+        <TabsContent value="returns" className="mt-0">
+          <ReturnsTable />
+        </TabsContent>
+        <TabsContent value="payments" className="mt-0">
+          <PaymentsTable />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

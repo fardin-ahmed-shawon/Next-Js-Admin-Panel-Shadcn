@@ -403,7 +403,8 @@ const columns: ColumnDef<OrderRow>[] = [
           onClick={async () => {
             const toastId = toast.loading(`Sending Order ${row.original.id} to Steadfast...`);
             try {
-              const res = await fetchClient(`${getApiBaseUrl()}steadfast-parcels/${row.original.id}`, {
+              const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+              const res = await fetchClient(`${getApiBaseUrl()}${endpoint}/${row.original.id}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
               });
@@ -710,6 +711,29 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
     }
   };
 
+  const handleBulkSteadfast = async () => {
+    const selectedIds = table.getSelectedRowModel().rows.map(r => r.original.id);
+    if (selectedIds.length === 0) return;
+    const toastId = toast.loading(`Sending ${selectedIds.length} orders to Steadfast...`);
+    try {
+      const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+      const res = await fetchClient(`${getApiBaseUrl()}${endpoint}/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_nos: selectedIds }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || err?.message || "Failed to send bulk orders to Steadfast.");
+      }
+      toast.success(`Successfully sent ${selectedIds.length} orders to Steadfast.`, { id: toastId });
+      setRowSelection({});
+      invalidateOrders();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to bulk send to Steadfast.", { id: toastId });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -935,6 +959,14 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
                         ))}
                     </DropdownMenuSubContent>
                   </DropdownMenuSub>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Courier Integrations</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={handleBulkSteadfast}>
+                    <Truck className="mr-2 size-4" />
+                    Bulk Send to Steadfast
+                  </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>

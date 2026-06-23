@@ -1,35 +1,46 @@
-import { Package, PackageMinus, RefreshCcw, Truck } from "lucide-react";
+"use client";
+
+import { Banknote, Package, RefreshCcw, Truck } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-const stats = [
-  {
-    title: "Total Orders",
-    value: "51",
-    icon: Package,
-    subtitle: "All Steadfast orders",
-  },
-  {
-    title: "Not Added",
-    value: "49",
-    icon: PackageMinus,
-    subtitle: "Pending to courier",
-  },
-  {
-    title: "Added to Courier",
-    value: "2",
-    icon: Truck,
-    subtitle: "Sent to Steadfast",
-  },
-  {
-    title: "Returned Parcel",
-    value: "2",
-    icon: RefreshCcw,
-    subtitle: "Parcels returned",
-  },
-];
+import { useSteadfastBalance } from "@/hooks/useSteadfastBalance";
+import { useSteadfastReturns } from "@/hooks/useSteadfastReturns";
+import { useSteadfastParcels } from "@/hooks/useSteadfastParcels";
+import { useOrders } from "@/hooks/useOrders";
 
 export function SteadfastStats() {
+  const { data: balanceData } = useSteadfastBalance();
+  const { data: returnsData } = useSteadfastReturns();
+  const { data: parcelsData } = useSteadfastParcels();
+  const { data: ordersData } = useOrders({ page: 1, per_page: 1 });
+
+  const stats = [
+    {
+      title: "Available Balance",
+      value: balanceData?.current_balance !== undefined ? `৳${Number(balanceData.current_balance).toLocaleString()}` : "—",
+      icon: Banknote,
+      subtitle: "Current Steadfast balance",
+    },
+    {
+      title: "Total Orders",
+      value: ordersData?.meta?.total ?? "—",
+      icon: Package,
+      subtitle: "All system orders",
+    },
+    {
+      title: "Sent to Steadfast",
+      value: parcelsData?.data?.total ?? (Array.isArray(parcelsData?.data) ? parcelsData.data.length : "—"),
+      icon: Truck,
+      subtitle: "Parcels pushed to courier",
+    },
+    {
+      title: "Return Requests",
+      value: Array.isArray(returnsData) ? returnsData.length : "—",
+      icon: RefreshCcw,
+      subtitle: "Pending returns",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs sm:grid-cols-2 lg:grid-cols-4 dark:*:data-[slot=card]:bg-card">
       {stats.map((stat, i) => (
@@ -51,3 +62,4 @@ export function SteadfastStats() {
     </div>
   );
 }
+

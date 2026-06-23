@@ -7,7 +7,7 @@ const fetcher = async (url: string) => {
   });
 
   if (!res.ok) {
-    const error = new Error("An error occurred while fetching the Steadfast setup data.");
+    const error = new Error("An error occurred while fetching Steadfast returns.");
     // @ts-ignore
     error.info = await res.json().catch(() => ({}));
     // @ts-ignore
@@ -18,9 +18,9 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
-export function useSteadfastSetup() {
+export function useSteadfastReturns() {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-  const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_SETUP_URL || "steadfast-setup";
+  const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_RETURNS_URL || "steadfast/return-requests";
   const url = `${baseUrl}${endpoint}`;
 
   const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
@@ -28,7 +28,7 @@ export function useSteadfastSetup() {
   });
 
   return {
-    data: data?.data,
+    data: data?.data?.data || data?.data || [], // Steadfast array response
     isLoading,
     isError: error,
     mutate,

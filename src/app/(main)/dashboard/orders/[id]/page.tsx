@@ -429,7 +429,8 @@ export default function OrderDetailPage() {
                       const toastId = toast.loading("Sending order to Steadfast...");
                       try {
                         const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-                        const res = await fetchClient(`${baseUrl}steadfast-parcels/${order.order_no}`, {
+                        const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+                        const res = await fetchClient(`${baseUrl}${endpoint}/${order.order_no}`, {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                         });
