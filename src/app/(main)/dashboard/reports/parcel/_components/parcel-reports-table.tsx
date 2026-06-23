@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CourierReportData } from "@/hooks/useCourierReports";
 
-interface CourierReportsTableProps {
+interface ParcelReportsTableProps {
   data?: CourierReportData[];
   currentPage: number;
   lastPage: number;
@@ -23,13 +23,13 @@ interface CourierReportsTableProps {
   isLoading?: boolean;
 }
 
-export function CourierReportsTable({
+export function ParcelReportsTable({
   data = [],
   currentPage,
   lastPage,
   onPageChange,
   isLoading,
-}: CourierReportsTableProps) {
+}: ParcelReportsTableProps) {
   
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -57,7 +57,7 @@ export function CourierReportsTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Detailed Courier Report</CardTitle>
+        <CardTitle>Detailed Parcel Report</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
