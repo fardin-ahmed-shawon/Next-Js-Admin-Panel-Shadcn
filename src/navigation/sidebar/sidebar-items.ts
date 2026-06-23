@@ -170,7 +170,7 @@ export const sidebarItems: NavGroup[] = [
         subItems: [
           { title: "Dashboard", url: "/dashboard/reports/dashboard" },
           { title: "Product Report", url: "/dashboard/reports/product" },
-          { title: "Order Report", url: "/dashboard/reports/order" },
+          { title: "Product Percent", url: "/dashboard/reports/product-percent" },
           { title: "Customer Report", url: "/dashboard/reports/customer" },
           { title: "Employee Report", url: "/dashboard/reports/employee" },
           { title: "Inventory Report", url: "/dashboard/reports/inventory" },
