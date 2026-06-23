@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Package, Search, Undo2 } from "lucide-react";
+import { Eye, Loader2, MoreHorizontal, Package, RefreshCcw, Search, Undo2 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +10,89 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useSteadfastReturnedParcels } from "@/hooks/useSteadfastReturnedParcels";
 import { fetchClient } from "@/lib/fetch-client";
 
 const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+
+function RowActions({ row, mutate }: { row: any; mutate: any }) {
+  const handleCheckStatus = async () => {
+    const toastId = toast.loading("Checking parcel status...");
+    try {
+      const baseUrl = getApiBaseUrl();
+      const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+      const res = await fetchClient(`${baseUrl}${endpoint}/${row.order_no}/status`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || err?.message || "Failed to fetch status.");
+      }
+      const data = await res.json();
+      const statusText = data?.data?.delivery_status || "Unknown";
+      toast.success(`Current Status: ${statusText.replace(/_/g, " ").toUpperCase()}`, { id: toastId });
+    } catch (e: any) {
+      toast.error(e?.message || "Something went wrong.", { id: toastId });
+    }
+  };
+
+  const handleReturnRequest = async () => {
+    if (!confirm("Are you sure you want to create a return request for this parcel?")) return;
+    const toastId = toast.loading(`Creating return request for order ${row.order_no}...`);
+    try {
+      const baseUrl = getApiBaseUrl();
+      const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+      const res = await fetchClient(`${baseUrl}${endpoint}/${row.order_no}/return`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Requested from Admin Panel" }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        const errorMessage = errorData?.raw_response?.error || errorData?.message || "Failed to create return request";
+        throw new Error(errorMessage);
+      }
+      
+      toast.success(`Return request for ${row.order_no} created successfully!`, { id: toastId });
+      mutate(); // Refresh the parcels table
+    } catch (e: any) {
+      toast.error(e.message || "An error occurred.", { id: toastId });
+    }
+  };
+
+  return (
+    <div className="flex w-full justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon-sm">
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuItem onClick={handleCheckStatus} className="cursor-pointer">
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Check Status
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={`/dashboard/orders/${row.order_no}`}>
+              <Eye className="mr-2 h-4 w-4" />
+              View Order
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleReturnRequest} className="text-red-600 cursor-pointer">
+            <Package className="mr-2 h-4 w-4" />
+            Send Return Request
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
 
 export function ReturnedParcelsTable() {
   const [searchInput, setSearchInput] = React.useState("");
@@ -25,28 +105,7 @@ export function ReturnedParcelsTable() {
 
   const filteredData = Array.isArray(apiData?.data?.data) ? apiData.data.data : (Array.isArray(apiData?.data) ? apiData.data : []);
 
-  const handleReturnRequest = async (order_no: string) => {
-    if (!confirm("Are you sure you want to create a return request for this parcel?")) return;
-    const toastId = toast.loading(`Creating return request for order ${order_no}...`);
-    try {
-      const res = await fetchClient(`${getApiBaseUrl()}steadfast-parcels/${order_no}/return`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: "Requested from Admin Panel" }),
-      });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        const errorMessage = errorData?.raw_response?.error || errorData?.message || "Failed to create return request";
-        throw new Error(errorMessage);
-      }
-      
-      toast.success(`Return request for ${order_no} created successfully!`, { id: toastId });
-      mutate(); // Refresh the parcels table
-    } catch (e: any) {
-      toast.error(e.message || "An error occurred.", { id: toastId });
-    }
-  };
 
   return (
     <Card>
@@ -116,15 +175,7 @@ export function ReturnedParcelsTable() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-8 gap-1.5"
-                          onClick={() => handleReturnRequest(row.order_no)}
-                        >
-                          <Undo2 className="size-3.5" />
-                          Send Return Request
-                        </Button>
+                        <RowActions row={row} mutate={mutate} />
                       </TableCell>
                     </TableRow>
                   );
