@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EmployeeReportDetails } from "./_components/employee-report-details";
+import Link from "next/link";
 
 type TimeRange = "daily" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
 
@@ -98,8 +98,6 @@ export default function EmployeeReportsPage() {
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-
-  const [selectedEmployee, setSelectedEmployee] = React.useState<EmployeeReportData | null>(null);
 
   const reportData = React.useMemo(() => {
     if (!rawReports) return [];
@@ -406,8 +404,10 @@ export default function EmployeeReportsPage() {
       header: "Actions",
       cell: ({ row }) => {
         return (
-          <Button variant="outline" size="sm" onClick={() => setSelectedEmployee(row.original.rawReport)}>
-            View Details
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/dashboard/employee-management/reports/${row.original.userId}?timeRange=${timeRange}&from=${customFrom}&to=${customTo}`}>
+              View Details
+            </Link>
           </Button>
         );
       },
@@ -599,11 +599,6 @@ export default function EmployeeReportsPage() {
         </CardContent>
       </Card>
 
-      <EmployeeReportDetails
-        open={!!selectedEmployee}
-        onOpenChange={(open) => !open && setSelectedEmployee(null)}
-        employeeData={selectedEmployee}
-      />
     </div>
   );
 }
