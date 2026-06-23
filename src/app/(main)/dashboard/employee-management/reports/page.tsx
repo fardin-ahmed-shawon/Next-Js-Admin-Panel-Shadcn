@@ -58,11 +58,22 @@ interface EmployeeReportAggregatedData {
   email: string;
   avatar: string;
   totalAssigned: number;
-  deliveredOrders: number;
-  pendingOrders: number;
+  pending: number;
+  confirmed: number;
+  readyToShip: number;
+  inCourier: number;
+  shipLater: number;
+  hold: number;
+  returned: number;
+  preOrder: number;
+  delivered: number;
+  cancelled: number;
+  missing: number;
+  lost: number;
+  fake: number;
+  trash: number;
   totalItems: number;
   totalRevenue: number;
-  totalCollected: number;
   rawReport: EmployeeReportData;
 }
 
@@ -84,49 +95,86 @@ export default function EmployeeReportsPage() {
   }, [timeRange, customTo]);
 
   const { data: rawReports, isLoading } = useEmployeeReports(startDate, endDate);
-  
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
   const [selectedEmployee, setSelectedEmployee] = React.useState<EmployeeReportData | null>(null);
 
   const reportData = React.useMemo(() => {
-    return rawReports.map((report) => {
-      let deliveredOrders = 0;
-      let pendingOrders = 0;
-      let totalItems = 0;
-      let totalRevenue = 0;
-      let totalCollected = 0;
+    if (!rawReports) return [];
+    return rawReports
+      .map((report) => {
+        let pending = 0;
+        let confirmed = 0;
+        let readyToShip = 0;
+        let inCourier = 0;
+        let shipLater = 0;
+        let hold = 0;
+        let returned = 0;
+        let preOrder = 0;
+        let delivered = 0;
+        let cancelled = 0;
+        let missing = 0;
+        let lost = 0;
+        let fake = 0;
+        let trash = 0;
+        let totalItems = 0;
+        let totalRevenue = 0;
 
-      report.orders.forEach((order) => {
-        if (order.order_status === "Delivered") deliveredOrders++;
-        if (order.order_status === "Pending") pendingOrders++;
-        
-        totalRevenue += order.grand_total_amount;
-        
-        order.ordered_products?.forEach((product) => {
-          totalItems += product.qty;
+        report.orders.forEach((order) => {
+          const statusLower = order.order_status?.toLowerCase().replace(/[\s-]/g, "") || "";
+
+          if (statusLower === "pending") pending++;
+          else if (statusLower === "confirmed") confirmed++;
+          else if (statusLower === "readytoship") readyToShip++;
+          else if (statusLower === "incourier") inCourier++;
+          else if (statusLower === "shiplater") shipLater++;
+          else if (statusLower === "hold") hold++;
+          else if (statusLower === "returned" || statusLower === "return") returned++;
+          else if (statusLower === "preorder") preOrder++;
+          else if (statusLower === "delivered") delivered++;
+          else if (statusLower === "cancelled" || statusLower === "cancel" || statusLower === "canceled") cancelled++;
+          else if (statusLower === "missing") missing++;
+          else if (statusLower === "lost") lost++;
+          else if (statusLower === "fake") fake++;
+          else if (statusLower === "trash") trash++;
+
+          const paidSum = order.payments?.reduce((sum, p) => sum + Number(p.paid_amount || 0), 0) || 0;
+          totalRevenue += paidSum;
+
+          order.ordered_products?.forEach((product) => {
+            totalItems += product.qty;
+          });
         });
 
-        order.payments?.forEach((payment) => {
-          totalCollected += payment.paid_amount;
-        });
-      });
-
-      return {
-        userId: report.user_id,
-        name: report.full_name,
-        email: report.email,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(report.full_name || "U")}&background=random`,
-        totalAssigned: report.assigned_orders_count,
-        deliveredOrders,
-        pendingOrders,
-        totalItems,
-        totalRevenue,
-        totalCollected,
-        rawReport: report,
-      } as EmployeeReportAggregatedData;
-    }).sort((a, b) => b.totalRevenue - a.totalRevenue); // Default sort by revenue for Top Performer
+        return {
+          userId: report.user_id,
+          name: report.full_name,
+          email: report.email,
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(report.full_name || "U")}&background=random`,
+          totalAssigned: report.orders.length,
+          pending,
+          confirmed,
+          readyToShip,
+          inCourier,
+          shipLater,
+          hold,
+          returned,
+          preOrder,
+          delivered,
+          cancelled,
+          missing,
+          lost,
+          fake,
+          trash,
+          totalItems,
+          totalRevenue,
+          rawReport: report,
+        } as EmployeeReportAggregatedData;
+      })
+      .filter((emp) => emp.totalAssigned > 0)
+      .sort((a, b) => b.totalRevenue - a.totalRevenue); // Default sort by revenue for Top Performer
   }, [rawReports]);
 
   // Aggregate Stats
@@ -134,7 +182,7 @@ export default function EmployeeReportsPage() {
     return reportData.reduce(
       (acc, curr) => {
         acc.totalAssigned += curr.totalAssigned;
-        acc.totalDelivered += curr.deliveredOrders;
+        acc.totalDelivered += curr.delivered;
         acc.totalRevenue += curr.totalRevenue;
         return acc;
       },
@@ -152,14 +200,14 @@ export default function EmployeeReportsPage() {
         const name = row.getValue("name") as string;
         const initials = name.substring(0, 2).toUpperCase();
         return (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-[170px]">
             <Avatar className="h-9 w-9">
               <AvatarImage src={row.original.avatar} alt={name} />
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
-              <span className="font-semibold text-foreground">{name}</span>
-              <span className="text-xs text-muted-foreground">{row.original.email}</span>
+              <span className="font-semibold text-foreground leading-none">{name}</span>
+              <span className="text-[11px] text-muted-foreground mt-1">{row.original.email}</span>
             </div>
           </div>
         );
@@ -167,38 +215,190 @@ export default function EmployeeReportsPage() {
     },
     {
       accessorKey: "totalAssigned",
-      header: "Total Assigned",
-      cell: ({ row }) => <span className="font-medium text-primary">{row.getValue("totalAssigned")}</span>,
+      header: "Total Order",
+      cell: ({ row }) => <span className="font-semibold text-primary">{row.getValue("totalAssigned")}</span>,
     },
     {
-      accessorKey: "deliveredOrders",
-      header: "Delivered",
-      cell: ({ row }) => (
-        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-          {row.getValue("deliveredOrders")}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: "pendingOrders",
+      accessorKey: "pending",
       header: "Pending",
-      cell: ({ row }) => (
-        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-          {row.getValue("pendingOrders")}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const val = row.original.pending;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "confirmed",
+      header: "Confirmed",
+      cell: ({ row }) => {
+        const val = row.original.confirmed;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "readyToShip",
+      header: "Ready To Ship",
+      cell: ({ row }) => {
+        const val = row.original.readyToShip;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "inCourier",
+      header: "In-Courier",
+      cell: ({ row }) => {
+        const val = row.original.inCourier;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "shipLater",
+      header: "Ship Later",
+      cell: ({ row }) => {
+        const val = row.original.shipLater;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "hold",
+      header: "Hold",
+      cell: ({ row }) => {
+        const val = row.original.hold;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "returned",
+      header: "Returned",
+      cell: ({ row }) => {
+        const val = row.original.returned;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 hover:bg-red-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "preOrder",
+      header: "Pre-Order",
+      cell: ({ row }) => {
+        const val = row.original.preOrder;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 hover:bg-fuchsia-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "delivered",
+      header: "Delivered",
+      cell: ({ row }) => {
+        const val = row.original.delivered;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 hover:bg-green-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "cancelled",
+      header: "Cancelled",
+      cell: ({ row }) => {
+        const val = row.original.cancelled;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "missing",
+      header: "Missing",
+      cell: ({ row }) => {
+        const val = row.original.missing;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "lost",
+      header: "Lost",
+      cell: ({ row }) => {
+        const val = row.original.lost;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "fake",
+      header: "Fake",
+      cell: ({ row }) => {
+        const val = row.original.fake;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "trash",
+      header: "Trash",
+      cell: ({ row }) => {
+        const val = row.original.trash;
+        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+          <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50 font-semibold">
+            {val}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "totalRevenue",
+      header: "Collected Revenue",
+      cell: ({ row }) => {
+        const amount = parseFloat(row.getValue("totalRevenue"));
+        return <span className="font-semibold text-emerald-600">৳{amount.toLocaleString()}</span>;
+      },
     },
     {
       accessorKey: "totalItems",
       header: "Items Handled",
-      cell: ({ row }) => <span className="font-medium">{row.getValue("totalItems")}</span>,
-    },
-    {
-      accessorKey: "totalRevenue",
-      header: "Total Revenue",
       cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("totalRevenue"));
-        return <span className="font-semibold text-primary">৳{amount.toLocaleString()}</span>;
+        return <span className="font-semibold">{row.getValue("totalItems")}</span>;
       },
     },
     {
@@ -261,6 +461,7 @@ export default function EmployeeReportsPage() {
               />
             </>
           )}
+
           <Select value={timeRange} onValueChange={(val: TimeRange) => setTimeRange(val)}>
             <SelectTrigger className="w-36 bg-background">
               <SelectValue placeholder="Select Range" />
