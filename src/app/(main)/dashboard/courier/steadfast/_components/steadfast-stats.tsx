@@ -1,18 +1,20 @@
 "use client";
 
-import { Banknote, Package, RefreshCcw, Truck } from "lucide-react";
+import { Banknote, Package, RefreshCcw, Truck, Undo2 } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSteadfastBalance } from "@/hooks/useSteadfastBalance";
 import { useSteadfastReturns } from "@/hooks/useSteadfastReturns";
 import { useSteadfastParcels } from "@/hooks/useSteadfastParcels";
 import { useOrders } from "@/hooks/useOrders";
+import { useSteadfastReturnedParcels } from "@/hooks/useSteadfastReturnedParcels";
 
 export function SteadfastStats() {
   const { data: balanceData } = useSteadfastBalance();
   const { data: returnsData } = useSteadfastReturns();
   const { data: parcelsData } = useSteadfastParcels();
   const { data: ordersData } = useOrders({ page: 1, per_page: 1 });
+  const { data: returnedParcelsData } = useSteadfastReturnedParcels({ page: 1, per_page: 1 });
 
   const stats = [
     {
@@ -39,10 +41,16 @@ export function SteadfastStats() {
       icon: RefreshCcw,
       subtitle: "Pending returns",
     },
+    {
+      title: "Returned Parcels",
+      value: returnedParcelsData?.data?.total ?? (Array.isArray(returnedParcelsData?.data) ? returnedParcelsData.data.length : "—"),
+      icon: Undo2,
+      subtitle: "Locally marked returned",
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs sm:grid-cols-2 lg:grid-cols-4 dark:*:data-[slot=card]:bg-card">
+    <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 dark:*:data-[slot=card]:bg-card">
       {stats.map((stat, i) => (
         <Card key={i}>
           <CardHeader>

@@ -31,6 +31,7 @@ import {
   RefreshCcw,
   Search,
   Truck,
+  Undo2,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -265,6 +266,27 @@ function RowActions({ row }: { row: ParcelRow }) {
     }
   };
 
+  const handleMarkAsReturned = async () => {
+    const toastId = toast.loading(`Marking order ${row.order_no} as returned...`);
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+      const res = await fetchClient(`${baseUrl}${endpoint}/${row.order_no}/mark-returned`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.message || "Failed to mark as returned");
+      }
+      toast.success(`Order ${row.order_no} locally marked as returned!`, { id: toastId });
+      // We don't have mutate passed to RowActions in steadfast-table, so we just let it refresh later or we can reload
+      window.location.reload(); 
+    } catch (e: any) {
+      toast.error(e.message || "An error occurred.", { id: toastId });
+    }
+  };
+
   return (
     <div className="flex w-full justify-end">
       <DropdownMenu>
@@ -286,6 +308,10 @@ function RowActions({ row }: { row: ParcelRow }) {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleMarkAsReturned} className="text-orange-600 cursor-pointer">
+            <Undo2 className="mr-2 h-4 w-4" />
+            Mark Returned
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleReturnRequest} className="text-red-600 cursor-pointer">
             <Package className="mr-2 h-4 w-4" />
             Send Return Request
