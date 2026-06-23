@@ -8,7 +8,6 @@ import {
   Ban,
   Banknote,
   BookOpenText,
-  Briefcase,
   Calendar,
   ChartBar,
   ClipboardList,
@@ -113,6 +112,7 @@ export const sidebarItems: NavGroup[] = [
         module: "orders",
         subItems: [
           { title: "Create Order", url: "/dashboard/orders/create" },
+          { title: "Assign Orders", url: "/dashboard/orders/assign-orders" },
           { title: "Order Management", url: "/dashboard/orders" },
         ],
       },
@@ -203,16 +203,6 @@ export const sidebarItems: NavGroup[] = [
         ],
       },
       { title: "Users", url: "/dashboard/users", icon: Users, module: "users" },
-      {
-        title: "Employee Management",
-        url: "/dashboard/employee-management",
-        icon: Briefcase,
-        module: "employee_management",
-        subItems: [
-          { title: "Assign Orders", url: "/dashboard/employee-management/assign-orders" },
-          { title: "Employee Reports", url: "/dashboard/reports/employee" },
-        ],
-      },
       { title: "Blocklist", url: "/dashboard/blocklist", icon: Ban, module: "blocklist" },
       { title: "Messages", url: "/dashboard/messages", icon: MessageCircle, module: "messages" },
       { title: "Settings", url: "/dashboard/settings", icon: Settings, module: "settings" },
