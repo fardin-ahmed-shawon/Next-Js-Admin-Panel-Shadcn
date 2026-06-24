@@ -23,9 +23,12 @@ export interface CourierReportData {
 
 export interface CourierReportStats {
   total_parcels: number;
-  total_delivered_parcel: number;
-  total_returned_parcel: number;
-  total_return_request: number;
+  total_order_value: number;
+  total_revenue_collected: number;
+  delivery_success_rate: number;
+  return_rate: number;
+  cancellation_rate: number;
+  [key: string]: any;
 }
 
 export interface CourierReportResponse {
