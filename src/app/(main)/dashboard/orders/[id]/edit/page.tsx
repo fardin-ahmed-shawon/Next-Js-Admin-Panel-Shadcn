@@ -44,6 +44,7 @@ interface CartItem {
   quantity: number;
   color: string;
   size: string;
+  unitPrice: number;
 }
 
 const fetcher = async (url: string) => {
@@ -66,23 +67,80 @@ const getImageUrl = (path: string | null) => {
   return `${baseUrl}${path}`;
 };
 
-function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem }: any) {
+function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, updateUnitPrice }: any) {
   const { data: sizesRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_SIZES || "product-sizes"}?product_id=${item.product.id}`, fetcher);
   const { data: colorsRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_COLORS || "product-colors"}?product_id=${item.product.id}`, fetcher);
   const { data: variantsRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_VARIANTS || "product-variants"}?product_id=${item.product.id}`, fetcher);
 
-  const sizes = Array.isArray(sizesRes) ? sizesRes : [];
-  const colors = Array.isArray(colorsRes) ? colorsRes : [];
-  const variants = Array.isArray(variantsRes) ? variantsRes : [];
+  const allSizes = React.useMemo(() => {
+    const list = Array.isArray(sizesRes) ? sizesRes : sizesRes?.data || [];
+    return Array.from(new Map(list.map((s: any) => [s.size, s])).values()) as any[];
+  }, [sizesRes]);
+  
+  const allColors = React.useMemo(() => {
+    const list = Array.isArray(colorsRes) ? colorsRes : colorsRes?.data || [];
+    return Array.from(new Map(list.map((c: any) => [c.color, c])).values()) as any[];
+  }, [colorsRes]);
 
-  const requiresVariant = sizes.length > 0 || colors.length > 0;
+  const variants = React.useMemo(() => {
+    return (Array.isArray(variantsRes) ? variantsRes : variantsRes?.data || []) as any[];
+  }, [variantsRes]);
+
+  const sizes = React.useMemo(() => allSizes.filter((s: any) => variants.some((v: any) => v.size_id === s.id)), [allSizes, variants]);
+  const colors = React.useMemo(() => allColors.filter((c: any) => variants.some((v: any) => v.color_id === c.id)), [allColors, variants]);
+
+  const requiresVariant = Number(item.product.has_variants) === 1 && variants.length > 0;
   let isValidVariant = true;
 
-  if (requiresVariant && (item.size || item.color)) {
-    const selectedSizeId = sizes.find((s: any) => s.size === item.size)?.id || null;
-    const selectedColorId = colors.find((c: any) => c.color === item.color)?.id || null;
-    
-    isValidVariant = variants.some((v: any) => v.size_id === selectedSizeId && v.color_id === selectedColorId);
+  const availableColors = item.size 
+    ? colors.filter((c: any) => {
+        const sizeId = sizes.find((s: any) => s.size === item.size)?.id;
+        return variants.some((v: any) => v.size_id === sizeId && v.color_id === c.id);
+      })
+    : colors;
+
+  const availableSizes = item.color
+    ? sizes.filter((s: any) => {
+        const colorId = colors.find((c: any) => c.color === item.color)?.id;
+        return variants.some((v: any) => v.color_id === colorId && v.size_id === s.id);
+      })
+    : sizes;
+
+  React.useEffect(() => {
+    if (requiresVariant && item.size && item.color) {
+      const selectedSizeId = sizes.find((s: any) => s.size === item.size)?.id || null;
+      const selectedColorId = colors.find((c: any) => c.color === item.color)?.id || null;
+      const variant = variants.find((v: any) => v.size_id === selectedSizeId && v.color_id === selectedColorId);
+      
+      if (variant && variant.variant_pricing) {
+        updateUnitPrice(item.product.id, variant.variant_pricing.selling_price);
+      }
+    }
+  }, [item.size, item.color, sizes, colors, variants]);
+
+  React.useEffect(() => {
+    if (requiresVariant) {
+      if (availableSizes.length === 1 && item.size !== availableSizes[0].size) {
+        updateCartItem(item.product.id, "size", availableSizes[0].size);
+      }
+      if (availableColors.length === 1 && item.color !== availableColors[0].color) {
+        updateCartItem(item.product.id, "color", availableColors[0].color);
+      }
+    }
+  }, [availableSizes, availableColors, item.size, item.color, requiresVariant]);
+
+  const requiresSize = sizes.length > 0;
+  const requiresColor = colors.length > 0;
+  const isSizeComplete = !requiresSize || !!item.size;
+  const isColorComplete = !requiresColor || !!item.color;
+
+  if (requiresVariant && isSizeComplete && isColorComplete && (item.size || item.color)) {
+    const selectedSizeId = requiresSize ? sizes.find((s: any) => s.size === item.size)?.id : null;
+    const selectedColorId = requiresColor ? colors.find((c: any) => c.color === item.color)?.id : null;
+    isValidVariant = variants.some((v: any) => 
+      (requiresSize ? v.size_id === selectedSizeId : true) && 
+      (requiresColor ? v.color_id === selectedColorId : true)
+    );
   }
 
   return (
@@ -94,7 +152,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem }: a
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{item.product.title}</p>
           <p className="text-xs text-muted-foreground">
-            {item.product.sku || "N/A"} · ৳{item.product.selling_price.toLocaleString()} each
+            {item.product.sku || "N/A"} · ৳{item.unitPrice.toLocaleString()} each
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -107,7 +165,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem }: a
           </Button>
         </div>
         <span className="w-20 text-right text-sm font-semibold tabular-nums">
-          ৳{(item.product.selling_price * item.quantity).toLocaleString()}
+          ৳{(item.unitPrice * item.quantity).toLocaleString()}
         </span>
         <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id)}>
           <X className="size-4 text-muted-foreground" />
@@ -117,34 +175,58 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem }: a
       {requiresVariant && (
         <div className="mt-2 flex flex-col gap-2 pl-15">
           <div className="flex items-center gap-3">
-            {colors.length > 0 && (
+            {availableColors.length > 1 ? (
               <Select value={item.color} onValueChange={(v) => updateCartItem(item.product.id, "color", v)}>
                 <SelectTrigger className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}>
                   <SelectValue placeholder="Color" />
                 </SelectTrigger>
                 <SelectContent>
-                  {colors.map((c: any) => (
+                  {availableColors.map((c: any) => (
                     <SelectItem key={c.id} value={c.color}>
                       {c.color}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            )}
+            ) : availableColors.length === 1 ? (
+              <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">
+                Color: {availableColors[0].color}
+              </div>
+            ) : null}
 
-            {sizes.length > 0 && (
+            {availableSizes.length > 1 ? (
               <Select value={item.size} onValueChange={(v) => updateCartItem(item.product.id, "size", v)}>
                 <SelectTrigger className={`h-7 w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}>
                   <SelectValue placeholder="Size" />
                 </SelectTrigger>
                 <SelectContent>
-                  {sizes.map((s: any) => (
+                  {availableSizes.map((s: any) => (
                     <SelectItem key={s.id} value={s.size}>
                       {s.size}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            ) : availableSizes.length === 1 ? (
+              <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">
+                Size: {availableSizes[0].size}
+              </div>
+            ) : null}
+            
+            {(item.color || item.size) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                onClick={() => {
+                  updateCartItem(item.product.id, "color", "");
+                  updateCartItem(item.product.id, "size", "");
+                  updateUnitPrice(item.product.id, item.product.has_variant_wise_pricing ? 0 : (item.product.selling_price || 0));
+                }}
+                title="Clear selections"
+              >
+                <X className="size-3.5" />
+              </Button>
             )}
           </div>
           {!isValidVariant && (item.color || item.size) && (
@@ -219,7 +301,7 @@ export default function EditOrderPage() {
   const [shippingMethod, setShippingMethod] = React.useState("inside-dhaka");
 
   const [paymentMethod, setPaymentMethod] = React.useState("cod");
-  const [paymentStatus, setPaymentStatus] = React.useState("unpaid");
+  const [paymentStatus, setPaymentStatus] = React.useState("Unpaid");
   const [paidAmount, setPaidAmount] = React.useState<number | "">("");
 
   const [discountType, setDiscountType] = React.useState("fixed");
@@ -246,7 +328,7 @@ export default function EditOrderPage() {
       // but they can type new ones if they want, or we just leave the select empty.
       
       const paymentStat = order.payment_status?.toLowerCase();
-      setPaymentStatus(paymentStat === "paid" || paymentStat === "full paid" ? "full paid" : paymentStat === "unpaid" ? "unpaid" : "partial");
+      setPaymentStatus(paymentStat === "paid" || paymentStat === "full paid" ? "Full Paid" : paymentStat === "unpaid" ? "Unpaid" : "Partially Paid");
       
       const p = order.payments?.[0];
       const pMethod = p?.payment_method?.toLowerCase() || "cod";
@@ -271,10 +353,13 @@ export default function EditOrderPage() {
             product_thumbnail_img: op.product?.product_thumbnail_img ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/"}${op.product.product_thumbnail_img.startsWith("/") ? op.product.product_thumbnail_img.slice(1) : op.product.product_thumbnail_img}` : "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NA",
             status: 'Active',
             regular_price: Number(op.unit_price) || 0,
+            has_variants: op.product?.has_variants || 0,
+            has_variant_wise_pricing: op.product?.has_variant_wise_pricing || 0,
           },
           quantity: op.qty,
           color: op.color_label || "",
-          size: op.size_label || ""
+          size: op.size_label || "",
+          unitPrice: Number(op.unit_price) || 0,
         }));
         setCart(mappedCart);
       }
@@ -288,7 +373,8 @@ export default function EditOrderPage() {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
-      return [...prev, { product, quantity: 1, color: "", size: "" }];
+      const initialPrice = product.has_variant_wise_pricing ? 0 : (product.selling_price || 0);
+      return [...prev, { product, quantity: 1, color: "", size: "", unitPrice: initialPrice }];
     });
     setSearchQuery("");
     setSearchFocused(false);
@@ -311,6 +397,20 @@ export default function EditOrderPage() {
     setCart((prev) => prev.map((i) => (i.product.id === productId ? { ...i, [field]: value } : i)));
   }
 
+  function updateUnitPrice(productId: number, price: number) {
+    setCart((prev) => {
+      let changed = false;
+      const next = prev.map((i) => {
+        if (i.product.id === productId && i.unitPrice !== price) {
+          changed = true;
+          return { ...i, unitPrice: price };
+        }
+        return i;
+      });
+      return changed ? next : prev;
+    });
+  }
+
   function selectCustomer(customer: any) {
     setCustomerName(customer.full_name || customer.name);
     setCustomerEmail(customer.email);
@@ -324,7 +424,7 @@ export default function EditOrderPage() {
     toast.success("Customer details loaded.");
   }
 
-  const subtotal = cart.reduce((sum, i) => sum + i.product.selling_price * i.quantity, 0);
+  const subtotal = cart.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
   const shippingCost = shippingMethod === "outside-dhaka" ? 150 : shippingMethod === "inside-dhaka" ? 70 : 0;
   const discountAmount =
     discountType === "percentage"
@@ -344,7 +444,7 @@ export default function EditOrderPage() {
     setThana("");
     setShippingMethod("inside-dhaka");
     setPaymentMethod("cod");
-    setPaymentStatus("unpaid");
+    setPaymentStatus("Unpaid");
     setPaidAmount("");
     setDiscountType("fixed");
     setDiscountValue("");
@@ -381,11 +481,11 @@ export default function EditOrderPage() {
       order_note: orderNote,
       payment_method: paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod === "bkash" ? "bKash" : paymentMethod === "nagad" ? "Nagad" : paymentMethod === "rocket" ? "Rocket" : paymentMethod === "bank" ? "Bank Transfer" : "Card Payment",
       paid_amount: Number(paidAmount) || 0,
-      payment_status: paymentStatus === "unpaid" ? "Unpaid" : paymentStatus === "full paid" || paymentStatus === "paid" ? "Full Paid" : "Partially Paid",
+      payment_status: paymentStatus,
       products: cart.map((item) => ({
         product_id: item.product.id,
         qty: item.quantity,
-        unit_price: item.product.selling_price,
+        unit_price: item.unitPrice,
         ...(item.size ? { size_label: item.size } : {}),
         ...(item.color ? { color_label: item.color } : {}),
       })),
@@ -524,7 +624,9 @@ export default function EditOrderPage() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-sm font-semibold tabular-nums">৳{p.selling_price.toLocaleString()}</span>
+                            <span className="text-sm font-semibold tabular-nums">
+                              {p.has_variant_wise_pricing ? "Variant Pricing" : `৳${p.selling_price.toLocaleString()}`}
+                            </span>
                             {inCart && (
                               <Badge variant="secondary" className="text-[10px]">
                                 ×{inCart.quantity}
@@ -555,6 +657,7 @@ export default function EditOrderPage() {
                       updateQuantity={updateQuantity}
                       removeFromCart={removeFromCart}
                       updateCartItem={updateCartItem}
+                      updateUnitPrice={updateUnitPrice}
                     />
                   ))}
                   <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2">

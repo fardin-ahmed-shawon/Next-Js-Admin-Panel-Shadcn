@@ -3,11 +3,23 @@ import useSWR from "swr";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/"}${process.env.NEXT_PUBLIC_API_PRODUCT_REPORTS_URL || "product-report"}`;
 
+export interface ProductReportVariant {
+  id: number;
+  name: string;
+  sku: string;
+  stock: number;
+  purchase_price: number;
+  regular_price: number;
+  selling_price: number;
+}
+
 export interface ProductReportItem {
   sl_no: number;
   product_name: string;
   sku: string;
   img: string;
+  has_variants?: boolean;
+  has_variant_wise_pricing?: boolean;
   purchase_price: number;
   selling_price: number;
   qty: number;
@@ -16,6 +28,7 @@ export interface ProductReportItem {
   total_purchase_value: number;
   total_profit: number;
   date: string;
+  variants?: ProductReportVariant[];
 }
 
 export interface ProductReportSummary {
