@@ -68,23 +68,22 @@ const getImageUrl = (path: string | null) => {
 };
 
 function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, updateUnitPrice }: any) {
-  const { data: sizesRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_SIZES || "product-sizes"}?product_id=${item.product.id}`, fetcher);
-  const { data: colorsRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_COLORS || "product-colors"}?product_id=${item.product.id}`, fetcher);
-  const { data: variantsRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_VARIANTS || "product-variants"}?product_id=${item.product.id}`, fetcher);
+  const { data: sizesRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SIZES || "sizes"}`, fetcher);
+  const { data: colorsRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_COLORS || "colors"}`, fetcher);
 
   const allSizes = React.useMemo(() => {
     const list = Array.isArray(sizesRes) ? sizesRes : sizesRes?.data || [];
-    return Array.from(new Map(list.map((s: any) => [s.size, s])).values()) as any[];
+    return list;
   }, [sizesRes]);
   
   const allColors = React.useMemo(() => {
     const list = Array.isArray(colorsRes) ? colorsRes : colorsRes?.data || [];
-    return Array.from(new Map(list.map((c: any) => [c.color, c])).values()) as any[];
+    return list;
   }, [colorsRes]);
 
   const variants = React.useMemo(() => {
-    return (Array.isArray(variantsRes) ? variantsRes : variantsRes?.data || []) as any[];
-  }, [variantsRes]);
+    return item.product.variants || [];
+  }, [item.product.variants]);
 
   const sizes = React.useMemo(() => allSizes.filter((s: any) => variants.some((v: any) => v.size_id === s.id)), [allSizes, variants]);
   const colors = React.useMemo(() => allColors.filter((c: any) => variants.some((v: any) => v.color_id === c.id)), [allColors, variants]);
@@ -94,22 +93,22 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
 
   const availableColors = item.size 
     ? colors.filter((c: any) => {
-        const sizeId = sizes.find((s: any) => s.size === item.size)?.id;
+        const sizeId = sizes.find((s: any) => s.label === item.size)?.id;
         return variants.some((v: any) => v.size_id === sizeId && v.color_id === c.id);
       })
     : colors;
 
   const availableSizes = item.color
     ? sizes.filter((s: any) => {
-        const colorId = colors.find((c: any) => c.color === item.color)?.id;
+        const colorId = colors.find((c: any) => c.label === item.color)?.id;
         return variants.some((v: any) => v.color_id === colorId && v.size_id === s.id);
       })
     : sizes;
 
   React.useEffect(() => {
     if (requiresVariant && item.size && item.color) {
-      const selectedSizeId = sizes.find((s: any) => s.size === item.size)?.id || null;
-      const selectedColorId = colors.find((c: any) => c.color === item.color)?.id || null;
+      const selectedSizeId = sizes.find((s: any) => s.label === item.size)?.id || null;
+      const selectedColorId = colors.find((c: any) => c.label === item.color)?.id || null;
       const variant = variants.find((v: any) => v.size_id === selectedSizeId && v.color_id === selectedColorId);
       
       if (variant && variant.variant_pricing) {
@@ -120,11 +119,11 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
 
   React.useEffect(() => {
     if (requiresVariant) {
-      if (availableSizes.length === 1 && item.size !== availableSizes[0].size) {
-        updateCartItem(item.product.id, "size", availableSizes[0].size);
+      if (availableSizes.length === 1 && item.size !== availableSizes[0].label) {
+        updateCartItem(item.product.id, "size", availableSizes[0].label);
       }
-      if (availableColors.length === 1 && item.color !== availableColors[0].color) {
-        updateCartItem(item.product.id, "color", availableColors[0].color);
+      if (availableColors.length === 1 && item.color !== availableColors[0].label) {
+        updateCartItem(item.product.id, "color", availableColors[0].label);
       }
     }
   }, [availableSizes, availableColors, item.size, item.color, requiresVariant]);
@@ -135,8 +134,8 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
   const isColorComplete = !requiresColor || !!item.color;
 
   if (requiresVariant && isSizeComplete && isColorComplete && (item.size || item.color)) {
-    const selectedSizeId = requiresSize ? sizes.find((s: any) => s.size === item.size)?.id : null;
-    const selectedColorId = requiresColor ? colors.find((c: any) => c.color === item.color)?.id : null;
+    const selectedSizeId = requiresSize ? sizes.find((s: any) => s.label === item.size)?.id : null;
+    const selectedColorId = requiresColor ? colors.find((c: any) => c.label === item.color)?.id : null;
     isValidVariant = variants.some((v: any) => 
       (requiresSize ? v.size_id === selectedSizeId : true) && 
       (requiresColor ? v.color_id === selectedColorId : true)
@@ -182,15 +181,15 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 </SelectTrigger>
                 <SelectContent>
                   {availableColors.map((c: any) => (
-                    <SelectItem key={c.id} value={c.color}>
-                      {c.color}
+                    <SelectItem key={c.id} value={c.label}>
+                      {c.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             ) : availableColors.length === 1 ? (
               <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">
-                Color: {availableColors[0].color}
+                Color: {availableColors[0].label}
               </div>
             ) : null}
 
@@ -201,15 +200,15 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 </SelectTrigger>
                 <SelectContent>
                   {availableSizes.map((s: any) => (
-                    <SelectItem key={s.id} value={s.size}>
-                      {s.size}
+                    <SelectItem key={s.id} value={s.label}>
+                      {s.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             ) : availableSizes.length === 1 ? (
               <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">
-                Size: {availableSizes[0].size}
+                Size: {availableSizes[0].label}
               </div>
             ) : null}
             
@@ -355,6 +354,7 @@ export default function EditOrderPage() {
             regular_price: Number(op.unit_price) || 0,
             has_variants: op.product?.has_variants || 0,
             has_variant_wise_pricing: op.product?.has_variant_wise_pricing || 0,
+            variants: op.product?.variants || [],
           },
           quantity: op.qty,
           color: op.color_label || "",
@@ -625,7 +625,7 @@ export default function EditOrderPage() {
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-sm font-semibold tabular-nums">
-                              {p.has_variant_wise_pricing ? "Variant Pricing" : `৳${p.selling_price.toLocaleString()}`}
+                              {p.has_variant_wise_pricing ? "Variant Pricing" : `৳${(p.selling_price || 0).toLocaleString()}`}
                             </span>
                             {inCart && (
                               <Badge variant="secondary" className="text-[10px]">
