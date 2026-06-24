@@ -1,7 +1,9 @@
 import useSWR from "swr";
 import { fetchClient } from "@/lib/fetch-client";
+import { useAuth } from "@/hooks/useAuth";
 
-const fetcher = async (url: string) => {
+const fetcher = async (key: string | [string, number | undefined]) => {
+  const url = Array.isArray(key) ? key[0] : key;
   const res = await fetchClient(url, {
     headers: { "Content-Type": "application/json" },
   });
@@ -25,6 +27,7 @@ interface UseSteadfastParcelsParams {
 }
 
 export function useSteadfastParcels(params?: UseSteadfastParcelsParams) {
+  const { user } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const searchParams = new URLSearchParams();
 
@@ -36,9 +39,13 @@ export function useSteadfastParcels(params?: UseSteadfastParcelsParams) {
   const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
   const url = `${baseUrl}${endpoint}${queryString}`;
 
-  const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
-    revalidateOnFocus: false,
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    user?.id ? [url, user.id] : url,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    }
+  );
 
   return {
     data,

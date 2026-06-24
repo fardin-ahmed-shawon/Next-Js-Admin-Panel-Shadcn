@@ -1,7 +1,9 @@
 import { fetchClient } from "@/lib/fetch-client";
+import { useAuth } from "@/hooks/useAuth";
 import useSWR from "swr";
 
-const fetcher = async (url: string) => {
+const fetcher = async (key: string | [string, number | undefined]) => {
+  const url = Array.isArray(key) ? key[0] : key;
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const res = await fetchClient(url, {
     headers: {
@@ -28,9 +30,13 @@ const fetcher = async (url: string) => {
 };
 
 export default function useDueCollection() {
+  const { user } = useAuth();
   const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ACCOUNTS_DUE_URL || "due-collection"}`;
 
-  const { data, error, isLoading, mutate } = useSWR(url, fetcher);
+  const { data, error, isLoading, mutate } = useSWR(
+    user?.id ? [url, user.id] : url,
+    fetcher
+  );
 
   return {
     summary: data?.summary || {},

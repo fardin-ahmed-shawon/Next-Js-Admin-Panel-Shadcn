@@ -1,4 +1,5 @@
 import { fetchClient } from "@/lib/fetch-client";
+import { useAuth } from "@/hooks/useAuth";
 import useSWR from "swr";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/"}${process.env.NEXT_PUBLIC_API_WEB_PAYMENTS || "payments"}`;
@@ -71,7 +72,8 @@ export interface PaymentReportResponse {
   data: PaymentReportPagination;
 }
 
-const fetcher = async (url: string) => {
+const fetcher = async (key: string | [string, number | undefined]) => {
+  const url = Array.isArray(key) ? key[0] : key;
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const res = await fetchClient(url, {
     headers: {
@@ -88,6 +90,7 @@ const fetcher = async (url: string) => {
 };
 
 export function usePaymentReports(params?: Record<string, any>) {
+  const { user } = useAuth();
   let url = API_URL;
   if (params) {
     const searchParams = new URLSearchParams();
@@ -102,9 +105,13 @@ export function usePaymentReports(params?: Record<string, any>) {
     }
   }
 
-  const { data, error, isLoading, mutate } = useSWR<PaymentReportResponse>(url, fetcher, {
-    revalidateOnFocus: false,
-  });
+  const { data, error, isLoading, mutate } = useSWR<PaymentReportResponse>(
+    user?.id ? [url, user.id] : url,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    }
+  );
 
   return {
     data,

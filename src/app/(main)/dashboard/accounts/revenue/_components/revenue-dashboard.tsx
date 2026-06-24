@@ -5,8 +5,11 @@ import { toast } from "sonner";
 import { RevenueStats } from "./revenue-stats";
 import { RevenueTable } from "./revenue-table";
 import { Loader2 } from "lucide-react";
+import { fetchClient } from "@/lib/fetch-client";
+import { useAuth } from "@/hooks/useAuth";
 
 export function RevenueDashboard() {
+  const { user } = useAuth();
   const [summary, setSummary] = useState<{
     total_revenue: number;
     this_month: number;
@@ -36,13 +39,7 @@ export function RevenueDashboard() {
         url += `&status=${filter}`;
       }
 
-      const token = localStorage.getItem('token');
-      const headers: Record<string, string> = {
-        'Accept': 'application/json',
-      };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const response = await fetch(url, { headers });
+      const response = await fetchClient(url);
       const result = await response.json();
 
       if (result.success) {
@@ -76,7 +73,7 @@ export function RevenueDashboard() {
 
   useEffect(() => {
     fetchRevenue();
-  }, [pageIndex, pageSize, filter]);
+  }, [pageIndex, pageSize, filter, user?.id]);
 
   if (loading && !summary) {
     return (

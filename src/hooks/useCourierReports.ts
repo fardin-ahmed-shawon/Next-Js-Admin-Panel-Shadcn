@@ -1,4 +1,5 @@
 import { fetchClient } from "@/lib/fetch-client";
+import { useAuth } from "@/hooks/useAuth";
 import useSWR from "swr";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/"}${process.env.NEXT_PUBLIC_API_PARCEL_REPORTS_URL || "courier-reports"}`;
@@ -50,7 +51,8 @@ export interface CourierReportResponse {
   };
 }
 
-const fetcher = async (url: string) => {
+const fetcher = async (key: string | [string, number | undefined]) => {
+  const url = Array.isArray(key) ? key[0] : key;
   const res = await fetchClient(url);
   if (!res.ok) {
     const error = new Error("An error occurred while fetching the data.");
@@ -60,6 +62,7 @@ const fetcher = async (url: string) => {
 };
 
 export function useCourierReports(params?: Record<string, any>) {
+  const { user } = useAuth();
   let url = API_URL;
   if (params) {
     const searchParams = new URLSearchParams();
@@ -74,9 +77,13 @@ export function useCourierReports(params?: Record<string, any>) {
     }
   }
 
-  const { data, error, isLoading, mutate } = useSWR<CourierReportResponse>(url, fetcher, {
-    revalidateOnFocus: false,
-  });
+  const { data, error, isLoading, mutate } = useSWR<CourierReportResponse>(
+    user?.id ? [url, user.id] : url,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    }
+  );
 
   return {
     data,

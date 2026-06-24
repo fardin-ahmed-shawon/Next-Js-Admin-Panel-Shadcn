@@ -1,6 +1,6 @@
 import useSWR from "swr";
-
 import { fetchClient } from "@/lib/fetch-client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface UseSteadfastReturnedParcelsOptions {
   page?: number;
@@ -9,6 +9,7 @@ interface UseSteadfastReturnedParcelsOptions {
 }
 
 export function useSteadfastReturnedParcels(options: UseSteadfastReturnedParcelsOptions = {}) {
+  const { user } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_RETURNED_PARCELS_URL || "steadfast/returned-parcels";
 
@@ -20,15 +21,19 @@ export function useSteadfastReturnedParcels(options: UseSteadfastReturnedParcels
   const queryString = params.toString() ? `?${params.toString()}` : "";
   const url = `${baseUrl}${endpoint}${queryString}`;
 
-  const fetcher = async (url: string) => {
-    const response = await fetchClient(url);
+  const fetcher = async (key: string | [string, number | undefined]) => {
+    const targetUrl = Array.isArray(key) ? key[0] : key;
+    const response = await fetchClient(targetUrl);
     if (!response.ok) {
       throw new Error("Failed to fetch steadfast returned parcels data");
     }
     return response.json();
   };
 
-  const { data, error, isLoading, mutate } = useSWR(url, fetcher);
+  const { data, error, isLoading, mutate } = useSWR(
+    user?.id ? [url, user.id] : url,
+    fetcher
+  );
 
   return {
     data,
