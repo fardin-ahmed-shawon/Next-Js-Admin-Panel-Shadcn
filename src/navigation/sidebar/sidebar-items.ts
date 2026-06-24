@@ -60,6 +60,7 @@ export interface NavSubItem {
   comingSoon?: boolean;
   newTab?: boolean;
   isNew?: boolean;
+  module?: string; // Corresponds to PageAccess keys
 }
 
 export interface NavMainItem {
@@ -113,10 +114,10 @@ export const sidebarItems: NavGroup[] = [
         icon: ShoppingCart,
         module: "orders",
         subItems: [
-          { title: "Create Order", url: "/dashboard/orders/create" },
-          { title: "Assign Orders", url: "/dashboard/orders/assign-orders" },
-          { title: "Order Management", url: "/dashboard/orders" },
-          { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", comingSoon: true },
+          { title: "Create Order", url: "/dashboard/orders/create", module: "create_orders" },
+          { title: "Assign Orders", url: "/dashboard/orders/assign-orders", module: "assign_orders" },
+          { title: "Order Management", url: "/dashboard/orders", module: "orders" },
+          { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", module: "orders", comingSoon: true },
         ],
       },
       {
@@ -125,8 +126,8 @@ export const sidebarItems: NavGroup[] = [
         icon: AppWindow,
         module: "landing_pages",
         subItems: [
-          { title: "Create Landing Page", url: "/dashboard/landing-pages/create" },
-          { title: "All Landing Pages", url: "/dashboard/landing-pages" },
+          { title: "Create Landing Page", url: "/dashboard/landing-pages/create", module: "landing_pages_create" },
+          { title: "All Landing Pages", url: "/dashboard/landing-pages", module: "landing_pages" },
         ],
       },
       {
@@ -142,14 +143,14 @@ export const sidebarItems: NavGroup[] = [
         icon: ChartBar,
         module: "accounts",
         subItems: [
-          { title: "Dashboard", url: "/dashboard/accounts" },
-          { title: "Revenue", url: "/dashboard/accounts/revenue" },
-          { title: "Expense Categories", url: "/dashboard/accounts/expense-category" },
-          { title: "Expenses", url: "/dashboard/accounts/expenses" },
-          { title: "Profit & Loss", url: "/dashboard/accounts/profit-loss" },
-          { title: "Statements", url: "/dashboard/accounts/statements" },
-          { title: "Due", url: "/dashboard/accounts/due" },
-          { title: "Refund History", url: "/dashboard/accounts/refund-history" },
+          { title: "Dashboard", url: "/dashboard/accounts", module: "accounts" },
+          { title: "Revenue", url: "/dashboard/accounts/revenue", module: "revenue" },
+          { title: "Expense Categories", url: "/dashboard/accounts/expense-category", module: "expense_category" },
+          { title: "Expenses", url: "/dashboard/accounts/expenses", module: "expenses" },
+          { title: "Profit & Loss", url: "/dashboard/accounts/profit-loss", module: "profit_loss" },
+          { title: "Statements", url: "/dashboard/accounts/statements", module: "statements" },
+          { title: "Due", url: "/dashboard/accounts/due", module: "due" },
+          { title: "Refund History", url: "/dashboard/accounts/refund-history", module: "refund_history" },
         ],
       },
       { title: "Inventory", url: "/dashboard/inventory", icon: Archive, module: "inventory" },
@@ -172,15 +173,15 @@ export const sidebarItems: NavGroup[] = [
         icon: TrendingUp,
         module: "reports",
         subItems: [
-          { title: "Dashboard", url: "/dashboard/reports/dashboard" },
-          { title: "Product Report", url: "/dashboard/reports/product" },
-          { title: "Product Percent", url: "/dashboard/reports/product-percent" },
-          { title: "Customer Report", url: "/dashboard/reports/customer" },
-          { title: "Employee Report", url: "/dashboard/reports/employee" },
-          { title: "Payment Report", url: "/dashboard/reports/payment" },
-          { title: "Parcel Report", url: "/dashboard/reports/parcel" },
-          { title: "Courier Report", url: "/dashboard/reports/courier" },
-          { title: "Inventory Report", url: "/dashboard/reports/inventory", comingSoon: true },
+          { title: "Dashboard", url: "/dashboard/reports/dashboard", module: "reports_dashboard" },
+          { title: "Product Report", url: "/dashboard/reports/product", module: "product_report" },
+          { title: "Product Percent", url: "/dashboard/reports/product-percent", module: "product_percent" },
+          { title: "Customer Report", url: "/dashboard/reports/customer", module: "customer_report" },
+          { title: "Employee Report", url: "/dashboard/reports/employee", module: "employee_report" },
+          { title: "Payment Report", url: "/dashboard/reports/payment", module: "payment_report" },
+          { title: "Parcel Report", url: "/dashboard/reports/parcel", module: "parcel_report" },
+          { title: "Courier Report", url: "/dashboard/reports/courier", module: "courier_report" },
+          { title: "Inventory Report", url: "/dashboard/reports/inventory", module: "reports_inventory", comingSoon: true },
         ],
       },
       { title: "Brands", url: "/dashboard/brands", icon: Award, module: "brands" },

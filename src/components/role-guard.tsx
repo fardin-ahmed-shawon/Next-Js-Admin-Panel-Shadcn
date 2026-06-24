@@ -22,19 +22,44 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
 
   for (const group of sidebarItems) {
     for (const item of group.items) {
-      if (item.url === pathname || (item.url !== "/dashboard/home" && pathname.startsWith(item.url))) {
+      // 1. Check exact match on parent first
+      if (item.url === pathname) {
         requiredModule = item.module;
         break;
       }
+
+      // 2. Check exact match on sub-items
+      let foundExactSub = false;
       if (item.subItems) {
         for (const subItem of item.subItems) {
-          if (subItem.url === pathname || pathname.startsWith(subItem.url)) {
-            requiredModule = item.module; // Inherit module from parent
+          if (subItem.url === pathname) {
+            requiredModule = subItem.module || item.module;
+            foundExactSub = true;
             break;
           }
         }
       }
-      if (requiredModule) break;
+      if (foundExactSub) break;
+
+      // 3. Check prefix match on sub-items (excluding dashboard sub-items equal to parent URL)
+      let foundPrefixSub = false;
+      if (item.subItems) {
+        for (const subItem of item.subItems) {
+          const isNotParentUrl = subItem.url !== item.url;
+          if (isNotParentUrl && pathname.startsWith(subItem.url)) {
+            requiredModule = subItem.module || item.module;
+            foundPrefixSub = true;
+            break;
+          }
+        }
+      }
+      if (foundPrefixSub) break;
+
+      // 4. Finally, check prefix match on parent
+      if (item.url !== "/dashboard/home" && pathname.startsWith(item.url)) {
+        requiredModule = item.module;
+        break;
+      }
     }
     if (requiredModule) break;
   }

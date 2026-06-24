@@ -75,14 +75,52 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
 
   const filteredItems = sidebarItems.map((group) => {
-    const filteredGroupItems = group.items.filter((item) => {
-      if (!item.module) return true; // Login/Logout or items without module requirements
-      if (user?.role?.role_name === "Admin") return true;
-      if (user?.role?.page_access && user.role.page_access[item.module as keyof typeof user.role.page_access] === 1) {
-        return true;
-      }
-      return false;
-    });
+    const filteredGroupItems = group.items
+      .map((item) => {
+        // Filter subItems first if they exist
+        let filteredSubItems = item.subItems;
+        if (item.subItems) {
+          filteredSubItems = item.subItems.filter((subItem) => {
+            const requiredModule = subItem.module || item.module;
+            if (!requiredModule) return true;
+            if (user?.role?.role_name === "Admin") return true;
+            if (
+              user?.role?.page_access &&
+              user.role.page_access[requiredModule as keyof typeof user.role.page_access] === 1
+            ) {
+              return true;
+            }
+            return false;
+          });
+        }
+
+        // Check if the parent menu item is allowed
+        let isParentAllowed = false;
+        if (!item.module) {
+          isParentAllowed = true;
+        } else if (user?.role?.role_name === "Admin") {
+          isParentAllowed = true;
+        } else {
+          // Allowed if user has access to parent module
+          if (
+            user?.role?.page_access &&
+            user.role.page_access[item.module as keyof typeof user.role.page_access] === 1
+          ) {
+            isParentAllowed = true;
+          }
+          // Or if they have access to at least one sub-item
+          else if (filteredSubItems && filteredSubItems.length > 0) {
+            isParentAllowed = true;
+          }
+        }
+
+        if (isParentAllowed) {
+          return { ...item, subItems: filteredSubItems };
+        }
+        return null;
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+
     return { ...group, items: filteredGroupItems };
   });
 

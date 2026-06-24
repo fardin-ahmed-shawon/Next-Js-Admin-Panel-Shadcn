@@ -17,9 +17,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
+import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DokanxMetricCards() {
+  const { user } = useAuth();
   const { data, isLoading } = useAdminDashboard();
   
   const metrics = data?.metrics;
@@ -30,6 +32,12 @@ export function DokanxMetricCards() {
     return acc + (Number(orderOverview[status as keyof typeof orderOverview]) || 0);
   }, 0);
 
+  const hasAccess = (module: string) => {
+    if (!user) return false;
+    if (user?.role?.role_name === "Admin") return true;
+    return user?.role?.page_access && user.role.page_access[module as keyof typeof user.role.page_access] === 1;
+  };
+
   const topCards = [
     {
       title: "Total Products",
@@ -39,6 +47,7 @@ export function DokanxMetricCards() {
       trend: "+2",
       trendIcon: TrendingUp,
       trendType: "default",
+      module: "products",
     },
     {
       title: "Product Categories",
@@ -48,6 +57,7 @@ export function DokanxMetricCards() {
       trend: "+1",
       trendIcon: TrendingUp,
       trendType: "default",
+      module: "categories",
     },
     {
       title: "Total Stock Unit",
@@ -57,6 +67,7 @@ export function DokanxMetricCards() {
       trend: "-15",
       trendIcon: TrendingDown,
       trendType: "destructive",
+      module: "inventory",
     },
     {
       title: "Customers",
@@ -66,6 +77,7 @@ export function DokanxMetricCards() {
       trend: "+3",
       trendIcon: TrendingUp,
       trendType: "default",
+      module: "customers",
     },
     {
       title: "Total Purchased Unit",
@@ -75,6 +87,7 @@ export function DokanxMetricCards() {
       trend: "+24%",
       trendIcon: TrendingUp,
       trendType: "default",
+      module: "orders",
     },
     {
       title: "Total Collection",
@@ -84,6 +97,7 @@ export function DokanxMetricCards() {
       trend: "+12.5%",
       trendIcon: TrendingUp,
       trendType: "default",
+      module: "accounts",
     },
     {
       title: "Pending Orders",
@@ -93,6 +107,7 @@ export function DokanxMetricCards() {
       trend: "-5%",
       trendIcon: TrendingDown,
       trendType: "destructive",
+      module: "orders",
     },
     {
       title: "Active Orders",
@@ -102,12 +117,20 @@ export function DokanxMetricCards() {
       trend: "+8%",
       trendIcon: TrendingUp,
       trendType: "default",
+      module: "orders",
     },
   ];
 
+  const allowedCards = topCards.filter((card) => {
+    if (card.module === "accounts") {
+      return hasAccess("accounts") || hasAccess("revenue");
+    }
+    return hasAccess(card.module);
+  });
+
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs sm:grid-cols-2 xl:grid-cols-4 dark:*:data-[slot=card]:bg-card">
-      {topCards.map((card, i) => (
+      {allowedCards.map((card, i) => (
         <Card key={i}>
           <CardHeader>
             <CardTitle>
