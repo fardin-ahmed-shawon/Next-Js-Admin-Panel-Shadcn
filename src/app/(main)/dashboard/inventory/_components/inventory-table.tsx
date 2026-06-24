@@ -60,6 +60,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import { fetchClient } from "@/lib/fetch-client";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 import type { InventoryItem, InventoryRecords, InventoryVariant } from "@/hooks/useInventory";
 
@@ -227,7 +237,7 @@ const columns: ColumnDef<any>[] = [
   {
     id: "actions",
     header: () => <div className="flex w-full justify-end">Actions</div>,
-    cell: ({ row }) => <RowActions row={row.original} />,
+    cell: ({ row, table }) => <RowActions row={row} mutate={(table.options.meta as any)?.mutate} />,
     enableHiding: false,
     enableSorting: false,
   },
@@ -235,11 +245,61 @@ const columns: ColumnDef<any>[] = [
 
 /* ---- Row Actions ---- */
 
-function RowActions({ row }: { row: any }) {
+function RowActions({ row, mutate }: { row: any, mutate?: () => void }) {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [stockOpen, setStockOpen] = React.useState(false);
+  const [stockMode, setStockMode] = React.useState<"add" | "reduce">("add");
+  const [quantity, setQuantity] = React.useState("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const isVariant = row.depth > 0;
+  const item = row.original;
+  const productId = isVariant ? row.getParentRow()?.original.id : item.id;
+  const variantId = isVariant ? item.id : undefined;
+
+  const handleStockUpdate = async () => {
+    if (!quantity || isNaN(Number(quantity)) || Number(quantity) <= 0) {
+      toast.error("Please enter a valid positive quantity");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    const toastId = toast.loading(`${stockMode === "add" ? "Adding" : "Reducing"} stock...`);
+    
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const productsEndpoint = process.env.NEXT_PUBLIC_API_PRODUCTS_URL || "products";
+      const endpoint = `${baseUrl}${productsEndpoint}/${productId}/stock/${stockMode}`;
+      
+      const res = await fetchClient(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quantity: Number(quantity),
+          ...(variantId ? { variant_id: variantId } : {})
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data?.message || data?.error || "Failed to update stock");
+      }
+      
+      toast.success(data?.message || `Stock ${stockMode === "add" ? "added" : "reduced"} successfully!`, { id: toastId });
+      setStockOpen(false);
+      setQuantity("");
+      if (mutate) mutate();
+      window.location.reload();
+    } catch (e: any) {
+      toast.error(e.message || "An error occurred.", { id: toastId });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // If this item has variants itself, don't show actions, let them edit per variant or main product elsewhere
-  if (row.variants && row.variants.length > 0) {
+  if (!isVariant && item.variants && item.variants.length > 0) {
     return <div className="flex w-full justify-end text-muted-foreground text-sm italic pr-4">per variant</div>;
   }
 
@@ -255,11 +315,11 @@ function RowActions({ row }: { row: any }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => { setStockMode("add"); setStockOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" />
             Add Stock
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => { setStockMode("reduce"); setStockOpen(true); }}>
             <Minus className="mr-2 h-4 w-4" />
             Reduce Stock
           </DropdownMenuItem>
@@ -275,6 +335,36 @@ function RowActions({ row }: { row: any }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Dialog open={stockOpen} onOpenChange={setStockOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{stockMode === "add" ? "Add Stock" : "Reduce Stock"}</DialogTitle>
+            <DialogDescription>
+              {stockMode === "add" 
+                ? "Enter the quantity you want to add to the current inventory."
+                : "Enter the quantity you want to reduce from the current inventory."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="stock-quantity" className="mb-2 block">Quantity</Label>
+            <Input 
+              id="stock-quantity" 
+              type="number" 
+              min="1" 
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              placeholder="e.g. 10" 
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStockOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleStockUpdate} disabled={isSubmitting}>
+              {stockMode === "add" ? "Add Stock" : "Reduce Stock"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent size="sm">
@@ -342,6 +432,7 @@ interface InventoryTableProps {
   setSearch: (search: string) => void;
   statusFilter: string;
   setStatusFilter: (status: string) => void;
+  mutate?: () => void;
 }
 
 export function InventoryTable({
@@ -353,6 +444,7 @@ export function InventoryTable({
   setSearch,
   statusFilter,
   setStatusFilter,
+  mutate,
 }: InventoryTableProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -387,6 +479,9 @@ export function InventoryTable({
     getExpandedRowModel: getExpandedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    meta: {
+      mutate,
+    },
   });
 
   const totalCount = records?.total || 0;

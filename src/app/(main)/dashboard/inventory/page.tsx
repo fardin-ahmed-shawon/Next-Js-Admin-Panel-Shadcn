@@ -6,6 +6,7 @@ import { Archive } from "lucide-react";
 import { InventoryStats } from "./_components/inventory-stats";
 import { InventoryTable } from "./_components/inventory-table";
 import useInventory from "@/hooks/useInventory";
+import { mutate } from "swr";
 
 export default function InventoryPage() {
   const [page, setPage] = React.useState(1);
@@ -45,6 +46,7 @@ export default function InventoryPage() {
         setSearch={setSearch}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
+        mutate={mutate}
       />
     </div>
   );
