@@ -178,7 +178,7 @@ export const sidebarItems: NavGroup[] = [
           { title: "Employee Report", url: "/dashboard/reports/employee" },
           { title: "Payment Report", url: "/dashboard/reports/payment" },
           { title: "Parcel Report", url: "/dashboard/reports/parcel" },
-          { title: "Courier Report", url: "/dashboard/reports/courier", comingSoon: true },
+          { title: "Courier Report", url: "/dashboard/reports/courier" },
           { title: "Inventory Report", url: "/dashboard/reports/inventory", comingSoon: true },
         ],
       },
