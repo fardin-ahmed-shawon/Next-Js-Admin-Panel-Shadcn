@@ -45,7 +45,7 @@ export function useOrders(params?: UseOrdersParams) {
   const url = `${baseUrl}${ordersEndpoint}${queryString}`;
 
   const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
-    revalidateOnFocus: false,
+    keepPreviousData: true,
   });
 
   return {
