@@ -4,6 +4,9 @@ import * as React from "react";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { useUsers } from "@/hooks/useUsers";
+import { useEmployeeOrders } from "@/hooks/useEmployeeOrders";
 
 import {
   ArrowLeft,
@@ -219,6 +222,8 @@ function CustomerOrderHistory({
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
+  const isAdmin = user?.role?.role_name === "Admin";
 
   const { data: order, isLoading, mutate } = useOrderDetail(id ?? null);
 
@@ -230,6 +235,20 @@ export default function OrderDetailPage() {
   const [modalOpen, setModalOpen] = React.useState(false);
   const [note, setNote] = React.useState("");
   const [isEditingNote, setIsEditingNote] = React.useState(false);
+
+  /* employee assignment state */
+  const { users, loading: loadingUsers } = useUsers();
+  const { createAssignment, deleteAssignment } = useEmployeeOrders();
+  const [selectedUserToAssign, setSelectedUserToAssign] = React.useState<string>("");
+  const [isAssigning, setIsAssigning] = React.useState(false);
+  const [isRemoving, setIsRemoving] = React.useState<number | null>(null);
+
+  const availableUsers = React.useMemo(() => {
+    if (!users || !order) return [];
+    return users.filter(
+      (u) => !order.employee_orders?.some((eo: any) => eo.user_id === u.id)
+    );
+  }, [users, order]);
 
   /* sync from API data */
   React.useEffect(() => {
@@ -409,12 +428,14 @@ export default function OrderDetailPage() {
                 Label
               </Link>
             </Button>
-            <Button variant="secondary" size="sm" asChild>
-              <Link href={`/dashboard/orders/${id}/edit`}>
-                <Edit className="mr-2 size-4" />
-                Edit
-              </Link>
-            </Button>
+            {isAdmin && (
+              <Button variant="secondary" size="sm" asChild>
+                <Link href={`/dashboard/orders/${id}/edit`}>
+                  <Edit className="mr-2 size-4" />
+                  Edit
+                </Link>
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -457,24 +478,28 @@ export default function OrderDetailPage() {
                     Pathao
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => toast.success("Customer blocked.")}
-                >
-                  <Ban className="mr-2 size-4" />
-                  Block Customer
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => {
-                    toast.success("Order deleted.");
-                    router.push("/dashboard/orders");
-                  }}
-                >
-                  <X className="mr-2 size-4" />
-                  Delete Order
-                </DropdownMenuItem>
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => toast.success("Customer blocked.")}
+                    >
+                      <Ban className="mr-2 size-4" />
+                      Block Customer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => {
+                        toast.success("Order deleted.");
+                        router.push("/dashboard/orders");
+                      }}
+                    >
+                      <X className="mr-2 size-4" />
+                      Delete Order
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
