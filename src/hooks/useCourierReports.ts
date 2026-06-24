@@ -1,7 +1,7 @@
 import { fetchClient } from "@/lib/fetch-client";
 import useSWR from "swr";
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/"}${process.env.NEXT_PUBLIC_API_COURIER_REPORTS_URL || "courier-reports"}`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/"}${process.env.NEXT_PUBLIC_API_PARCEL_REPORTS_URL || "courier-reports"}`;
 
 export interface CourierReportData {
   id: number;
@@ -12,6 +12,13 @@ export interface CourierReportData {
   parcel_status: string;
   order_status: string;
   payment_status: string;
+  customer?: {
+    full_name: string;
+    phone: string;
+    email: string;
+  } | null;
+  grand_total_amount?: number;
+  paid_amount?: number;
 }
 
 export interface CourierReportStats {

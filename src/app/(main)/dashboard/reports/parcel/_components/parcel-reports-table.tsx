@@ -1,6 +1,6 @@
 import * as React from "react";
 import { format } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, PackageX } from "lucide-react";
 
 import {
   Table,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CourierReportData } from "@/hooks/useCourierReports";
 
 interface ParcelReportsTableProps {
@@ -30,6 +30,16 @@ export function ParcelReportsTable({
   onPageChange,
   isLoading,
 }: ParcelReportsTableProps) {
+  
+  const getInitials = (name?: string) => {
+    if (!name) return "NA";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  };
   
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -55,95 +65,146 @@ export function ParcelReportsTable({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Detailed Parcel Report</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
+    <>
+      <div className="overflow-hidden">
+        <Table className="**:data-[slot='table-cell']:px-4.5 **:data-[slot='table-head']:px-4.5">
+          <TableHeader className="border-t **:data-[slot='table-head']:h-11 **:data-[slot='table-head']:font-normal **:data-[slot='table-head']:text-foreground **:data-[slot='table-head']:text-sm">
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Order No</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Courier Name</TableHead>
+              <TableHead>Tracking Code</TableHead>
+              <TableHead>Grand Total</TableHead>
+              <TableHead>Revenue Collected</TableHead>
+              <TableHead>Parcel Status</TableHead>
+              <TableHead>Order Status</TableHead>
+              <TableHead>Payment Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="**:data-[slot='table-row']:border-border/50 **:data-[slot='table-cell']:py-3 **:data-[slot='table-row']:hover:bg-transparent">
+            {isLoading ? (
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Order No</TableHead>
-                <TableHead>Courier Name</TableHead>
-                <TableHead>Tracking Code</TableHead>
-                <TableHead>Parcel Status</TableHead>
-                <TableHead>Order Status</TableHead>
-                <TableHead>Payment Status</TableHead>
+                <TableCell colSpan={10} className="h-48 text-center">
+                  Loading reports...
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    Loading reports...
+            ) : data.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={10} className="h-auto p-0">
+                  <div className="flex flex-col items-center justify-center gap-3 py-16">
+                    <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+                      <PackageX className="size-6 text-muted-foreground" />
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <p className="text-sm font-medium">No parcels found</p>
+                      <p className="text-xs text-muted-foreground">Try adjusting your search or filter.</p>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              data.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell className="whitespace-nowrap">
+                    {format(new Date(row.date), "MMM dd, yyyy HH:mm")}
+                  </TableCell>
+                  <TableCell className="font-medium">{row.order_no}</TableCell>
+                  <TableCell>
+                    {row.customer ? (
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-9 rounded-full border border-border/50">
+                          <AvatarFallback className="bg-primary/5 text-primary text-xs font-semibold">
+                            {getInitials(row.customer.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{row.customer.full_name}</span>
+                          <span className="text-xs text-muted-foreground">{row.customer.phone}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">N/A</span>
+                    )}
+                  </TableCell>
+                  <TableCell>{row.courier_name}</TableCell>
+                  <TableCell>{row.tracking_code}</TableCell>
+                  <TableCell>
+                    {row.grand_total_amount !== undefined ? `৳${row.grand_total_amount}` : "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    {row.paid_amount !== undefined ? `৳${row.paid_amount}` : "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getStatusColor(row.parcel_status)}>
+                      {row.parcel_status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getStatusColor(row.order_status)}>
+                      {row.order_status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getStatusColor(row.payment_status)}>
+                      {row.payment_status}
+                    </Badge>
                   </TableCell>
                 </TableRow>
-              ) : data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    No records found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                data.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="whitespace-nowrap">
-                      {format(new Date(row.date), "MMM dd, yyyy HH:mm")}
-                    </TableCell>
-                    <TableCell className="font-medium">{row.order_no}</TableCell>
-                    <TableCell>{row.courier_name}</TableCell>
-                    <TableCell>{row.tracking_code}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusColor(row.parcel_status)}>
-                        {row.parcel_status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusColor(row.order_status)}>
-                        {row.order_status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusColor(row.payment_status)}>
-                        {row.payment_status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-        {/* Pagination */}
-        {lastPage > 1 && (
-          <div className="flex items-center justify-end space-x-2 py-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage <= 1 || isLoading}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-            <div className="text-sm text-muted-foreground mx-2">
-              Page {currentPage} of {lastPage}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage >= lastPage || isLoading}
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-between px-4 pb-1">
+        <p className="text-muted-foreground text-sm">
+          Page {currentPage} of {Math.max(1, lastPage)}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="hidden size-8 lg:flex"
+            size="icon"
+            onClick={() => onPageChange(1)}
+            disabled={currentPage <= 1 || isLoading}
+          >
+            <span className="sr-only">Go to first page</span>
+            <ChevronsLeft className="size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            className="size-8"
+            size="icon"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage <= 1 || isLoading}
+          >
+            <span className="sr-only">Go to previous page</span>
+            <ChevronLeft className="size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            className="size-8"
+            size="icon"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage >= lastPage || isLoading}
+          >
+            <span className="sr-only">Go to next page</span>
+            <ChevronRight className="size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            className="hidden size-8 lg:flex"
+            size="icon"
+            onClick={() => onPageChange(lastPage)}
+            disabled={currentPage >= lastPage || isLoading}
+          >
+            <span className="sr-only">Go to last page</span>
+            <ChevronsRight className="size-4" />
+          </Button>
+        </div>
+      </div>
+    </>
   );
 }

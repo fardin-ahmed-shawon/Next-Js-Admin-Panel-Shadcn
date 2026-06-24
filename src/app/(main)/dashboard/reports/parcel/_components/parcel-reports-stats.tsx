@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Truck, ArrowLeftRight, RotateCcw } from "lucide-react";
+import { Package, Truck, RotateCcw } from "lucide-react";
 
 interface ParcelReportStatsProps {
   stats?: {
@@ -33,17 +33,10 @@ export function ParcelReportStats({ stats }: ParcelReportStatsProps) {
       color: "text-red-500",
       bgColor: "bg-red-500/10",
     },
-    {
-      title: "Return Requests",
-      value: stats?.total_return_request || 0,
-      icon: ArrowLeftRight,
-      color: "text-orange-500",
-      bgColor: "bg-orange-500/10",
-    },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {items.map((item, index) => (
         <Card key={index} className="overflow-hidden border-none bg-card shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
