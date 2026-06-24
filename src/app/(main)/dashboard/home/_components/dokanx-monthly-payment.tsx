@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/chart";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
+import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const chartConfig = {
@@ -30,10 +31,13 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function DokanxMonthlyPayment() {
+  const { user } = useAuth();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = React.useState(String(currentYear));
   const years = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
   const { data, isLoading } = useAdminDashboard();
+
+  const showExpense = user?.role?.role_name === "Admin" || user?.role?.page_access?.expenses === 1;
 
   const monthlyPaymentData = React.useMemo(() => {
     if (!data?.revenue_expense_chart) return [];
@@ -102,7 +106,9 @@ export function DokanxMonthlyPayment() {
                 dot={false}
                 fillOpacity={1}
               />
-              <Line dataKey="expense" type="natural" stroke="var(--color-expense)" strokeWidth={1.4} dot={false} />
+              {showExpense && (
+                <Line dataKey="expense" type="natural" stroke="var(--color-expense)" strokeWidth={1.4} dot={false} />
+              )}
             </ComposedChart>
           </ChartContainer>
         )}

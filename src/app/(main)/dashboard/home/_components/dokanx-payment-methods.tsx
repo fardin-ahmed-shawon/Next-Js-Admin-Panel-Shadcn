@@ -88,6 +88,7 @@ export function DokanxPaymentMethods() {
   const paymentTrends = data?.payment_trends;
   const methods: Record<string, string | number> = paymentTrends?.methods || {};
   const totalProcessing = paymentTrends?.total_processing || 0;
+  const chartData = paymentTrends?.chart_data || [];
 
   const calculatePercentage = (value: string | number) => {
     if (!totalProcessing) return "0.0";
@@ -215,7 +216,7 @@ export function DokanxPaymentMethods() {
               <ChartContainer config={paymentTrendConfig} className="h-74 w-full">
                 <ComposedChart
                   accessibilityLayer
-                  data={paymentTrendsData}
+                  data={chartData}
                   margin={{ bottom: 0, left: 0, right: 0, top: 0 }}
                 >
                   <defs>
@@ -234,20 +235,16 @@ export function DokanxPaymentMethods() {
                     dataKey="period"
                     axisLine={false}
                     height={30}
-                    interval={0}
-                    minTickGap={0}
                     tick={{ fontSize: 10 }}
                     tickLine={false}
                     tickMargin={8}
-                    tickFormatter={(value) => formatMonthTick(String(value))}
                   />
-                  <YAxis yAxisId="revenue" hide domain={[3000, 10_000]} />
-                  <YAxis yAxisId="volume" hide domain={[0, 6000]} />
+                  <YAxis yAxisId="revenue" hide domain={["auto", "auto"]} />
+                  <YAxis yAxisId="volume" hide domain={["auto", "auto"]} />
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
                         className="w-40"
-                        labelFormatter={(value) => formatTooltipLabel(String(value))}
                         formatter={(value, name, item) => (
                           <>
                             <div

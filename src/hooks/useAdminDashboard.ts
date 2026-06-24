@@ -41,13 +41,21 @@ export interface OrderOverview {
   Pending: number;
 }
 
+export interface PaymentTrendChartItem {
+  period: string;
+  revenue: number;
+  volume: number;
+}
+
 export interface PaymentTrends {
   total_processing: number;
   methods: {
-    bKash: string;
-    "Cash on Delivery": string;
-    Nagad: string;
+    bKash?: string;
+    "Cash on Delivery"?: string;
+    Nagad?: string;
+    [key: string]: any;
   };
+  chart_data?: PaymentTrendChartItem[];
 }
 
 export interface RevenueExpenseChartItem {
