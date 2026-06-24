@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { CalendarIcon, Download, Search } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
+import { downloadCSV } from "@/lib/csv-export";
 
 import { useCourierAnalytics } from "@/hooks/useCourierAnalytics";
 import { CourierReportsTable } from "./_components/courier-reports-table";
@@ -34,6 +36,7 @@ export default function CourierReportPage() {
   const [timeRange, setTimeRange] = React.useState<TimeRange>("all_time");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
+  const [isExporting, setIsExporting] = React.useState(false);
 
   const queryParams: Record<string, any> = {
     period: timeRange,
@@ -45,6 +48,54 @@ export default function CourierReportPage() {
   }
 
   const { data, isLoading } = useCourierAnalytics(queryParams);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const exportParams = new URLSearchParams();
+      exportParams.append("period", timeRange);
+      if (timeRange === "custom" && customFrom && customTo) {
+        exportParams.append("start_date", customFrom);
+        exportParams.append("end_date", customTo);
+      }
+
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const endpoint = process.env.NEXT_PUBLIC_API_COURIER_REPORTS_URL || "courier-reports";
+
+      const { fetchClient } = await import("@/lib/fetch-client");
+      const res = await fetchClient(`${baseUrl}${endpoint}?${exportParams.toString()}`);
+
+      if (!res.ok) throw new Error("Failed to export data");
+
+      const json = await res.json();
+      if (json.success && json.data) {
+        const flatData = json.data.map((row: any) => ({
+          "Courier Name": row.courier_name,
+          "Total Parcels": row.all,
+          "Delivered": row.delivered_count,
+          "Returned": row.returned_count,
+          "In-Courier": row.in__courier_count,
+          "Pending": row.pending_count,
+          "Confirmed": row.confirmed_count,
+          "Ready to Ship": row.ready_to_ship_count,
+          "Ship Later": row.ship_later_count,
+          "Hold": row.hold_count,
+          "Pre-Order": row.pre__order_count,
+          "Cancelled": row.cancelled_count,
+          "Missing": row.missing_count,
+          "Lost": row.lost_count,
+          "Fake": row.fake_count,
+          "Trash": row.trash_count,
+        }));
+        downloadCSV(flatData, `Courier_Analytics_${new Date().toISOString().split("T")[0]}.csv`);
+        toast.success("Report exported successfully");
+      }
+    } catch (error) {
+      toast.error("Failed to export data");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -121,6 +172,17 @@ export default function CourierReportPage() {
           <CardTitle className="font-normal text-muted-foreground text-sm">
             Courier Performance Data
           </CardTitle>
+          <CardAction>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={isExporting}
+            >
+              <Download className="mr-2 size-4" />
+              {isExporting ? "Exporting..." : "Export"}
+            </Button>
+          </CardAction>
         </CardHeader>
 
         <CardContent className="px-0">
