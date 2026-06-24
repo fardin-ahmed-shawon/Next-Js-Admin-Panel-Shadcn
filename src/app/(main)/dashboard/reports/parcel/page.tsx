@@ -66,12 +66,14 @@ export default function ParcelReportPage() {
 
   const [isExporting, setIsExporting] = React.useState(false);
 
-  // Handle Search Submission
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearchQuery(searchInput);
-    setPage(1);
-  };
+  // Debounced search on input change
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
   // When filters change, reset page to 1
   React.useEffect(() => {
@@ -240,12 +242,6 @@ export default function ParcelReportPage() {
                   placeholder="Search orders..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleSearch(e as unknown as React.FormEvent);
-                    }
-                  }}
                 />
               </div>
 
