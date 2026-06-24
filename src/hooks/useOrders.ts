@@ -1,7 +1,9 @@
 import { fetchClient } from "@/lib/fetch-client";
+import { useAuth } from "@/hooks/useAuth";
 import useSWR from "swr";
 
-const fetcher = async (url: string) => {
+const fetcher = async (key: string | [string, number | undefined]) => {
+  const url = Array.isArray(key) ? key[0] : key;
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const res = await fetchClient(url, {
     headers: {
@@ -31,6 +33,7 @@ interface UseOrdersParams {
 }
 
 export function useOrders(params?: UseOrdersParams) {
+  const { user } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const ordersEndpoint = process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders";
 
@@ -44,9 +47,13 @@ export function useOrders(params?: UseOrdersParams) {
   const queryString = searchParams.toString() ? `?${searchParams.toString()}` : "";
   const url = `${baseUrl}${ordersEndpoint}${queryString}`;
 
-  const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
-    keepPreviousData: true,
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    user?.id ? [url, user.id] : url,
+    fetcher,
+    {
+      keepPreviousData: true,
+    }
+  );
 
   return {
     data,

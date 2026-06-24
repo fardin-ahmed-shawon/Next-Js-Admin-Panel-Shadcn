@@ -6,7 +6,6 @@ import { Archive } from "lucide-react";
 import { InventoryStats } from "./_components/inventory-stats";
 import { InventoryTable } from "./_components/inventory-table";
 import useInventory from "@/hooks/useInventory";
-import { mutate } from "swr";
 
 export default function InventoryPage() {
   const [page, setPage] = React.useState(1);
@@ -20,7 +19,7 @@ export default function InventoryPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { data, loading } = useInventory({
+  const { data, loading, mutate } = useInventory({
     page,
     per_page: perPage,
     search: debouncedSearch,
