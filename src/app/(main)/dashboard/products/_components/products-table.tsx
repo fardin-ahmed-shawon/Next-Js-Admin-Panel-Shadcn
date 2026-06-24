@@ -192,24 +192,45 @@ export function ProductsTable() {
       header: "Category",
       cell: ({ row }) => (
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm">{row.original.mainCategory?.name || "-"}</span>
-          <span className="text-xs text-muted-foreground">{row.original.subCategory?.name || "-"}</span>
+          <span className="text-sm">{row.original.main_category?.name || "-"}</span>
+          <span className="text-xs text-muted-foreground">{row.original.sub_category?.name || "-"}</span>
         </div>
       ),
     },
     {
       accessorKey: "selling_price",
       header: "Price",
-      cell: ({ row }) => (
-        <div className="flex flex-col gap-0.5">
-          <span className="tabular-nums font-medium">৳{Number(row.original.selling_price || 0).toFixed(2)}</span>
-          {row.original.regular_price > row.original.selling_price && (
-            <span className="tabular-nums text-xs text-muted-foreground line-through">
-              ৳{Number(row.original.regular_price || 0).toFixed(2)}
-            </span>
-          )}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const product = row.original;
+        
+        if (product.has_variant_wise_pricing) {
+          const prices = product.variants?.map((v: any) => v.variant_pricing?.selling_price).filter(Boolean) || [];
+          if (prices.length > 0) {
+            const min = Math.min(...prices);
+            const max = Math.max(...prices);
+            return (
+              <div className="flex flex-col gap-0.5">
+                <span className="tabular-nums font-medium">
+                  {min === max ? `৳${min.toFixed(2)}` : `৳${min.toFixed(2)} - ৳${max.toFixed(2)}`}
+                </span>
+                <span className="text-xs text-muted-foreground">Variants</span>
+              </div>
+            );
+          }
+          return <span className="text-muted-foreground text-xs">Variant Pricing</span>;
+        }
+
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="tabular-nums font-medium">৳{Number(product.selling_price || 0).toFixed(2)}</span>
+            {product.regular_price > product.selling_price && (
+              <span className="tabular-nums text-xs text-muted-foreground line-through">
+                ৳{Number(product.regular_price || 0).toFixed(2)}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "available_stock",
@@ -262,10 +283,10 @@ export function ProductsTable() {
           row.id,
           `"${row.title}"`,
           `"${row.sku || ""}"`,
-          `"${row.mainCategory?.name || ""}"`,
-          `"${row.subCategory?.name || ""}"`,
-          row.regular_price,
-          row.selling_price,
+          `"${row.main_category?.name || ""}"`,
+          `"${row.sub_category?.name || ""}"`,
+          row.has_variant_wise_pricing ? "Variant" : row.regular_price,
+          row.has_variant_wise_pricing ? "Variant" : row.selling_price,
           row.available_stock,
           row.status,
         ].join(","),

@@ -12,8 +12,8 @@ export interface Product {
   selling_price: number;
   available_stock: number;
   status: string;
-  mainCategory?: { id: number; name: string };
-  subCategory?: { id: number; name: string };
+  main_category?: { id: number; name: string };
+  sub_category?: { id: number; name: string };
   [key: string]: any;
 }
 
