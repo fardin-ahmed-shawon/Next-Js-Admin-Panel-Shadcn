@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-
 import { CalendarIcon, Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -54,7 +53,7 @@ const rangeLabels: Record<TimeRange, string> = {
   custom: "Custom Range",
 };
 
-export default function SalesReportPage() {
+export default function ReportsDashboardPage() {
   const { data: apiData, isLoading } = useOrders({ per_page: 1000 });
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState("");
@@ -131,6 +130,7 @@ export default function SalesReportPage() {
       };
     });
   }, [apiData, getImageUrl]);
+
   const filteredByTime = React.useMemo(() => {
     if (timeRange === "alltime") return allOrders;
     if (timeRange === "custom") {
@@ -145,14 +145,14 @@ export default function SalesReportPage() {
   }, [allOrders, timeRange, customFrom, customTo]);
 
   if (isLoading) {
-    return <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center text-muted-foreground">Loading sales reports...</div>;
+    return <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center text-muted-foreground">Loading dashboard...</div>;
   }
 
   return (
     <div className="flex flex-col gap-6 w-full">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl tracking-tight">Sales Reports</h1>
+          <h1 className="text-3xl tracking-tight">Reports Dashboard</h1>
           <p className="text-muted-foreground text-sm">
             Analyze your sales data, revenue trends, and payment distributions.
           </p>

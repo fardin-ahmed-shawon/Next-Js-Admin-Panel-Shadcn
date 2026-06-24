@@ -42,7 +42,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { ProductsModal } from "../../orders/_components/products-modal";
+import { ProductsModal } from "@/app/(main)/dashboard/orders/_components/products-modal";
 type OrderRow = any;
 
 function ProductsCell({ row }: { row: any }) {

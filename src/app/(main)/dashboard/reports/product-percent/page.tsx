@@ -15,9 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { usePaymentReports } from "@/hooks/usePaymentReports";
-import { PaymentReportsStats } from "./_components/payment-reports-stats";
-import { PaymentReportsTable } from "./_components/payment-reports-table";
+import { useProductPercentReports } from "@/hooks/useProductPercentReports";
+import { ProductPercentStats } from "./_components/product-percent-stats";
+import { ProductPercentTable } from "./_components/product-percent-table";
 import { downloadCSV } from "@/lib/csv-export";
 
 type TimeRange = "all_time" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
@@ -31,7 +31,7 @@ const rangeLabels: Record<TimeRange, string> = {
   custom: "Custom Range",
 };
 
-export default function PaymentReportPage() {
+export default function ProductPercentReportPage() {
   const [timeRange, setTimeRange] = React.useState<TimeRange>("all_time");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
@@ -39,15 +39,9 @@ export default function PaymentReportPage() {
 
   // Filters within table card
   const [searchVal, setSearchVal] = React.useState("");
-  const [statusVal, setStatusVal] = React.useState("all");
-  const [methodVal, setMethodVal] = React.useState("all");
-
-  // Submitted filter state
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState("all");
-  const [methodFilter, setMethodFilter] = React.useState("all");
 
-  const [sortBy, setSortBy] = React.useState("created_at");
+  const [sortBy, setSortBy] = React.useState("orders");
   const [sortDir, setSortDir] = React.useState("desc");
 
   const [isExporting, setIsExporting] = React.useState(false);
@@ -55,7 +49,7 @@ export default function PaymentReportPage() {
   // Reset page when any filter query changes
   React.useEffect(() => {
     setPage(1);
-  }, [timeRange, customFrom, customTo, sortBy, sortDir, searchQuery, statusFilter, methodFilter]);
+  }, [timeRange, customFrom, customTo, sortBy, sortDir, searchQuery]);
 
   const queryParams: Record<string, any> = {
     page,
@@ -65,35 +59,24 @@ export default function PaymentReportPage() {
   };
 
   if (searchQuery) queryParams.search = searchQuery;
-  if (statusFilter !== "all") queryParams.payment_status = statusFilter;
-  if (methodFilter !== "all") queryParams.payment_method = methodFilter;
 
   if (timeRange === "custom") {
     if (customFrom) queryParams.start_date = customFrom;
     if (customTo) queryParams.end_date = customTo;
   } else if (timeRange !== "all_time") {
-    // If backend controller expects period or handles start/end dates
-    // For standard reports: daily, weekly, monthly, yearly
-    // Let's compute date ranges client-side just in case or pass 'period' parameter
     queryParams.period = timeRange;
   }
 
-  const { data, isLoading } = usePaymentReports(queryParams);
+  const { data, isLoading } = useProductPercentReports(queryParams);
 
   const handleFilterSubmit = () => {
     setSearchQuery(searchVal);
-    setStatusFilter(statusVal);
-    setMethodFilter(methodVal);
     setPage(1);
   };
 
   const handleReset = () => {
     setSearchVal("");
-    setStatusVal("all");
-    setMethodVal("all");
     setSearchQuery("");
-    setStatusFilter("all");
-    setMethodFilter("all");
     setTimeRange("all_time");
     setCustomFrom("");
     setCustomTo("");
@@ -109,8 +92,6 @@ export default function PaymentReportPage() {
       exportParams.append("sort_by", sortBy);
       exportParams.append("sort_dir", sortDir);
       if (searchQuery) exportParams.append("search", searchQuery);
-      if (statusFilter !== "all") exportParams.append("payment_status", statusFilter);
-      if (methodFilter !== "all") exportParams.append("payment_method", methodFilter);
 
       if (timeRange === "custom") {
         if (customFrom) exportParams.append("start_date", customFrom);
@@ -121,7 +102,7 @@ export default function PaymentReportPage() {
 
       const baseUrl =
         process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-      const endpoint = process.env.NEXT_PUBLIC_API_WEB_PAYMENTS || "payments";
+      const endpoint = process.env.NEXT_PUBLIC_API_PRODUCT_PERCENT_URL || "product-percent";
 
       const { fetchClient } = await import("@/lib/fetch-client");
       const res = await fetchClient(`${baseUrl}${endpoint}?${exportParams.toString()}`);
@@ -130,26 +111,32 @@ export default function PaymentReportPage() {
 
       const json = await res.json();
       if (json.success && json.data?.data) {
-        // Flatten the data fields for clean CSV export (except store_amount as requested)
+        // Flatten the status percentages for clean CSV export
         const exportData = json.data.data.map((row: any, index: number) => ({
           SL_No: index + 1,
-          Payment_ID: row.payment_id,
-          Order_No: row.order_no,
-          Payment_Method: row.payment_method,
-          Account_Number: row.acc_number || "",
-          Transaction_ID: row.transaction_id || "",
-          Paid_Amount: row.paid_amount,
-          Payment_Date: row.payment_date,
-          Customer_Name: row.customer?.full_name || "",
-          Customer_Phone: row.customer?.phone || "",
-          Customer_Email: row.customer?.email || "",
-          Order_Status: row.order?.order_status || "",
-          Payment_Status: row.order?.payment_status || "",
+          Product_Name: row.product_name,
+          SKU: row.sku,
+          Date: row.date,
+          Total_Orders: row.orders,
+          Pending_Count: row.pending?.count || 0,
+          Pending_Percentage: `${row.pending?.percentage || 0}%`,
+          Confirmed_Count: row.confirmed?.count || 0,
+          Confirmed_Percentage: `${row.confirmed?.percentage || 0}%`,
+          ReadyToShip_Count: row.ready_to_ship?.count || 0,
+          ReadyToShip_Percentage: `${row.ready_to_ship?.percentage || 0}%`,
+          InCourier_Count: row.in_courier?.count || 0,
+          InCourier_Percentage: `${row.in_courier?.percentage || 0}%`,
+          Delivered_Count: row.delivered?.count || 0,
+          Delivered_Percentage: `${row.delivered?.percentage || 0}%`,
+          Returned_Count: row.returned?.count || 0,
+          Returned_Percentage: `${row.returned?.percentage || 0}%`,
+          Cancelled_Count: row.cancelled?.count || 0,
+          Cancelled_Percentage: `${row.cancelled?.percentage || 0}%`,
         }));
 
         downloadCSV(
           exportData,
-          `Payment_Report_${new Date().toISOString().split("T")[0]}.csv`
+          `Product_Percent_Report_${new Date().toISOString().split("T")[0]}.csv`
         );
         toast.success("Report exported successfully");
       }
@@ -165,9 +152,9 @@ export default function PaymentReportPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl tracking-tight">Payment Report</h1>
+          <h1 className="text-3xl tracking-tight">Product Percent Report</h1>
           <p className="text-muted-foreground text-sm">
-            View and manage payment reports and transactions.
+            View order status distributions and percentages for each product.
           </p>
         </div>
 
@@ -255,10 +242,10 @@ export default function PaymentReportPage() {
       </div>
 
       {/* Summary Stats Cards */}
-      <PaymentReportsStats summary={data?.summary} />
+      <ProductPercentStats summary={data?.summary} />
 
-      {/* Transactions Data Table */}
-      <PaymentReportsTable
+      {/* Product Percent Data Table */}
+      <ProductPercentTable
         data={data?.data?.data || []}
         isLoading={isLoading}
         currentPage={data?.data?.current_page || 1}
@@ -270,10 +257,6 @@ export default function PaymentReportPage() {
         
         searchVal={searchVal}
         setSearchVal={setSearchVal}
-        statusFilter={statusVal}
-        setStatusFilter={setStatusVal}
-        methodFilter={methodVal}
-        setMethodFilter={setMethodVal}
         sortBy={sortBy}
         setSortBy={setSortBy}
         sortDir={sortDir}

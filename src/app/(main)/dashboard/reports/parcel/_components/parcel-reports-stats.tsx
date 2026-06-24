@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Truck, ArrowLeftRight, RotateCcw } from "lucide-react";
 
-interface CourierReportStatsProps {
+interface ParcelReportStatsProps {
   stats?: {
     total_parcels: number;
     total_delivered_parcel: number;
@@ -10,7 +10,7 @@ interface CourierReportStatsProps {
   };
 }
 
-export function CourierReportStats({ stats }: CourierReportStatsProps) {
+export function ParcelReportStats({ stats }: ParcelReportStatsProps) {
   const items = [
     {
       title: "Total Parcels",
