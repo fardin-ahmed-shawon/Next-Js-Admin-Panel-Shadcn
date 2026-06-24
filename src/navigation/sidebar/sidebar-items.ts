@@ -8,6 +8,7 @@ import {
   Ban,
   Banknote,
   BookOpenText,
+  Bot,
   Calendar,
   ChartBar,
   ClipboardList,
@@ -103,7 +104,7 @@ export const sidebarItems: NavGroup[] = [
         subItems: [
           { title: "Add Product", url: "/dashboard/products/add" },
           { title: "All Products", url: "/dashboard/products" },
-          { title: "Recommendations", url: "/dashboard/products/recommendations", icon: Sparkles },
+          { title: "Recommendations", url: "/dashboard/products/recommendations" },
         ],
       },
       {
@@ -134,7 +135,7 @@ export const sidebarItems: NavGroup[] = [
         icon: Users,
         module: "customers",
       },
-      { title: "Auto Calling AI", url: "/dashboard/auto-calling", icon: PhoneCall, module: "auto_calling", comingSoon: true },
+      // { title: "Auto Calling AI", url: "/dashboard/auto-calling", icon: PhoneCall, module: "auto_calling", comingSoon: true },
       {
         title: "Accounts",
         url: "/dashboard/accounts",
@@ -211,4 +212,16 @@ export const sidebarItems: NavGroup[] = [
       { title: "Logout", url: "#", icon: LogOut },
     ],
   },
+  {
+    id: 1,
+    label: "Upcoming AI Features",
+    items: [
+      { title: "AI Assistant", url: "/dashboard/ai-assistant", icon: Bot, module: "ai_assistant", comingSoon: true },
+      { title: "AI Auto Calling", url: "/dashboard/ai-auto-calling", icon: PhoneCall, module: "ai_auto_calling", comingSoon: true },
+      { title: "AI Business Copilot", url: "/dashboard/ai-business-copilot", icon: Sparkles, module: "ai_business_copilot", comingSoon: true },
+      { title: "AI Sales Forecasting", url: "/dashboard/ai-sales-forecasting", icon: TrendingUp, module: "ai_sales_forecasting", comingSoon: true },
+      { title: "AI Inventory Assistant", url: "/dashboard/ai-inventory-assistant", icon: Archive, module: "ai_inventory_assistant", comingSoon: true },
+      { title: "AI Customer Support", url: "/dashboard/ai-customer-support", icon: MessageCircle, module: "ai_customer_support_agent", comingSoon: true },
+    ]
+  }
 ];

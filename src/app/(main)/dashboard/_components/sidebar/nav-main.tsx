@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
-import { ChevronRight, MailIcon, PlusCircleIcon } from "lucide-react";
+import { ChevronRight, MailIcon, Sparkles, PlusCircleIcon, Hourglass } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -81,8 +81,8 @@ const NavItemExpanded = ({
               {item.subItems.map((subItem) => (
                 <SidebarMenuSubItem key={subItem.title}>
                   {subItem.comingSoon ? (
-                    <SidebarMenuSubButton 
-                      className="cursor-not-allowed opacity-60 hover:bg-transparent select-none" 
+                    <SidebarMenuSubButton
+                      className="cursor-not-allowed opacity-60 hover:bg-transparent select-none"
                       isActive={false}
                     >
                       {subItem.icon && <subItem.icon />}
@@ -188,24 +188,19 @@ export function NavMain({ items }: NavMainProps) {
   return (
     <>
       <SidebarGroup>
+        <SidebarGroupLabel className="text-xs font-semibold text-primary/80">Coming Soon</SidebarGroupLabel>
         <SidebarGroupContent className="flex flex-col gap-2">
           <SidebarMenu>
             <SidebarMenuItem className="flex items-center gap-2">
               <SidebarMenuButton
-                tooltip="Quick Create"
-                className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+                tooltip="AI Intelligence Dashboard"
+                className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground cursor-not-allowed opacity-80"
               >
-                <PlusCircleIcon />
-                <span>Quick Create</span>
+                <Sparkles />
+                <span>AI Intelligence Dashboard</span>
+                <Hourglass className="ml-auto size-4" />
               </SidebarMenuButton>
-              <Button
-                size="icon"
-                className="h-9 w-9 shrink-0 group-data-[collapsible=icon]:opacity-0"
-                variant="outline"
-              >
-                <MailIcon />
-                <span className="sr-only">Inbox</span>
-              </Button>
+
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
