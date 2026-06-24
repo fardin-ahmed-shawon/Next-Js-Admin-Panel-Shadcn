@@ -54,7 +54,7 @@ export function EditProductForm({ productId }: { productId: string }) {
   const router = useRouter();
   const { product, loading: productLoading } = useProduct(productId);
   const { categories } = useCategories();
-  const { colors, sizes } = useAttributes();
+  const { colors, sizes, loading: attributesLoading } = useAttributes();
 
   // State initialization flag
   const [initialized, setInitialized] = React.useState(false);
@@ -104,7 +104,7 @@ export function EditProductForm({ productId }: { productId: string }) {
   const mediaRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
-    if (product && !initialized) {
+    if (product && !attributesLoading && !initialized) {
       setProductName(product.title || "");
       setCategoryId(product.main_category_id?.toString() || "");
       setSubCategoryId(product.sub_category_id?.toString() || "");
@@ -134,16 +134,21 @@ export function EditProductForm({ productId }: { productId: string }) {
       setHasVariantWisePricing(!!product.has_variant_wise_pricing);
 
       if (product.variants && Array.isArray(product.variants)) {
-        setVariants(product.variants.map((v: any) => ({
-          id: v.id,
-          color: v.color || "",
-          size: v.size || "",
-          sku: v.sku || "",
-          available_stock: v.available_stock || 0,
-          purchasePrice: v.variant_pricing?.purchase_price?.toString() || "",
-          regularPrice: v.variant_pricing?.regular_price?.toString() || "",
-          sellingPrice: v.variant_pricing?.selling_price?.toString() || "",
-        })));
+        setVariants(product.variants.map((v: any) => {
+          const colorLabel = colors.find((c: any) => c.id == v.color_id)?.label || v.color?.name || v.color || "";
+          const sizeLabel = sizes.find((s: any) => s.id == v.size_id)?.label || v.size?.name || v.size || "";
+          
+          return {
+            id: v.id,
+            color: colorLabel,
+            size: sizeLabel,
+            sku: v.sku || "",
+            available_stock: v.available_stock || 0,
+            purchasePrice: v.variant_pricing?.purchase_price?.toString() || "",
+            regularPrice: v.variant_pricing?.regular_price?.toString() || "",
+            sellingPrice: v.variant_pricing?.selling_price?.toString() || "",
+          };
+        }));
       }
 
       setIsPreOrder(!!product.is_preorder_active);
@@ -154,7 +159,7 @@ export function EditProductForm({ productId }: { productId: string }) {
 
       setInitialized(true);
     }
-  }, [product, initialized]);
+  }, [product, initialized, attributesLoading, colors, sizes]);
 
   const filteredSubCategories = React.useMemo(() => {
     const main = categories.find(c => c.id.toString() === categoryId);
