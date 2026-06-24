@@ -1,7 +1,9 @@
 import { fetchClient } from "@/lib/fetch-client";
+import { useAuth } from "@/hooks/useAuth";
 import useSWR from "swr";
 
-const fetcher = async (url: string) => {
+const fetcher = async (key: string | [string, number | undefined]) => {
+  const url = Array.isArray(key) ? key[0] : key;
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const res = await fetchClient(url, {
     headers: {
@@ -104,14 +106,19 @@ export interface DashboardApiResponse {
 }
 
 export function useAdminDashboard() {
+  const { user } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const dashboardEndpoint = process.env.NEXT_PUBLIC_API_ADMIN_DASHBOARD_URL || "dashboard";
 
   const url = `${baseUrl}${dashboardEndpoint}`;
 
-  const { data, error, isLoading, mutate } = useSWR<DashboardApiResponse>(url, fetcher, {
-    revalidateOnFocus: false,
-  });
+  const { data, error, isLoading, mutate } = useSWR<DashboardApiResponse>(
+    user?.id ? [url, user.id] : url,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    }
+  );
 
   return {
     data: data?.data,
