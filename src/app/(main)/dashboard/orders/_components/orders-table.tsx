@@ -423,7 +423,7 @@ const columns: ColumnDef<OrderRow>[] = [
         </Button>
         <Button
           size="sm"
-          className="h-7 bg-[#ef4444] hover:bg-[#ef4444]/90 text-white text-[11px] px-2 justify-start font-medium"
+          className="hidden h-7 bg-[#ef4444] hover:bg-[#ef4444]/90 text-white text-[11px] px-2 justify-start font-medium"
           onClick={() => toast.success(`Order ${row.original.id} sent to Pathao`)}
         >
           <Truck className="mr-1.5 size-3.5" /> Pathao

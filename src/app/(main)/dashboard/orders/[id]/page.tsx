@@ -450,6 +450,7 @@ export default function OrderDetailPage() {
                     Steadfast
                   </DropdownMenuItem>
                   <DropdownMenuItem
+                    className="hidden"
                     onClick={() => toast.success("Sent to Pathao!")}
                   >
                     <Truck className="mr-2 size-4" />
@@ -985,7 +986,7 @@ export default function OrderDetailPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="w-full"
+                      className="hidden w-full"
                       onClick={() => toast.success("Sent to Pathao!")}
                     >
                       <Send className="mr-2 size-4 text-muted-foreground" />
