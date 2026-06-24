@@ -29,6 +29,9 @@ interface Variant {
   size: string;
   sku: string;
   stock: string;
+  purchasePrice?: string;
+  regularPrice?: string;
+  sellingPrice?: string;
 }
 
 interface MediaItem {
@@ -39,10 +42,9 @@ interface MediaItem {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Data                                                               */
+/*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
-
-
+const generateSKU = () => 'SKU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -69,7 +71,9 @@ export function AddProductForm() {
   const [isDragging, setIsDragging] = React.useState(false);
 
   // Variants & Stock
-  const [sku, setSku] = React.useState("");
+  const [hasVariants, setHasVariants] = React.useState(false);
+  const [hasVariantWisePricing, setHasVariantWisePricing] = React.useState(false);
+  const [sku, setSku] = React.useState(generateSKU());
   const [availableStock, setAvailableStock] = React.useState("");
   const [variants, setVariants] = React.useState<Variant[]>([]);
 
@@ -103,8 +107,11 @@ export function AddProductForm() {
         id: `v${Date.now()}`,
         color: "",
         size: "",
-        sku: "",
+        sku: generateSKU(),
         stock: "",
+        purchasePrice: purchasePrice,
+        regularPrice: regularPrice,
+        sellingPrice: sellingPrice,
       },
     ]);
   }
@@ -138,7 +145,7 @@ export function AddProductForm() {
   /* ---- actions ---- */
   function resetForm() {
     setProductName("");
-    setSku("");
+    setSku(generateSKU());
     setShortDescription("");
     setLongDescription("");
     setCategory("");
@@ -147,6 +154,8 @@ export function AddProductForm() {
     setThumbnailFile(null);
     setIsActive(true);
     setMedia([]);
+    setHasVariants(false);
+    setHasVariantWisePricing(false);
     setVariants([]);
     setAvailableStock("");
     setPurchasePrice("");
@@ -172,19 +181,29 @@ export function AddProductForm() {
     if (!subCategory) { toast.error("Sub category is required."); return; }
     if (!shortDescription.trim()) { toast.error("Short description is required."); return; }
     if (!longDescription.trim()) { toast.error("Long description is required."); return; }
-    if (!purchasePrice || !regularPrice || !sellingPrice) {
+    if (!hasVariantWisePricing && (!purchasePrice || !regularPrice || !sellingPrice)) {
       toast.error("Pricing (Purchase, Regular, Selling) is required.");
       return;
     }
     
-    if (variants.length === 0) {
+    if (!hasVariants) {
       if (!sku.trim()) { toast.error("SKU is required when there are no variants."); return; }
       if (!availableStock) { toast.error("Available stock is required when there are no variants."); return; }
     } else {
+      if (variants.length === 0) {
+        toast.error("Please add at least one variant since 'Has Variants' is enabled.");
+        return;
+      }
       for (let i = 0; i < variants.length; i++) {
         if (!variants[i].sku.trim() || !variants[i].stock) {
           toast.error(`SKU and Stock are required for Variant ${i + 1}.`);
           return;
+        }
+        if (hasVariantWisePricing) {
+          if (!variants[i].purchasePrice || !variants[i].regularPrice || !variants[i].sellingPrice) {
+            toast.error(`Pricing fields are required for Variant ${i + 1} when Variant-Wise Pricing is enabled.`);
+            return;
+          }
         }
       }
     }
@@ -199,9 +218,11 @@ export function AddProductForm() {
       if (category) formData.append("main_category_id", category);
       if (subCategory) formData.append("sub_category_id", subCategory);
       
-      if (purchasePrice) formData.append("purchase_price", purchasePrice);
-      if (regularPrice) formData.append("regular_price", regularPrice);
-      if (sellingPrice) formData.append("selling_price", sellingPrice);
+      if (!hasVariantWisePricing) {
+        if (purchasePrice) formData.append("purchase_price", purchasePrice);
+        if (regularPrice) formData.append("regular_price", regularPrice);
+        if (sellingPrice) formData.append("selling_price", sellingPrice);
+      }
       if (availableStock) formData.append("available_stock", availableStock);
       formData.append("is_preorder", isPreOrder ? "true" : "false");
       
@@ -214,6 +235,9 @@ export function AddProductForm() {
       if (metaKeywords) formData.append("meta_keywords", metaKeywords);
       if (canonicalUrl) formData.append("canonical_url", canonicalUrl);
       
+      formData.append("has_variants", hasVariants ? "1" : "0");
+      formData.append("has_variant_wise_pricing", hasVariantWisePricing ? "1" : "0");
+      
       if (thumbnailFile) {
         formData.append("thumbnail", thumbnailFile);
       }
@@ -222,12 +246,15 @@ export function AddProductForm() {
         formData.append(`gallery_images[]`, item.file);
       });
       
-      if (variants.length > 0) {
+      if (hasVariants && variants.length > 0) {
         const mappedVariants = variants.map((v) => ({
           sku: v.sku,
           color: v.color || null,
           size: v.size || null,
           available_stock: v.stock ? Number(v.stock) : undefined,
+          purchase_price: hasVariantWisePricing && v.purchasePrice ? Number(v.purchasePrice) : undefined,
+          regular_price: hasVariantWisePricing && v.regularPrice ? Number(v.regularPrice) : undefined,
+          selling_price: hasVariantWisePricing && v.sellingPrice ? Number(v.sellingPrice) : undefined,
         }));
         formData.append("variants", JSON.stringify(mappedVariants));
       }
@@ -538,25 +565,74 @@ export function AddProductForm() {
               <CardDescription>Configure alternate sizes or colors with their own inventory.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
-              {/* Base SKU & Stock */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="base-sku">SKU</Label>
-                  <Input id="base-sku" placeholder="eg. SKU-001" value={sku} onChange={(e) => setSku(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="base-stock">Available Stock</Label>
-                  <Input
-                    id="base-stock"
-                    type="number"
-                    placeholder="0"
-                    value={availableStock}
-                    onChange={(e) => setAvailableStock(e.target.value)}
+              <div className="flex flex-col gap-4 mb-4">
+                <div className="flex items-start gap-3">
+                  <Switch
+                    id="has-variants"
+                    checked={hasVariants}
+                    onCheckedChange={(val) => {
+                      setHasVariants(val);
+                      if (!val) {
+                        setHasVariantWisePricing(false);
+                      }
+                    }}
+                    className="mt-0.5"
                   />
+                  <div className="space-y-0.5">
+                    <Label htmlFor="has-variants" className="text-sm font-medium cursor-pointer">
+                      Has Variants
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Enable this if your product comes in multiple sizes or colors.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Switch
+                    id="has-variant-pricing"
+                    checked={hasVariantWisePricing}
+                    onCheckedChange={setHasVariantWisePricing}
+                    disabled={!hasVariants}
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-0.5">
+                    <Label htmlFor="has-variant-pricing" className="text-sm font-medium cursor-pointer">
+                      Variant-Wise Pricing
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Enable this to set distinct purchase, regular, and selling prices per variant.
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <Separator />
+              {!hasVariants && (
+                <>
+                  <Separator />
+                  {/* Base SKU & Stock */}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="base-sku">Base SKU</Label>
+                      <Input id="base-sku" placeholder="eg. SKU-001" value={sku} onChange={(e) => setSku(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="base-stock">Base Available Stock</Label>
+                      <Input
+                        id="base-stock"
+                        type="number"
+                        placeholder="0"
+                        value={availableStock}
+                        onChange={(e) => setAvailableStock(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {hasVariants && (
+                <>
+                  <Separator />
 
               {/* Variants list or empty state */}
               {variants.length === 0 ? (
@@ -651,6 +727,38 @@ export function AddProductForm() {
                         </div>
                       </div>
 
+                      {hasVariantWisePricing && (
+                        <div className="grid gap-3 sm:grid-cols-3 bg-muted/30 p-3 rounded-md border border-dashed">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-primary">Purchase Price (৳)</Label>
+                            <Input
+                              type="number"
+                              placeholder="0.00"
+                              value={v.purchasePrice || ""}
+                              onChange={(e) => updateVariant(v.id, "purchasePrice", e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-primary">Regular Price (৳)</Label>
+                            <Input
+                              type="number"
+                              placeholder="0.00"
+                              value={v.regularPrice || ""}
+                              onChange={(e) => updateVariant(v.id, "regularPrice", e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-primary">Selling Price (৳)</Label>
+                            <Input
+                              type="number"
+                              placeholder="0.00"
+                              value={v.sellingPrice || ""}
+                              onChange={(e) => updateVariant(v.id, "sellingPrice", e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      )}
+
                       {/* End Variant Fields */}
                     </div>
                   ))}
@@ -660,6 +768,8 @@ export function AddProductForm() {
                   </Button>
                 </>
               )}
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -667,9 +777,10 @@ export function AddProductForm() {
         {/* ======== RIGHT COLUMN ======== */}
         <div className="flex flex-col gap-6">
           {/* ---- Pricing ---- */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base text-primary">Pricing</CardTitle>
+          {!hasVariantWisePricing && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base text-primary">Pricing</CardTitle>
               <CardDescription>Set the base pricing for this product.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
@@ -708,6 +819,7 @@ export function AddProductForm() {
               </div>
             </CardContent>
           </Card>
+          )}
 
           {/* ---- Pre-Order ---- */}
           <Card>

@@ -28,6 +28,9 @@ interface Variant {
   size: string;
   sku: string;
   available_stock: string | number;
+  purchasePrice?: string;
+  regularPrice?: string;
+  sellingPrice?: string;
 }
 
 interface MediaItem {
@@ -44,6 +47,8 @@ const getImageUrl = (path: string | null) => {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
   return `${baseUrl}${path}`;
 };
+
+const generateSKU = () => 'SKU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
 export function EditProductForm({ productId }: { productId: string }) {
   const router = useRouter();
@@ -78,6 +83,8 @@ export function EditProductForm({ productId }: { productId: string }) {
   const [sellingPrice, setSellingPrice] = React.useState("0");
 
   // Variants
+  const [hasVariants, setHasVariants] = React.useState(false);
+  const [hasVariantWisePricing, setHasVariantWisePricing] = React.useState(false);
   const [variants, setVariants] = React.useState<Variant[]>([]);
 
   // Pre-Order
@@ -123,6 +130,9 @@ export function EditProductForm({ productId }: { productId: string }) {
         })));
       }
 
+      setHasVariants(!!product.has_variants);
+      setHasVariantWisePricing(!!product.has_variant_wise_pricing);
+
       if (product.variants && Array.isArray(product.variants)) {
         setVariants(product.variants.map((v: any) => ({
           id: v.id,
@@ -130,6 +140,9 @@ export function EditProductForm({ productId }: { productId: string }) {
           size: v.size || "",
           sku: v.sku || "",
           available_stock: v.available_stock || 0,
+          purchasePrice: v.variant_pricing?.purchase_price?.toString() || "",
+          regularPrice: v.variant_pricing?.regular_price?.toString() || "",
+          sellingPrice: v.variant_pricing?.selling_price?.toString() || "",
         })));
       }
 
@@ -151,7 +164,16 @@ export function EditProductForm({ productId }: { productId: string }) {
   function addVariant() {
     setVariants((p) => [
       ...p,
-      { id: `new_${Date.now()}`, color: "", size: "", sku: "", available_stock: 0 },
+      { 
+        id: `new_${Date.now()}`, 
+        color: "", 
+        size: "", 
+        sku: generateSKU(), 
+        available_stock: 0,
+        purchasePrice: purchasePrice,
+        regularPrice: regularPrice,
+        sellingPrice: sellingPrice
+      },
     ]);
   }
 
@@ -207,15 +229,20 @@ export function EditProductForm({ productId }: { productId: string }) {
       formData.append("status", isActive ? "Active" : "Inactive");
       formData.append("sku", sku);
       formData.append("available_stock", availableStock.toString());
-      formData.append("purchase_price", purchasePrice.toString());
-      formData.append("regular_price", regularPrice.toString());
-      formData.append("selling_price", sellingPrice.toString());
+      if (!hasVariantWisePricing) {
+        formData.append("purchase_price", purchasePrice.toString());
+        formData.append("regular_price", regularPrice.toString());
+        formData.append("selling_price", sellingPrice.toString());
+      }
       
       formData.append("is_preorder", isPreOrder ? "true" : "false");
       if (metaTitle) formData.append("meta_title", metaTitle);
       if (metaDescription) formData.append("meta_description", metaDescription);
       if (metaKeywords) formData.append("meta_keywords", metaKeywords);
       if (canonicalUrl) formData.append("canonical_url", canonicalUrl);
+
+      formData.append("has_variants", hasVariants ? "1" : "0");
+      formData.append("has_variant_wise_pricing", hasVariantWisePricing ? "1" : "0");
 
       if (thumbnailFile) {
         formData.append("thumbnail", thumbnailFile);
@@ -229,18 +256,31 @@ export function EditProductForm({ productId }: { productId: string }) {
         formData.append(`gallery_images[]`, m.file);
       });
 
-      // Filter out temporary string IDs for new variants
-      const mappedVariants = variants.map(v => {
-        const mapped: any = { ...v };
-        if (typeof mapped.id === 'string' && mapped.id.startsWith('new_')) {
-          delete mapped.id;
-        }
-        mapped.color = mapped.color || null;
-        mapped.size = mapped.size || null;
-        mapped.available_stock = mapped.available_stock ? Number(mapped.available_stock) : undefined;
-        return mapped;
-      });
-      formData.append("variants", JSON.stringify(mappedVariants));
+      if (hasVariants && variants.length > 0) {
+        // Filter out temporary string IDs for new variants
+        const mappedVariants = variants.map(v => {
+          const mapped: any = { ...v };
+          if (typeof mapped.id === 'string' && mapped.id.startsWith('new_')) {
+            delete mapped.id;
+          }
+          mapped.color = mapped.color || null;
+          mapped.size = mapped.size || null;
+          mapped.available_stock = mapped.available_stock ? Number(mapped.available_stock) : undefined;
+          
+          if (hasVariantWisePricing) {
+            mapped.purchase_price = mapped.purchasePrice ? Number(mapped.purchasePrice) : undefined;
+            mapped.regular_price = mapped.regularPrice ? Number(mapped.regularPrice) : undefined;
+            mapped.selling_price = mapped.sellingPrice ? Number(mapped.sellingPrice) : undefined;
+          }
+          
+          delete mapped.purchasePrice;
+          delete mapped.regularPrice;
+          delete mapped.sellingPrice;
+          
+          return mapped;
+        });
+        formData.append("variants", JSON.stringify(mappedVariants));
+      }
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}product/${productId}`, {
         method: "POST", // POST with _method=PUT
@@ -405,11 +445,60 @@ export function EditProductForm({ productId }: { productId: string }) {
           <Card>
             <CardHeader><CardTitle className="text-base">Variants & Stock</CardTitle></CardHeader>
             <CardContent className="flex flex-col gap-5">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2"><Label>Base SKU</Label><Input value={sku} onChange={(e) => setSku(e.target.value)} /></div>
-                <div className="space-y-2"><Label>Available Stock</Label><Input type="number" value={availableStock} onChange={(e) => setAvailableStock(e.target.value)} /></div>
+              <div className="flex flex-col gap-4 mb-4">
+                <div className="flex items-start gap-3">
+                  <Switch
+                    id="has-variants"
+                    checked={hasVariants}
+                    onCheckedChange={(val) => {
+                      setHasVariants(val);
+                      if (!val) {
+                        setHasVariantWisePricing(false);
+                      }
+                    }}
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-0.5">
+                    <Label htmlFor="has-variants" className="text-sm font-medium cursor-pointer">
+                      Has Variants
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Enable this if your product comes in multiple sizes or colors.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Switch
+                    id="has-variant-pricing"
+                    checked={hasVariantWisePricing}
+                    onCheckedChange={setHasVariantWisePricing}
+                    disabled={!hasVariants}
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-0.5">
+                    <Label htmlFor="has-variant-pricing" className="text-sm font-medium cursor-pointer">
+                      Variant-Wise Pricing
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Enable this to set distinct purchase, regular, and selling prices per variant.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <Separator />
+
+              {!hasVariants && (
+                <>
+                  <Separator />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2"><Label>Base SKU</Label><Input value={sku} onChange={(e) => setSku(e.target.value)} /></div>
+                    <div className="space-y-2"><Label>Base Available Stock</Label><Input type="number" value={availableStock} onChange={(e) => setAvailableStock(e.target.value)} /></div>
+                  </div>
+                </>
+              )}
+              {hasVariants && (
+                <>
+                  <Separator />
               {variants.map((v, idx) => (
                 <div key={v.id} className="space-y-4 rounded-lg border p-4">
                   <div className="flex items-center justify-between"><p className="text-sm font-medium">Variant {idx + 1}</p><Button variant="ghost" size="icon-sm" onClick={() => removeVariant(v.id!)}><X className="size-4" /></Button></div>
@@ -421,22 +510,42 @@ export function EditProductForm({ productId }: { productId: string }) {
                     <div className="space-y-1.5"><Label className="text-xs">SKU</Label><Input value={v.sku} onChange={(e) => updateVariant(v.id!, "sku", e.target.value)} /></div>
                     <div className="space-y-1.5"><Label className="text-xs">Stock</Label><Input type="number" value={v.available_stock} onChange={(e) => updateVariant(v.id!, "available_stock", e.target.value)} /></div>
                   </div>
+                  {hasVariantWisePricing && (
+                    <div className="grid gap-3 sm:grid-cols-3 bg-muted/30 p-3 rounded-md border border-dashed">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-primary">Purchase Price (৳)</Label>
+                        <Input type="number" placeholder="0.00" value={v.purchasePrice || ""} onChange={(e) => updateVariant(v.id!, "purchasePrice", e.target.value)} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-primary">Regular Price (৳)</Label>
+                        <Input type="number" placeholder="0.00" value={v.regularPrice || ""} onChange={(e) => updateVariant(v.id!, "regularPrice", e.target.value)} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-primary">Selling Price (৳)</Label>
+                        <Input type="number" placeholder="0.00" value={v.sellingPrice || ""} onChange={(e) => updateVariant(v.id!, "sellingPrice", e.target.value)} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               <Button variant="ghost" size="sm" className="w-fit" onClick={addVariant}><CirclePlus className="mr-2 size-4" /> Add Variant</Button>
+              </>
+              )}
             </CardContent>
           </Card>
         </div>
 
         <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader><CardTitle className="text-base text-primary">Pricing</CardTitle></CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <div className="space-y-2"><Label>Purchase Price (৳)</Label><Input value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Regular Price (৳)</Label><Input value={regularPrice} onChange={(e) => setRegularPrice(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Selling Price (৳)</Label><Input value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} /></div>
-            </CardContent>
-          </Card>
+          {!hasVariantWisePricing && (
+            <Card>
+              <CardHeader><CardTitle className="text-base text-primary">Pricing</CardTitle></CardHeader>
+              <CardContent className="flex flex-col gap-5">
+                <div className="space-y-2"><Label>Purchase Price (৳)</Label><Input value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} /></div>
+                <div className="space-y-2"><Label>Regular Price (৳)</Label><Input value={regularPrice} onChange={(e) => setRegularPrice(e.target.value)} /></div>
+                <div className="space-y-2"><Label>Selling Price (৳)</Label><Input value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} /></div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader><CardTitle className="text-base text-primary">Pre-Order</CardTitle></CardHeader>
