@@ -84,6 +84,7 @@ export const sidebarItems: NavGroup[] = [
           { title: "All Products", url: "/dashboard/products" },
           { title: "Recommendations", url: "/dashboard/products/recommendations" },
           { title: "Variant Attributes", url: "/dashboard/products/attributes" },
+          { title: "Home Page Videos", url: "/dashboard/products/homepage-videos" },
         ],
       },
       {
