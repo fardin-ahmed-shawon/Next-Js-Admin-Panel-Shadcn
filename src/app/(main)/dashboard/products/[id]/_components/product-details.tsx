@@ -344,7 +344,7 @@ export function ProductDetails({ productId }: { productId: string }) {
                       <div>
                         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
                           <Globe className="size-3" />
-                          Canonical URL
+                          Youtube URL
                         </p>
                         <p className="text-xs text-primary break-all">{product.canonicalUrl}</p>
                       </div>

@@ -918,15 +918,15 @@ export function AddProductForm() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="canonical-url" className="text-primary font-medium">
-                  Canonical URL
+                  Youtube URL
                 </Label>
                 <Input
                   id="canonical-url"
-                  placeholder="https://yourstore.com/products/product-name"
+                  placeholder="https://www.youtube.com/watch?v=xxxxxxxx"
                   value={canonicalUrl}
                   onChange={(e) => setCanonicalUrl(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">Set a canonical URL to avoid duplicate content issues.</p>
+                <p className="text-xs text-muted-foreground">Set a Youtube URL.</p>
               </div>
             </CardContent>
           </Card>

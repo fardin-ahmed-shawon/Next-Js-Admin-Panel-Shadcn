@@ -568,7 +568,7 @@ export function EditProductForm({ productId }: { productId: string }) {
               <div className="space-y-2"><Label>Meta Title</Label><Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} /></div>
               <div className="space-y-2"><Label>Meta Description</Label><Textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} /></div>
               <div className="space-y-2"><Label>Meta Keywords</Label><Input value={metaKeywords} onChange={(e) => setMetaKeywords(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Canonical URL</Label><Input value={canonicalUrl} onChange={(e) => setCanonicalUrl(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Youtube URL</Label><Input value={canonicalUrl} onChange={(e) => setCanonicalUrl(e.target.value)} /></div>
             </CardContent>
           </Card>
         </div>

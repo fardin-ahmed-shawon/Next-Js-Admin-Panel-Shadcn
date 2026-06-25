@@ -1,13 +1,15 @@
 "use client";
 
 import * as React from "react";
+
 import { CalendarIcon, Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 import { useOrders } from "@/hooks/useOrders";
+
+import { SalesReportsDistrictAnalysis } from "./_components/sales-reports-district-analysis";
 import { SalesReportsOrderHistory } from "./_components/sales-reports-order-history";
 import { SalesReportsStats } from "./_components/sales-reports-stats";
 import { SalesReportsTopCustomers } from "./_components/sales-reports-top-customers";
@@ -60,12 +62,15 @@ export default function ReportsDashboardPage() {
   const [customTo, setCustomTo] = React.useState("");
 
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
-  
-  const getImageUrl = React.useCallback((path: string | null) => {
-    if (!path) return "https://placehold.co/80x80/1a1a2e/e0e0e0?text=No+Image";
-    if (path.startsWith("http")) return path;
-    return `${baseUrl}${path.startsWith("/") ? path.slice(1) : path}`;
-  }, [baseUrl]);
+
+  const getImageUrl = React.useCallback(
+    (path: string | null) => {
+      if (!path) return "https://placehold.co/80x80/1a1a2e/e0e0e0?text=No+Image";
+      if (path.startsWith("http")) return path;
+      return `${baseUrl}${path.startsWith("/") ? path.slice(1) : path}`;
+    },
+    [baseUrl],
+  );
 
   const allOrders = React.useMemo(() => {
     if (!apiData?.data?.data) return [];
@@ -73,16 +78,17 @@ export default function ReportsDashboardPage() {
       const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
       const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
       const paymentMethod = order.payments?.[0]?.payment_method || "COD";
-      
-      const mappedProducts = order.ordered_products?.map((p: any) => ({
-        id: p.id || p.product_id,
-        image: getImageUrl(p.product?.product_thumbnail_img),
-        name: p.product?.product_name || p.product?.title || "Unknown Product",
-        size: p.size_label || "—",
-        color: p.color_label || "—",
-        qty: p.qty || 1,
-        price: p.unit_price || 0,
-      })) || [];
+
+      const mappedProducts =
+        order.ordered_products?.map((p: any) => ({
+          id: p.id || p.product_id,
+          image: getImageUrl(p.product?.product_thumbnail_img),
+          name: p.product?.product_name || p.product?.title || "Unknown Product",
+          size: p.size_label || "—",
+          color: p.color_label || "—",
+          qty: p.qty || 1,
+          price: p.unit_price || 0,
+        })) || [];
       const productImages = mappedProducts.map((p: any) => p.image);
 
       const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
@@ -90,14 +96,15 @@ export default function ReportsDashboardPage() {
 
       const createdDate = new Date(order.created_at);
       const dateString = createdDate.toISOString().slice(0, 10);
-      const timeString = createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const timeString = createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-      const initials = (order.customer_full_name || "Unknown")
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase() || "U";
+      const initials =
+        (order.customer_full_name || "Unknown")
+          .split(" ")
+          .map((n: string) => n[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase() || "U";
       const avatarUrl = `https://placehold.co/40x40/1a1a2e/e0e0e0?text=${initials}`;
 
       return {
@@ -121,6 +128,7 @@ export default function ReportsDashboardPage() {
         orderedProducts: mappedProducts,
         parcelStatus: "",
         courier: "",
+        district: order.district || "Unassigned",
         parcelHistory: {
           total: order.customer?.parcel_history?.total || 0,
           delivered: order.customer?.parcel_history?.delivered || 0,
@@ -145,11 +153,15 @@ export default function ReportsDashboardPage() {
   }, [allOrders, timeRange, customFrom, customTo]);
 
   if (isLoading) {
-    return <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center text-muted-foreground">Loading dashboard...</div>;
+    return (
+      <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center text-muted-foreground">
+        Loading dashboard...
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full">
+    <div className="flex w-full flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl tracking-tight">Reports Dashboard</h1>
@@ -161,7 +173,7 @@ export default function ReportsDashboardPage() {
         <div className="flex flex-col gap-2 sm:items-end">
           <div className="flex items-center justify-between gap-2 sm:justify-end">
             <Select value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
-              <SelectTrigger className="w-32 sm:w-40 bg-background">
+              <SelectTrigger className="w-32 bg-background sm:w-40">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
@@ -179,7 +191,7 @@ export default function ReportsDashboardPage() {
             </Select>
 
             {timeRange === "custom" && (
-              <div className="hidden sm:flex items-center gap-2">
+              <div className="hidden items-center gap-2 sm:flex">
                 <CalendarIcon className="size-4 text-muted-foreground" />
                 <Input
                   type="date"
@@ -187,7 +199,7 @@ export default function ReportsDashboardPage() {
                   value={customFrom}
                   onChange={(e) => setCustomFrom(e.target.value)}
                 />
-                <span className="text-xs text-muted-foreground">to</span>
+                <span className="text-muted-foreground text-xs">to</span>
                 <Input
                   type="date"
                   className="h-9 w-36 text-xs"
@@ -204,15 +216,15 @@ export default function ReportsDashboardPage() {
           </div>
 
           {timeRange === "custom" && (
-            <div className="flex sm:hidden items-center gap-2 w-full mt-2">
-              <CalendarIcon className="size-4 text-muted-foreground shrink-0" />
+            <div className="mt-2 flex w-full items-center gap-2 sm:hidden">
+              <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
               <Input
                 type="date"
                 className="h-9 flex-1 text-xs"
                 value={customFrom}
                 onChange={(e) => setCustomFrom(e.target.value)}
               />
-              <span className="text-xs text-muted-foreground shrink-0">to</span>
+              <span className="shrink-0 text-muted-foreground text-xs">to</span>
               <Input
                 type="date"
                 className="h-9 flex-1 text-xs"
@@ -222,7 +234,7 @@ export default function ReportsDashboardPage() {
             </div>
           )}
 
-          <Button variant="outline" size="sm" className="sm:hidden w-full mt-2">
+          <Button variant="outline" size="sm" className="mt-2 w-full sm:hidden">
             <Download className="mr-2 size-4" />
             Export Report
           </Button>
@@ -230,13 +242,16 @@ export default function ReportsDashboardPage() {
       </div>
 
       <SalesReportsStats data={filteredByTime} />
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <SalesReportsTopProducts data={filteredByTime} />
         <SalesReportsTopCustomers data={filteredByTime} />
       </div>
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <SalesReportsOrderHistory data={filteredByTime} />
         <SalesReportsTransactions data={filteredByTime} />
+      </div>
+      <div className="w-full">
+        <SalesReportsDistrictAnalysis data={filteredByTime} />
       </div>
     </div>
   );
