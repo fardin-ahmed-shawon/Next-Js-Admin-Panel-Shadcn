@@ -29,7 +29,7 @@ export default function InvoicePage() {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const settingsEndpoint = process.env.NEXT_PUBLIC_API_WEB_SETTINGS || "web-settings";
   const { data: settingsRes, isLoading: settingsLoading } = useSWR(`${baseUrl}${settingsEndpoint}`, fetcher);
-  
+
   const settings = settingsRes?.data;
   const isLoading = orderLoading || settingsLoading;
 
@@ -51,17 +51,11 @@ export default function InvoicePage() {
 
   if (!order) {
     return (
-      <div className="flex h-screen w-full items-center justify-center text-muted-foreground">
-        Invoice not found.
-      </div>
+      <div className="flex h-screen w-full items-center justify-center text-muted-foreground">Invoice not found.</div>
     );
   }
 
-  const paidAmount =
-    order?.payments?.reduce(
-      (sum: number, p: any) => sum + Number(p.paid_amount ?? 0),
-      0
-    ) ?? 0;
+  const paidAmount = order?.payments?.reduce((sum: number, p: any) => sum + Number(p.paid_amount ?? 0), 0) ?? 0;
   const grandTotal = Number(order?.grand_total_amount ?? 0);
   const dueAmount = Math.max(0, grandTotal - paidAmount);
 
@@ -77,7 +71,6 @@ export default function InvoicePage() {
 
       {/* A4 Container */}
       <div className="max-w-[210mm] min-h-[297mm] mx-auto bg-white p-[20mm] shadow-sm print:shadow-none print:m-0 print:p-0">
-        
         {/* Header Section */}
         <div className="flex justify-between items-start mb-12">
           <div>
@@ -100,12 +93,8 @@ export default function InvoicePage() {
             <h3 className="text-sm font-semibold text-neutral-900 mb-2 uppercase tracking-wider">Bill To</h3>
             <p className="text-base font-medium text-neutral-800">{order.customer_full_name}</p>
             <p className="text-sm text-neutral-600 mt-1">{order.customer_phone}</p>
-            <p className="text-sm text-neutral-600 mt-1 max-w-[250px]">
-              {order.customer_shipping_address}
-            </p>
-            {order.shipping_area && (
-              <p className="text-sm text-neutral-600">{order.shipping_area}</p>
-            )}
+            <p className="text-sm text-neutral-600 mt-1 max-w-[250px]">{order.customer_shipping_address}</p>
+            {order.shipping_area && <p className="text-sm text-neutral-600">{order.shipping_area}</p>}
           </div>
           <div className="text-right">
             <div className="mb-4">
@@ -142,7 +131,9 @@ export default function InvoicePage() {
                     </p>
                   </td>
                   <td className="py-4 align-top text-right text-neutral-600">{item.qty}</td>
-                  <td className="py-4 align-top text-right text-neutral-600">৳{Number(item.unit_price).toLocaleString()}</td>
+                  <td className="py-4 align-top text-right text-neutral-600">
+                    ৳{Number(item.unit_price).toLocaleString()}
+                  </td>
                   <td className="py-4 align-top text-right font-medium text-neutral-800">
                     ৳{(Number(item.unit_price) * item.qty).toLocaleString()}
                   </td>
@@ -189,7 +180,6 @@ export default function InvoicePage() {
           <p>Thank you for your business!</p>
           <p className="mt-1">If you have any questions concerning this invoice, contact our support.</p>
         </div>
-
       </div>
     </div>
   );

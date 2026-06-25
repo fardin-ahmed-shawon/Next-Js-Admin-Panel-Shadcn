@@ -171,7 +171,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
 export default function EditRolePage() {
   const router = useRouter();
   const { roles, loading, error, setRoles } = useRoles();
-  
+
   const [roleName, setRoleName] = React.useState("");
   const [selected, setSelected] = React.useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -185,7 +185,7 @@ export default function EditRolePage() {
   React.useEffect(() => {
     if (role && !isLoaded) {
       setRoleName(role.role_name || "");
-      
+
       const newSelected: Record<string, boolean> = {};
       PERMISSION_GROUPS.forEach((group) => {
         group.items.forEach((item) => {
@@ -215,7 +215,9 @@ export default function EditRolePage() {
         <p className="font-medium">Error loading role</p>
         <p className="text-sm">{error || "Role not found."}</p>
         <Link href="/dashboard/roles">
-          <Button variant="outline" className="mt-4">Back to Roles</Button>
+          <Button variant="outline" className="mt-4">
+            Back to Roles
+          </Button>
         </Link>
       </div>
     );
@@ -277,7 +279,7 @@ export default function EditRolePage() {
 
     try {
       const pageAccessPayload: Record<string, number> = {};
-      
+
       PERMISSION_GROUPS.forEach((group) => {
         group.items.forEach((item) => {
           if (item.alwaysOn) {
@@ -294,7 +296,7 @@ export default function EditRolePage() {
       };
 
       const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ROLES || ""}/${roleId}`;
-      
+
       const response = await fetch(API_URL, {
         method: "PUT",
         headers: {
@@ -384,9 +386,7 @@ export default function EditRolePage() {
                 value={roleName}
                 onChange={(e) => setRoleName(e.target.value)}
               />
-              {errors.role_name && (
-                <p className="text-sm font-medium text-destructive">{errors.role_name[0]}</p>
-              )}
+              {errors.role_name && <p className="text-sm font-medium text-destructive">{errors.role_name[0]}</p>}
             </div>
           </CardContent>
         </Card>
@@ -481,7 +481,11 @@ export default function EditRolePage() {
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="px-8 gap-2 w-full sm:w-auto" disabled={role.role_name === "Admin"}>
+              <Button
+                variant="destructive"
+                className="px-8 gap-2 w-full sm:w-auto"
+                disabled={role.role_name === "Admin"}
+              >
                 <Trash className="h-4 w-4" />
                 Delete Role
               </Button>

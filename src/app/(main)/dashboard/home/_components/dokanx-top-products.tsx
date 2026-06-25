@@ -49,8 +49,12 @@ export function DokanxTopProducts() {
                 <div className="flex items-center gap-3">
                   <div className="flex size-10 relative items-center justify-center overflow-hidden rounded-lg bg-muted border">
                     {product.image ? (
-                       // Assuming base URL needs to be added, but just using the path from API for now
-                      <img src={`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || ""}${product.image}`} alt={product.product_title} className="object-cover w-full h-full" />
+                      // Assuming base URL needs to be added, but just using the path from API for now
+                      <img
+                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || ""}${product.image}`}
+                        alt={product.product_title}
+                        className="object-cover w-full h-full"
+                      />
                     ) : (
                       <Box className="size-5 text-muted-foreground" />
                     )}

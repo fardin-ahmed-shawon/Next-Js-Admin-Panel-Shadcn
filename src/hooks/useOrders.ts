@@ -42,18 +42,15 @@ export function useOrders(params?: UseOrdersParams) {
   if (params?.per_page) searchParams.append("per_page", params.per_page.toString());
   if (params?.search) searchParams.append("search", params.search);
   if (params?.status && params.status !== "All") searchParams.append("status", params.status);
-  if (params?.payment_status && params.payment_status !== "All") searchParams.append("payment_status", params.payment_status);
+  if (params?.payment_status && params.payment_status !== "All")
+    searchParams.append("payment_status", params.payment_status);
 
   const queryString = searchParams.toString() ? `?${searchParams.toString()}` : "";
   const url = `${baseUrl}${ordersEndpoint}${queryString}`;
 
-  const { data, error, isLoading, mutate } = useSWR(
-    user?.id ? [url, user.id] : url,
-    fetcher,
-    {
-      keepPreviousData: true,
-    }
-  );
+  const { data, error, isLoading, mutate } = useSWR(user?.id ? [url, user.id] : url, fetcher, {
+    keepPreviousData: true,
+  });
 
   return {
     data,

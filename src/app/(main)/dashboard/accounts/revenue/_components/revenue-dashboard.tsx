@@ -29,11 +29,11 @@ export function RevenueDashboard() {
   const fetchRevenue = async () => {
     try {
       setLoading(true);
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin/';
-      const REVENUE_URL = process.env.NEXT_PUBLIC_API_ACCOUNTS_REVENUE_URL || 'revenue';
-      const cleanBase = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
-      const cleanPath = REVENUE_URL.startsWith('/') ? REVENUE_URL.slice(1) : REVENUE_URL;
-      
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const REVENUE_URL = process.env.NEXT_PUBLIC_API_ACCOUNTS_REVENUE_URL || "revenue";
+      const cleanBase = API_BASE_URL.endsWith("/") ? API_BASE_URL : `${API_BASE_URL}/`;
+      const cleanPath = REVENUE_URL.startsWith("/") ? REVENUE_URL.slice(1) : REVENUE_URL;
+
       let url = `${cleanBase}${cleanPath}?page=${pageIndex + 1}&per_page=${pageSize}`;
       if (filter !== "All") {
         url += `&status=${filter}`;
@@ -44,7 +44,7 @@ export function RevenueDashboard() {
 
       if (result.success) {
         setSummary(result.summary);
-        
+
         // Map backend data to frontend format
         const mappedData = result.data.data.map((item: any) => ({
           id: item.id.toString(),
@@ -86,7 +86,7 @@ export function RevenueDashboard() {
   return (
     <div className="flex flex-col gap-6 w-full">
       <RevenueStats summary={summary} />
-      <RevenueTable 
+      <RevenueTable
         data={data}
         totalCount={totalCount}
         pageIndex={pageIndex}

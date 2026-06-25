@@ -2,14 +2,7 @@ import * as React from "react";
 import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, PackageX } from "lucide-react";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -30,7 +23,6 @@ export function ParcelReportsTable({
   onPageChange,
   isLoading,
 }: ParcelReportsTableProps) {
-  
   const getInitials = (name?: string) => {
     if (!name) return "NA";
     return name
@@ -40,7 +32,7 @@ export function ParcelReportsTable({
       .substring(0, 2)
       .toUpperCase();
   };
-  
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "delivered":
@@ -129,12 +121,8 @@ export function ParcelReportsTable({
                   </TableCell>
                   <TableCell>{row.courier_name}</TableCell>
                   <TableCell>{row.tracking_code}</TableCell>
-                  <TableCell>
-                    {row.grand_total_amount !== undefined ? `৳${row.grand_total_amount}` : "N/A"}
-                  </TableCell>
-                  <TableCell>
-                    {row.paid_amount !== undefined ? `৳${row.paid_amount}` : "N/A"}
-                  </TableCell>
+                  <TableCell>{row.grand_total_amount !== undefined ? `৳${row.grand_total_amount}` : "N/A"}</TableCell>
+                  <TableCell>{row.paid_amount !== undefined ? `৳${row.paid_amount}` : "N/A"}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={getStatusColor(row.parcel_status)}>
                       {row.parcel_status}

@@ -580,8 +580,12 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
-  const mainCatUrl = process.env.NEXT_PUBLIC_API_MAIN_CATEGORIES_URL ? `${baseUrl}api/v1/admin/${process.env.NEXT_PUBLIC_API_MAIN_CATEGORIES_URL}` : null;
-  const subCatUrl = process.env.NEXT_PUBLIC_API_SUB_CATEGORIES_URL ? `${baseUrl}api/v1/admin/${process.env.NEXT_PUBLIC_API_SUB_CATEGORIES_URL}` : null;
+  const mainCatUrl = process.env.NEXT_PUBLIC_API_MAIN_CATEGORIES_URL
+    ? `${baseUrl}api/v1/admin/${process.env.NEXT_PUBLIC_API_MAIN_CATEGORIES_URL}`
+    : null;
+  const subCatUrl = process.env.NEXT_PUBLIC_API_SUB_CATEGORIES_URL
+    ? `${baseUrl}api/v1/admin/${process.env.NEXT_PUBLIC_API_SUB_CATEGORIES_URL}`
+    : null;
 
   const { data: mainCatsRaw } = useSWR(mainCatUrl);
   const { data: subCatsRaw } = useSWR(subCatUrl);
@@ -691,12 +695,12 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
     activeOrderFilter !== "All" || activePaymentFilter !== "All" || activeCatFilter !== "All" || searchQuery;
 
   const handleBulkUpdate = async (type: "status" | "payment", val: string) => {
-    const selectedIds = table.getSelectedRowModel().rows.map(r => r.original.id);
+    const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
     const toastId = toast.loading(`Updating ${selectedIds.length} orders...`);
     try {
       const endpoint = type === "status" ? "bulk-update-status" : "bulk-update-payment";
       const bodyKey = type === "status" ? "order_status" : "payment_status";
-      
+
       const res = await fetch(`${getApiBaseUrl()}orders/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -712,7 +716,7 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
   };
 
   const handleBulkSteadfast = async () => {
-    const selectedIds = table.getSelectedRowModel().rows.map(r => r.original.id);
+    const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
     if (selectedIds.length === 0) return;
     const toastId = toast.loading(`Sending ${selectedIds.length} orders to Steadfast...`);
     try {

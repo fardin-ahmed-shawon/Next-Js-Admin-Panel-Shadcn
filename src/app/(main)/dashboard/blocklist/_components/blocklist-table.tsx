@@ -148,14 +148,20 @@ export function BlocklistTable({ data, onDelete, onToggleStatus, onRefresh }: Bl
         const status = row.getValue("status") as string;
         if (status === "Active") {
           return (
-            <Badge variant="outline" className="bg-emerald-100/80 text-emerald-700 hover:bg-emerald-100/80 border-transparent rounded-full px-3 py-1 font-semibold">
+            <Badge
+              variant="outline"
+              className="bg-emerald-100/80 text-emerald-700 hover:bg-emerald-100/80 border-transparent rounded-full px-3 py-1 font-semibold"
+            >
               <CheckCircle2 className="mr-1.5 size-3.5" />
               {status}
             </Badge>
           );
         }
         return (
-          <Badge variant="outline" className="bg-red-100/80 text-red-700 hover:bg-red-100/80 border-transparent rounded-full px-3 py-1 font-semibold">
+          <Badge
+            variant="outline"
+            className="bg-red-100/80 text-red-700 hover:bg-red-100/80 border-transparent rounded-full px-3 py-1 font-semibold"
+          >
             <XCircle className="mr-1.5 size-3.5" />
             {status}
           </Badge>
@@ -174,7 +180,14 @@ export function BlocklistTable({ data, onDelete, onToggleStatus, onRefresh }: Bl
     {
       accessorKey: "expires",
       header: "Expires",
-      cell: ({ row }) => <Badge variant="outline" className="bg-slate-100 text-slate-600 border-transparent font-medium hover:bg-slate-100 whitespace-pre-line leading-tight text-center">{row.getValue("expires")}</Badge>,
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className="bg-slate-100 text-slate-600 border-transparent font-medium hover:bg-slate-100 whitespace-pre-line leading-tight text-center"
+        >
+          {row.getValue("expires")}
+        </Badge>
+      ),
     },
     {
       id: "actions",
@@ -186,28 +199,29 @@ export function BlocklistTable({ data, onDelete, onToggleStatus, onRefresh }: Bl
 
         return (
           <div className="flex justify-end gap-2">
-            <Button 
-              className={isActive 
-                ? "bg-amber-100/80 text-amber-700 hover:bg-amber-200 border-transparent shadow-none font-semibold px-3" 
-                : "bg-emerald-100/80 text-emerald-700 hover:bg-emerald-200 border-transparent shadow-none font-semibold px-3"
+            <Button
+              className={
+                isActive
+                  ? "bg-amber-100/80 text-amber-700 hover:bg-amber-200 border-transparent shadow-none font-semibold px-3"
+                  : "bg-emerald-100/80 text-emerald-700 hover:bg-emerald-200 border-transparent shadow-none font-semibold px-3"
               }
               variant="outline"
-              size="sm" 
+              size="sm"
               onClick={() => handleToggleStatus(entry.id, entry.is_active)}
               disabled={isLoading}
             >
               {isActive ? (
-                <ShieldOff className={`mr-1.5 size-4 ${isLoading ? 'animate-pulse' : ''}`} />
+                <ShieldOff className={`mr-1.5 size-4 ${isLoading ? "animate-pulse" : ""}`} />
               ) : (
-                <ShieldCheck className={`mr-1.5 size-4 ${isLoading ? 'animate-pulse' : ''}`} />
+                <ShieldCheck className={`mr-1.5 size-4 ${isLoading ? "animate-pulse" : ""}`} />
               )}
-              {isLoading ? "Wait..." : (isActive ? "Unblock" : "Re-block")}
+              {isLoading ? "Wait..." : isActive ? "Unblock" : "Re-block"}
             </Button>
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   className="bg-red-100/80 text-red-700 hover:bg-red-200 hover:text-red-800 border-transparent shadow-none font-semibold px-3"
                 >
@@ -371,7 +385,11 @@ export function BlocklistTable({ data, onDelete, onToggleStatus, onRefresh }: Bl
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className="border-slate-100 hover:bg-slate-50/50">
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className="border-slate-100 hover:bg-slate-50/50"
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className="py-4 font-medium text-slate-600">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}

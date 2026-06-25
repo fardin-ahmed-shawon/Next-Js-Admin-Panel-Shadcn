@@ -72,17 +72,14 @@ const getImageUrl = (path: string | null) => {
   if (!path) return "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Blog";
   if (path.startsWith("http")) return path;
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+  const cleanBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   return `${cleanBase}${cleanPath}`;
 };
 
 /* ---- Columns ---- */
 
-function getColumns(
-  onEdit: (row: BlogRow) => void,
-  onDelete: (row: BlogRow) => void
-): ColumnDef<BlogRow>[] {
+function getColumns(onEdit: (row: BlogRow) => void, onDelete: (row: BlogRow) => void): ColumnDef<BlogRow>[] {
   return [
     {
       id: "select",
@@ -90,10 +87,7 @@ function getColumns(
         <div className="w-10">
           <Checkbox
             aria-label="Select all blogs"
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && "indeterminate")
-            }
+            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
             onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           />
         </div>
@@ -119,9 +113,7 @@ function getColumns(
     {
       accessorKey: "id",
       header: "ID",
-      cell: ({ row }) => (
-        <span className="font-medium text-muted-foreground">BLG-{row.original.id}</span>
-      ),
+      cell: ({ row }) => <span className="font-medium text-muted-foreground">BLG-{row.original.id}</span>,
     },
     {
       accessorKey: "title",
@@ -134,18 +126,13 @@ function getColumns(
               alt={row.original.title}
               className="size-full object-cover rounded-sm"
               onError={(e) => {
-                (e.target as HTMLImageElement).src =
-                  "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Blog";
+                (e.target as HTMLImageElement).src = "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Blog";
               }}
             />
           </div>
           <div className="flex flex-col gap-1 max-w-[300px]">
-            <div className="font-medium leading-none text-base truncate">
-              {row.original.title}
-            </div>
-            <div className="text-muted-foreground text-xs truncate">
-              {row.original.description}
-            </div>
+            <div className="font-medium leading-none text-base truncate">{row.original.title}</div>
+            <div className="text-muted-foreground text-xs truncate">{row.original.description}</div>
           </div>
         </div>
       ),
@@ -154,17 +141,13 @@ function getColumns(
       accessorKey: "created_at",
       header: "Created Date",
       cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {new Date(row.original.created_at).toLocaleDateString()}
-        </span>
+        <span className="text-muted-foreground">{new Date(row.original.created_at).toLocaleDateString()}</span>
       ),
     },
     {
       id: "actions",
       header: () => <div className="flex w-full justify-end">Actions</div>,
-      cell: ({ row }) => (
-        <RowActions row={row.original} onEdit={onEdit} onDelete={onDelete} />
-      ),
+      cell: ({ row }) => <RowActions row={row.original} onEdit={onEdit} onDelete={onDelete} />,
       enableHiding: false,
       enableSorting: false,
     },
@@ -240,8 +223,7 @@ function RowActions({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete <strong>{row.title}</strong>. This action cannot be
-              undone.
+              This will permanently delete <strong>{row.title}</strong>. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -267,8 +249,12 @@ function TableSkeleton() {
     <>
       {Array.from({ length: 5 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-4" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-16" />
+          </TableCell>
           <TableCell>
             <div className="flex items-center gap-4">
               <Skeleton className="h-12 w-20 rounded-md" />
@@ -278,8 +264,12 @@ function TableSkeleton() {
               </div>
             </div>
           </TableCell>
-          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-8 w-8 ml-auto" />
+          </TableCell>
         </TableRow>
       ))}
     </>
@@ -372,17 +362,9 @@ export function BlogsTable({ onDeleted }: { onDeleted?: () => void }) {
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="font-normal text-muted-foreground text-sm">
-            Blog Posts List
-          </CardTitle>
+          <CardTitle className="font-normal text-muted-foreground text-sm">Blog Posts List</CardTitle>
           <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
-            {isLoading ? (
-              <Skeleton className="h-7 w-20" />
-            ) : totalCount > 0 ? (
-              `${totalCount} posts`
-            ) : (
-              "No posts"
-            )}
+            {isLoading ? <Skeleton className="h-7 w-20" /> : totalCount > 0 ? `${totalCount} posts` : "No posts"}
           </CardDescription>
         </CardHeader>
 
@@ -412,9 +394,7 @@ export function BlogsTable({ onDeleted }: { onDeleted?: () => void }) {
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -439,9 +419,7 @@ export function BlogsTable({ onDeleted }: { onDeleted?: () => void }) {
                   table.getRowModel().rows.map((row) => (
                     <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
+                        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                       ))}
                     </TableRow>
                   ))
@@ -453,9 +431,7 @@ export function BlogsTable({ onDeleted }: { onDeleted?: () => void }) {
                           <FileText className="size-6 text-muted-foreground" />
                         </div>
                         <p className="text-sm font-medium">No blogs found</p>
-                        <p className="text-xs text-muted-foreground">
-                          Try adjusting your search query.
-                        </p>
+                        <p className="text-xs text-muted-foreground">Try adjusting your search query.</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -469,9 +445,7 @@ export function BlogsTable({ onDeleted }: { onDeleted?: () => void }) {
               <span className="text-sm text-muted-foreground">Rows per page</span>
               <Select
                 value={`${pagination.pageSize}`}
-                onValueChange={(v) =>
-                  setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))
-                }
+                onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}
               >
                 <SelectTrigger className="h-8 w-16">
                   <SelectValue />
@@ -527,12 +501,7 @@ export function BlogsTable({ onDeleted }: { onDeleted?: () => void }) {
       </Card>
 
       {editTarget && (
-        <EditBlogDialog
-          blog={editTarget}
-          open={editOpen}
-          onOpenChange={setEditOpen}
-          onUpdated={handleUpdated}
-        />
+        <EditBlogDialog blog={editTarget} open={editOpen} onOpenChange={setEditOpen} onUpdated={handleUpdated} />
       )}
     </>
   );

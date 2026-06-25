@@ -59,11 +59,11 @@ import { EditCouponDialog } from "./edit-coupon-dialog";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
 const COUPON_API_URL = process.env.NEXT_PUBLIC_API_COUPON_URL || "coupons";
 
-const getCouponUrl = (path: string = '') => {
+const getCouponUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) baseUrl += '/';
-  const couponPath = COUPON_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+  if (!baseUrl.endsWith("/")) baseUrl += "/";
+  const couponPath = COUPON_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${couponPath}/${cleanPath}` : couponPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
@@ -86,24 +86,24 @@ interface CouponsTableProps {
 
 function formatExpiryDate(dateString: string): string {
   if (!dateString) return "No expiry";
-  
+
   try {
     // If it's already in YYYY-MM-DD format, return as is
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
       return dateString;
     }
-    
+
     // Handle ISO date string
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
       return "Invalid date";
     }
-    
+
     // Format as YYYY-MM-DD
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
     return `${year}-${month}-${day}`;
   } catch (error) {
     console.error("Error formatting date:", error);
@@ -142,14 +142,27 @@ function RowActions({ row, onCouponDeleted }: { row: CouponRow; onCouponDeleted:
     <div className="flex justify-end">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm"><MoreHorizontal /></Button>
+          <Button variant="ghost" size="icon-sm">
+            <MoreHorizontal />
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setEditOpen(true); }}>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setEditOpen(true);
+            }}
+          >
             <Edit className="mr-2 size-4" /> Edit Coupon
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive" onSelect={(e) => { e.preventDefault(); setDeleteOpen(true); }}>
+          <DropdownMenuItem
+            className="text-destructive"
+            onSelect={(e) => {
+              e.preventDefault();
+              setDeleteOpen(true);
+            }}
+          >
             <Trash className="mr-2 size-4" /> Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -257,7 +270,9 @@ export function CouponsTable({ refreshTrigger, onCouponDeleted }: CouponsTablePr
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         />
       ),
-      cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} />,
+      cell: ({ row }) => (
+        <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} />
+      ),
       enableHiding: false,
     },
     {
@@ -290,7 +305,9 @@ export function CouponsTable({ refreshTrigger, onCouponDeleted }: CouponsTablePr
       accessorKey: "usage",
       header: "Usage",
       cell: ({ row }) => (
-        <span className="text-sm">{row.original.usageCount} / {row.original.usageLimit}</span>
+        <span className="text-sm">
+          {row.original.usageCount} / {row.original.usageLimit}
+        </span>
       ),
     },
     {
@@ -298,11 +315,7 @@ export function CouponsTable({ refreshTrigger, onCouponDeleted }: CouponsTablePr
       header: "Expiry Date",
       cell: ({ row }) => {
         const expiryDate = row.original.expiryDate;
-        return (
-          <span className="text-sm font-mono">
-            {expiryDate}
-          </span>
-        );
+        return <span className="text-sm font-mono">{expiryDate}</span>;
       },
     },
     {
@@ -348,7 +361,9 @@ export function CouponsTable({ refreshTrigger, onCouponDeleted }: CouponsTablePr
 
   if (isLoading) {
     return (
-      <Card><CardContent className="flex items-center justify-center py-12">Loading coupons...</CardContent></Card>
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">Loading coupons...</CardContent>
+      </Card>
     );
   }
 
@@ -453,25 +468,56 @@ export function CouponsTable({ refreshTrigger, onCouponDeleted }: CouponsTablePr
         <div className="flex items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows per page</span>
-            <Select value={`${pagination.pageSize}`} onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}>
-              <SelectTrigger className="h-8 w-16"><SelectValue /></SelectTrigger>
+            <Select
+              value={`${pagination.pageSize}`}
+              onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}
+            >
+              <SelectTrigger className="h-8 w-16">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {[5, 10, 20, 50].map((size) => <SelectItem key={size} value={`${size}`}>{size}</SelectItem>)}
+                {[5, 10, 20, 50].map((size) => (
+                  <SelectItem key={size} value={`${size}`}>
+                    {size}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-sm">Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}</span>
-            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+            <span className="text-sm">
+              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
+            </span>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronsLeft className="size-4" />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronLeft className="size-4" />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronRight className="size-4" />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronsRight className="size-4" />
             </Button>
           </div>

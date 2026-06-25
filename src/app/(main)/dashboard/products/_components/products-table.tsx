@@ -72,7 +72,7 @@ export function ProductsTable() {
   const [activeFilter, setActiveFilter] = React.useState<ProductFilter>("All");
   const [rowSelection, setRowSelection] = React.useState({});
   const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
-  
+
   // States for server-side fetching
   const [searchQuery, setSearchQuery] = React.useState("");
   const [mainCategoryId, setMainCategoryId] = React.useState("all");
@@ -81,7 +81,12 @@ export function ProductsTable() {
   const [pageSize, setPageSize] = React.useState(10);
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
-  const { data: productsData, loading, error, refetch } = useProducts({
+  const {
+    data: productsData,
+    loading,
+    error,
+    refetch,
+  } = useProducts({
     page: pageIndex + 1,
     per_page: pageSize,
     search: searchQuery,
@@ -91,19 +96,19 @@ export function ProductsTable() {
   });
 
   const { categories } = useCategories();
-  
+
   // Extract main and sub categories for dropdowns
   const allMainCategories = React.useMemo(() => {
-    return categories.map(c => ({ id: c.id.toString(), name: c.main_category_name }));
+    return categories.map((c) => ({ id: c.id.toString(), name: c.main_category_name }));
   }, [categories]);
 
   const allSubCategories = React.useMemo(() => {
     if (mainCategoryId !== "all") {
-      const selectedMain = categories.find(c => c.id.toString() === mainCategoryId);
-      return selectedMain?.["sub-categories"]?.map(s => ({ id: s.id.toString(), name: s.name })) || [];
+      const selectedMain = categories.find((c) => c.id.toString() === mainCategoryId);
+      return selectedMain?.["sub-categories"]?.map((s) => ({ id: s.id.toString(), name: s.name })) || [];
     }
     // Flatten all subcategories if no main category selected
-    return categories.flatMap(c => c["sub-categories"] || []).map(s => ({ id: s.id.toString(), name: s.name }));
+    return categories.flatMap((c) => c["sub-categories"] || []).map((s) => ({ id: s.id.toString(), name: s.name }));
   }, [categories, mainCategoryId]);
 
   const products = productsData?.data || [];
@@ -178,7 +183,11 @@ export function ProductsTable() {
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
-            <img src={getImageUrl(row.original.product_thumbnail_img)} alt={row.original.title} className="size-full object-cover" />
+            <img
+              src={getImageUrl(row.original.product_thumbnail_img)}
+              alt={row.original.title}
+              className="size-full object-cover"
+            />
           </div>
           <div className="flex flex-col gap-0.5">
             <div className="font-medium leading-none">{row.original.title}</div>
@@ -202,7 +211,7 @@ export function ProductsTable() {
       header: "Price",
       cell: ({ row }) => {
         const product = row.original;
-        
+
         if (product.has_variant_wise_pricing) {
           const prices = product.variants?.map((v: any) => v.variant_pricing?.selling_price).filter(Boolean) || [];
           if (prices.length > 0) {
@@ -236,7 +245,9 @@ export function ProductsTable() {
       accessorKey: "available_stock",
       header: "Stock",
       cell: ({ row }) => (
-        <span className={`tabular-nums ${row.original.available_stock === 0 ? "text-destructive" : ""}`}>{row.original.available_stock || 0}</span>
+        <span className={`tabular-nums ${row.original.available_stock === 0 ? "text-destructive" : ""}`}>
+          {row.original.available_stock || 0}
+        </span>
       ),
     },
     {
@@ -250,9 +261,7 @@ export function ProductsTable() {
     {
       id: "actions",
       header: () => <div className="flex w-full justify-end">Actions</div>,
-      cell: ({ row }) => (
-        <RowActions row={row.original} onDelete={() => handleDelete(row.original.id)} />
-      ),
+      cell: ({ row }) => <RowActions row={row.original} onDelete={() => handleDelete(row.original.id)} />,
     },
   ];
 
@@ -275,7 +284,17 @@ export function ProductsTable() {
   const selectedCount = table.getSelectedRowModel().rows.length;
 
   const exportToExcel = (data: Product[]) => {
-    const headers = ["ID", "Name", "SKU", "Main Category", "Sub Category", "Regular Price", "Selling Price", "Stock", "Status"];
+    const headers = [
+      "ID",
+      "Name",
+      "SKU",
+      "Main Category",
+      "Sub Category",
+      "Regular Price",
+      "Selling Price",
+      "Stock",
+      "Status",
+    ];
     const csvRows = [
       headers.join(","),
       ...data.map((row) =>
@@ -312,11 +331,7 @@ export function ProductsTable() {
           {loading ? "Loading..." : countDescription}
         </CardDescription>
         <CardAction>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportToExcel(products)}
-          >
+          <Button variant="outline" size="sm" onClick={() => exportToExcel(products)}>
             <Download className="mr-2 size-4" />
             Export Page
           </Button>
@@ -444,7 +459,7 @@ export function ProductsTable() {
                   <AlertDialogCancel variant="outline">Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     variant="destructive"
-                    onClick={() => handleBulkDelete(table.getSelectedRowModel().rows.map(r => parseInt(r.id)))}
+                    onClick={() => handleBulkDelete(table.getSelectedRowModel().rows.map((r) => parseInt(r.id)))}
                   >
                     Delete
                   </AlertDialogAction>
@@ -561,7 +576,7 @@ export function ProductsTable() {
   );
 }
 
-function RowActions({ row, onDelete }: { row: Product, onDelete: () => void }) {
+function RowActions({ row, onDelete }: { row: Product; onDelete: () => void }) {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
 
   return (

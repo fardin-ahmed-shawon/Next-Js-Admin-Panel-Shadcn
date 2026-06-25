@@ -9,11 +9,11 @@ export default function DiscountsPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleDiscountAdded = useCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
   }, []);
 
   const handleDiscountDeleted = useCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
   }, []);
 
   return (

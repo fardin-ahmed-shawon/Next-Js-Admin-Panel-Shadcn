@@ -153,7 +153,11 @@ const columns: ColumnDef<any>[] = [
         <div className="flex items-center gap-3 w-[200px]">
           <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
             {row.original.product_thumbnail_img && (
-              <img src={getImageUrl(row.original.product_thumbnail_img)} alt={row.original.title} className="size-full object-cover" />
+              <img
+                src={getImageUrl(row.original.product_thumbnail_img)}
+                alt={row.original.title}
+                className="size-full object-cover"
+              />
             )}
           </div>
           <div className="flex flex-col gap-0.5">
@@ -245,7 +249,7 @@ const columns: ColumnDef<any>[] = [
 
 /* ---- Row Actions ---- */
 
-function RowActions({ row, mutate }: { row: any, mutate?: () => void }) {
+function RowActions({ row, mutate }: { row: any; mutate?: () => void }) {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [stockOpen, setStockOpen] = React.useState(false);
   const [stockMode, setStockMode] = React.useState<"add" | "reduce">("add");
@@ -262,31 +266,33 @@ function RowActions({ row, mutate }: { row: any, mutate?: () => void }) {
       toast.error("Please enter a valid positive quantity");
       return;
     }
-    
+
     setIsSubmitting(true);
     const toastId = toast.loading(`${stockMode === "add" ? "Adding" : "Reducing"} stock...`);
-    
+
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
       const productsEndpoint = process.env.NEXT_PUBLIC_API_PRODUCTS_URL || "products";
       const endpoint = `${baseUrl}${productsEndpoint}/${productId}/stock/${stockMode}`;
-      
+
       const res = await fetchClient(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           quantity: Number(quantity),
-          ...(variantId ? { variant_id: variantId } : {})
-        })
+          ...(variantId ? { variant_id: variantId } : {}),
+        }),
       });
-      
+
       const data = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(data?.message || data?.error || "Failed to update stock");
       }
-      
-      toast.success(data?.message || `Stock ${stockMode === "add" ? "added" : "reduced"} successfully!`, { id: toastId });
+
+      toast.success(data?.message || `Stock ${stockMode === "add" ? "added" : "reduced"} successfully!`, {
+        id: toastId,
+      });
       setStockOpen(false);
       setQuantity("");
       if (mutate) mutate();
@@ -315,11 +321,21 @@ function RowActions({ row, mutate }: { row: any, mutate?: () => void }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem onSelect={() => { setStockMode("add"); setStockOpen(true); }}>
+          <DropdownMenuItem
+            onSelect={() => {
+              setStockMode("add");
+              setStockOpen(true);
+            }}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Stock
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => { setStockMode("reduce"); setStockOpen(true); }}>
+          <DropdownMenuItem
+            onSelect={() => {
+              setStockMode("reduce");
+              setStockOpen(true);
+            }}
+          >
             <Minus className="mr-2 h-4 w-4" />
             Reduce Stock
           </DropdownMenuItem>
@@ -341,24 +357,28 @@ function RowActions({ row, mutate }: { row: any, mutate?: () => void }) {
           <DialogHeader>
             <DialogTitle>{stockMode === "add" ? "Add Stock" : "Reduce Stock"}</DialogTitle>
             <DialogDescription>
-              {stockMode === "add" 
+              {stockMode === "add"
                 ? "Enter the quantity you want to add to the current inventory."
                 : "Enter the quantity you want to reduce from the current inventory."}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Label htmlFor="stock-quantity" className="mb-2 block">Quantity</Label>
-            <Input 
-              id="stock-quantity" 
-              type="number" 
-              min="1" 
+            <Label htmlFor="stock-quantity" className="mb-2 block">
+              Quantity
+            </Label>
+            <Input
+              id="stock-quantity"
+              type="number"
+              min="1"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              placeholder="e.g. 10" 
+              placeholder="e.g. 10"
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setStockOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button variant="outline" onClick={() => setStockOpen(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
             <Button onClick={handleStockUpdate} disabled={isSubmitting}>
               {stockMode === "add" ? "Add Stock" : "Reduce Stock"}
             </Button>
@@ -452,14 +472,20 @@ export function InventoryTable({
 
   const tableData = React.useMemo(() => {
     if (!records?.data) return [];
-    return records.data.map(item => ({
+    return records.data.map((item) => ({
       ...item,
       subRows: item.variants || [], // For expander to work properly
     }));
   }, [records]);
 
-  const allCategories = React.useMemo(() => [...new Set(tableData.map((p) => p.category?.main).filter(Boolean))] as string[], [tableData]);
-  const allSubCategories = React.useMemo(() => [...new Set(tableData.map((p) => p.category?.sub).filter(Boolean))] as string[], [tableData]);
+  const allCategories = React.useMemo(
+    () => [...new Set(tableData.map((p) => p.category?.main).filter(Boolean))] as string[],
+    [tableData],
+  );
+  const allSubCategories = React.useMemo(
+    () => [...new Set(tableData.map((p) => p.category?.sub).filter(Boolean))] as string[],
+    [tableData],
+  );
 
   const table = useReactTable({
     data: tableData,
@@ -609,7 +635,9 @@ export function InventoryTable({
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     {columns.map((c, j) => (
-                      <TableCell key={j}><Skeleton className="h-6 w-full" /></TableCell>
+                      <TableCell key={j}>
+                        <Skeleton className="h-6 w-full" />
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
@@ -676,7 +704,9 @@ export function InventoryTable({
               <span className="sr-only">Go to previous page</span>
               <ChevronLeft className="size-4" />
             </Button>
-            <span className="text-sm font-medium mx-2">{page} / {records?.last_page || 1}</span>
+            <span className="text-sm font-medium mx-2">
+              {page} / {records?.last_page || 1}
+            </span>
             <Button
               variant="outline"
               className="size-8"

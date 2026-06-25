@@ -26,7 +26,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) return;
-    
+
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
@@ -123,12 +123,12 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
           <Field>
             <FieldLabel htmlFor="edit-user-password">Password</FieldLabel>
             <FieldContent>
-              <Input 
-                id="edit-user-password" 
-                name="password" 
-                type="password" 
-                placeholder="Leave blank to keep current" 
-                minLength={8} 
+              <Input
+                id="edit-user-password"
+                name="password"
+                type="password"
+                placeholder="Leave blank to keep current"
+                minLength={8}
               />
             </FieldContent>
           </Field>

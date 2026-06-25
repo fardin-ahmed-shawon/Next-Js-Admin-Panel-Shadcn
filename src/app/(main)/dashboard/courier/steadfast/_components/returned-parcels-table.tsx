@@ -10,7 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useSteadfastReturnedParcels } from "@/hooks/useSteadfastReturnedParcels";
 import { fetchClient } from "@/lib/fetch-client";
 
@@ -55,7 +62,7 @@ function RowActions({ row, mutate }: { row: any; mutate: any }) {
         const errorMessage = errorData?.raw_response?.error || errorData?.message || "Failed to create return request";
         throw new Error(errorMessage);
       }
-      
+
       toast.success(`Return request for ${row.order_no} created successfully!`, { id: toastId });
       mutate(); // Refresh the parcels table
     } catch (e: any) {
@@ -96,23 +103,35 @@ function RowActions({ row, mutate }: { row: any; mutate: any }) {
 
 export function ReturnedParcelsTable() {
   const [searchInput, setSearchInput] = React.useState("");
-  
-  const { data: apiData, isLoading, mutate } = useSteadfastReturnedParcels({
+
+  const {
+    data: apiData,
+    isLoading,
+    mutate,
+  } = useSteadfastReturnedParcels({
     page: 1,
     per_page: 100, // fetching larger amount or we can add pagination later
     search: searchInput || undefined,
   });
 
-  const filteredData = Array.isArray(apiData?.data?.data) ? apiData.data.data : (Array.isArray(apiData?.data) ? apiData.data : []);
-
-
+  const filteredData = Array.isArray(apiData?.data?.data)
+    ? apiData.data.data
+    : Array.isArray(apiData?.data)
+      ? apiData.data
+      : [];
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="font-normal text-muted-foreground text-sm">Returned Parcels</CardTitle>
         <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
-          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : filteredData.length > 0 ? `${filteredData.length} returned parcels` : "No returned parcels"}
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : filteredData.length > 0 ? (
+            `${filteredData.length} returned parcels`
+          ) : (
+            "No returned parcels"
+          )}
         </CardDescription>
       </CardHeader>
 
@@ -157,17 +176,24 @@ export function ReturnedParcelsTable() {
                   const oStatus = row.order?.order_status || "Unknown";
                   const pStatus = row.order?.payment_status || "Unknown";
                   const parcelStatus = row.parcel_status || row.status || "Unknown";
-                  
+
                   return (
                     <TableRow key={row.id}>
                       <TableCell className="font-medium">{row.order_no}</TableCell>
                       <TableCell>{row.tracking_code}</TableCell>
                       <TableCell>৳{Number(row.order?.grand_total_amount || 0).toLocaleString()}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={oStatus === "Returned" ? "border-red-500 text-red-600" : ""}>{oStatus}</Badge>
+                        <Badge
+                          variant="outline"
+                          className={oStatus === "Returned" ? "border-red-500 text-red-600" : ""}
+                        >
+                          {oStatus}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={pStatus === "Refund" || pStatus === "Unpaid" ? "secondary" : "default"}>{pStatus}</Badge>
+                        <Badge variant={pStatus === "Refund" || pStatus === "Unpaid" ? "secondary" : "default"}>
+                          {pStatus}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="border-orange-500 text-orange-600 capitalize">

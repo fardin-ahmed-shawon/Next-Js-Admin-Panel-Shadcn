@@ -33,10 +33,7 @@ export function useProductRecommendations() {
     revalidateOnFocus: false,
   });
 
-  const createRecommendation = async (payload: {
-    product_id: number;
-    recommended_product_id: number;
-  }) => {
+  const createRecommendation = async (payload: { product_id: number; recommended_product_id: number }) => {
     const res = await fetchClient(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -48,10 +45,7 @@ export function useProductRecommendations() {
     return json;
   };
 
-  const updateRecommendation = async (
-    id: number,
-    payload: { recommended_product_id: number }
-  ) => {
+  const updateRecommendation = async (id: number, payload: { recommended_product_id: number }) => {
     const res = await fetchClient(`${API_URL}/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

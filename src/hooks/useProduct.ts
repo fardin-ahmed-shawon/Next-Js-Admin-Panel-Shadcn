@@ -16,11 +16,11 @@ function useProduct(id: string) {
     try {
       const res = await fetchClient(`${API_BASE_URL}product/${id}`, {
         headers: {
-          "Accept": "application/json",
+          Accept: "application/json",
         },
       });
       if (!res.ok) throw new Error("Failed to fetch product");
-      
+
       const result = await res.json();
       if (result.success) {
         setProduct(result.data);

@@ -56,32 +56,32 @@ export function MessagesTable({ initialMessages }: MessagesTableProps) {
 
   const handleDelete = async (id: string) => {
     try {
-      let apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin';
-      const messageEndpoint = process.env.NEXT_PUBLIC_API_MESSAGE_URL || 'messages';
-      
-      const baseUrl = apiUrl.replace(/\/$/, '');
+      let apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin";
+      const messageEndpoint = process.env.NEXT_PUBLIC_API_MESSAGE_URL || "messages";
+
+      const baseUrl = apiUrl.replace(/\/$/, "");
       const url = `${baseUrl}/${messageEndpoint}/${id}`;
 
       const response = await fetch(url, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Accept': 'application/json',
+          Accept: "application/json",
         },
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to delete message');
+        throw new Error(error.message || "Failed to delete message");
       }
 
       const result = await response.json();
-      
+
       if (result.success) {
         setData((prev) => prev.filter((msg) => msg.id !== id));
         toast.success(result.message || "Message deleted successfully.");
         router.refresh();
       } else {
-        throw new Error(result.message || 'Failed to delete message');
+        throw new Error(result.message || "Failed to delete message");
       }
     } catch (error) {
       console.error("Delete error:", error);
@@ -229,9 +229,7 @@ export function MessagesTable({ initialMessages }: MessagesTableProps) {
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}
                   </TableRow>
                 ))

@@ -21,7 +21,7 @@ interface PaymentReportsTableProps {
   from: number;
   to: number;
   onPageChange: (page: number) => void;
-  
+
   // Filters & Sorting passed from parent
   searchVal: string;
   setSearchVal: (val: string) => void;
@@ -33,7 +33,7 @@ interface PaymentReportsTableProps {
   setSortBy: (val: string) => void;
   sortDir: string;
   setSortDir: (val: string) => void;
-  
+
   onFilterSubmit: () => void;
   onReset: () => void;
 }
@@ -60,7 +60,6 @@ export function PaymentReportsTable({
   onFilterSubmit,
   onReset,
 }: PaymentReportsTableProps) {
-
   const handleSort = (field: string) => {
     if (sortBy === field) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
@@ -71,7 +70,8 @@ export function PaymentReportsTable({
   };
 
   const getStatusColor = (status: string | null | undefined) => {
-    if (!status) return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
+    if (!status)
+      return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
     switch (status.toLowerCase()) {
       case "full paid":
       case "paid":
@@ -171,7 +171,11 @@ export function PaymentReportsTable({
                   </Button>
                 </TableHead>
                 <TableHead className="text-right">
-                  <Button variant="ghost" className="p-0 ml-auto hover:bg-transparent" onClick={() => handleSort("paid_amount")}>
+                  <Button
+                    variant="ghost"
+                    className="p-0 ml-auto hover:bg-transparent"
+                    onClick={() => handleSort("paid_amount")}
+                  >
                     Paid Amount
                     <ArrowUpDown className="ml-2 size-4" />
                   </Button>
@@ -222,22 +226,16 @@ export function PaymentReportsTable({
 
                   return (
                     <TableRow key={row.payment_id}>
-                      <TableCell className="font-medium text-muted-foreground">
-                        {from + index}
-                      </TableCell>
+                      <TableCell className="font-medium text-muted-foreground">{from + index}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium whitespace-nowrap">{customerName}</span>
                           {customerPhone && (
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              {customerPhone}
-                            </span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{customerPhone}</span>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium whitespace-nowrap">
-                        {row.order_no}
-                      </TableCell>
+                      <TableCell className="font-medium whitespace-nowrap">{row.order_no}</TableCell>
                       <TableCell className="whitespace-nowrap">{row.payment_method}</TableCell>
                       <TableCell className="whitespace-nowrap">{accDisplay}</TableCell>
                       <TableCell className="text-muted-foreground font-mono text-xs whitespace-nowrap">
@@ -246,9 +244,7 @@ export function PaymentReportsTable({
                       <TableCell className="text-right tabular-nums font-medium text-emerald-600 dark:text-emerald-500 whitespace-nowrap">
                         ৳{row.paid_amount.toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-muted-foreground tabular-nums whitespace-nowrap">
-                        {dateStr}
-                      </TableCell>
+                      <TableCell className="text-muted-foreground tabular-nums whitespace-nowrap">{dateStr}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={getStatusColor(orderStatusDisplay)}>
                           {orderStatusDisplay}

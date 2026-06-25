@@ -6,14 +6,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { useProductReports } from "@/hooks/useProductReports";
 import { ProductReportStats } from "./_components/product-reports-stats";
@@ -87,10 +80,8 @@ export default function ProductReportPage() {
         exportParams.append("end_date", customTo);
       }
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-      const endpoint =
-        process.env.NEXT_PUBLIC_API_PRODUCT_REPORTS_URL || "product-report";
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const endpoint = process.env.NEXT_PUBLIC_API_PRODUCT_REPORTS_URL || "product-report";
 
       const { fetchClient } = await import("@/lib/fetch-client");
       const res = await fetchClient(`${baseUrl}${endpoint}?${exportParams.toString()}`);
@@ -99,10 +90,7 @@ export default function ProductReportPage() {
 
       const json = await res.json();
       if (json.success && json.data?.data) {
-        downloadCSV(
-          json.data.data,
-          `Product_Report_${new Date().toISOString().split("T")[0]}.csv`
-        );
+        downloadCSV(json.data.data, `Product_Report_${new Date().toISOString().split("T")[0]}.csv`);
         toast.success("Report exported successfully");
       }
     } catch {
@@ -118,9 +106,7 @@ export default function ProductReportPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl tracking-tight">Product Report</h1>
-          <p className="text-muted-foreground text-sm">
-            Analyze product sales, profits, and stock performance.
-          </p>
+          <p className="text-muted-foreground text-sm">Analyze product sales, profits, and stock performance.</p>
         </div>
 
         <div className="flex flex-col gap-2 sm:items-end">

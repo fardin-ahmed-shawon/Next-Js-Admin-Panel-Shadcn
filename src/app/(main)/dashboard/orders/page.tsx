@@ -71,12 +71,15 @@ export default function OrdersPage() {
   const [customTo, setCustomTo] = React.useState("");
 
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
-  
-  const getImageUrl = React.useCallback((path: string | null) => {
-    if (!path) return "https://placehold.co/80x80/1a1a2e/e0e0e0?text=No+Image";
-    if (path.startsWith("http")) return path;
-    return `${baseUrl}${path.startsWith("/") ? path.slice(1) : path}`;
-  }, [baseUrl]);
+
+  const getImageUrl = React.useCallback(
+    (path: string | null) => {
+      if (!path) return "https://placehold.co/80x80/1a1a2e/e0e0e0?text=No+Image";
+      if (path.startsWith("http")) return path;
+      return `${baseUrl}${path.startsWith("/") ? path.slice(1) : path}`;
+    },
+    [baseUrl],
+  );
 
   const allOrders = React.useMemo(() => {
     if (!apiData?.data?.data) return [];
@@ -84,16 +87,17 @@ export default function OrdersPage() {
       const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
       const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
       const paymentMethod = order.payments?.[0]?.payment_method || "COD";
-      
-      const mappedProducts = order.ordered_products?.map((p: any) => ({
-        id: p.id || p.product_id,
-        image: getImageUrl(p.product?.product_thumbnail_img),
-        name: p.product?.product_name || p.product?.title || "Unknown Product",
-        size: p.size_label || "—",
-        color: p.color_label || "—",
-        qty: p.qty || 1,
-        price: p.unit_price || 0,
-      })) || [];
+
+      const mappedProducts =
+        order.ordered_products?.map((p: any) => ({
+          id: p.id || p.product_id,
+          image: getImageUrl(p.product?.product_thumbnail_img),
+          name: p.product?.product_name || p.product?.title || "Unknown Product",
+          size: p.size_label || "—",
+          color: p.color_label || "—",
+          qty: p.qty || 1,
+          price: p.unit_price || 0,
+        })) || [];
       const productImages = mappedProducts.map((p: any) => p.image);
 
       const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
@@ -101,14 +105,15 @@ export default function OrdersPage() {
 
       const createdDate = new Date(order.created_at);
       const dateString = createdDate.toISOString().slice(0, 10);
-      const timeString = createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const timeString = createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-      const initials = (order.customer_full_name || "Unknown")
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase() || "U";
+      const initials =
+        (order.customer_full_name || "Unknown")
+          .split(" ")
+          .map((n: string) => n[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase() || "U";
       const avatarUrl = `https://placehold.co/40x40/1a1a2e/e0e0e0?text=${initials}`;
 
       return {
@@ -156,7 +161,11 @@ export default function OrdersPage() {
   }, [allOrders, timeRange, customFrom, customTo]);
 
   if (isLoading) {
-    return <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center text-muted-foreground">Loading orders...</div>;
+    return (
+      <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center text-muted-foreground">
+        Loading orders...
+      </div>
+    );
   }
 
   return (

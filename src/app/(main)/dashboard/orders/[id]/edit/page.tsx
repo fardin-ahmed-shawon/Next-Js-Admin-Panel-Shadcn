@@ -68,14 +68,20 @@ const getImageUrl = (path: string | null) => {
 };
 
 function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, updateUnitPrice }: any) {
-  const { data: sizesRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SIZES || "sizes"}`, fetcher);
-  const { data: colorsRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_COLORS || "colors"}`, fetcher);
+  const { data: sizesRes } = useSWR(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SIZES || "sizes"}`,
+    fetcher,
+  );
+  const { data: colorsRes } = useSWR(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_COLORS || "colors"}`,
+    fetcher,
+  );
 
   const allSizes = React.useMemo(() => {
     const list = Array.isArray(sizesRes) ? sizesRes : sizesRes?.data || [];
     return list;
   }, [sizesRes]);
-  
+
   const allColors = React.useMemo(() => {
     const list = Array.isArray(colorsRes) ? colorsRes : colorsRes?.data || [];
     return list;
@@ -85,13 +91,19 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
     return item.product.variants || [];
   }, [item.product.variants]);
 
-  const sizes = React.useMemo(() => allSizes.filter((s: any) => variants.some((v: any) => v.size_id === s.id)), [allSizes, variants]);
-  const colors = React.useMemo(() => allColors.filter((c: any) => variants.some((v: any) => v.color_id === c.id)), [allColors, variants]);
+  const sizes = React.useMemo(
+    () => allSizes.filter((s: any) => variants.some((v: any) => v.size_id === s.id)),
+    [allSizes, variants],
+  );
+  const colors = React.useMemo(
+    () => allColors.filter((c: any) => variants.some((v: any) => v.color_id === c.id)),
+    [allColors, variants],
+  );
 
   const requiresVariant = Number(item.product.has_variants) === 1 && variants.length > 0;
   let isValidVariant = true;
 
-  const availableColors = item.size 
+  const availableColors = item.size
     ? colors.filter((c: any) => {
         const sizeId = sizes.find((s: any) => s.label === item.size)?.id;
         return variants.some((v: any) => v.size_id === sizeId && v.color_id === c.id);
@@ -110,7 +122,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
       const selectedSizeId = sizes.find((s: any) => s.label === item.size)?.id || null;
       const selectedColorId = colors.find((c: any) => c.label === item.color)?.id || null;
       const variant = variants.find((v: any) => v.size_id === selectedSizeId && v.color_id === selectedColorId);
-      
+
       if (variant && variant.variant_pricing) {
         updateUnitPrice(item.product.id, variant.variant_pricing.selling_price);
       }
@@ -136,9 +148,9 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
   if (requiresVariant && isSizeComplete && isColorComplete && (item.size || item.color)) {
     const selectedSizeId = requiresSize ? sizes.find((s: any) => s.label === item.size)?.id : null;
     const selectedColorId = requiresColor ? colors.find((c: any) => c.label === item.color)?.id : null;
-    isValidVariant = variants.some((v: any) => 
-      (requiresSize ? v.size_id === selectedSizeId : true) && 
-      (requiresColor ? v.color_id === selectedColorId : true)
+    isValidVariant = variants.some(
+      (v: any) =>
+        (requiresSize ? v.size_id === selectedSizeId : true) && (requiresColor ? v.color_id === selectedColorId : true),
     );
   }
 
@@ -146,7 +158,11 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
     <div className="rounded-lg border p-3 transition-colors hover:bg-muted/30">
       <div className="flex items-center gap-3">
         <div className="size-12 shrink-0 overflow-hidden rounded-md border bg-muted">
-          <img src={getImageUrl(item.product.product_thumbnail_img)} alt={item.product.title} className="size-full object-cover" />
+          <img
+            src={getImageUrl(item.product.product_thumbnail_img)}
+            alt={item.product.title}
+            className="size-full object-cover"
+          />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{item.product.title}</p>
@@ -176,7 +192,9 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
           <div className="flex items-center gap-3">
             {availableColors.length > 1 ? (
               <Select value={item.color} onValueChange={(v) => updateCartItem(item.product.id, "color", v)}>
-                <SelectTrigger className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}>
+                <SelectTrigger
+                  className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}
+                >
                   <SelectValue placeholder="Color" />
                 </SelectTrigger>
                 <SelectContent>
@@ -195,7 +213,9 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
 
             {availableSizes.length > 1 ? (
               <Select value={item.size} onValueChange={(v) => updateCartItem(item.product.id, "size", v)}>
-                <SelectTrigger className={`h-7 w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}>
+                <SelectTrigger
+                  className={`h-7 w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}
+                >
                   <SelectValue placeholder="Size" />
                 </SelectTrigger>
                 <SelectContent>
@@ -211,7 +231,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 Size: {availableSizes[0].label}
               </div>
             ) : null}
-            
+
             {(item.color || item.size) && (
               <Button
                 variant="ghost"
@@ -220,7 +240,10 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 onClick={() => {
                   updateCartItem(item.product.id, "color", "");
                   updateCartItem(item.product.id, "size", "");
-                  updateUnitPrice(item.product.id, item.product.has_variant_wise_pricing ? 0 : (item.product.selling_price || 0));
+                  updateUnitPrice(
+                    item.product.id,
+                    item.product.has_variant_wise_pricing ? 0 : item.product.selling_price || 0,
+                  );
                 }}
                 title="Clear selections"
               >
@@ -229,7 +252,9 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
             )}
           </div>
           {!isValidVariant && (item.color || item.size) && (
-            <span className="text-[10px] text-destructive font-medium">Selected combination is out of stock or unavailable.</span>
+            <span className="text-[10px] text-destructive font-medium">
+              Selected combination is out of stock or unavailable.
+            </span>
           )}
         </div>
       )}
@@ -319,20 +344,38 @@ export default function EditOrderPage() {
       setCustomerName(order.customer_full_name || "");
       setCustomerEmail(order.customer_email || "");
       setCustomerPhone(order.customer_phone || "");
-      
+
       setShippingAddress(order.customer_shipping_address || "");
       setShippingMethod(order.shipping_area === "Outside Dhaka" ? "outside-dhaka" : "inside-dhaka");
 
-      // We don't parse the exact division/district/thana since it's a single string in the DB, 
+      // We don't parse the exact division/district/thana since it's a single string in the DB,
       // but they can type new ones if they want, or we just leave the select empty.
-      
+
       const paymentStat = order.payment_status?.toLowerCase();
-      setPaymentStatus(paymentStat === "paid" || paymentStat === "full paid" ? "Full Paid" : paymentStat === "unpaid" ? "Unpaid" : "Partially Paid");
-      
+      setPaymentStatus(
+        paymentStat === "paid" || paymentStat === "full paid"
+          ? "Full Paid"
+          : paymentStat === "unpaid"
+            ? "Unpaid"
+            : "Partially Paid",
+      );
+
       const p = order.payments?.[0];
       const pMethod = p?.payment_method?.toLowerCase() || "cod";
-      setPaymentMethod(pMethod.includes("bkash") ? "bkash" : pMethod.includes("nagad") ? "nagad" : pMethod.includes("rocket") ? "rocket" : pMethod.includes("bank") ? "bank" : pMethod.includes("card") ? "card" : "cod");
-      
+      setPaymentMethod(
+        pMethod.includes("bkash")
+          ? "bkash"
+          : pMethod.includes("nagad")
+            ? "nagad"
+            : pMethod.includes("rocket")
+              ? "rocket"
+              : pMethod.includes("bank")
+                ? "bank"
+                : pMethod.includes("card")
+                  ? "card"
+                  : "cod",
+      );
+
       const totalPaid = order.payments?.reduce((s: number, pm: any) => s + Number(pm.paid_amount || 0), 0) || 0;
       setPaidAmount(totalPaid > 0 ? totalPaid : "");
 
@@ -349,8 +392,10 @@ export default function EditOrderPage() {
             sku: op.product?.sku || "",
             selling_price: Number(op.unit_price) || 0,
             available_stock: op.product?.available_stock || 0,
-            product_thumbnail_img: op.product?.product_thumbnail_img ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/"}${op.product.product_thumbnail_img.startsWith("/") ? op.product.product_thumbnail_img.slice(1) : op.product.product_thumbnail_img}` : "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NA",
-            status: 'Active',
+            product_thumbnail_img: op.product?.product_thumbnail_img
+              ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/"}${op.product.product_thumbnail_img.startsWith("/") ? op.product.product_thumbnail_img.slice(1) : op.product.product_thumbnail_img}`
+              : "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NA",
+            status: "Active",
             regular_price: Number(op.unit_price) || 0,
             has_variants: op.product?.has_variants || 0,
             has_variant_wise_pricing: op.product?.has_variant_wise_pricing || 0,
@@ -373,7 +418,7 @@ export default function EditOrderPage() {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
-      const initialPrice = product.has_variant_wise_pricing ? 0 : (product.selling_price || 0);
+      const initialPrice = product.has_variant_wise_pricing ? 0 : product.selling_price || 0;
       return [...prev, { product, quantity: 1, color: "", size: "", unitPrice: initialPrice }];
     });
     setSearchQuery("");
@@ -479,7 +524,18 @@ export default function EditOrderPage() {
       grand_total_amount: total,
       order_status: orderStatus,
       order_note: orderNote,
-      payment_method: paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod === "bkash" ? "bKash" : paymentMethod === "nagad" ? "Nagad" : paymentMethod === "rocket" ? "Rocket" : paymentMethod === "bank" ? "Bank Transfer" : "Card Payment",
+      payment_method:
+        paymentMethod === "cod"
+          ? "Cash on Delivery"
+          : paymentMethod === "bkash"
+            ? "bKash"
+            : paymentMethod === "nagad"
+              ? "Nagad"
+              : paymentMethod === "rocket"
+                ? "Rocket"
+                : paymentMethod === "bank"
+                  ? "Bank Transfer"
+                  : "Card Payment",
       paid_amount: Number(paidAmount) || 0,
       payment_status: paymentStatus,
       products: cart.map((item) => ({
@@ -497,8 +553,8 @@ export default function EditOrderPage() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}`,
+          Accept: "application/json",
+          Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}`,
         },
         body: JSON.stringify(payload),
       });
@@ -615,7 +671,11 @@ export default function EditOrderPage() {
                           onClick={() => addToCart(p)}
                         >
                           <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
-                            <img src={getImageUrl(p.product_thumbnail_img)} alt={p.title} className="size-full object-cover" />
+                            <img
+                              src={getImageUrl(p.product_thumbnail_img)}
+                              alt={p.title}
+                              className="size-full object-cover"
+                            />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{p.title}</p>
@@ -625,7 +685,9 @@ export default function EditOrderPage() {
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-sm font-semibold tabular-nums">
-                              {p.has_variant_wise_pricing ? "Variant Pricing" : `৳${(p.selling_price || 0).toLocaleString()}`}
+                              {p.has_variant_wise_pricing
+                                ? "Variant Pricing"
+                                : `৳${(p.selling_price || 0).toLocaleString()}`}
                             </span>
                             {inCart && (
                               <Badge variant="secondary" className="text-[10px]">

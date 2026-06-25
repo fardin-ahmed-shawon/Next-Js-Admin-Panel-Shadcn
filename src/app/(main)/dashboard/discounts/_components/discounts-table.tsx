@@ -62,16 +62,16 @@ const DISCOUNT_API_URL = process.env.NEXT_PUBLIC_API_DISCOUNT_URL || "discounts"
 // Helper functions
 const getFullUrl = (endpoint: string) => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) {
-    baseUrl += '/';
+  if (!baseUrl.endsWith("/")) {
+    baseUrl += "/";
   }
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
   return `${baseUrl}${cleanEndpoint}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
-const getDiscountUrl = (path: string = '') => {
-  const discountPath = DISCOUNT_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+const getDiscountUrl = (path: string = "") => {
+  const discountPath = DISCOUNT_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${discountPath}/${cleanPath}` : discountPath;
   return getFullUrl(fullPath);
 };
@@ -133,14 +133,22 @@ function RowActions({ row, onDiscountDeleted }: { row: DiscountRow; onDiscountDe
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setEditOpen(true); }}>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setEditOpen(true);
+            }}
+          >
             <Edit className="mr-2 size-4" />
             Edit Discount
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="text-destructive focus:text-destructive"
-            onSelect={(e) => { e.preventDefault(); setDeleteOpen(true); }}
+            onSelect={(e) => {
+              e.preventDefault();
+              setDeleteOpen(true);
+            }}
           >
             <Trash className="mr-2 size-4" />
             Delete
@@ -149,9 +157,9 @@ function RowActions({ row, onDiscountDeleted }: { row: DiscountRow; onDiscountDe
       </DropdownMenu>
 
       {/* Updated EditDiscountDialog with onDiscountUpdated prop */}
-      <EditDiscountDialog 
-        discount={row} 
-        open={editOpen} 
+      <EditDiscountDialog
+        discount={row}
+        open={editOpen}
         onOpenChange={setEditOpen}
         onDiscountUpdated={onDiscountDeleted}
       />
@@ -190,10 +198,7 @@ const getColumns = (onDiscountDeleted: () => void): ColumnDef<DiscountRow>[] => 
     ),
     cell: ({ row }) => (
       <div className="w-10">
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-        />
+        <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} />
       </div>
     ),
     enableHiding: false,
@@ -238,24 +243,21 @@ const getColumns = (onDiscountDeleted: () => void): ColumnDef<DiscountRow>[] => 
   {
     accessorKey: "freeShipping",
     header: "Perks",
-    cell: ({ row }) => row.original.freeShipping ? (
-      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-        Free Shipping
-      </Badge>
-    ) : (
-      <span className="text-muted-foreground text-sm">-</span>
-    ),
+    cell: ({ row }) =>
+      row.original.freeShipping ? (
+        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+          Free Shipping
+        </Badge>
+      ) : (
+        <span className="text-muted-foreground text-sm">-</span>
+      ),
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
       const status = row.original.status;
-      return (
-        <Badge variant={status === "Active" ? "default" : "secondary"}>
-          {status}
-        </Badge>
-      );
+      return <Badge variant={status === "Active" ? "default" : "secondary"}>{status}</Badge>;
     },
     filterFn: "equals",
   },
@@ -299,9 +301,9 @@ export function DiscountsTable({ refreshTrigger, onDiscountDeleted }: DiscountsT
         id: item.id?.toString() || "",
         purchaseAmount: item.minimum_subtotal_amount || 0,
         discountAmount: item.discount_amount || 0,
-        type: item.type === 'percentage' ? 'Percentage' : 'Fixed',
+        type: item.type === "percentage" ? "Percentage" : "Fixed",
         freeShipping: item.has_free_shipping === 1 || item.has_free_shipping === true,
-        status: item.status === 'active' ? 'Active' : 'Inactive',
+        status: item.status === "active" ? "Active" : "Inactive",
       }));
 
       setDiscounts(transformedData);
@@ -345,7 +347,7 @@ export function DiscountsTable({ refreshTrigger, onDiscountDeleted }: DiscountsT
   };
 
   const columns = getColumns(handleDiscountDeleted);
-  
+
   const table = useReactTable({
     data: discounts,
     columns,
@@ -446,14 +448,13 @@ export function DiscountsTable({ refreshTrigger, onDiscountDeleted }: DiscountsT
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete {selectedCount} selected {selectedCount === 1 ? "discount" : "discounts"}.
+                    This will permanently delete {selectedCount} selected{" "}
+                    {selectedCount === 1 ? "discount" : "discounts"}.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => handleBulkDelete(selectedIds)}>
-                    Delete
-                  </AlertDialogAction>
+                  <AlertDialogAction onClick={() => handleBulkDelete(selectedIds)}>Delete</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -511,7 +512,9 @@ export function DiscountsTable({ refreshTrigger, onDiscountDeleted }: DiscountsT
               </SelectTrigger>
               <SelectContent>
                 {[5, 10, 20, 50].map((size) => (
-                  <SelectItem key={size} value={`${size}`}>{size}</SelectItem>
+                  <SelectItem key={size} value={`${size}`}>
+                    {size}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -520,16 +523,36 @@ export function DiscountsTable({ refreshTrigger, onDiscountDeleted }: DiscountsT
             <span className="text-sm text-muted-foreground">
               Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </span>
-            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronsLeft className="size-4" />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronLeft className="size-4" />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronRight className="size-4" />
             </Button>
-            <Button size="icon-sm" variant="outline" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronsRight className="size-4" />
             </Button>
           </div>

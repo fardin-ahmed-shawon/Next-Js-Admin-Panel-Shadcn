@@ -24,7 +24,13 @@ export function PaymentsTable() {
       <CardHeader>
         <CardTitle className="font-normal text-muted-foreground text-sm">Payments</CardTitle>
         <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
-          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : filteredData.length > 0 ? `${filteredData.length} payments` : "No payments"}
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : filteredData.length > 0 ? (
+            `${filteredData.length} payments`
+          ) : (
+            "No payments"
+          )}
         </CardDescription>
       </CardHeader>
 
@@ -67,7 +73,9 @@ export function PaymentsTable() {
                   <TableRow key={i}>
                     <TableCell className="font-medium">{row.id || "N/A"}</TableCell>
                     <TableCell>{row.trx_id || "N/A"}</TableCell>
-                    <TableCell className="font-semibold tabular-nums">৳{row.amount ? Number(row.amount).toLocaleString() : "0"}</TableCell>
+                    <TableCell className="font-semibold tabular-nums">
+                      ৳{row.amount ? Number(row.amount).toLocaleString() : "0"}
+                    </TableCell>
                     <TableCell className="capitalize">{row.status || "Unknown"}</TableCell>
                     <TableCell>{row.created_at ? new Date(row.created_at).toLocaleDateString() : "—"}</TableCell>
                   </TableRow>

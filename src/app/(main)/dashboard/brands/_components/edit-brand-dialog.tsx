@@ -49,7 +49,7 @@ export function EditBrandDialog({ brand, open, onOpenChange, onUpdate }: EditBra
         toast.error("File size must be less than 2MB");
         return;
       }
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith("image/")) {
         toast.error("Please upload an image file");
         return;
       }
@@ -67,8 +67,8 @@ export function EditBrandDialog({ brand, open, onOpenChange, onUpdate }: EditBra
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    formData.append('_method', 'PUT');
-    
+    formData.append("_method", "PUT");
+
     try {
       const success = await onUpdate(brand.id, formData);
       if (success) {
@@ -94,21 +94,15 @@ export function EditBrandDialog({ brand, open, onOpenChange, onUpdate }: EditBra
               <Label htmlFor="name">
                 Brand Name <span className="text-destructive">*</span>
               </Label>
-              <Input 
-                id="name" 
-                name="name" 
-                defaultValue={brand.name}
-                placeholder="e.g. Nike" 
-                required 
-              />
+              <Input id="name" name="name" defaultValue={brand.name} placeholder="e.g. Nike" required />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea 
-                id="description" 
-                name="description" 
-                defaultValue={brand.description || ''}
+              <Textarea
+                id="description"
+                name="description"
+                defaultValue={brand.description || ""}
                 placeholder="Brand description..."
                 rows={3}
               />
@@ -138,7 +132,7 @@ export function EditBrandDialog({ brand, open, onOpenChange, onUpdate }: EditBra
                         setSelectedFile(null);
                         setPreviewUrl(null);
                         if (formRef.current) {
-                          (formRef.current.elements.namedItem('logo') as HTMLInputElement).value = '';
+                          (formRef.current.elements.namedItem("logo") as HTMLInputElement).value = "";
                         }
                       }}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"

@@ -7,11 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
 const REVIEW_API_URL = process.env.NEXT_PUBLIC_API_REVIEW_URL || "reviews";
 
-const getReviewUrl = (path: string = '') => {
+const getReviewUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) baseUrl += '/';
-  const reviewPath = REVIEW_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+  if (!baseUrl.endsWith("/")) baseUrl += "/";
+  const reviewPath = REVIEW_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${reviewPath}/${cleanPath}` : reviewPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
@@ -34,11 +34,11 @@ export function ReviewsStats({ refreshTrigger }: ReviewsStatsProps) {
     try {
       const url = getReviewUrl();
       console.log("Fetching reviews from:", url);
-      
+
       const response = await fetch(url, {
-        headers: { 
-          Accept: "application/json", 
-          "Content-Type": "application/json" 
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
       });
 
@@ -46,7 +46,7 @@ export function ReviewsStats({ refreshTrigger }: ReviewsStatsProps) {
 
       const result = await response.json();
       let reviewsData = [];
-      
+
       if (result.data && Array.isArray(result.data)) {
         reviewsData = result.data;
       } else if (Array.isArray(result)) {
@@ -59,7 +59,7 @@ export function ReviewsStats({ refreshTrigger }: ReviewsStatsProps) {
       const totalRatings = reviewsData.reduce((sum: number, review: any) => sum + (review.ratings || 0), 0);
       const averageRating = totalReviews > 0 ? (totalRatings / totalReviews).toFixed(1) : 0;
       const fiveStarReviews = reviewsData.filter((review: any) => review.ratings === 5).length;
-      
+
       // Recent reviews (last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

@@ -118,7 +118,7 @@ export function SalesReportsTopProducts({ data: _unused }: { data: OrderRow[] })
   // Map API response to the ProductRow structure
   const productSales = React.useMemo(() => {
     if (!response?.data) return [];
-    
+
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
 
     const getImageUrl = (path: string | null) => {
@@ -126,7 +126,7 @@ export function SalesReportsTopProducts({ data: _unused }: { data: OrderRow[] })
       if (path.startsWith("http")) return path;
       return `${baseUrl}${path.startsWith("/") ? path.slice(1) : path}`;
     };
-    
+
     return response.data.map((item: any) => ({
       id: item.id.toString(),
       name: item.product_title,

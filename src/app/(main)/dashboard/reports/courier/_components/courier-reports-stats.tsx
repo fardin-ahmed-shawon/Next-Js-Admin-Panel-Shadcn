@@ -11,7 +11,7 @@ export function CourierReportsStats({ stats }: CourierReportsStatsProps) {
 
   // Find dynamic courier distribution keys
   const courierKeys = Object.keys(stats).filter(
-    (key) => key.endsWith("_distribution_count") && key !== "not_distributed_count"
+    (key) => key.endsWith("_distribution_count") && key !== "not_distributed_count",
   );
 
   return (
@@ -41,9 +41,7 @@ export function CourierReportsStats({ stats }: CourierReportsStatsProps) {
         return (
           <Card key={key} className="overflow-hidden border-none bg-card shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {formattedName} Distribution
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{formattedName} Distribution</CardTitle>
               <div className="p-2 rounded-full bg-emerald-500/10">
                 <Truck className="h-4 w-4 text-emerald-500" />
               </div>

@@ -36,7 +36,7 @@ export function AddBrandDialog({ open, onOpenChange, onAddBrand }: AddBrandDialo
         toast.error("File size must be less than 2MB");
         return;
       }
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith("image/")) {
         toast.error("Please upload an image file");
         return;
       }
@@ -54,7 +54,7 @@ export function AddBrandDialog({ open, onOpenChange, onAddBrand }: AddBrandDialo
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    
+
     try {
       const success = await onAddBrand(formData);
       if (success) {
@@ -91,12 +91,7 @@ export function AddBrandDialog({ open, onOpenChange, onAddBrand }: AddBrandDialo
 
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea 
-                id="description" 
-                name="description" 
-                placeholder="Brand description..."
-                rows={3}
-              />
+              <Textarea id="description" name="description" placeholder="Brand description..." rows={3} />
             </div>
 
             <div className="grid gap-2">
@@ -123,7 +118,7 @@ export function AddBrandDialog({ open, onOpenChange, onAddBrand }: AddBrandDialo
                         setSelectedFile(null);
                         setPreviewUrl(null);
                         if (formRef.current) {
-                          (formRef.current.elements.namedItem('logo') as HTMLInputElement).value = '';
+                          (formRef.current.elements.namedItem("logo") as HTMLInputElement).value = "";
                         }
                       }}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"

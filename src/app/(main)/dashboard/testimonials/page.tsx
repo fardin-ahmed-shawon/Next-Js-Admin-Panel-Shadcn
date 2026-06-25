@@ -8,51 +8,50 @@ export const metadata = {
 };
 
 async function getTestimonials() {
-  let apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin';
-  const testimonialEndpoint = process.env.NEXT_PUBLIC_API_TESTIMONIAL_URL || 'testimonials';
-  
+  let apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin";
+  const testimonialEndpoint = process.env.NEXT_PUBLIC_API_TESTIMONIAL_URL || "testimonials";
+
   // Also get the base app URL for images
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:8000';
-  
-  const baseUrl = apiUrl.replace(/\/$/, '');
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:8000";
+
+  const baseUrl = apiUrl.replace(/\/$/, "");
   const url = `${baseUrl}/${testimonialEndpoint}`;
-  
+
   try {
     const response = await fetch(url, {
-      cache: 'no-store',
+      cache: "no-store",
       headers: {
-        'Accept': 'application/json',
+        Accept: "application/json",
       },
     });
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch testimonials`);
     }
-    
+
     const result = await response.json();
-    
+
     let testimonialsData = [];
     if (result.success && result.data) {
       testimonialsData = Array.isArray(result.data) ? result.data : [];
     }
-    
+
     // Transform to match frontend format with full image URL
     return testimonialsData.map((testimonial: any) => ({
       id: testimonial.id?.toString(),
       name: testimonial.user_name,
-      position: testimonial.user_position || '',
+      position: testimonial.user_position || "",
       // Fix image URL - prepend app URL if it's a relative path
-      photo: testimonial.user_photo 
-        ? testimonial.user_photo.startsWith('http') 
-          ? testimonial.user_photo 
-          : `${appUrl}/${testimonial.user_photo.replace(/^\//, '')}`
-        : 'https://i.pravatar.cc/150',
+      photo: testimonial.user_photo
+        ? testimonial.user_photo.startsWith("http")
+          ? testimonial.user_photo
+          : `${appUrl}/${testimonial.user_photo.replace(/^\//, "")}`
+        : "https://i.pravatar.cc/150",
       rating: testimonial.ratings || 5,
       text: testimonial.testimonial_text,
     }));
-    
   } catch (error) {
-    console.error('Error fetching testimonials:', error);
+    console.error("Error fetching testimonials:", error);
     return [];
   }
 }

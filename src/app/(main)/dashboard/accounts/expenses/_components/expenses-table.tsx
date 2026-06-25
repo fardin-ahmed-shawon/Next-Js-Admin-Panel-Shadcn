@@ -111,7 +111,11 @@ const columns: ColumnDef<ExpenseItem>[] = [
     header: "Date",
     cell: ({ row }) => {
       const dateStr = row.original.created_at;
-      return <span className="text-muted-foreground tabular-nums">{dateStr ? new Date(dateStr).toLocaleDateString() : "N/A"}</span>;
+      return (
+        <span className="text-muted-foreground tabular-nums">
+          {dateStr ? new Date(dateStr).toLocaleDateString() : "N/A"}
+        </span>
+      );
     },
   },
   {
@@ -121,7 +125,9 @@ const columns: ColumnDef<ExpenseItem>[] = [
       const meta = table.options.meta as any;
       const categories = meta?.categories || [];
       const category = categories.find((c: any) => c.id === row.original.expense_category_id);
-      return <span className="font-medium">{category ? category.title : `ID: ${row.original.expense_category_id}`}</span>;
+      return (
+        <span className="font-medium">{category ? category.title : `ID: ${row.original.expense_category_id}`}</span>
+      );
     },
   },
   {
@@ -204,7 +210,7 @@ export function ExpensesTable() {
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this expense?")) return;
-    
+
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
       const endpoint = process.env.NEXT_PUBLIC_API_EXPENSES_URL || "expenses";
@@ -263,7 +269,7 @@ export function ExpensesTable() {
           `"${catName}"`,
           `"${row.title}"`,
           row.amount,
-          `"${row.description || ""}"`
+          `"${row.description || ""}"`,
         ].join(",");
       }),
     ];
@@ -400,13 +406,11 @@ export function ExpensesTable() {
                   </DialogDescription>
                   <DialogFooter>
                     <DialogClose asChild>
-                      <Button variant="outline" disabled={isDeletingBulk}>Cancel</Button>
+                      <Button variant="outline" disabled={isDeletingBulk}>
+                        Cancel
+                      </Button>
                     </DialogClose>
-                    <Button
-                      variant="destructive"
-                      disabled={isDeletingBulk}
-                      onClick={handleBulkDelete}
-                    >
+                    <Button variant="destructive" disabled={isDeletingBulk} onClick={handleBulkDelete}>
                       {isDeletingBulk ? "Deleting..." : "Delete"}
                     </Button>
                   </DialogFooter>
@@ -527,7 +531,13 @@ export function ExpensesTable() {
         </div>
       </CardContent>
 
-      <ExpenseDialog open={dialogOpen} onOpenChange={setDialogOpen} initialData={editData} mode="edit" onSuccess={() => mutate()} />
+      <ExpenseDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        initialData={editData}
+        mode="edit"
+        onSuccess={() => mutate()}
+      />
     </Card>
   );
 }

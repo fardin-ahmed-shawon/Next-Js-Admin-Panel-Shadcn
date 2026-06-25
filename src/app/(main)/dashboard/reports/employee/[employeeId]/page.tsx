@@ -2,26 +2,26 @@
 
 import * as React from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { 
-  ArrowLeft, 
-  Loader2, 
-  Calendar, 
-  ShoppingBag, 
-  Package, 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
-  ChevronsRight, 
-  Search, 
+import {
+  ArrowLeft,
+  Loader2,
+  Calendar,
+  ShoppingBag,
+  Package,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Search,
   ArrowUpDown,
   PackageCheck,
   Coins,
   ShoppingBag as OrderIcon,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
 } from "lucide-react";
 import { format } from "date-fns";
-import { 
+import {
   type ColumnDef,
   type ColumnFiltersState,
   flexRender,
@@ -31,7 +31,7 @@ import {
   getSortedRowModel,
   type PaginationState,
   type SortingState,
-  useReactTable 
+  useReactTable,
 } from "@tanstack/react-table";
 import { useEmployeeReports, EmployeeReportOrder } from "@/hooks/useEmployeeReports";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -246,9 +246,7 @@ export default function EmployeeReportDetailsPage() {
         accessorKey: "assigned_date",
         header: "Assigned Date",
         cell: ({ row }) => (
-          <span className="text-muted-foreground text-xs">
-            {format(new Date(row.original.assigned_date), "PP p")}
-          </span>
+          <span className="text-muted-foreground text-xs">{format(new Date(row.original.assigned_date), "PP p")}</span>
         ),
       },
       {
@@ -276,7 +274,7 @@ export default function EmployeeReportDetailsPage() {
         },
       },
     ],
-    [expandedOrders]
+    [expandedOrders],
   );
 
   const table = useReactTable({
@@ -337,9 +335,10 @@ export default function EmployeeReportDetailsPage() {
       title: "Successful Deliveries",
       value: stats.delivered.toString(),
       icon: PackageCheck,
-      subtitle: stats.totalAssigned > 0 
-        ? `${Math.round((stats.delivered / stats.totalAssigned) * 100)}% delivery rate`
-        : "No orders assigned",
+      subtitle:
+        stats.totalAssigned > 0
+          ? `${Math.round((stats.delivered / stats.totalAssigned) * 100)}% delivery rate`
+          : "No orders assigned",
       color: "text-emerald-600",
     },
     {
@@ -375,11 +374,13 @@ export default function EmployeeReportDetailsPage() {
         <Button variant="outline" size="sm" onClick={() => router.back()} className="w-fit gap-2">
           <ArrowLeft className="size-4" /> Back to Reports
         </Button>
-        
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6">
           <div className="flex items-center gap-4">
             <Avatar className="h-14 w-14 border-2 border-primary/20">
-              <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(employeeData.full_name)}&background=random`} />
+              <AvatarImage
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(employeeData.full_name)}&background=random`}
+              />
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
@@ -389,11 +390,12 @@ export default function EmployeeReportDetailsPage() {
               <p className="text-muted-foreground text-sm mt-1">{employeeData.email}</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2 bg-muted px-4 py-2.5 rounded-lg border text-sm text-muted-foreground font-medium w-fit">
             <Calendar className="size-4 text-primary" />
             <span>
-              Period: {startDate ? format(new Date(startDate), "PP") : "All Time"} to {endDate ? format(new Date(endDate), "PP") : "Today"}
+              Period: {startDate ? format(new Date(startDate), "PP") : "All Time"} to{" "}
+              {endDate ? format(new Date(endDate), "PP") : "Today"}
             </span>
           </div>
         </div>
@@ -428,9 +430,7 @@ export default function EmployeeReportDetailsPage() {
             <OrderIcon className="size-5 text-primary" />
             Assigned Orders Breakdown
           </CardTitle>
-          <CardDescription>
-            Detailed list of all assigned orders &middot; {totalCount} total orders
-          </CardDescription>
+          <CardDescription>Detailed list of all assigned orders &middot; {totalCount} total orders</CardDescription>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4 px-0">
@@ -447,11 +447,15 @@ export default function EmployeeReportDetailsPage() {
                 }}
               />
             </div>
-            
+
             <Button
               size="icon-sm"
               variant="outline"
-              onClick={() => table.getColumn("grand_total_amount")?.toggleSorting(table.getColumn("grand_total_amount")?.getIsSorted() === "asc")}
+              onClick={() =>
+                table
+                  .getColumn("grand_total_amount")
+                  ?.toggleSorting(table.getColumn("grand_total_amount")?.getIsSorted() === "asc")
+              }
             >
               <ArrowUpDown className="size-4" />
             </Button>
@@ -476,12 +480,14 @@ export default function EmployeeReportDetailsPage() {
                     const isExpanded = !!expandedOrders[row.original.order_no];
                     return (
                       <React.Fragment key={row.id}>
-                        <TableRow 
+                        <TableRow
                           className="hover:bg-muted/50 cursor-pointer"
                           onClick={() => toggleExpand(row.original.order_no)}
                         >
                           {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                            <TableCell key={cell.id}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
                           ))}
                         </TableRow>
                         {isExpanded && (
@@ -491,7 +497,8 @@ export default function EmployeeReportDetailsPage() {
                                 {/* Products Sub-table */}
                                 <div className="space-y-2">
                                   <h4 className="text-xs font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5">
-                                    <Package className="size-3.5" /> Items ({row.original.ordered_products?.length || 0})
+                                    <Package className="size-3.5" /> Items ({row.original.ordered_products?.length || 0}
+                                    )
                                   </h4>
                                   {row.original.ordered_products && row.original.ordered_products.length > 0 ? (
                                     <div className="rounded-md border bg-background overflow-hidden max-w-2xl">
@@ -499,18 +506,32 @@ export default function EmployeeReportDetailsPage() {
                                         <TableHeader className="bg-muted/40">
                                           <TableRow>
                                             <TableHead className="py-2 text-xs font-semibold">Product Name</TableHead>
-                                            <TableHead className="py-2 text-xs font-semibold text-right w-[80px]">Qty</TableHead>
-                                            <TableHead className="py-2 text-xs font-semibold text-right w-[120px]">Unit Price</TableHead>
-                                            <TableHead className="py-2 text-xs font-semibold text-right w-[120px]">Total</TableHead>
+                                            <TableHead className="py-2 text-xs font-semibold text-right w-[80px]">
+                                              Qty
+                                            </TableHead>
+                                            <TableHead className="py-2 text-xs font-semibold text-right w-[120px]">
+                                              Unit Price
+                                            </TableHead>
+                                            <TableHead className="py-2 text-xs font-semibold text-right w-[120px]">
+                                              Total
+                                            </TableHead>
                                           </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                           {row.original.ordered_products.map((p, idx) => (
                                             <TableRow key={idx}>
-                                              <TableCell className="py-2 text-xs font-medium">{p.product_name || "Unknown Product"}</TableCell>
-                                              <TableCell className="py-2 text-xs text-right font-medium">{p.qty}</TableCell>
-                                              <TableCell className="py-2 text-xs text-right">৳{p.unit_price.toLocaleString()}</TableCell>
-                                              <TableCell className="py-2 text-xs text-right font-semibold">৳{(p.qty * p.unit_price).toLocaleString()}</TableCell>
+                                              <TableCell className="py-2 text-xs font-medium">
+                                                {p.product_name || "Unknown Product"}
+                                              </TableCell>
+                                              <TableCell className="py-2 text-xs text-right font-medium">
+                                                {p.qty}
+                                              </TableCell>
+                                              <TableCell className="py-2 text-xs text-right">
+                                                ৳{p.unit_price.toLocaleString()}
+                                              </TableCell>
+                                              <TableCell className="py-2 text-xs text-right font-semibold">
+                                                ৳{(p.qty * p.unit_price).toLocaleString()}
+                                              </TableCell>
                                             </TableRow>
                                           ))}
                                         </TableBody>
@@ -533,22 +554,32 @@ export default function EmployeeReportDetailsPage() {
                                           <TableRow>
                                             <TableHead className="py-2 text-xs font-semibold">Method</TableHead>
                                             <TableHead className="py-2 text-xs font-semibold">Transaction ID</TableHead>
-                                            <TableHead className="py-2 text-xs font-semibold text-right w-[150px]">Paid Amount</TableHead>
+                                            <TableHead className="py-2 text-xs font-semibold text-right w-[150px]">
+                                              Paid Amount
+                                            </TableHead>
                                           </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                           {row.original.payments.map((p, idx) => (
                                             <TableRow key={idx}>
-                                              <TableCell className="py-2 text-xs font-medium capitalize">{p.payment_method}</TableCell>
-                                              <TableCell className="py-2 text-xs text-muted-foreground font-mono">{p.transaction_id || "N/A"}</TableCell>
-                                              <TableCell className="py-2 text-xs text-right font-semibold text-emerald-600">৳{p.paid_amount.toLocaleString()}</TableCell>
+                                              <TableCell className="py-2 text-xs font-medium capitalize">
+                                                {p.payment_method}
+                                              </TableCell>
+                                              <TableCell className="py-2 text-xs text-muted-foreground font-mono">
+                                                {p.transaction_id || "N/A"}
+                                              </TableCell>
+                                              <TableCell className="py-2 text-xs text-right font-semibold text-emerald-600">
+                                                ৳{p.paid_amount.toLocaleString()}
+                                              </TableCell>
                                             </TableRow>
                                           ))}
                                         </TableBody>
                                       </Table>
                                     </div>
                                   ) : (
-                                    <p className="text-xs text-muted-foreground italic pl-2">No payment transaction records found.</p>
+                                    <p className="text-xs text-muted-foreground italic pl-2">
+                                      No payment transaction records found.
+                                    </p>
                                   )}
                                 </div>
                               </div>
@@ -563,7 +594,9 @@ export default function EmployeeReportDetailsPage() {
                     <TableCell colSpan={columns.length} className="h-48">
                       <div className="flex flex-col items-center justify-center gap-2 text-center">
                         <p className="text-sm font-medium">No orders found</p>
-                        <p className="text-xs text-muted-foreground">This employee has no orders assigned in the specified range.</p>
+                        <p className="text-xs text-muted-foreground">
+                          This employee has no orders assigned in the specified range.
+                        </p>
                       </div>
                     </TableCell>
                   </TableRow>

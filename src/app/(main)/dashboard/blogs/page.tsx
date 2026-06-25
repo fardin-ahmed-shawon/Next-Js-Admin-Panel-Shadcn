@@ -23,7 +23,6 @@ export default function BlogsPage() {
         </div>
       </div>
 
-
       <BlogsTable key={`table-${refreshKey}`} onDeleted={handleRefresh} />
     </div>
   );

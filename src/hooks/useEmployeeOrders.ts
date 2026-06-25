@@ -61,7 +61,7 @@ export function useEmployeeOrders() {
   };
 
   return {
-    data: data?.data as EmployeeOrder[] || [],
+    data: (data?.data as EmployeeOrder[]) || [],
     error,
     isLoading,
     mutate,

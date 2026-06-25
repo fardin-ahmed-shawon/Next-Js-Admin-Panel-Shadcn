@@ -6,14 +6,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
 import { downloadCSV } from "@/lib/csv-export";
 
@@ -72,20 +65,20 @@ export default function CourierReportPage() {
         const flatData = json.data.map((row: any) => ({
           "Courier Name": row.courier_name,
           "Total Parcels": row.all,
-          "Delivered": row.delivered_count,
-          "Returned": row.returned_count,
+          Delivered: row.delivered_count,
+          Returned: row.returned_count,
           "In-Courier": row.in__courier_count,
-          "Pending": row.pending_count,
-          "Confirmed": row.confirmed_count,
+          Pending: row.pending_count,
+          Confirmed: row.confirmed_count,
           "Ready to Ship": row.ready_to_ship_count,
           "Ship Later": row.ship_later_count,
-          "Hold": row.hold_count,
+          Hold: row.hold_count,
           "Pre-Order": row.pre__order_count,
-          "Cancelled": row.cancelled_count,
-          "Missing": row.missing_count,
-          "Lost": row.lost_count,
-          "Fake": row.fake_count,
-          "Trash": row.trash_count,
+          Cancelled: row.cancelled_count,
+          Missing: row.missing_count,
+          Lost: row.lost_count,
+          Fake: row.fake_count,
+          Trash: row.trash_count,
         }));
         downloadCSV(flatData, `Courier_Analytics_${new Date().toISOString().split("T")[0]}.csv`);
         toast.success("Report exported successfully");
@@ -102,9 +95,7 @@ export default function CourierReportPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl tracking-tight">Courier Analytics</h1>
-          <p className="text-muted-foreground text-sm">
-            Analyze your parcel delivery performance across all couriers.
-          </p>
+          <p className="text-muted-foreground text-sm">Analyze your parcel delivery performance across all couriers.</p>
         </div>
 
         <div className="flex flex-col gap-2 sm:items-end">
@@ -169,16 +160,9 @@ export default function CourierReportPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-normal text-muted-foreground text-sm">
-            Courier Performance Data
-          </CardTitle>
+          <CardTitle className="font-normal text-muted-foreground text-sm">Courier Performance Data</CardTitle>
           <CardAction>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              disabled={isExporting}
-            >
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
               <Download className="mr-2 size-4" />
               {isExporting ? "Exporting..." : "Export"}
             </Button>

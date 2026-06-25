@@ -75,7 +75,7 @@ export function EditMainCategoryDialog({ open, onOpenChange, category }: EditMai
 
     const numericId = category.id.replace("CAT-", "");
     setIsSubmitting(true);
-    
+
     try {
       const formData = new FormData();
       formData.append("_method", "PUT");
@@ -149,12 +149,7 @@ export function EditMainCategoryDialog({ open, onOpenChange, category }: EditMai
             <FieldContent>
               {imagePreview ? (
                 <div className="relative flex h-32 w-full items-center justify-center rounded-lg border bg-muted">
-                  <Image 
-                    src={imagePreview} 
-                    alt="Preview" 
-                    fill 
-                    className="object-contain p-2" 
-                  />
+                  <Image src={imagePreview} alt="Preview" fill className="object-contain p-2" />
                   <Button
                     type="button"
                     variant="destructive"

@@ -60,9 +60,7 @@ export default function SettingsPage() {
     return null;
   }
 
-  const allowedTabs = isAdmin
-    ? TABS
-    : TABS.filter((tab) => tab.id === "change-password");
+  const allowedTabs = isAdmin ? TABS : TABS.filter((tab) => tab.id === "change-password");
 
   const displayTab = allowedTabs.some((tab) => tab.id === activeTab)
     ? activeTab

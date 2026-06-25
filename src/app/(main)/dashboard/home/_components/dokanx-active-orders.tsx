@@ -148,7 +148,7 @@ function exportToExcel(data: OrderRow[]) {
 
 export function DokanxActiveOrders() {
   const { data, isLoading } = useAdminDashboard();
-  
+
   const activeOrders = React.useMemo(() => {
     if (!data?.lists?.active) return [];
     return data.lists.active.map((order) => ({
@@ -288,11 +288,11 @@ export function DokanxActiveOrders() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                 <TableRow>
-                   <TableCell colSpan={5} className="h-24 text-center">
-                     <Skeleton className="h-8 w-full" />
-                   </TableCell>
-                 </TableRow>
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    <Skeleton className="h-8 w-full" />
+                  </TableCell>
+                </TableRow>
               ) : table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>

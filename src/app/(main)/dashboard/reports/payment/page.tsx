@@ -6,14 +6,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { usePaymentReports } from "@/hooks/usePaymentReports";
 import { PaymentReportsStats } from "./_components/payment-reports-stats";
@@ -119,8 +112,7 @@ export default function PaymentReportPage() {
         exportParams.append("period", timeRange);
       }
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
       const endpoint = process.env.NEXT_PUBLIC_API_WEB_PAYMENTS || "payments";
 
       const { fetchClient } = await import("@/lib/fetch-client");
@@ -147,10 +139,7 @@ export default function PaymentReportPage() {
           Payment_Status: row.order?.payment_status || "",
         }));
 
-        downloadCSV(
-          exportData,
-          `Payment_Report_${new Date().toISOString().split("T")[0]}.csv`
-        );
+        downloadCSV(exportData, `Payment_Report_${new Date().toISOString().split("T")[0]}.csv`);
         toast.success("Report exported successfully");
       }
     } catch {
@@ -166,9 +155,7 @@ export default function PaymentReportPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl tracking-tight">Payment Report</h1>
-          <p className="text-muted-foreground text-sm">
-            View and manage payment reports and transactions.
-          </p>
+          <p className="text-muted-foreground text-sm">View and manage payment reports and transactions.</p>
         </div>
 
         <div className="flex flex-col gap-2 sm:items-end">
@@ -267,7 +254,6 @@ export default function PaymentReportPage() {
         from={data?.data?.from || 0}
         to={data?.data?.to || 0}
         onPageChange={(p) => setPage(p)}
-        
         searchVal={searchVal}
         setSearchVal={setSearchVal}
         statusFilter={statusVal}
@@ -278,7 +264,6 @@ export default function PaymentReportPage() {
         setSortBy={setSortBy}
         sortDir={sortDir}
         setSortDir={setSortDir}
-        
         onFilterSubmit={handleFilterSubmit}
         onReset={handleReset}
       />

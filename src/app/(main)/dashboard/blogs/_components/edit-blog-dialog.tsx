@@ -28,8 +28,8 @@ const getImageUrl = (path: string | null) => {
   if (!path) return "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Blog";
   if (path.startsWith("http")) return path;
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+  const cleanBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   return `${cleanBase}${cleanPath}`;
 };
 
@@ -109,12 +109,7 @@ export function EditBlogDialog({ blog, open, onOpenChange, onUpdated }: EditBlog
               <Label htmlFor="edit-title">
                 Title <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="edit-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
+              <Input id="edit-title" value={title} onChange={(e) => setTitle(e.target.value)} required />
             </div>
 
             <div className="grid gap-2">
@@ -139,8 +134,7 @@ export function EditBlogDialog({ blog, open, onOpenChange, onUpdated }: EditBlog
                     alt={title}
                     className="size-full object-cover rounded-md"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Blog";
+                      (e.target as HTMLImageElement).src = "https://placehold.co/600x400/1a1a2e/e0e0e0?text=Blog";
                     }}
                   />
                 </div>
@@ -151,12 +145,7 @@ export function EditBlogDialog({ blog, open, onOpenChange, onUpdated }: EditBlog
                   className="hidden"
                   onChange={handleImageChange}
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                >
+                <Button variant="outline" size="sm" type="button" onClick={() => fileInputRef.current?.click()}>
                   <UploadCloud className="mr-2 size-4" />
                   Change Cover Image
                 </Button>

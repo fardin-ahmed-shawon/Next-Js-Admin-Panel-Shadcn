@@ -116,9 +116,7 @@ function ProductPicker({ label, id, selected, onSelect, disabledId }: ProductPic
                           />
                         )}
                         <span className="flex-1 truncate">{p.title}</span>
-                        {p.id === disabledId && (
-                          <span className="text-xs text-muted-foreground">(current)</span>
-                        )}
+                        {p.id === disabledId && <span className="text-xs text-muted-foreground">(current)</span>}
                       </button>
                     ))}
                   </div>
@@ -140,11 +138,7 @@ interface EditRecommendationDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function EditRecommendationDialog({
-  recommendation,
-  open,
-  onOpenChange,
-}: EditRecommendationDialogProps) {
+export function EditRecommendationDialog({ recommendation, open, onOpenChange }: EditRecommendationDialogProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [newRecommended, setNewRecommended] = React.useState<RecommendationProduct | null>(null);
 
@@ -231,12 +225,9 @@ export function EditRecommendationDialog({
                   )}
                   <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                     <span className="text-sm font-medium leading-none truncate">
-                      {recommendation.recommended_product?.title ??
-                        `Product #${recommendation.recommended_product_id}`}
+                      {recommendation.recommended_product?.title ?? `Product #${recommendation.recommended_product_id}`}
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      ID: {recommendation.recommended_product_id}
-                    </span>
+                    <span className="text-xs text-muted-foreground">ID: {recommendation.recommended_product_id}</span>
                   </div>
                 </div>
               </div>
@@ -256,11 +247,7 @@ export function EditRecommendationDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button
-              id="update-recommendation-btn"
-              type="submit"
-              disabled={isSubmitting || !newRecommended}
-            >
+            <Button id="update-recommendation-btn" type="submit" disabled={isSubmitting || !newRecommended}>
               {isSubmitting ? "Saving…" : "Update Recommendation"}
             </Button>
           </DialogFooter>

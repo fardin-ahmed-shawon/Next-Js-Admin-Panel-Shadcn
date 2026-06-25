@@ -1,5 +1,6 @@
+import { useCallback, useEffect, useState } from "react";
+
 import { fetchClient } from "@/lib/fetch-client";
-import { useEffect, useState, useCallback } from "react";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}products`;
 
@@ -12,6 +13,7 @@ export interface Product {
   selling_price: number;
   available_stock: number;
   status: string;
+  product_type?: string | null;
   main_category?: { id: number; name: string };
   sub_category?: { id: number; name: string };
   [key: string]: any;
@@ -66,7 +68,7 @@ function useProducts(options: FetchProductsOptions = {}) {
 
       const res = await fetchClient(url.toString());
       if (!res.ok) throw new Error("Failed to fetch products");
-      
+
       const result = await res.json();
       if (result.success) {
         setData(result.data);

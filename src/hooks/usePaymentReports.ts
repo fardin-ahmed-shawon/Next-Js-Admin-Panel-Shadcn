@@ -105,13 +105,9 @@ export function usePaymentReports(params?: Record<string, any>) {
     }
   }
 
-  const { data, error, isLoading, mutate } = useSWR<PaymentReportResponse>(
-    user?.id ? [url, user.id] : url,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-    }
-  );
+  const { data, error, isLoading, mutate } = useSWR<PaymentReportResponse>(user?.id ? [url, user.id] : url, fetcher, {
+    revalidateOnFocus: false,
+  });
 
   return {
     data,

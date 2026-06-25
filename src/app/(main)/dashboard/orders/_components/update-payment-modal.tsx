@@ -129,7 +129,9 @@ export function UpdatePaymentModal({ order, open: controlledOpen, onOpenChange, 
             {isSaving ? "Saving..." : "Save Changes"}
           </Button>
           <DialogClose asChild>
-            <Button variant="outline" disabled={isSaving}>Cancel</Button>
+            <Button variant="outline" disabled={isSaving}>
+              Cancel
+            </Button>
           </DialogClose>
         </div>
       </DialogContent>

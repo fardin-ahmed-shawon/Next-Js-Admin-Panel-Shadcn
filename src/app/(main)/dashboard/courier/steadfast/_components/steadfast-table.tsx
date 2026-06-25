@@ -118,7 +118,7 @@ const columns: ColumnDef<ParcelRow>[] = [
     cell: ({ row }) => {
       const order = row.original.order;
       if (!order) return <span className="text-muted-foreground">N/A</span>;
-      
+
       const initials = (order.customer_full_name || "U")
         .split(" ")
         .map((n: string) => n[0])
@@ -144,7 +144,7 @@ const columns: ColumnDef<ParcelRow>[] = [
       const order = row.original.order;
       if (!order) return "N/A";
       return <span>৳{Number(order.grand_total_amount).toLocaleString()}</span>;
-    }
+    },
   },
   {
     accessorKey: "paymentStatus",
@@ -162,8 +162,12 @@ const columns: ColumnDef<ParcelRow>[] = [
       const dateObj = new Date(dateStr);
       return (
         <div className="flex flex-col gap-0.5">
-          <span className="font-medium text-sm">{dateObj.toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric'})}</span>
-          <span className="text-muted-foreground text-xs">{dateObj.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit'})}</span>
+          <span className="font-medium text-sm">
+            {dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+          </span>
+          <span className="text-muted-foreground text-xs">
+            {dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+          </span>
         </div>
       );
     },
@@ -204,12 +208,14 @@ const columns: ColumnDef<ParcelRow>[] = [
                 ? "border-red-500 text-red-600"
                 : status === "returned" || status === "in_return"
                   ? "border-orange-500 text-orange-600"
-                  : status === "delivered_approval_pending" || status === "partial_delivered_approval_pending" || status === "unknown_approval_pending"
+                  : status === "delivered_approval_pending" ||
+                      status === "partial_delivered_approval_pending" ||
+                      status === "unknown_approval_pending"
                     ? "border-yellow-500 text-yellow-600"
                     : "border-blue-500 text-blue-600"
           }
         >
-          {status.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+          {status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
         </Badge>
       );
     },
@@ -281,7 +287,7 @@ function RowActions({ row }: { row: ParcelRow }) {
       }
       toast.success(`Order ${row.order_no} locally marked as returned!`, { id: toastId });
       // We don't have mutate passed to RowActions in steadfast-table, so we just let it refresh later or we can reload
-      window.location.reload(); 
+      window.location.reload();
     } catch (e: any) {
       toast.error(e.message || "An error occurred.", { id: toastId });
     }
@@ -327,7 +333,7 @@ export function SteadfastTable() {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  
+
   const [pageIndex, setPageIndex] = React.useState(0);
   const [pageSize, setPageSize] = React.useState(10);
   const [searchInput, setSearchInput] = React.useState("");
@@ -344,7 +350,11 @@ export function SteadfastTable() {
     search: debouncedSearch || undefined,
   });
 
-  const parcelsData = Array.isArray(apiData?.data?.data) ? apiData.data.data : (Array.isArray(apiData?.data) ? apiData.data : []);
+  const parcelsData = Array.isArray(apiData?.data?.data)
+    ? apiData.data.data
+    : Array.isArray(apiData?.data)
+      ? apiData.data
+      : [];
   const meta = apiData?.data || {};
   const totalCount = meta?.total || parcelsData.length || 0;
   const pageCount = meta?.last_page || 1;
@@ -367,7 +377,7 @@ export function SteadfastTable() {
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: (updater) => {
-      if (typeof updater === 'function') {
+      if (typeof updater === "function") {
         const newState = updater({ pageIndex, pageSize });
         setPageIndex(newState.pageIndex);
         setPageSize(newState.pageSize);
@@ -388,7 +398,13 @@ export function SteadfastTable() {
       <CardHeader>
         <CardTitle className="font-normal text-muted-foreground text-sm">Parcels</CardTitle>
         <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
-          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : totalCount > 0 ? `${totalCount} parcels` : "No parcels"}
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : totalCount > 0 ? (
+            `${totalCount} parcels`
+          ) : (
+            "No parcels"
+          )}
         </CardDescription>
         <CardAction>
           <Button variant="outline" size="sm">
@@ -419,7 +435,9 @@ export function SteadfastTable() {
             <Button
               size="icon-sm"
               variant="outline"
-              onClick={() => table.getColumn("order_no")?.toggleSorting(table.getColumn("order_no")?.getIsSorted() === "asc")}
+              onClick={() =>
+                table.getColumn("order_no")?.toggleSorting(table.getColumn("order_no")?.getIsSorted() === "asc")
+              }
             >
               <ArrowUpDown className="size-4" />
             </Button>

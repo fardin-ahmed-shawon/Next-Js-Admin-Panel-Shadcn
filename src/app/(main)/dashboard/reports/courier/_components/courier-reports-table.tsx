@@ -1,13 +1,6 @@
 import * as React from "react";
 import { PackageX } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CourierReportItem } from "@/hooks/useCourierAnalytics";
 
 interface CourierReportsTableProps {
@@ -63,50 +56,62 @@ export function CourierReportsTable({ data = [], isLoading }: CourierReportsTabl
           ) : (
             data.map((row) => (
               <TableRow key={row.sl}>
-                <TableCell className="font-semibold whitespace-nowrap bg-muted/10">
-                  {row.courier_name}
-                </TableCell>
+                <TableCell className="font-semibold whitespace-nowrap bg-muted/10">{row.courier_name}</TableCell>
                 <TableCell className="text-center font-bold">{row.all}</TableCell>
                 <TableCell className="text-center">
                   <div className="flex flex-col">
                     <span className="font-medium text-blue-600 dark:text-blue-400">{row.in__courier_count}</span>
-                    {row.all > 0 && <span className="text-[10px] text-muted-foreground">{row.in__courier_percentage}%</span>}
+                    {row.all > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{row.in__courier_percentage}%</span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex flex-col">
                     <span className="font-medium text-green-600 dark:text-green-400">{row.delivered_count}</span>
-                    {row.all > 0 && <span className="text-[10px] text-muted-foreground">{row.delivered_percentage}%</span>}
+                    {row.all > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{row.delivered_percentage}%</span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex flex-col">
                     <span className="font-medium text-red-600 dark:text-red-400">{row.returned_count}</span>
-                    {row.all > 0 && <span className="text-[10px] text-muted-foreground">{row.returned_percentage}%</span>}
+                    {row.all > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{row.returned_percentage}%</span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex flex-col">
                     <span className="font-medium text-yellow-600 dark:text-yellow-400">{row.pending_count}</span>
-                    {row.all > 0 && <span className="text-[10px] text-muted-foreground">{row.pending_percentage}%</span>}
+                    {row.all > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{row.pending_percentage}%</span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex flex-col">
                     <span className="font-medium">{row.confirmed_count}</span>
-                    {row.all > 0 && <span className="text-[10px] text-muted-foreground">{row.confirmed_percentage}%</span>}
+                    {row.all > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{row.confirmed_percentage}%</span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex flex-col">
                     <span className="font-medium">{row.ready_to_ship_count}</span>
-                    {row.all > 0 && <span className="text-[10px] text-muted-foreground">{row.ready_to_ship_percentage}%</span>}
+                    {row.all > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{row.ready_to_ship_percentage}%</span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex flex-col">
                     <span className="font-medium">{row.ship_later_count}</span>
-                    {row.all > 0 && <span className="text-[10px] text-muted-foreground">{row.ship_later_percentage}%</span>}
+                    {row.all > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{row.ship_later_percentage}%</span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
@@ -118,19 +123,25 @@ export function CourierReportsTable({ data = [], isLoading }: CourierReportsTabl
                 <TableCell className="text-center">
                   <div className="flex flex-col">
                     <span className="font-medium text-amber-600 dark:text-amber-400">{row.pre__order_count}</span>
-                    {row.all > 0 && <span className="text-[10px] text-muted-foreground">{row.pre__order_percentage}%</span>}
+                    {row.all > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{row.pre__order_percentage}%</span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex flex-col">
                     <span className="font-medium text-rose-600 dark:text-rose-400">{row.cancelled_count}</span>
-                    {row.all > 0 && <span className="text-[10px] text-muted-foreground">{row.cancelled_percentage}%</span>}
+                    {row.all > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{row.cancelled_percentage}%</span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex flex-col">
                     <span className="font-medium text-slate-500">{row.missing_count}</span>
-                    {row.all > 0 && <span className="text-[10px] text-muted-foreground">{row.missing_percentage}%</span>}
+                    {row.all > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{row.missing_percentage}%</span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">

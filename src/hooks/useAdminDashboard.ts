@@ -120,13 +120,9 @@ export function useAdminDashboard() {
 
   const url = `${baseUrl}${dashboardEndpoint}`;
 
-  const { data, error, isLoading, mutate } = useSWR<DashboardApiResponse>(
-    user?.id ? [url, user.id] : url,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-    }
-  );
+  const { data, error, isLoading, mutate } = useSWR<DashboardApiResponse>(user?.id ? [url, user.id] : url, fetcher, {
+    revalidateOnFocus: false,
+  });
 
   return {
     data: data?.data,

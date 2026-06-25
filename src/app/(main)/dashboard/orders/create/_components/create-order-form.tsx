@@ -52,14 +52,20 @@ const getImageUrl = (path: string | null) => {
 };
 
 function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, updateUnitPrice }: any) {
-  const { data: sizesRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SIZES || "sizes"}`, fetcher);
-  const { data: colorsRes } = useSWR(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_COLORS || "colors"}`, fetcher);
+  const { data: sizesRes } = useSWR(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SIZES || "sizes"}`,
+    fetcher,
+  );
+  const { data: colorsRes } = useSWR(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_COLORS || "colors"}`,
+    fetcher,
+  );
 
   const allSizes = React.useMemo(() => {
     const list = Array.isArray(sizesRes) ? sizesRes : sizesRes?.data || [];
     return list;
   }, [sizesRes]);
-  
+
   const allColors = React.useMemo(() => {
     const list = Array.isArray(colorsRes) ? colorsRes : colorsRes?.data || [];
     return list;
@@ -69,13 +75,19 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
     return item.product.variants || [];
   }, [item.product.variants]);
 
-  const sizes = React.useMemo(() => allSizes.filter((s: any) => variants.some((v: any) => v.size_id === s.id)), [allSizes, variants]);
-  const colors = React.useMemo(() => allColors.filter((c: any) => variants.some((v: any) => v.color_id === c.id)), [allColors, variants]);
+  const sizes = React.useMemo(
+    () => allSizes.filter((s: any) => variants.some((v: any) => v.size_id === s.id)),
+    [allSizes, variants],
+  );
+  const colors = React.useMemo(
+    () => allColors.filter((c: any) => variants.some((v: any) => v.color_id === c.id)),
+    [allColors, variants],
+  );
 
   const requiresVariant = Number(item.product.has_variants) === 1 && variants.length > 0;
   let isValidVariant = true;
 
-  const availableColors = item.size 
+  const availableColors = item.size
     ? colors.filter((c: any) => {
         const sizeId = sizes.find((s: any) => s.label === item.size)?.id;
         return variants.some((v: any) => v.size_id === sizeId && v.color_id === c.id);
@@ -94,7 +106,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
       const selectedSizeId = sizes.find((s: any) => s.label === item.size)?.id || null;
       const selectedColorId = colors.find((c: any) => c.label === item.color)?.id || null;
       const variant = variants.find((v: any) => v.size_id === selectedSizeId && v.color_id === selectedColorId);
-      
+
       if (variant && variant.variant_pricing) {
         updateUnitPrice(item.product.id, variant.variant_pricing.selling_price);
       }
@@ -120,9 +132,9 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
   if (requiresVariant && isSizeComplete && isColorComplete && (item.size || item.color)) {
     const selectedSizeId = requiresSize ? sizes.find((s: any) => s.label === item.size)?.id : null;
     const selectedColorId = requiresColor ? colors.find((c: any) => c.label === item.color)?.id : null;
-    isValidVariant = variants.some((v: any) => 
-      (requiresSize ? v.size_id === selectedSizeId : true) && 
-      (requiresColor ? v.color_id === selectedColorId : true)
+    isValidVariant = variants.some(
+      (v: any) =>
+        (requiresSize ? v.size_id === selectedSizeId : true) && (requiresColor ? v.color_id === selectedColorId : true),
     );
   }
 
@@ -130,7 +142,11 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
     <div className="rounded-lg border p-3 transition-colors hover:bg-muted/30">
       <div className="flex items-center gap-3">
         <div className="size-12 shrink-0 overflow-hidden rounded-md border bg-muted">
-          <img src={getImageUrl(item.product.product_thumbnail_img)} alt={item.product.title} className="size-full object-cover" />
+          <img
+            src={getImageUrl(item.product.product_thumbnail_img)}
+            alt={item.product.title}
+            className="size-full object-cover"
+          />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{item.product.title}</p>
@@ -160,7 +176,9 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
           <div className="flex items-center gap-3">
             {availableColors.length > 1 ? (
               <Select value={item.color} onValueChange={(v) => updateCartItem(item.product.id, "color", v)}>
-                <SelectTrigger className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}>
+                <SelectTrigger
+                  className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}
+                >
                   <SelectValue placeholder="Color" />
                 </SelectTrigger>
                 <SelectContent>
@@ -179,7 +197,9 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
 
             {availableSizes.length > 1 ? (
               <Select value={item.size} onValueChange={(v) => updateCartItem(item.product.id, "size", v)}>
-                <SelectTrigger className={`h-7 w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}>
+                <SelectTrigger
+                  className={`h-7 w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}
+                >
                   <SelectValue placeholder="Size" />
                 </SelectTrigger>
                 <SelectContent>
@@ -195,7 +215,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 Size: {availableSizes[0].label}
               </div>
             ) : null}
-            
+
             {(item.color || item.size) && (
               <Button
                 variant="ghost"
@@ -204,7 +224,10 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 onClick={() => {
                   updateCartItem(item.product.id, "color", "");
                   updateCartItem(item.product.id, "size", "");
-                  updateUnitPrice(item.product.id, item.product.has_variant_wise_pricing ? 0 : (item.product.selling_price || 0));
+                  updateUnitPrice(
+                    item.product.id,
+                    item.product.has_variant_wise_pricing ? 0 : item.product.selling_price || 0,
+                  );
                 }}
                 title="Clear selections"
               >
@@ -213,7 +236,9 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
             )}
           </div>
           {!isValidVariant && (item.color || item.size) && (
-            <span className="text-[10px] text-destructive font-medium">Selected combination is out of stock or unavailable.</span>
+            <span className="text-[10px] text-destructive font-medium">
+              Selected combination is out of stock or unavailable.
+            </span>
           )}
         </div>
       )}
@@ -308,10 +333,10 @@ export function CreateOrderForm() {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
-      
+
       // If it has variant wise pricing, but no variants selected yet, we might want to default to 0 or product.selling_price
       // It will auto-update when they select a size/color via the useEffect in CartItemRow
-      const initialPrice = product.has_variant_wise_pricing ? 0 : (product.selling_price || 0);
+      const initialPrice = product.has_variant_wise_pricing ? 0 : product.selling_price || 0;
       return [...prev, { product, quantity: 1, color: "", size: "", unitPrice: initialPrice }];
     });
     setSearchQuery("");
@@ -353,7 +378,7 @@ export function CreateOrderForm() {
     if (!customerSearchQuery.trim()) return [];
     const q = customerSearchQuery.toLowerCase();
     return customersData.filter(
-      (c) => c.full_name?.toLowerCase().includes(q) || c.phone?.includes(q) || c.email?.toLowerCase().includes(q)
+      (c) => c.full_name?.toLowerCase().includes(q) || c.phone?.includes(q) || c.email?.toLowerCase().includes(q),
     );
   }, [customerSearchQuery, customersData]);
 
@@ -362,17 +387,22 @@ export function CreateOrderForm() {
     setCustomerName(customer.full_name || "");
     setCustomerEmail(customer.email || "");
     setCustomerPhone(customer.phone || "");
-    
-    // Automatically fill address if available in parcel_history or orders? No, just address from the model if any. 
+
+    // Automatically fill address if available in parcel_history or orders? No, just address from the model if any.
     // They don't have address in the root JSON, so leave address blank for them to type.
-    
+
     setCustomerSearchQuery("");
     setCustomerSearchFocused(false);
     toast.success("Customer details loaded.");
   }
 
   const subtotal = cart.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
-  const shippingCost = shippingMethod === "outside-dhaka" ? outsideShippingCharge : shippingMethod === "inside-dhaka" ? insideShippingCharge : 0;
+  const shippingCost =
+    shippingMethod === "outside-dhaka"
+      ? outsideShippingCharge
+      : shippingMethod === "inside-dhaka"
+        ? insideShippingCharge
+        : 0;
   const discountAmount =
     discountType === "percentage"
       ? Math.round((subtotal * (Number(discountValue) || 0)) / 100)
@@ -426,14 +456,32 @@ export function CreateOrderForm() {
       customer_phone: customerPhone,
       customer_email: customerEmail,
       customer_shipping_address: `${shippingAddress}, ${thana}, ${district}, ${division}`,
-      shipping_area: shippingMethod === "inside-dhaka" ? "Inside Dhaka" : shippingMethod === "outside-dhaka" ? "Outside Dhaka" : (division === "Dhaka" ? "Inside Dhaka" : "Outside Dhaka"),
+      shipping_area:
+        shippingMethod === "inside-dhaka"
+          ? "Inside Dhaka"
+          : shippingMethod === "outside-dhaka"
+            ? "Outside Dhaka"
+            : division === "Dhaka"
+              ? "Inside Dhaka"
+              : "Outside Dhaka",
       subtotal_amount: subtotal,
       discount_amount: discountAmount,
       shipping_charge: shippingCost,
       grand_total_amount: total,
       order_status: orderStatus,
       order_note: orderNote,
-      payment_method: paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod === "bkash" ? "bKash" : paymentMethod === "nagad" ? "Nagad" : paymentMethod === "rocket" ? "Rocket" : paymentMethod === "bank" ? "Bank Transfer" : "Card Payment",
+      payment_method:
+        paymentMethod === "cod"
+          ? "Cash on Delivery"
+          : paymentMethod === "bkash"
+            ? "bKash"
+            : paymentMethod === "nagad"
+              ? "Nagad"
+              : paymentMethod === "rocket"
+                ? "Rocket"
+                : paymentMethod === "bank"
+                  ? "Bank Transfer"
+                  : "Card Payment",
       paid_amount: Number(paidAmount) || 0,
       payment_status: paymentStatus === "unpaid" ? "Unpaid" : paymentStatus === "paid" ? "Paid" : "Partial",
       products: cart.map((item) => ({
@@ -451,8 +499,8 @@ export function CreateOrderForm() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}`,
+          Accept: "application/json",
+          Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}`,
         },
         body: JSON.stringify(payload),
       });
@@ -476,7 +524,8 @@ export function CreateOrderForm() {
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchFocused(false);
-      if (customerSearchRef.current && !customerSearchRef.current.contains(e.target as Node)) setCustomerSearchFocused(false);
+      if (customerSearchRef.current && !customerSearchRef.current.contains(e.target as Node))
+        setCustomerSearchFocused(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -545,7 +594,11 @@ export function CreateOrderForm() {
                           onClick={() => addToCart(p)}
                         >
                           <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
-                            <img src={getImageUrl(p.product_thumbnail_img)} alt={p.title} className="size-full object-cover" />
+                            <img
+                              src={getImageUrl(p.product_thumbnail_img)}
+                              alt={p.title}
+                              className="size-full object-cover"
+                            />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{p.title}</p>
@@ -555,7 +608,9 @@ export function CreateOrderForm() {
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-sm font-semibold tabular-nums">
-                              {p.has_variant_wise_pricing ? "Variant Pricing" : `৳${(p.selling_price || 0).toLocaleString()}`}
+                              {p.has_variant_wise_pricing
+                                ? "Variant Pricing"
+                                : `৳${(p.selling_price || 0).toLocaleString()}`}
                             </span>
                             {inCart && (
                               <Badge variant="secondary" className="text-[10px]">

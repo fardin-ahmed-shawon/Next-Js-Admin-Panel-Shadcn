@@ -14,33 +14,33 @@ export default function BlocklistPage() {
   const [loading, setLoading] = React.useState(true);
 
   // Use environment variables
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin/';
-  const BLOCK_LIST_URL = process.env.NEXT_PUBLIC_API_BLOCK_LIST_URL || 'block-list';
-  const cleanBase = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
-  const cleanPath = BLOCK_LIST_URL.startsWith('/') ? BLOCK_LIST_URL.slice(1) : BLOCK_LIST_URL;
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+  const BLOCK_LIST_URL = process.env.NEXT_PUBLIC_API_BLOCK_LIST_URL || "block-list";
+  const cleanBase = API_BASE_URL.endsWith("/") ? API_BASE_URL : `${API_BASE_URL}/`;
+  const cleanPath = BLOCK_LIST_URL.startsWith("/") ? BLOCK_LIST_URL.slice(1) : BLOCK_LIST_URL;
   const API_URL = `${cleanBase}${cleanPath}`;
 
   // Fetch all blocklist entries
   const fetchBlocklist = async () => {
     try {
       setLoading(true);
-      console.log('Fetching from:', API_URL);
-      
+      console.log("Fetching from:", API_URL);
+
       const response = await fetch(API_URL, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const result = await response.json();
-      console.log('API Response:', result);
-      
+      console.log("API Response:", result);
+
       // Handle different response structures
       let dataArray = [];
       if (result.success && Array.isArray(result.data)) {
@@ -52,43 +52,53 @@ export default function BlocklistPage() {
       } else {
         dataArray = [];
       }
-      
+
       // Transform Laravel data to match frontend format
       const formattedData = dataArray.map((item: any) => ({
         id: item.id,
-        type: item.block_type === 'ip' ? 'IP' : 'Phone',
+        type: item.block_type === "ip" ? "IP" : "Phone",
         value: item.block_value,
         reason: item.reason || "-",
         status: item.is_active ? "Active" : "Inactive",
         is_active: item.is_active, // Keep the original boolean for updates
-        blockedAt: item.blocked_at ? new Date(item.blocked_at).toLocaleString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }).replace(',', '\n') : new Date().toLocaleString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }).replace(',', '\n'),
-        expires: item.expires_at ? new Date(item.expires_at).toLocaleString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }).replace(',', '\n') : "Permanent",
+        blockedAt: item.blocked_at
+          ? new Date(item.blocked_at)
+              .toLocaleString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+              .replace(",", "\n")
+          : new Date()
+              .toLocaleString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+              .replace(",", "\n"),
+        expires: item.expires_at
+          ? new Date(item.expires_at)
+              .toLocaleString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+              .replace(",", "\n")
+          : "Permanent",
       }));
-      
+
       setBlocklistData(formattedData);
     } catch (error) {
-      console.error('Fetch error:', error);
+      console.error("Fetch error:", error);
       toast.error("Failed to connect to API. Make sure Laravel backend is running");
       setBlocklistData([]);
     } finally {
@@ -96,26 +106,24 @@ export default function BlocklistPage() {
     }
   };
 
-
-
   // Toggle status (Unblock/Re-block)
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
     try {
       const newStatus = !currentStatus;
-      
+
       const response = await fetch(`${API_URL}/${id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
-          is_active: newStatus
+          is_active: newStatus,
         }),
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         toast.success(newStatus ? "Entry re-blocked successfully." : "Entry unblocked successfully.");
         await fetchBlocklist();
@@ -123,27 +131,30 @@ export default function BlocklistPage() {
         toast.error(result.message || "Failed to update status");
       }
     } catch (error) {
-      console.error('Toggle status error:', error);
+      console.error("Toggle status error:", error);
       toast.error("Failed to update status");
     }
   };
 
-
-
   // Add new block entry
-  const handleAddBlock = async (newBlock: { block_type: string; block_value: string; reason?: string; expires_at?: string }) => {
+  const handleAddBlock = async (newBlock: {
+    block_type: string;
+    block_value: string;
+    reason?: string;
+    expires_at?: string;
+  }) => {
     try {
       const response = await fetch(API_URL, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify(newBlock),
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         toast.success("Block entry added successfully.");
         await fetchBlocklist();
@@ -151,13 +162,13 @@ export default function BlocklistPage() {
       } else {
         if (result.errors) {
           const errors = Object.values(result.errors).flat();
-          toast.error(errors.join(', '));
+          toast.error(errors.join(", "));
         } else {
           toast.error(result.message || "Failed to add block entry");
         }
       }
     } catch (error) {
-      console.error('Add error:', error);
+      console.error("Add error:", error);
       toast.error("Failed to add block entry");
     }
   };
@@ -166,14 +177,14 @@ export default function BlocklistPage() {
   const handleDeleteBlock = async (id: string) => {
     try {
       const response = await fetch(`${API_URL}/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Accept': 'application/json',
+          Accept: "application/json",
         },
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         toast.success("Entry deleted successfully.");
         await fetchBlocklist();
@@ -181,7 +192,7 @@ export default function BlocklistPage() {
         toast.error(result.message || "Failed to delete entry");
       }
     } catch (error) {
-      console.error('Delete error:', error);
+      console.error("Delete error:", error);
       toast.error("Failed to delete entry");
     }
   };
@@ -217,17 +228,13 @@ export default function BlocklistPage() {
             <PlusCircle className="h-4 w-4" />
             Add Block
           </Button>
-          <AddBlockDialog 
-            open={isAddOpen} 
-            onOpenChange={setIsAddOpen}
-            onAddBlock={handleAddBlock}
-          />
+          <AddBlockDialog open={isAddOpen} onOpenChange={setIsAddOpen} onAddBlock={handleAddBlock} />
         </div>
       </div>
 
       <BlocklistStats data={blocklistData} />
-      <BlocklistTable 
-        data={blocklistData} 
+      <BlocklistTable
+        data={blocklistData}
         onDelete={handleDeleteBlock}
         onToggleStatus={handleToggleStatus}
         onRefresh={fetchBlocklist}

@@ -176,7 +176,9 @@ export default function ViewRolePage() {
         <p className="font-medium">Error loading role</p>
         <p className="text-sm">{error || "Role not found."}</p>
         <Link href="/dashboard/roles">
-          <Button variant="outline" className="mt-4">Back to Roles</Button>
+          <Button variant="outline" className="mt-4">
+            Back to Roles
+          </Button>
         </Link>
       </div>
     );

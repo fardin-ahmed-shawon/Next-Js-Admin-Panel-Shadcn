@@ -60,11 +60,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:8000";
 const REVIEW_API_URL = process.env.NEXT_PUBLIC_API_REVIEW_URL || "reviews";
 
-const getReviewUrl = (path: string = '') => {
+const getReviewUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) baseUrl += '/';
-  const reviewPath = REVIEW_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+  if (!baseUrl.endsWith("/")) baseUrl += "/";
+  const reviewPath = REVIEW_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${reviewPath}/${cleanPath}` : reviewPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
@@ -72,9 +72,9 @@ const getReviewUrl = (path: string = '') => {
 const getFullImageUrl = (imagePath: string) => {
   if (!imagePath) return "";
   if (imagePath.startsWith("http")) return imagePath;
-  const cleanPath = imagePath.replace(/^\/+/, '');
+  const cleanPath = imagePath.replace(/^\/+/, "");
   let appUrl = APP_URL;
-  if (!appUrl.endsWith('/')) appUrl += '/';
+  if (!appUrl.endsWith("/")) appUrl += "/";
   return `${appUrl}${cleanPath}`;
 };
 
@@ -108,14 +108,14 @@ function RowActions({ row, onRefresh }: { row: ReviewRow; onRefresh: () => void 
       const url = getReviewUrl(row.id.toString());
       const response = await fetch(url, {
         method: "DELETE",
-        headers: { 
-          Accept: "application/json", 
-          "Content-Type": "application/json" 
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) throw new Error("Failed to delete review");
-      
+
       toast.success(`Review deleted successfully.`);
       onRefresh();
       setDeleteOpen(false);
@@ -200,11 +200,11 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
     try {
       const url = getReviewUrl();
       console.log("Fetching reviews from:", url);
-      
+
       const response = await fetch(url, {
-        headers: { 
-          Accept: "application/json", 
-          "Content-Type": "application/json" 
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
       });
 
@@ -212,7 +212,7 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
 
       const result = await response.json();
       let reviewsData = [];
-      
+
       if (result.data && Array.isArray(result.data)) {
         reviewsData = result.data;
       } else if (Array.isArray(result)) {
@@ -226,7 +226,8 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
       const transformedData: ReviewRow[] = reviewsData.map((review: any) => ({
         id: review.id,
         productId: `PRD-${review.product_id}`,
-        productName: review.product?.product_short_description || review.product?.title || `Product #${review.product_id}`,
+        productName:
+          review.product?.product_short_description || review.product?.title || `Product #${review.product_id}`,
         productImage: review.product?.product_thumbnail_img || "",
         customerId: `CUS-${review.customer_id}`,
         customerName: review.customer?.full_name || `Customer #${review.customer_id}`,
@@ -234,7 +235,7 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
         customerAvatar: "",
         rating: review.ratings,
         text: review.review_text,
-        date: review.created_at ? new Date(review.created_at).toISOString().split('T')[0] : "",
+        date: review.created_at ? new Date(review.created_at).toISOString().split("T")[0] : "",
       }));
 
       setReviews(transformedData);
@@ -255,15 +256,15 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
       const url = getReviewUrl("bulk-delete");
       const response = await fetch(url, {
         method: "POST",
-        headers: { 
-          Accept: "application/json", 
-          "Content-Type": "application/json" 
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ ids: selectedIds }),
       });
 
       if (!response.ok) throw new Error("Failed to delete reviews");
-      
+
       toast.success(`${selectedIds.length} review(s) deleted successfully.`);
       setRowSelection({});
       await fetchReviews();
@@ -310,7 +311,11 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
         <div className="flex items-center gap-3">
           <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
             {row.original.productImage ? (
-              <img src={getFullImageUrl(row.original.productImage)} alt={row.original.productName} className="size-full object-cover" />
+              <img
+                src={getFullImageUrl(row.original.productImage)}
+                alt={row.original.productName}
+                className="size-full object-cover"
+              />
             ) : (
               <div className="flex size-full items-center justify-center text-muted-foreground">
                 <MessageSquare className="size-4" />

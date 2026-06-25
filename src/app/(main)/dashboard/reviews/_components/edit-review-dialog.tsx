@@ -21,29 +21,29 @@ const PRODUCT_API_URL = process.env.NEXT_PUBLIC_API_ALL_PRODUCT_URL || "products
 const CUSTOMER_API_URL = process.env.NEXT_PUBLIC_API_CUSTOMER_URL || "customers";
 const REVIEW_API_URL = process.env.NEXT_PUBLIC_API_REVIEW_URL || "reviews";
 
-const getProductUrl = (path: string = '') => {
+const getProductUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) baseUrl += '/';
-  const productPath = PRODUCT_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+  if (!baseUrl.endsWith("/")) baseUrl += "/";
+  const productPath = PRODUCT_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${productPath}/${cleanPath}` : productPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
-const getCustomerUrl = (path: string = '') => {
+const getCustomerUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) baseUrl += '/';
-  const customerPath = CUSTOMER_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+  if (!baseUrl.endsWith("/")) baseUrl += "/";
+  const customerPath = CUSTOMER_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${customerPath}/${cleanPath}` : customerPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
-const getReviewUrl = (path: string = '') => {
+const getReviewUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) baseUrl += '/';
-  const reviewPath = REVIEW_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+  if (!baseUrl.endsWith("/")) baseUrl += "/";
+  const reviewPath = REVIEW_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${reviewPath}/${cleanPath}` : reviewPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
@@ -84,9 +84,9 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
     try {
       const url = getProductUrl();
       const response = await fetch(url, {
-        headers: { 
-          Accept: "application/json", 
-          "Content-Type": "application/json" 
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
       });
 
@@ -94,7 +94,7 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
 
       const result = await response.json();
       let productsData = [];
-      
+
       // Handle the nested pagination structure
       if (result.data && result.data.data && Array.isArray(result.data.data)) {
         productsData = result.data.data;
@@ -107,12 +107,12 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
       }
 
       const activeProducts = productsData
-        .filter((p: any) => p.status === 'active')
+        .filter((p: any) => p.status === "active")
         .map((p: any) => ({
           id: p.id,
           title: p.product_short_description || p.title || `Product #${p.id}`,
         }));
-      
+
       setProducts(activeProducts);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -128,9 +128,9 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
     try {
       const url = getCustomerUrl();
       const response = await fetch(url, {
-        headers: { 
-          Accept: "application/json", 
-          "Content-Type": "application/json" 
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
       });
 
@@ -138,7 +138,7 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
 
       const result = await response.json();
       let customersData = [];
-      
+
       if (result.data && Array.isArray(result.data)) {
         customersData = result.data;
       } else if (Array.isArray(result)) {
@@ -151,7 +151,7 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
         id: c.id,
         full_name: c.full_name || c.name || `Customer #${c.id}`,
       }));
-      
+
       setCustomers(mappedCustomers);
     } catch (error) {
       console.error("Error fetching customers:", error);
@@ -171,8 +171,8 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
   useEffect(() => {
     if (review && open) {
       setFormData({
-        productId: review.productId ? review.productId.replace('PRD-', '') : "",
-        customerId: review.customerId ? review.customerId.replace('CUS-', '') : "",
+        productId: review.productId ? review.productId.replace("PRD-", "") : "",
+        customerId: review.customerId ? review.customerId.replace("CUS-", "") : "",
         rating: String(review.rating || ""),
         text: review.text || "",
       });
@@ -208,12 +208,12 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
         ratings: parseInt(formData.rating),
         review_text: formData.text.trim(),
       });
-      
+
       const response = await fetch(url, {
         method: "PUT",
-        headers: { 
-          Accept: "application/json", 
-          "Content-Type": "application/json" 
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           product_id: parseInt(formData.productId),
@@ -232,7 +232,7 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
 
       toast.success(result.message || "Review updated successfully.");
       onOpenChange(false);
-      
+
       if (onRefresh) {
         onRefresh();
       }
@@ -256,27 +256,25 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
             <Label htmlFor="edit-product">
               Select Product <span className="text-destructive">*</span>
             </Label>
-            <Select 
-              value={formData.productId} 
+            <Select
+              value={formData.productId}
               onValueChange={(val) => setFormData({ ...formData, productId: val })}
               disabled={isLoadingProducts}
             >
               <SelectTrigger className="w-full" id="edit-product">
-                <SelectValue 
+                <SelectValue
                   placeholder={
-                    isLoadingProducts 
-                      ? "Loading products..." 
-                      : products.length === 0 
-                        ? "No products available" 
+                    isLoadingProducts
+                      ? "Loading products..."
+                      : products.length === 0
+                        ? "No products available"
                         : "-- Select Product --"
-                  } 
+                  }
                 />
               </SelectTrigger>
               <SelectContent>
                 {isLoadingProducts && (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">
-                    Loading products...
-                  </div>
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">Loading products...</div>
                 )}
                 {!isLoadingProducts && products.length === 0 && (
                   <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">
@@ -296,32 +294,28 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
             <Label htmlFor="edit-customer">
               Select Customer <span className="text-destructive">*</span>
             </Label>
-            <Select 
-              value={formData.customerId} 
+            <Select
+              value={formData.customerId}
               onValueChange={(val) => setFormData({ ...formData, customerId: val })}
               disabled={isLoadingCustomers}
             >
               <SelectTrigger className="w-full" id="edit-customer">
-                <SelectValue 
+                <SelectValue
                   placeholder={
-                    isLoadingCustomers 
-                      ? "Loading customers..." 
-                      : customers.length === 0 
-                        ? "No customers available" 
+                    isLoadingCustomers
+                      ? "Loading customers..."
+                      : customers.length === 0
+                        ? "No customers available"
                         : "-- Select Customer --"
-                  } 
+                  }
                 />
               </SelectTrigger>
               <SelectContent>
                 {isLoadingCustomers && (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">
-                    Loading customers...
-                  </div>
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">Loading customers...</div>
                 )}
                 {!isLoadingCustomers && customers.length === 0 && (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">
-                    No customers available
-                  </div>
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">No customers available</div>
                 )}
                 {customers.map((c) => (
                   <SelectItem key={c.id} value={c.id.toString()}>

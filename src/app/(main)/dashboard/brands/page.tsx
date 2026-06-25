@@ -16,11 +16,11 @@ export default function BrandsPage() {
     total: 0,
     newThisMonth: 0,
     totalProducts: 0,
-    topTier: 0
+    topTier: 0,
   });
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin';
-  const BRANDS_URL = process.env.NEXT_PUBLIC_API_BRANDS_URL || 'brands';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin";
+  const BRANDS_URL = process.env.NEXT_PUBLIC_API_BRANDS_URL || "brands";
   const API_URL = `${API_BASE_URL}/${BRANDS_URL}`;
 
   // Fetch brands from API
@@ -29,18 +29,20 @@ export default function BrandsPage() {
       setLoading(true);
       const response = await fetch(API_URL);
       const result = await response.json();
-      
+
       if (result.success) {
         const formattedData = result.data.map((item: any) => ({
-          id: `BRD-${item.id.toString().padStart(3, '0')}`,
+          id: `BRD-${item.id.toString().padStart(3, "0")}`,
           name: item.name,
           totalProducts: item.products_count || 0,
-          logo: item.logo || `https://placehold.co/80x80/1a1a2e/e0e0e0?text=${item.name.substring(0,2).toUpperCase()}`,
-          joinedDate: item.created_at ? new Date(item.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          logo: item.logo || `https://placehold.co/80x80/1a1a2e/e0e0e0?text=${item.name.substring(0, 2).toUpperCase()}`,
+          joinedDate: item.created_at
+            ? new Date(item.created_at).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0],
         }));
-        
+
         setBrandsData(formattedData);
-        
+
         // Update stats
         setStats({
           total: formattedData.length,
@@ -50,7 +52,7 @@ export default function BrandsPage() {
         });
       }
     } catch (error) {
-      console.error('Error fetching brands:', error);
+      console.error("Error fetching brands:", error);
       toast.error("Failed to load brands");
     } finally {
       setLoading(false);
@@ -60,17 +62,17 @@ export default function BrandsPage() {
   // Update brand
   const handleUpdateBrand = async (id: string, formData: FormData) => {
     try {
-      const numericId = id.replace('BRD-', '');
+      const numericId = id.replace("BRD-", "");
       const response = await fetch(`${API_URL}/${numericId}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'X-HTTP-Method-Override': 'PUT',
+          "X-HTTP-Method-Override": "PUT",
         },
         body: formData,
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         toast.success("Brand updated successfully");
         await fetchBrands();
@@ -78,14 +80,14 @@ export default function BrandsPage() {
       } else {
         if (result.errors) {
           const errors = Object.values(result.errors).flat();
-          toast.error(errors.join(', '));
+          toast.error(errors.join(", "));
         } else {
           toast.error(result.message || "Failed to update brand");
         }
         return false;
       }
     } catch (error) {
-      console.error('Update error:', error);
+      console.error("Update error:", error);
       toast.error("Failed to update brand");
       return false;
     }
@@ -94,13 +96,13 @@ export default function BrandsPage() {
   // Delete brand
   const handleDeleteBrand = async (id: string) => {
     try {
-      const numericId = id.replace('BRD-', '');
+      const numericId = id.replace("BRD-", "");
       const response = await fetch(`${API_URL}/${numericId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         toast.success("Brand deleted successfully");
         await fetchBrands();
@@ -116,12 +118,12 @@ export default function BrandsPage() {
   const handleAddBrand = async (formData: FormData) => {
     try {
       const response = await fetch(API_URL, {
-        method: 'POST',
+        method: "POST",
         body: formData,
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         toast.success("Brand added successfully");
         await fetchBrands();
@@ -129,14 +131,14 @@ export default function BrandsPage() {
       } else {
         if (result.errors) {
           const errors = Object.values(result.errors).flat();
-          toast.error(errors.join(', '));
+          toast.error(errors.join(", "));
         } else {
           toast.error(result.message || "Failed to add brand");
         }
         return false;
       }
     } catch (error) {
-      console.error('Add error:', error);
+      console.error("Add error:", error);
       toast.error("Failed to add brand");
       return false;
     }
@@ -173,22 +175,18 @@ export default function BrandsPage() {
             <PlusCircle className="h-4 w-4" />
             Add Brand
           </Button>
-          <AddBrandDialog 
-            open={isAddOpen} 
-            onOpenChange={setIsAddOpen}
-            onAddBrand={handleAddBrand}
-          />
+          <AddBrandDialog open={isAddOpen} onOpenChange={setIsAddOpen} onAddBrand={handleAddBrand} />
         </div>
       </div>
 
-      <BrandsStats 
+      <BrandsStats
         totalBrands={stats.total}
         newThisMonth={stats.newThisMonth}
         totalProducts={stats.totalProducts}
         topTier={stats.topTier}
       />
-      <BrandsTable 
-        data={brandsData} 
+      <BrandsTable
+        data={brandsData}
         onDelete={handleDeleteBrand}
         onUpdate={handleUpdateBrand}
         onRefresh={fetchBrands}

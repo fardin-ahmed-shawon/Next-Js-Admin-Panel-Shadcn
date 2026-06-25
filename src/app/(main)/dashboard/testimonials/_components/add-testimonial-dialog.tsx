@@ -40,7 +40,7 @@ export function AddTestimonialDialog() {
         toast.error("File size must be less than 2MB");
         return;
       }
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+      const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"];
       if (!allowedTypes.includes(file.type)) {
         toast.error("Please upload a valid image file (JPEG, PNG, JPG, GIF, WEBP)");
         return;
@@ -77,23 +77,23 @@ export function AddTestimonialDialog() {
 
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('user_name', formData.name);
-      formDataToSend.append('user_position', formData.position);
-      formDataToSend.append('testimonial_text', formData.text);
-      formDataToSend.append('ratings', formData.rating);
-      
+      formDataToSend.append("user_name", formData.name);
+      formDataToSend.append("user_position", formData.position);
+      formDataToSend.append("testimonial_text", formData.text);
+      formDataToSend.append("ratings", formData.rating);
+
       if (selectedImage) {
-        formDataToSend.append('user_photo', selectedImage);
+        formDataToSend.append("user_photo", selectedImage);
       }
 
-      let apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin';
-      const testimonialEndpoint = process.env.NEXT_PUBLIC_API_TESTIMONIAL_URL || 'testimonials';
-      
-      const baseUrl = apiUrl.replace(/\/$/, '');
+      let apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin";
+      const testimonialEndpoint = process.env.NEXT_PUBLIC_API_TESTIMONIAL_URL || "testimonials";
+
+      const baseUrl = apiUrl.replace(/\/$/, "");
       const url = `${baseUrl}/${testimonialEndpoint}`;
 
       const response = await fetch(url, {
-        method: 'POST',
+        method: "POST",
         body: formDataToSend,
       });
 
@@ -179,7 +179,7 @@ export function AddTestimonialDialog() {
             <label
               htmlFor="user_photo"
               className={`border-2 border-dashed rounded-lg p-4 bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer justify-center flex-col text-center flex items-center gap-2 ${
-                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
               {imagePreview ? (
@@ -214,8 +214,8 @@ export function AddTestimonialDialog() {
             <Label htmlFor="rating">
               Rating <span className="text-destructive">*</span>
             </Label>
-            <Select 
-              value={formData.rating} 
+            <Select
+              value={formData.rating}
               onValueChange={(val) => setFormData({ ...formData, rating: val })}
               disabled={isSubmitting}
             >

@@ -19,7 +19,8 @@ export function SteadfastStats() {
   const stats = [
     {
       title: "Available Balance",
-      value: balanceData?.current_balance !== undefined ? `৳${Number(balanceData.current_balance).toLocaleString()}` : "—",
+      value:
+        balanceData?.current_balance !== undefined ? `৳${Number(balanceData.current_balance).toLocaleString()}` : "—",
       icon: Banknote,
       subtitle: "Current Steadfast balance",
     },
@@ -43,7 +44,9 @@ export function SteadfastStats() {
     },
     {
       title: "Returned Parcels",
-      value: returnedParcelsData?.data?.total ?? (Array.isArray(returnedParcelsData?.data) ? returnedParcelsData.data.length : "—"),
+      value:
+        returnedParcelsData?.data?.total ??
+        (Array.isArray(returnedParcelsData?.data) ? returnedParcelsData.data.length : "—"),
       icon: Undo2,
       subtitle: "Locally marked returned",
     },
@@ -70,4 +73,3 @@ export function SteadfastStats() {
     </div>
   );
 }
-

@@ -9,11 +9,11 @@ export default function CouponsPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleCouponAdded = useCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
   }, []);
 
   const handleCouponDeleted = useCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
   }, []);
 
   return (

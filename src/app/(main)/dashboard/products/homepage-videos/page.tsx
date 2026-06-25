@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { Calendar, Loader2, PlaySquare, Plus, Video } from "lucide-react";
+import { Calendar, Loader2, PlaySquare, Plus, Trash2, Video } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -36,9 +36,24 @@ function formatDate(dateStr: string): string {
 }
 
 export default function HomePageVideosPage() {
-  const { videos, isLoading, error, addVideo } = useHomePageVideos();
+  const { videos, isLoading, error, addVideo, deleteVideo } = useHomePageVideos();
   const [videoUrl, setVideoUrl] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [deletingId, setDeletingId] = React.useState<number | null>(null);
+
+  const handleDelete = async (id: number) => {
+    try {
+      setDeletingId(id);
+      await deleteVideo(id);
+      toast.success("Home page video deleted successfully!");
+    } catch (err: unknown) {
+      console.error(err);
+      const message = err instanceof Error ? err.message : "Failed to delete video";
+      toast.error(message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,9 +209,24 @@ export default function HomePageVideosPage() {
                               {video.vdo_url}
                             </a>
                           </div>
-                          <div className="flex items-center gap-1.5 border-t pt-1.5 text-[10px] text-muted-foreground">
-                            <Calendar className="size-3" />
-                            <span>Added: {formatDate(video.created_at)}</span>
+                          <div className="flex items-center justify-between border-t pt-1.5">
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                              <Calendar className="size-3" />
+                              <span>Added: {formatDate(video.created_at)}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              onClick={() => handleDelete(video.id)}
+                              disabled={deletingId === video.id}
+                            >
+                              {deletingId === video.id ? (
+                                <Loader2 className="size-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="size-3.5" />
+                              )}
+                            </Button>
                           </div>
                         </div>
                       </Card>

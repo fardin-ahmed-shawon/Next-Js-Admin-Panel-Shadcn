@@ -26,13 +26,9 @@ export function useSteadfastPayments() {
   const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PAYMENTS_URL || "steadfast/payments";
   const url = `${baseUrl}${endpoint}`;
 
-  const { data, error, isLoading, mutate } = useSWR(
-    user?.id ? [url, user.id] : url,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-    }
-  );
+  const { data, error, isLoading, mutate } = useSWR(user?.id ? [url, user.id] : url, fetcher, {
+    revalidateOnFocus: false,
+  });
 
   return {
     data: data?.data?.data || data?.data || [], // Handle potential pagination or raw array

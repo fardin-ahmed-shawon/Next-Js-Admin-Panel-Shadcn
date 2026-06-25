@@ -6,7 +6,7 @@ export function RevenueStats({ summary }: { summary: any }) {
   if (!summary) return null;
 
   const formatCurrency = (amount: number) => {
-    return `৳${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    return `৳${amount.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
   };
 
   const stats = [

@@ -3,14 +3,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, Layers, Pen } from "lucide-reac
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,11 +20,10 @@ interface ProductReportsTableProps {
   isLoading?: boolean;
 }
 
-const BASE_URL =
-  (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/").replace(
-    "/api/v1/admin/",
-    "/"
-  );
+const BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/").replace(
+  "/api/v1/admin/",
+  "/",
+);
 
 function getImageUrl(img: string | null | undefined): string {
   if (!img) return "https://placehold.co/48x48/1a1a2e/e0e0e0?text=No+Img";
@@ -113,9 +105,7 @@ export function ProductReportsTable({
                 data.map((row) => (
                   <React.Fragment key={row.sl_no}>
                     <TableRow className={row.has_variants && expandedRows[row.sl_no] ? "border-b-0 bg-muted/10" : ""}>
-                      <TableCell className="text-muted-foreground">
-                        {row.sl_no}
-                      </TableCell>
+                      <TableCell className="text-muted-foreground">{row.sl_no}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           {row.has_variants && (
@@ -152,9 +142,7 @@ export function ProductReportsTable({
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {row.sku}
-                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{row.sku}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">
                         {row.has_variant_wise_pricing ? (
                           <span className="text-muted-foreground text-xs">Variant Pricing</span>
@@ -190,11 +178,9 @@ export function ProductReportsTable({
                           {formatCurrency(row.total_profit)}
                         </span>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
-                        {row.date}
-                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground text-sm">{row.date}</TableCell>
                     </TableRow>
-                    
+
                     {row.has_variants && expandedRows[row.sl_no] && row.variants && (
                       <>
                         {row.variants.map((v) => (
@@ -206,18 +192,14 @@ export function ProductReportsTable({
                                 {v.name}
                               </div>
                             </TableCell>
-                            <TableCell className="font-mono text-xs text-muted-foreground">
-                              {v.sku}
-                            </TableCell>
+                            <TableCell className="font-mono text-xs text-muted-foreground">{v.sku}</TableCell>
                             <TableCell className="text-right whitespace-nowrap text-muted-foreground text-sm">
                               {v.purchase_price > 0 ? formatCurrency(v.purchase_price) : "-"}
                             </TableCell>
                             <TableCell className="text-right whitespace-nowrap text-muted-foreground text-sm">
                               {v.selling_price > 0 ? formatCurrency(v.selling_price) : "-"}
                             </TableCell>
-                            <TableCell className="text-right text-muted-foreground text-sm">
-                              {v.stock}
-                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground text-sm">{v.stock}</TableCell>
                             {/* Variants don't have individual report stats in this payload */}
                             <TableCell colSpan={5}></TableCell>
                           </TableRow>

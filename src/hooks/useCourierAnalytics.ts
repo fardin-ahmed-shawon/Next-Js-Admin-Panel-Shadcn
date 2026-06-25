@@ -52,7 +52,7 @@ export interface CourierAnalyticsResponse {
 const fetcher = async (url: string) => {
   const res = await fetchClient(url);
   if (!res.ok) throw new Error("Failed to fetch courier reports.");
-  
+
   const data = await res.json();
   if (!data.success) {
     throw new Error(data.message || "Failed to fetch courier reports.");
@@ -68,18 +68,14 @@ export function useCourierAnalytics(queryParams: Record<string, any> = {}) {
       searchParams.append(key, queryParams[key]);
     }
   });
-  
+
   const queryStr = searchParams.toString();
   const url = `${API_URL}${queryStr ? `?${queryStr}` : ""}`;
 
-  const { data, error, isLoading, mutate } = useSWR<CourierAnalyticsResponse>(
-    url,
-    fetcher,
-    {
-      keepPreviousData: true,
-      revalidateOnFocus: false,
-    }
-  );
+  const { data, error, isLoading, mutate } = useSWR<CourierAnalyticsResponse>(url, fetcher, {
+    keepPreviousData: true,
+    revalidateOnFocus: false,
+  });
 
   return {
     data,

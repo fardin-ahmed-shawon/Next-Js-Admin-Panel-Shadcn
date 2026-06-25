@@ -23,16 +23,16 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8
 const COUPON_API_URL = process.env.NEXT_PUBLIC_API_COUPON_URL || "coupons";
 
 // Helper function for coupon-specific URLs
-const getCouponUrl = (path: string = '') => {
+const getCouponUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) {
-    baseUrl += '/';
+  if (!baseUrl.endsWith("/")) {
+    baseUrl += "/";
   }
-  
-  const couponPath = COUPON_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+
+  const couponPath = COUPON_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${couponPath}/${cleanPath}` : couponPath;
-  
+
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
@@ -43,7 +43,7 @@ interface AddCouponDialogProps {
 export function AddCouponDialog({ onCouponAdded }: AddCouponDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  
+
   // Form state
   const [code, setCode] = React.useState("");
   const [discountType, setDiscountType] = React.useState<"percentage" | "fixed">("percentage");
@@ -51,7 +51,7 @@ export function AddCouponDialog({ onCouponAdded }: AddCouponDialogProps) {
   const [expiryDate, setExpiryDate] = React.useState("");
   const [usageLimit, setUsageLimit] = React.useState("");
   const [status, setStatus] = React.useState<"active" | "inactive">("active");
-  
+
   // Form validation
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
@@ -66,19 +66,19 @@ export function AddCouponDialog({ onCouponAdded }: AddCouponDialogProps) {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!code.trim()) {
       newErrors.code = "Coupon code is required";
     }
-    
+
     if (!discountValue || parseFloat(discountValue) <= 0) {
       newErrors.discountValue = "Discount value is required and must be greater than 0";
     }
-    
+
     if (discountType === "percentage" && parseFloat(discountValue) > 100) {
       newErrors.discountValue = "Percentage discount cannot exceed 100%";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -95,13 +95,13 @@ export function AddCouponDialog({ onCouponAdded }: AddCouponDialogProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const couponData = {
         code: code.toUpperCase(),
@@ -111,12 +111,12 @@ export function AddCouponDialog({ onCouponAdded }: AddCouponDialogProps) {
         usage_limit: usageLimit ? parseInt(usageLimit) : null,
         status: status,
       };
-      
+
       console.log("Submitting coupon data:", couponData);
-      
+
       const url = getCouponUrl();
       console.log("API URL:", url);
-      
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -125,14 +125,14 @@ export function AddCouponDialog({ onCouponAdded }: AddCouponDialogProps) {
         },
         body: JSON.stringify(couponData),
       });
-      
+
       const responseData = await response.json();
       console.log("API Response:", responseData);
-      
+
       if (!response.ok) {
         if (response.status === 422 && responseData.errors) {
           const apiErrors: Record<string, string> = {};
-          Object.keys(responseData.errors).forEach(key => {
+          Object.keys(responseData.errors).forEach((key) => {
             apiErrors[key] = responseData.errors[key][0];
           });
           setErrors(apiErrors);
@@ -142,15 +142,14 @@ export function AddCouponDialog({ onCouponAdded }: AddCouponDialogProps) {
         }
         return;
       }
-      
+
       toast.success(`Coupon ${code.toUpperCase()} added successfully`);
       resetForm();
       setOpen(false);
-      
+
       if (onCouponAdded) {
         onCouponAdded();
       }
-      
     } catch (error) {
       console.error("Error adding coupon:", error);
       toast.error(error instanceof Error ? error.message : "Failed to add coupon");
@@ -251,7 +250,7 @@ export function AddCouponDialog({ onCouponAdded }: AddCouponDialogProps) {
                   type="date"
                   value={expiryDate}
                   onChange={(e) => setExpiryDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={new Date().toISOString().split("T")[0]}
                 />
               </div>
 
@@ -281,7 +280,7 @@ export function AddCouponDialog({ onCouponAdded }: AddCouponDialogProps) {
               </Select>
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel

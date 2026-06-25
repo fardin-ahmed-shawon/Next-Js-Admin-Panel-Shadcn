@@ -34,7 +34,7 @@ export default function CustomersPage() {
     phone: c.phone || "",
     totalOrders: c.parcel_history?.total || 0,
     totalSpent: c.parcel_history?.total_spent || 0,
-    // For demo purposes, we consider active users with a password as 'Registered', 
+    // For demo purposes, we consider active users with a password as 'Registered',
     // otherwise 'Guest'. Or simply if status is active, they are registered.
     status: c.password ? "Registered" : "Guest",
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.full_name)}&background=random`,

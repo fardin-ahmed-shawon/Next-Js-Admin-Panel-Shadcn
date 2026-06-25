@@ -216,17 +216,17 @@ function RowActions({ row }: { row: CategoryRow }) {
                 if (row.type === "Sub") {
                   const numericId = row.id.replace("SUB-", "");
                   const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_SUB_CATEGORIES_URL || "sub-categories"}`;
-                  
+
                   try {
                     const res = await fetch(`${API_URL}/${numericId}`, {
                       method: "DELETE",
                     });
                     const data = await res.json();
-                    
+
                     if (!res.ok || !data.success) {
                       throw new Error(data.message || "Failed to delete sub category");
                     }
-                    
+
                     toast.success(data.message || "Sub category deleted successfully");
                     setDeleteOpen(false);
                     window.location.reload();
@@ -236,17 +236,17 @@ function RowActions({ row }: { row: CategoryRow }) {
                 } else if (row.type === "Main") {
                   const numericId = row.id.replace("CAT-", "");
                   const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_MAIN_CATEGORIES_URL || "main-categories"}`;
-                  
+
                   try {
                     const res = await fetch(`${API_URL}/${numericId}`, {
                       method: "DELETE",
                     });
                     const data = await res.json();
-                    
+
                     if (!res.ok || !data.success) {
                       throw new Error(data.message || "Failed to delete main category");
                     }
-                    
+
                     toast.success(data.message || "Main category deleted successfully");
                     setDeleteOpen(false);
                     window.location.reload();

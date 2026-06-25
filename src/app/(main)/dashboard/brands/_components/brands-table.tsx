@@ -69,7 +69,15 @@ interface BrandsTableProps {
 }
 
 /* ---- Row Actions ---- */
-function RowActions({ row, onDelete, onUpdate }: { row: BrandRow; onDelete: (id: string) => Promise<void>; onUpdate: (id: string, formData: FormData) => Promise<boolean> }) {
+function RowActions({
+  row,
+  onDelete,
+  onUpdate,
+}: {
+  row: BrandRow;
+  onDelete: (id: string) => Promise<void>;
+  onUpdate: (id: string, formData: FormData) => Promise<boolean>;
+}) {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
 
@@ -110,12 +118,7 @@ function RowActions({ row, onDelete, onUpdate }: { row: BrandRow; onDelete: (id:
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <EditBrandDialog 
-        brand={row} 
-        open={editOpen} 
-        onOpenChange={setEditOpen}
-        onUpdate={onUpdate}
-      />
+      <EditBrandDialog brand={row} open={editOpen} onOpenChange={setEditOpen} onUpdate={onUpdate} />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
@@ -189,12 +192,13 @@ export function BrandsTable({ data, onDelete, onUpdate, onRefresh }: BrandsTable
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted p-1">
-            <img 
-              src={row.original.logo} 
-              alt={row.original.name} 
+            <img
+              src={row.original.logo}
+              alt={row.original.name}
               className="size-full object-cover rounded-sm"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://placehold.co/80x80/1a1a2e/e0e0e0?text=${row.original.name.substring(0,2).toUpperCase()}`;
+                (e.target as HTMLImageElement).src =
+                  `https://placehold.co/80x80/1a1a2e/e0e0e0?text=${row.original.name.substring(0, 2).toUpperCase()}`;
               }}
             />
           </div>
@@ -213,13 +217,7 @@ export function BrandsTable({ data, onDelete, onUpdate, onRefresh }: BrandsTable
     {
       id: "actions",
       header: () => <div className="flex w-full justify-end">Actions</div>,
-      cell: ({ row }) => (
-        <RowActions 
-          row={row.original} 
-          onDelete={onDelete}
-          onUpdate={onUpdate}
-        />
-      ),
+      cell: ({ row }) => <RowActions row={row.original} onDelete={onDelete} onUpdate={onUpdate} />,
       enableHiding: false,
       enableSorting: false,
     },

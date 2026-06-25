@@ -17,7 +17,7 @@ export function downloadCSV(data: any[], filename: string) {
             }
             return field;
           })
-          .join(",")
+          .join(","),
       ),
     ].join("\n");
 

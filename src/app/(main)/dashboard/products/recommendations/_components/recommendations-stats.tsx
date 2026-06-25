@@ -59,9 +59,7 @@ export function RecommendationsStats() {
             {isLoading ? (
               <Skeleton className="h-9 w-16" />
             ) : (
-              <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">
-                {stat.value}
-              </div>
+              <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">{stat.value}</div>
             )}
             <p className="text-muted-foreground text-sm">{stat.subtitle}</p>
           </CardContent>

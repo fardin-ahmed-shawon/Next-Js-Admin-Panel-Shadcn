@@ -39,13 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,27 +48,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import {
-  type Recommendation,
-  useProductRecommendations,
-} from "@/hooks/useProductRecommendations";
+import { type Recommendation, useProductRecommendations } from "@/hooks/useProductRecommendations";
 
 import { EditRecommendationDialog } from "./edit-recommendation-dialog";
 
@@ -82,24 +60,19 @@ import { EditRecommendationDialog } from "./edit-recommendation-dialog";
 
 function buildColumns(
   onEdit: (rec: Recommendation) => void,
-  onDelete: (rec: Recommendation) => void
+  onDelete: (rec: Recommendation) => void,
 ): ColumnDef<Recommendation>[] {
   return [
     {
       id: "search",
-      accessorFn: (row) =>
-        `${row.product?.title ?? ""} ${row.recommended_product?.title ?? ""} ${row.id}`,
+      accessorFn: (row) => `${row.product?.title ?? ""} ${row.recommended_product?.title ?? ""} ${row.id}`,
       filterFn: "includesString",
       enableHiding: true,
     },
     {
       accessorKey: "id",
       header: "ID",
-      cell: ({ row }) => (
-        <span className="font-medium text-muted-foreground tabular-nums">
-          #{row.original.id}
-        </span>
-      ),
+      cell: ({ row }) => <span className="font-medium text-muted-foreground tabular-nums">#{row.original.id}</span>,
     },
     {
       accessorKey: "product",
@@ -114,10 +87,7 @@ function buildColumns(
           <ArrowUpDown className="ml-2 size-3.5 text-muted-foreground" />
         </Button>
       ),
-      sortingFn: (a, b) =>
-        (a.original.product?.title ?? "").localeCompare(
-          b.original.product?.title ?? ""
-        ),
+      sortingFn: (a, b) => (a.original.product?.title ?? "").localeCompare(b.original.product?.title ?? ""),
       cell: ({ row }) => {
         const p = row.original.product;
         return (
@@ -137,9 +107,7 @@ function buildColumns(
               <span className="text-sm font-medium leading-none truncate">
                 {p?.title ?? `Product #${row.original.product_id}`}
               </span>
-              <span className="text-xs text-muted-foreground">
-                ID: {row.original.product_id}
-              </span>
+              <span className="text-xs text-muted-foreground">ID: {row.original.product_id}</span>
             </div>
           </div>
         );
@@ -150,13 +118,7 @@ function buildColumns(
       header: "",
       cell: () => (
         <div className="flex justify-center text-muted-foreground/60">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            className="shrink-0"
-          >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0">
             <path
               d="M4 10h12M12 6l4 4-4 4"
               stroke="currentColor"
@@ -183,9 +145,7 @@ function buildColumns(
         </Button>
       ),
       sortingFn: (a, b) =>
-        (a.original.recommended_product?.title ?? "").localeCompare(
-          b.original.recommended_product?.title ?? ""
-        ),
+        (a.original.recommended_product?.title ?? "").localeCompare(b.original.recommended_product?.title ?? ""),
       cell: ({ row }) => {
         const p = row.original.recommended_product;
         return (
@@ -205,9 +165,7 @@ function buildColumns(
               <span className="text-sm font-medium leading-none truncate">
                 {p?.title ?? `Product #${row.original.recommended_product_id}`}
               </span>
-              <span className="text-xs text-muted-foreground">
-                ID: {row.original.recommended_product_id}
-              </span>
+              <span className="text-xs text-muted-foreground">ID: {row.original.recommended_product_id}</span>
             </div>
           </div>
         );
@@ -229,16 +187,8 @@ function buildColumns(
     },
     {
       id: "actions",
-      header: () => (
-        <div className="flex w-full justify-end">Actions</div>
-      ),
-      cell: ({ row }) => (
-        <RowActions
-          row={row.original}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-      ),
+      header: () => <div className="flex w-full justify-end">Actions</div>,
+      cell: ({ row }) => <RowActions row={row.original} onEdit={onEdit} onDelete={onDelete} />,
       enableHiding: false,
       enableSorting: false,
     },
@@ -357,10 +307,7 @@ export function RecommendationsTable() {
     }
   };
 
-  const columns = React.useMemo(
-    () => buildColumns(handleEdit, handleDeleteRequest),
-    [handleEdit, handleDeleteRequest]
-  );
+  const columns = React.useMemo(() => buildColumns(handleEdit, handleDeleteRequest), [handleEdit, handleDeleteRequest]);
 
   const table = useReactTable({
     data,
@@ -380,23 +327,20 @@ export function RecommendationsTable() {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const searchQuery =
-    (table.getColumn("search")?.getFilterValue() as string) ?? "";
+  const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
   const totalCount = table.getFilteredRowModel().rows.length;
 
   return (
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="font-normal text-muted-foreground text-sm">
-            Recommendations List
-          </CardTitle>
+          <CardTitle className="font-normal text-muted-foreground text-sm">Recommendations List</CardTitle>
           <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
             {isLoading
               ? "Loading…"
               : totalCount > 0
-              ? `${totalCount} recommendation${totalCount !== 1 ? "s" : ""}`
-              : "No recommendations"}
+                ? `${totalCount} recommendation${totalCount !== 1 ? "s" : ""}`
+                : "No recommendations"}
           </CardDescription>
         </CardHeader>
 
@@ -411,9 +355,7 @@ export function RecommendationsTable() {
                 placeholder="Search products…"
                 value={searchQuery}
                 onChange={(e) => {
-                  table
-                    .getColumn("search")
-                    ?.setFilterValue(e.target.value || undefined);
+                  table.getColumn("search")?.setFilterValue(e.target.value || undefined);
                   table.setPageIndex(0);
                 }}
               />
@@ -428,12 +370,7 @@ export function RecommendationsTable() {
                   <TableRow key={hg.id}>
                     {hg.headers.map((header) => (
                       <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -451,28 +388,18 @@ export function RecommendationsTable() {
                   table.getRowModel().rows.map((row) => (
                     <TableRow key={row.id}>
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
+                        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-48"
-                    >
+                    <TableCell colSpan={columns.length} className="h-48">
                       <div className="flex flex-col items-center justify-center gap-2 text-center">
                         <div className="flex size-14 items-center justify-center rounded-full bg-muted">
                           <Sparkles className="size-6 text-muted-foreground" />
                         </div>
-                        <p className="text-sm font-medium">
-                          No recommendations found
-                        </p>
+                        <p className="text-sm font-medium">No recommendations found</p>
                         <p className="text-xs text-muted-foreground">
                           Try adjusting your search or add a new recommendation.
                         </p>
@@ -487,9 +414,7 @@ export function RecommendationsTable() {
           {/* Pagination */}
           <div className="flex items-center justify-between gap-4 px-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Rows per page
-              </span>
+              <span className="text-sm text-muted-foreground">Rows per page</span>
               <Select
                 value={`${pagination.pageSize}`}
                 onValueChange={(v) =>
@@ -514,8 +439,7 @@ export function RecommendationsTable() {
             </div>
             <div className="flex items-center gap-1">
               <span className="text-sm text-muted-foreground">
-                Page {table.getState().pagination.pageIndex + 1} of{" "}
-                {table.getPageCount() || 1}
+                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
               </span>
               <Button
                 size="icon-sm"
@@ -544,9 +468,7 @@ export function RecommendationsTable() {
               <Button
                 size="icon-sm"
                 variant="outline"
-                onClick={() =>
-                  table.setPageIndex(table.getPageCount() - 1)
-                }
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                 disabled={!table.getCanNextPage()}
               >
                 <ChevronsRight className="size-4" />
@@ -575,14 +497,9 @@ export function RecommendationsTable() {
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently remove the recommendation linking{" "}
+              <strong>{deleteTarget?.product?.title ?? `Product #${deleteTarget?.product_id}`}</strong> →{" "}
               <strong>
-                {deleteTarget?.product?.title ??
-                  `Product #${deleteTarget?.product_id}`}
-              </strong>{" "}
-              →{" "}
-              <strong>
-                {deleteTarget?.recommended_product?.title ??
-                  `Product #${deleteTarget?.recommended_product_id}`}
+                {deleteTarget?.recommended_product?.title ?? `Product #${deleteTarget?.recommended_product_id}`}
               </strong>
               . This action cannot be undone.
             </AlertDialogDescription>

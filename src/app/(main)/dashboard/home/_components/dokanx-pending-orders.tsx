@@ -164,7 +164,7 @@ function exportToExcel(data: OrderRow[]) {
 
 export function DokanxPendingOrders() {
   const { data, isLoading } = useAdminDashboard();
-  
+
   const pendingOrders = React.useMemo(() => {
     if (!data?.lists?.pending) return [];
     return data.lists.pending.map((order) => ({
@@ -304,11 +304,11 @@ export function DokanxPendingOrders() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                 <TableRow>
-                   <TableCell colSpan={5} className="h-24 text-center">
-                     <Skeleton className="h-8 w-full" />
-                   </TableCell>
-                 </TableRow>
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    <Skeleton className="h-8 w-full" />
+                  </TableCell>
+                </TableRow>
               ) : table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>

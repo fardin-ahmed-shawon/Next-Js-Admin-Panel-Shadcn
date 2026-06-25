@@ -22,16 +22,16 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8
 const DISCOUNT_API_URL = process.env.NEXT_PUBLIC_API_DISCOUNT_URL || "discounts";
 
 // Helper function for discount-specific URLs
-const getDiscountUrl = (path: string = '') => {
+const getDiscountUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) {
-    baseUrl += '/';
+  if (!baseUrl.endsWith("/")) {
+    baseUrl += "/";
   }
-  
-  const discountPath = DISCOUNT_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+
+  const discountPath = DISCOUNT_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${discountPath}/${cleanPath}` : discountPath;
-  
+
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
@@ -51,18 +51,18 @@ interface EditDiscountDialogProps {
 
 export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpdated }: EditDiscountDialogProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  
+
   // Form state
   const [minimumSubtotalAmount, setMinimumSubtotalAmount] = React.useState(discount.purchaseAmount.toString());
   const [discountType, setDiscountType] = React.useState<"fixed" | "percentage">(
-    discount.type === "Percentage" ? "percentage" : "fixed"
+    discount.type === "Percentage" ? "percentage" : "fixed",
   );
   const [discountAmount, setDiscountAmount] = React.useState(discount.discountAmount.toString());
   const [freeShipping, setFreeShipping] = React.useState(discount.freeShipping);
   const [status, setStatus] = React.useState<"active" | "inactive">(
-    discount.status === "Active" ? "active" : "inactive"
+    discount.status === "Active" ? "active" : "inactive",
   );
-  
+
   // Form validation
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
@@ -78,32 +78,32 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!minimumSubtotalAmount || parseFloat(minimumSubtotalAmount) <= 0) {
       newErrors.minimumSubtotalAmount = "Minimum purchase amount is required and must be greater than 0";
     }
-    
+
     if (!discountAmount || parseFloat(discountAmount) <= 0) {
       newErrors.discountAmount = "Discount amount is required and must be greater than 0";
     }
-    
+
     if (discountType === "percentage" && parseFloat(discountAmount) > 100) {
       newErrors.discountAmount = "Percentage discount cannot exceed 100%";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Prepare data to match database schema
       const discountData = {
@@ -113,12 +113,12 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
         has_free_shipping: freeShipping ? 1 : 0,
         status: status,
       };
-      
+
       console.log("Updating discount data:", discountData);
-      
+
       const url = getDiscountUrl(`${discount.id}`);
       console.log("Update URL:", url);
-      
+
       const response = await fetch(url, {
         method: "PUT",
         headers: {
@@ -127,15 +127,15 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
         },
         body: JSON.stringify(discountData),
       });
-      
+
       const responseData = await response.json();
       console.log("API Response:", responseData);
-      
+
       if (!response.ok) {
         // Handle validation errors from Laravel
         if (response.status === 422 && responseData.errors) {
           const apiErrors: Record<string, string> = {};
-          Object.keys(responseData.errors).forEach(key => {
+          Object.keys(responseData.errors).forEach((key) => {
             apiErrors[key] = responseData.errors[key][0];
           });
           setErrors(apiErrors);
@@ -145,15 +145,14 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
         }
         return;
       }
-      
+
       toast.success(`Discount rule ${discount.id} updated successfully.`);
       onOpenChange(false);
-      
+
       // Refresh the discounts list
       if (onDiscountUpdated) {
         onDiscountUpdated();
       }
-      
     } catch (error) {
       console.error("Error updating discount:", error);
       toast.error(error instanceof Error ? error.message : "Failed to update discount");
@@ -195,10 +194,7 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="edit-discountType">Discount Type</Label>
-                <Select 
-                  value={discountType} 
-                  onValueChange={(value: "fixed" | "percentage") => setDiscountType(value)}
-                >
+                <Select value={discountType} onValueChange={(value: "fixed" | "percentage") => setDiscountType(value)}>
                   <SelectTrigger id="edit-discountType">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -223,9 +219,7 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
                   required
                   className={errors.discountAmount ? "border-destructive" : ""}
                 />
-                {errors.discountAmount && (
-                  <p className="text-sm text-destructive">{errors.discountAmount}</p>
-                )}
+                {errors.discountAmount && <p className="text-sm text-destructive">{errors.discountAmount}</p>}
               </div>
             </div>
 
@@ -237,11 +231,7 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
                 </Label>
                 <p className="text-sm text-muted-foreground">Include free shipping with this discount</p>
               </div>
-              <Switch 
-                id="edit-freeShipping" 
-                checked={freeShipping} 
-                onCheckedChange={setFreeShipping} 
-              />
+              <Switch id="edit-freeShipping" checked={freeShipping} onCheckedChange={setFreeShipping} />
             </div>
 
             {/* Status Selection */}
@@ -258,7 +248,7 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
               </Select>
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

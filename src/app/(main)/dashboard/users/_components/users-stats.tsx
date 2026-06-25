@@ -10,9 +10,9 @@ interface UsersStatsProps {
 
 export function UsersStats({ users, loading }: UsersStatsProps) {
   const totalUsers = users.length;
-  
+
   // Calculate unique roles in use
-  const distinctRolesCount = new Set(users.map(u => u.role_id)).size;
+  const distinctRolesCount = new Set(users.map((u) => u.role_id)).size;
 
   // Calculate most common role
   const roleCounts: Record<string, number> = {};

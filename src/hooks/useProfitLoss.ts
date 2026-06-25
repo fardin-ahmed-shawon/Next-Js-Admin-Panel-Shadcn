@@ -23,7 +23,7 @@ const fetcher = async (url: string) => {
       last_page: json.data?.last_page,
       per_page: json.data?.per_page,
       total: json.data?.total,
-    }
+    },
   };
 };
 

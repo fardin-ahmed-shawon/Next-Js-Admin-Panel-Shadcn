@@ -30,10 +30,7 @@ export function useSteadfastReturnedParcels(options: UseSteadfastReturnedParcels
     return response.json();
   };
 
-  const { data, error, isLoading, mutate } = useSWR(
-    user?.id ? [url, user.id] : url,
-    fetcher
-  );
+  const { data, error, isLoading, mutate } = useSWR(user?.id ? [url, user.id] : url, fetcher);
 
   return {
     data,

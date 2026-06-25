@@ -23,7 +23,7 @@ export function AddBlockDialog({ open, onOpenChange, onAddBlock }: AddBlockDialo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!blockValue.trim()) {
       toast.error("Please enter a value to block");
       return;
@@ -36,7 +36,7 @@ export function AddBlockDialog({ open, onOpenChange, onAddBlock }: AddBlockDialo
         block_value: blockValue.trim(),
         reason: blockReason.trim() || undefined,
       });
-      
+
       // Reset form
       setBlockValue("");
       setBlockReason("");

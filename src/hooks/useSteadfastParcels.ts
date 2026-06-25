@@ -39,13 +39,9 @@ export function useSteadfastParcels(params?: UseSteadfastParcelsParams) {
   const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
   const url = `${baseUrl}${endpoint}${queryString}`;
 
-  const { data, error, isLoading, mutate } = useSWR(
-    user?.id ? [url, user.id] : url,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-    }
-  );
+  const { data, error, isLoading, mutate } = useSWR(user?.id ? [url, user.id] : url, fetcher, {
+    revalidateOnFocus: false,
+  });
 
   return {
     data,

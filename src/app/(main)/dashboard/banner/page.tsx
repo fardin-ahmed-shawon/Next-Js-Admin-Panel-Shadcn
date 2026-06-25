@@ -12,11 +12,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:8000";
 const BANNER_API_URL = process.env.NEXT_PUBLIC_API_BANNER_URL || "banners";
 
-const getBannerUrl = (path: string = '') => {
+const getBannerUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) baseUrl += '/';
-  const bannerPath = BANNER_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+  if (!baseUrl.endsWith("/")) baseUrl += "/";
+  const bannerPath = BANNER_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${bannerPath}/${cleanPath}` : bannerPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
@@ -25,11 +25,11 @@ const getFullImageUrl = (imagePath: string) => {
   if (!imagePath) return "";
   if (imagePath.startsWith("http")) return imagePath;
   if (imagePath.startsWith("data:")) return imagePath;
-  
-  const cleanPath = imagePath.replace(/^\/+/, '');
+
+  const cleanPath = imagePath.replace(/^\/+/, "");
   let appUrl = APP_URL;
-  if (!appUrl.endsWith('/')) appUrl += '/';
-  
+  if (!appUrl.endsWith("/")) appUrl += "/";
+
   return `${appUrl}${cleanPath}`;
 };
 
@@ -166,11 +166,11 @@ export default function BannerPage() {
     try {
       const url = getBannerUrl();
       console.log("Fetching banners from:", url);
-      
+
       const response = await fetch(url, {
-        headers: { 
-          Accept: "application/json", 
-          "Content-Type": "application/json" 
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
       });
 
@@ -178,7 +178,7 @@ export default function BannerPage() {
 
       const result = await response.json();
       console.log("API Response:", result);
-      
+
       if (result.success && result.data) {
         const data = result.data;
         setBannerId(data.id);
@@ -218,55 +218,55 @@ export default function BannerPage() {
     try {
       const formData = new FormData();
       let hasChanges = false;
-      
+
       // Handle Banner 1
       if (banner1File) {
-        formData.append('banner_img_1', banner1File);
+        formData.append("banner_img_1", banner1File);
         hasChanges = true;
         console.log("Uploading new banner 1 file:", banner1File.name);
       } else if (banner1Removed) {
-        formData.append('remove_banner_img_1', 'true');
+        formData.append("remove_banner_img_1", "true");
         hasChanges = true;
         console.log("Removing banner 1");
       }
-      
+
       // Handle Banner 2
       if (banner2File) {
-        formData.append('banner_img_2', banner2File);
+        formData.append("banner_img_2", banner2File);
         hasChanges = true;
         console.log("Uploading new banner 2 file:", banner2File.name);
       } else if (banner2Removed) {
-        formData.append('remove_banner_img_2', 'true');
+        formData.append("remove_banner_img_2", "true");
         hasChanges = true;
         console.log("Removing banner 2");
       }
-      
+
       if (!hasChanges) {
         toast.info("No changes to save");
         setIsSubmitting(false);
         return;
       }
-      
+
       const url = getBannerUrl();
       console.log("Submitting to:", url);
-      
+
       const response = await fetch(url, {
         method: "POST",
         body: formData,
       });
-      
+
       const result = await response.json();
       console.log("Server response:", result);
-      
+
       if (!response.ok) {
         throw new Error(result.message || "Failed to save banners");
       }
-      
+
       toast.success(result.message || "Banners updated successfully");
-      
+
       // Refresh banner data
       await fetchBanners();
-      
+
       // Reset states
       setBanner1File(null);
       setBanner1Preview("");
@@ -274,7 +274,6 @@ export default function BannerPage() {
       setBanner2File(null);
       setBanner2Preview("");
       setBanner2Removed(false);
-      
     } catch (error) {
       console.error("Error saving banners:", error);
       toast.error(error instanceof Error ? error.message : "Failed to save banners");

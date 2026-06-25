@@ -113,9 +113,7 @@ function ProductPicker({ label, id, selected, onSelect, disabledId }: ProductPic
                           />
                         )}
                         <span className="flex-1 truncate">{p.title}</span>
-                        {p.id === disabledId && (
-                          <span className="text-xs text-muted-foreground">(selected)</span>
-                        )}
+                        {p.id === disabledId && <span className="text-xs text-muted-foreground">(selected)</span>}
                       </button>
                     ))}
                   </div>

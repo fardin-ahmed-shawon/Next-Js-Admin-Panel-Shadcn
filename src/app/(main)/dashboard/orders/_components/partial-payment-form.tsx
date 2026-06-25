@@ -56,7 +56,6 @@ export function PartialPaymentForm({
 
   return (
     <div className="space-y-4">
-
       <Field>
         <FieldLabel htmlFor="paidAmt">Paid Amount</FieldLabel>
         <FieldContent>

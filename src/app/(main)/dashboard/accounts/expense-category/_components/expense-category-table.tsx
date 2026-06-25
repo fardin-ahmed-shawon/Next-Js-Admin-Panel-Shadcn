@@ -196,7 +196,7 @@ export function ExpenseCategoryTable() {
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this category?")) return;
-    
+
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
       const endpoint = process.env.NEXT_PUBLIC_API_EXPENSE_CATEGORIES_URL || "expense-categories";
@@ -365,13 +365,11 @@ export function ExpenseCategoryTable() {
                   </DialogDescription>
                   <DialogFooter>
                     <DialogClose asChild>
-                      <Button variant="outline" disabled={isDeletingBulk}>Cancel</Button>
+                      <Button variant="outline" disabled={isDeletingBulk}>
+                        Cancel
+                      </Button>
                     </DialogClose>
-                    <Button
-                      variant="destructive"
-                      disabled={isDeletingBulk}
-                      onClick={handleBulkDelete}
-                    >
+                    <Button variant="destructive" disabled={isDeletingBulk} onClick={handleBulkDelete}>
                       {isDeletingBulk ? "Deleting..." : "Delete"}
                     </Button>
                   </DialogFooter>
@@ -492,7 +490,13 @@ export function ExpenseCategoryTable() {
         </div>
       </CardContent>
 
-      <CategoryDialog open={dialogOpen} onOpenChange={setDialogOpen} initialData={editData} mode="edit" onSuccess={() => mutate()} />
+      <CategoryDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        initialData={editData}
+        mode="edit"
+        onSuccess={() => mutate()}
+      />
     </Card>
   );
 }

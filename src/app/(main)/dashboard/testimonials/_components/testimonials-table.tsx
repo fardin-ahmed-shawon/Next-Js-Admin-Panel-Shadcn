@@ -85,32 +85,32 @@ export function TestimonialsTable({ initialTestimonials }: TestimonialsTableProp
 
   const handleDelete = async (id: string) => {
     try {
-      let apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin';
-      const testimonialEndpoint = process.env.NEXT_PUBLIC_API_TESTIMONIAL_URL || 'testimonials';
-      
-      const baseUrl = apiUrl.replace(/\/$/, '');
+      let apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin";
+      const testimonialEndpoint = process.env.NEXT_PUBLIC_API_TESTIMONIAL_URL || "testimonials";
+
+      const baseUrl = apiUrl.replace(/\/$/, "");
       const url = `${baseUrl}/${testimonialEndpoint}/${id}`;
 
       const response = await fetch(url, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Accept': 'application/json',
+          Accept: "application/json",
         },
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to delete testimonial');
+        throw new Error(error.message || "Failed to delete testimonial");
       }
 
       const result = await response.json();
-      
+
       if (result.success) {
         setData((prev) => prev.filter((item) => item.id !== id));
         toast.success(result.message || "Testimonial deleted successfully.");
         router.refresh();
       } else {
-        throw new Error(result.message || 'Failed to delete testimonial');
+        throw new Error(result.message || "Failed to delete testimonial");
       }
     } catch (error) {
       console.error("Delete error:", error);
@@ -192,8 +192,8 @@ export function TestimonialsTable({ initialTestimonials }: TestimonialsTableProp
       id: "actions",
       header: () => <div className="flex w-full justify-end">Actions</div>,
       cell: ({ row }) => (
-        <RowActions 
-          row={row.original} 
+        <RowActions
+          row={row.original}
           onDelete={() => handleDelete(row.original.id)}
           onUpdate={() => router.refresh()}
         />
@@ -227,7 +227,7 @@ export function TestimonialsTable({ initialTestimonials }: TestimonialsTableProp
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
   const totalCount = table.getFilteredRowModel().rows.length;
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
-  const selectedIds = table.getFilteredSelectedRowModel().rows.map(row => row.original.id);
+  const selectedIds = table.getFilteredSelectedRowModel().rows.map((row) => row.original.id);
 
   return (
     <Card>
@@ -426,12 +426,7 @@ function RowActions({ row, onDelete, onUpdate }: { row: Testimonial; onDelete: (
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <EditTestimonialDialog 
-        testimonial={row} 
-        open={editOpen} 
-        onOpenChange={setEditOpen}
-        onUpdate={onUpdate}
-      />
+      <EditTestimonialDialog testimonial={row} open={editOpen} onOpenChange={setEditOpen} onUpdate={onUpdate} />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

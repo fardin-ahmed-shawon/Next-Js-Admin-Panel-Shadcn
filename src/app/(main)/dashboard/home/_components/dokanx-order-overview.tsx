@@ -39,7 +39,7 @@ const orderConfig = {
 
 export function DokanxOrderOverview() {
   const { data, isLoading } = useAdminDashboard();
-  
+
   const orderOverviewData = React.useMemo(() => {
     if (!data?.order_overview) return [];
     return Object.entries(data.order_overview).map(([key, value]) => ({
@@ -49,7 +49,10 @@ export function DokanxOrderOverview() {
     }));
   }, [data?.order_overview]);
 
-  const totalOrders = React.useMemo(() => orderOverviewData.reduce((acc, curr) => acc + curr.value, 0), [orderOverviewData]);
+  const totalOrders = React.useMemo(
+    () => orderOverviewData.reduce((acc, curr) => acc + curr.value, 0),
+    [orderOverviewData],
+  );
 
   return (
     <Card className="flex flex-col h-full">
@@ -75,14 +78,17 @@ export function DokanxOrderOverview() {
       <CardContent className="flex flex-col items-center gap-8 pb-6">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center gap-4 h-full w-full py-8">
-             <Skeleton className="size-48 rounded-full" />
-             <Skeleton className="h-20 w-full" />
+            <Skeleton className="size-48 rounded-full" />
+            <Skeleton className="h-20 w-full" />
           </div>
         ) : (
           <>
             <ChartContainer config={orderConfig} className="mx-auto aspect-square max-h-56 w-full">
               <PieChart className="m-0" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel className="w-52" nameKey="name" />} />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel className="w-52" nameKey="name" />}
+                />
                 <Pie
                   cornerRadius={4}
                   data={orderOverviewData}

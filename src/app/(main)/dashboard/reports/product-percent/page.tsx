@@ -6,14 +6,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { useProductPercentReports } from "@/hooks/useProductPercentReports";
 import { ProductPercentStats } from "./_components/product-percent-stats";
@@ -100,8 +93,7 @@ export default function ProductPercentReportPage() {
         exportParams.append("period", timeRange);
       }
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
       const endpoint = process.env.NEXT_PUBLIC_API_PRODUCT_PERCENT_URL || "product-percent";
 
       const { fetchClient } = await import("@/lib/fetch-client");
@@ -134,10 +126,7 @@ export default function ProductPercentReportPage() {
           Cancelled_Percentage: `${row.cancelled?.percentage || 0}%`,
         }));
 
-        downloadCSV(
-          exportData,
-          `Product_Percent_Report_${new Date().toISOString().split("T")[0]}.csv`
-        );
+        downloadCSV(exportData, `Product_Percent_Report_${new Date().toISOString().split("T")[0]}.csv`);
         toast.success("Report exported successfully");
       }
     } catch {
@@ -254,14 +243,12 @@ export default function ProductPercentReportPage() {
         from={data?.data?.from || 0}
         to={data?.data?.to || 0}
         onPageChange={(p) => setPage(p)}
-        
         searchVal={searchVal}
         setSearchVal={setSearchVal}
         sortBy={sortBy}
         setSortBy={setSortBy}
         sortDir={sortDir}
         setSortDir={setSortDir}
-        
         onFilterSubmit={handleFilterSubmit}
         onReset={handleReset}
       />

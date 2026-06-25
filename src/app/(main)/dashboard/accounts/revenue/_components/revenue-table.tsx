@@ -248,7 +248,7 @@ export function RevenueTable({
   setPageSize,
   filter,
   setFilter,
-  loading
+  loading,
 }: {
   data: RevenueItem[];
   totalCount: number;

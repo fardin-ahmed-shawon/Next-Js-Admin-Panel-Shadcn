@@ -25,16 +25,16 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8
 const DISCOUNT_API_URL = process.env.NEXT_PUBLIC_API_DISCOUNT_URL || "discounts";
 
 // Helper function for discount-specific URLs
-const getDiscountUrl = (path: string = '') => {
+const getDiscountUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) {
-    baseUrl += '/';
+  if (!baseUrl.endsWith("/")) {
+    baseUrl += "/";
   }
-  
-  const discountPath = DISCOUNT_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+
+  const discountPath = DISCOUNT_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${discountPath}/${cleanPath}` : discountPath;
-  
+
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
@@ -45,32 +45,32 @@ interface AddDiscountDialogProps {
 export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  
+
   // Form state
   const [minimumSubtotalAmount, setMinimumSubtotalAmount] = React.useState("");
   const [discountType, setDiscountType] = React.useState<"fixed" | "percentage">("fixed");
   const [discountAmount, setDiscountAmount] = React.useState("");
   const [freeShipping, setFreeShipping] = React.useState(false);
   const [status, setStatus] = React.useState<"active" | "inactive">("active");
-  
+
   // Form validation
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!minimumSubtotalAmount || parseFloat(minimumSubtotalAmount) <= 0) {
       newErrors.minimumSubtotalAmount = "Minimum purchase amount is required and must be greater than 0";
     }
-    
+
     if (!discountAmount || parseFloat(discountAmount) <= 0) {
       newErrors.discountAmount = "Discount amount is required and must be greater than 0";
     }
-    
+
     if (discountType === "percentage" && parseFloat(discountAmount) > 100) {
       newErrors.discountAmount = "Percentage discount cannot exceed 100%";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -86,13 +86,13 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Prepare data to match database schema
       const discountData = {
@@ -102,12 +102,12 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
         has_free_shipping: freeShipping ? 1 : 0,
         status: status,
       };
-      
+
       console.log("Submitting discount data:", discountData);
-      
+
       const url = getDiscountUrl();
       console.log("API URL:", url);
-      
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -116,15 +116,15 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
         },
         body: JSON.stringify(discountData),
       });
-      
+
       const responseData = await response.json();
       console.log("API Response:", responseData);
-      
+
       if (!response.ok) {
         // Handle validation errors from Laravel
         if (response.status === 422 && responseData.errors) {
           const apiErrors: Record<string, string> = {};
-          Object.keys(responseData.errors).forEach(key => {
+          Object.keys(responseData.errors).forEach((key) => {
             apiErrors[key] = responseData.errors[key][0];
           });
           setErrors(apiErrors);
@@ -134,16 +134,15 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
         }
         return;
       }
-      
+
       toast.success("Discount rule added successfully");
       resetForm();
       setOpen(false);
-      
+
       // Refresh the discounts list
       if (onDiscountAdded) {
         onDiscountAdded();
       }
-      
     } catch (error) {
       console.error("Error adding discount:", error);
       toast.error(error instanceof Error ? error.message : "Failed to add discount");
@@ -198,10 +197,7 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="discountType">Discount Type</Label>
-                <Select 
-                  value={discountType} 
-                  onValueChange={(value: "fixed" | "percentage") => setDiscountType(value)}
-                >
+                <Select value={discountType} onValueChange={(value: "fixed" | "percentage") => setDiscountType(value)}>
                   <SelectTrigger id="discountType">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -226,9 +222,7 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
                   required
                   className={errors.discountAmount ? "border-destructive" : ""}
                 />
-                {errors.discountAmount && (
-                  <p className="text-sm text-destructive">{errors.discountAmount}</p>
-                )}
+                {errors.discountAmount && <p className="text-sm text-destructive">{errors.discountAmount}</p>}
               </div>
             </div>
 
@@ -240,11 +234,7 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
                 </Label>
                 <p className="text-sm text-muted-foreground">Include free shipping with this discount</p>
               </div>
-              <Switch 
-                id="freeShipping" 
-                checked={freeShipping} 
-                onCheckedChange={setFreeShipping} 
-              />
+              <Switch id="freeShipping" checked={freeShipping} onCheckedChange={setFreeShipping} />
             </div>
 
             {/* Status Selection */}
@@ -261,7 +251,7 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
               </Select>
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel

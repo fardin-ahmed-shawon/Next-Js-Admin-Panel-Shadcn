@@ -77,7 +77,9 @@ export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit }: Assi
           <DialogHeader>
             <DialogTitle>{isEdit ? "Edit Assignment" : "Assign Order"}</DialogTitle>
             <DialogDescription>
-              {isEdit ? "Update the order assigned to this employee." : "Assign an order to an employee for fulfillment."}
+              {isEdit
+                ? "Update the order assigned to this employee."
+                : "Assign an order to an employee for fulfillment."}
             </DialogDescription>
           </DialogHeader>
 
@@ -98,7 +100,11 @@ export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit }: Assi
                   ))}
                 </SelectContent>
               </Select>
-              {isEdit && <p className="text-xs text-muted-foreground">You cannot change the employee for an existing assignment.</p>}
+              {isEdit && (
+                <p className="text-xs text-muted-foreground">
+                  You cannot change the employee for an existing assignment.
+                </p>
+              )}
             </div>
 
             <div className="grid gap-2">

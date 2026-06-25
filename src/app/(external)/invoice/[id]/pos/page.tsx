@@ -15,7 +15,7 @@ function formatDate(dateStr: string) {
       month: "short",
       year: "numeric",
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
     });
   } catch {
     return dateStr;
@@ -31,7 +31,7 @@ export default function POSInvoicePage() {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const settingsEndpoint = process.env.NEXT_PUBLIC_API_WEB_SETTINGS || "web-settings";
   const { data: settingsRes, isLoading: settingsLoading } = useSWR(`${baseUrl}${settingsEndpoint}`, fetcher);
-  
+
   const settings = settingsRes?.data;
   const isLoading = orderLoading || settingsLoading;
 
@@ -46,17 +46,11 @@ export default function POSInvoicePage() {
 
   if (!order) {
     return (
-      <div className="flex h-screen w-full items-center justify-center text-muted-foreground">
-        Invoice not found.
-      </div>
+      <div className="flex h-screen w-full items-center justify-center text-muted-foreground">Invoice not found.</div>
     );
   }
 
-  const paidAmount =
-    order?.payments?.reduce(
-      (sum: number, p: any) => sum + Number(p.paid_amount ?? 0),
-      0
-    ) ?? 0;
+  const paidAmount = order?.payments?.reduce((sum: number, p: any) => sum + Number(p.paid_amount ?? 0), 0) ?? 0;
   const grandTotal = Number(order?.grand_total_amount ?? 0);
   const dueAmount = Math.max(0, grandTotal - paidAmount);
 
@@ -72,11 +66,12 @@ export default function POSInvoicePage() {
 
       {/* POS Receipt Container - 80mm width standard */}
       <div className="w-[80mm] bg-white p-4 shadow-sm print:shadow-none print:m-0 print:p-0 leading-tight">
-        
         {/* Header Section */}
         <div className="text-center mb-4">
           <h1 className="text-xl font-bold uppercase">{settings?.brand_name || "DokanX"}</h1>
-          <p className="text-xs mt-1 whitespace-pre-line">{settings?.address || "123 E-commerce Street\nDhaka, Bangladesh"}</p>
+          <p className="text-xs mt-1 whitespace-pre-line">
+            {settings?.address || "123 E-commerce Street\nDhaka, Bangladesh"}
+          </p>
           {settings?.phone && <p className="text-xs">{settings.phone}</p>}
           <p className="text-xs">{settings?.email || "support@dokanx.com"}</p>
         </div>
@@ -125,9 +120,7 @@ export default function POSInvoicePage() {
                         {item.size_label} {item.color_label}
                       </div>
                     )}
-                    <div className="text-[10px] text-neutral-500">
-                      ৳{Number(item.unit_price).toLocaleString()}
-                    </div>
+                    <div className="text-[10px] text-neutral-500">৳{Number(item.unit_price).toLocaleString()}</div>
                   </td>
                   <td className="py-1 align-top text-right pr-1">x{item.qty}</td>
                   <td className="py-1 align-top text-right">
@@ -178,7 +171,6 @@ export default function POSInvoicePage() {
           <p>Please come again.</p>
           <p className="text-[10px] mt-2">Powered by DokanX</p>
         </div>
-
       </div>
     </div>
   );

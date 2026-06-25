@@ -100,7 +100,10 @@ const columns: ColumnDef<CustomerRow>[] = [
       return (
         <div className="flex items-center gap-2">
           <Avatar className="size-8 rounded-full border shrink-0">
-            <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(row.original.name)}&background=random`} alt={row.original.name} />
+            <AvatarImage
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(row.original.name)}&background=random`}
+              alt={row.original.name}
+            />
             <AvatarFallback className="bg-muted text-muted-foreground text-xs font-medium border-0">
               {initials}
             </AvatarFallback>

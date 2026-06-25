@@ -49,7 +49,7 @@ export function useEmployeeReports(startDate?: string, endDate?: string) {
   const params = new URLSearchParams();
   if (startDate) params.append("start_date", startDate);
   if (endDate) params.append("end_date", endDate);
-  
+
   if (params.toString()) {
     url += `?${params.toString()}`;
   }
@@ -59,7 +59,7 @@ export function useEmployeeReports(startDate?: string, endDate?: string) {
   });
 
   return {
-    data: data?.data as EmployeeReportData[] || [],
+    data: (data?.data as EmployeeReportData[]) || [],
     error,
     isLoading,
     mutate,

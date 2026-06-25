@@ -60,7 +60,7 @@ export function CategoryDialog({ open, onOpenChange, initialData, mode, onSucces
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
       const endpoint = process.env.NEXT_PUBLIC_API_EXPENSE_CATEGORIES_URL || "expense-categories";
-      
+
       let url = `${baseUrl}${endpoint}`;
       let method = "POST";
 

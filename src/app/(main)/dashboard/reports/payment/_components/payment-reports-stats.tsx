@@ -36,7 +36,9 @@ export function PaymentReportsStats({ summary }: PaymentReportsStatsProps) {
 
   return (
     <div className="overflow-hidden rounded-xl bg-card shadow-xs ring-1 ring-foreground/10">
-      <div className={`grid grid-cols-1 *:data-[slot=card]:rounded-none *:data-[slot=card]:ring-0 [&>*]:border-b md:grid-cols-${Math.min(stats.length, 4)} md:[&>*]:border-b-0 md:[&>*:not(:last-child)]:border-r md:[&>*:last-child]:border-r-0`}>
+      <div
+        className={`grid grid-cols-1 *:data-[slot=card]:rounded-none *:data-[slot=card]:ring-0 [&>*]:border-b md:grid-cols-${Math.min(stats.length, 4)} md:[&>*]:border-b-0 md:[&>*:not(:last-child)]:border-r md:[&>*:last-child]:border-r-0`}
+      >
         {stats.map((stat, i) => (
           <Card key={i}>
             <CardHeader>

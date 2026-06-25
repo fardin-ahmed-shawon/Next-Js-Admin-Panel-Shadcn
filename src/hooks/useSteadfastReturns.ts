@@ -26,13 +26,9 @@ export function useSteadfastReturns() {
   const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_RETURNS_URL || "steadfast/return-requests";
   const url = `${baseUrl}${endpoint}`;
 
-  const { data, error, isLoading, mutate } = useSWR(
-    user?.id ? [url, user.id] : url,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-    }
-  );
+  const { data, error, isLoading, mutate } = useSWR(user?.id ? [url, user.id] : url, fetcher, {
+    revalidateOnFocus: false,
+  });
 
   return {
     data: data?.data?.data || data?.data || [], // Steadfast array response

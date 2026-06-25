@@ -5,14 +5,7 @@ import { CalendarIcon, Download, Search, Package, ArrowUpDown, ChevronDown } fro
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -220,12 +213,7 @@ export default function ParcelReportPage() {
             })()} parcels
           </CardDescription>
           <CardAction>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              disabled={isExporting}
-            >
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
               <Download className="mr-2 size-4" />
               {isExporting ? "Exporting..." : "Export"}
             </Button>
@@ -259,7 +247,11 @@ export default function ParcelReportPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button size="icon-sm" variant="outline" onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")}>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+              >
                 <ArrowUpDown />
               </Button>
             </div>

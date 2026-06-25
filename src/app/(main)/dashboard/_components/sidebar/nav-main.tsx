@@ -200,7 +200,6 @@ export function NavMain({ items }: NavMainProps) {
                 <span>AI Intelligence Dashboard</span>
                 <Hourglass className="ml-auto size-4" />
               </SidebarMenuButton>
-
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
@@ -217,10 +216,7 @@ export function NavMain({ items }: NavMainProps) {
                     if (item.title === "Logout") {
                       return (
                         <SidebarMenuItem key={item.title}>
-                          <SidebarMenuButton
-                            onClick={handleLogout}
-                            tooltip={item.title}
-                          >
+                          <SidebarMenuButton onClick={handleLogout} tooltip={item.title}>
                             {item.icon && <item.icon />}
                             <span>{item.title}</span>
                           </SidebarMenuButton>
@@ -251,10 +247,7 @@ export function NavMain({ items }: NavMainProps) {
                 if (!item.subItems && item.title === "Logout") {
                   return (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        onClick={handleLogout}
-                        tooltip={item.title}
-                      >
+                      <SidebarMenuButton onClick={handleLogout} tooltip={item.title}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
                       </SidebarMenuButton>

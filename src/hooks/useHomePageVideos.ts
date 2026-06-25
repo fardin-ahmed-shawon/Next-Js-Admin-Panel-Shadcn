@@ -49,11 +49,29 @@ export function useHomePageVideos() {
     return json;
   };
 
+  const deleteVideo = async (id: number) => {
+    const res = await fetchClient(`${url}/${id}`, {
+      method: "DELETE",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to delete video");
+    }
+
+    await mutate();
+    return json;
+  };
+
   return {
     videos: videos || [],
     error,
     isLoading,
     addVideo,
+    deleteVideo,
     mutate,
   };
 }

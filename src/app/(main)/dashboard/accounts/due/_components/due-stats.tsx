@@ -24,7 +24,9 @@ export function DueStats() {
     },
     {
       title: "Average Due",
-      value: isLoading ? "..." : `৳${Number(summary.average_due || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
+      value: isLoading
+        ? "..."
+        : `৳${Number(summary.average_due || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
       subtitle: "Per outstanding invoice",
       icon: Receipt,
     },

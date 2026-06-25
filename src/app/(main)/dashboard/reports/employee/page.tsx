@@ -189,7 +189,7 @@ export default function EmployeeReportsPage() {
         acc.totalDue += curr.totalDue;
         return acc;
       },
-      { totalAssigned: 0, totalDelivered: 0, totalRevenue: 0, totalDue: 0 }
+      { totalAssigned: 0, totalDelivered: 0, totalRevenue: 0, totalDue: 0 },
     );
   }, [reportData]);
 
@@ -226,8 +226,13 @@ export default function EmployeeReportsPage() {
       header: "Pending",
       cell: ({ row }) => {
         const val = row.original.pending;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
-          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 font-semibold">
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
+          <Badge
+            variant="outline"
+            className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 font-semibold"
+          >
             {val}
           </Badge>
         );
@@ -238,7 +243,9 @@ export default function EmployeeReportsPage() {
       header: "Confirmed",
       cell: ({ row }) => {
         const val = row.original.confirmed;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
           <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50 font-semibold">
             {val}
           </Badge>
@@ -250,8 +257,13 @@ export default function EmployeeReportsPage() {
       header: "Ready To Ship",
       cell: ({ row }) => {
         const val = row.original.readyToShip;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
-          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50 font-semibold">
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
+          <Badge
+            variant="outline"
+            className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50 font-semibold"
+          >
             {val}
           </Badge>
         );
@@ -262,7 +274,9 @@ export default function EmployeeReportsPage() {
       header: "In-Courier",
       cell: ({ row }) => {
         const val = row.original.inCourier;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
           <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-50 font-semibold">
             {val}
           </Badge>
@@ -274,8 +288,13 @@ export default function EmployeeReportsPage() {
       header: "Ship Later",
       cell: ({ row }) => {
         const val = row.original.shipLater;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
-          <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-50 font-semibold">
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
+          <Badge
+            variant="outline"
+            className="bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-50 font-semibold"
+          >
             {val}
           </Badge>
         );
@@ -286,8 +305,13 @@ export default function EmployeeReportsPage() {
       header: "Hold",
       cell: ({ row }) => {
         const val = row.original.hold;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-50 font-semibold">
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
+          <Badge
+            variant="outline"
+            className="bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-50 font-semibold"
+          >
             {val}
           </Badge>
         );
@@ -298,7 +322,9 @@ export default function EmployeeReportsPage() {
       header: "Returned",
       cell: ({ row }) => {
         const val = row.original.returned;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
           <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 hover:bg-red-50 font-semibold">
             {val}
           </Badge>
@@ -310,8 +336,13 @@ export default function EmployeeReportsPage() {
       header: "Pre-Order",
       cell: ({ row }) => {
         const val = row.original.preOrder;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
-          <Badge variant="outline" className="bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 hover:bg-fuchsia-50 font-semibold">
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
+          <Badge
+            variant="outline"
+            className="bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 hover:bg-fuchsia-50 font-semibold"
+          >
             {val}
           </Badge>
         );
@@ -322,8 +353,13 @@ export default function EmployeeReportsPage() {
       header: "Delivered",
       cell: ({ row }) => {
         const val = row.original.delivered;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 hover:bg-green-50 font-semibold">
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200 hover:bg-green-50 font-semibold"
+          >
             {val}
           </Badge>
         );
@@ -334,7 +370,9 @@ export default function EmployeeReportsPage() {
       header: "Cancelled",
       cell: ({ row }) => {
         const val = row.original.cancelled;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
           <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-50 font-semibold">
             {val}
           </Badge>
@@ -346,7 +384,9 @@ export default function EmployeeReportsPage() {
       header: "Missing",
       cell: ({ row }) => {
         const val = row.original.missing;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
           <Badge variant="outline" className="bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-50 font-semibold">
             {val}
           </Badge>
@@ -358,8 +398,13 @@ export default function EmployeeReportsPage() {
       header: "Lost",
       cell: ({ row }) => {
         const val = row.original.lost;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
-          <Badge variant="outline" className="bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-50 font-semibold">
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
+          <Badge
+            variant="outline"
+            className="bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-50 font-semibold"
+          >
             {val}
           </Badge>
         );
@@ -370,8 +415,13 @@ export default function EmployeeReportsPage() {
       header: "Fake",
       cell: ({ row }) => {
         const val = row.original.fake;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
-          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-50 font-semibold">
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
+          <Badge
+            variant="outline"
+            className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-50 font-semibold"
+          >
             {val}
           </Badge>
         );
@@ -382,8 +432,13 @@ export default function EmployeeReportsPage() {
       header: "Trash",
       cell: ({ row }) => {
         const val = row.original.trash;
-        return val === 0 ? <span className="text-muted-foreground/30">0</span> : (
-          <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50 font-semibold">
+        return val === 0 ? (
+          <span className="text-muted-foreground/30">0</span>
+        ) : (
+          <Badge
+            variant="outline"
+            className="bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50 font-semibold"
+          >
             {val}
           </Badge>
         );
@@ -418,7 +473,9 @@ export default function EmployeeReportsPage() {
       cell: ({ row }) => {
         return (
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/dashboard/reports/employee/${row.original.userId}?timeRange=${timeRange}&from=${customFrom}&to=${customTo}`}>
+            <Link
+              href={`/dashboard/reports/employee/${row.original.userId}?timeRange=${timeRange}&from=${customFrom}&to=${customTo}`}
+            >
               View Details
             </Link>
           </Button>
@@ -459,19 +516,9 @@ export default function EmployeeReportsPage() {
         <div className="flex flex-col sm:flex-row gap-2 items-center">
           {timeRange === "custom" && (
             <>
-              <Input
-                type="date"
-                className="w-36"
-                value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
-              />
+              <Input type="date" className="w-36" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
               <span className="text-muted-foreground text-sm">to</span>
-              <Input
-                type="date"
-                className="w-36"
-                value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
-              />
+              <Input type="date" className="w-36" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
             </>
           )}
 
@@ -512,7 +559,9 @@ export default function EmployeeReportsPage() {
                 </Avatar>
                 <div className="flex flex-col">
                   <span className="font-bold text-foreground">{topPerformer.name}</span>
-                  <span className="text-xs text-muted-foreground">৳{topPerformer.totalRevenue.toLocaleString()} Generated</span>
+                  <span className="text-xs text-muted-foreground">
+                    ৳{topPerformer.totalRevenue.toLocaleString()} Generated
+                  </span>
                 </div>
               </div>
             ) : (
@@ -622,7 +671,6 @@ export default function EmployeeReportsPage() {
           </div>
         </CardContent>
       </Card>
-
     </div>
   );
 }

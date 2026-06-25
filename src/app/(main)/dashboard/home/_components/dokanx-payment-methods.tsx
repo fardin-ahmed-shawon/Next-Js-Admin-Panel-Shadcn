@@ -84,7 +84,7 @@ function formatTooltipLabel(value: string) {
 
 export function DokanxPaymentMethods() {
   const { data, isLoading } = useAdminDashboard();
-  
+
   const paymentTrends = data?.payment_trends;
   const methods: Record<string, string | number> = paymentTrends?.methods || {};
   const totalProcessing = paymentTrends?.total_processing || 0;
@@ -124,7 +124,11 @@ export function DokanxPaymentMethods() {
               <CardHeader>
                 <CardTitle className="font-normal text-sm">Cash On Delivery</CardTitle>
                 <CardDescription className="text-3xl text-foreground tabular-nums leading-none tracking-tight">
-                  {isLoading ? <Skeleton className="h-8 w-24" /> : `৳${Number(methods["Cash on Delivery"] || 0).toLocaleString()}`}
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    `৳${Number(methods["Cash on Delivery"] || 0).toLocaleString()}`
+                  )}
                 </CardDescription>
                 <CardAction className="grid size-6 place-items-center rounded-sm bg-muted">
                   <Package className="size-3 text-foreground" />
@@ -132,7 +136,9 @@ export function DokanxPaymentMethods() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm">
-                  <span className="text-muted-foreground">{calculatePercentage(methods["Cash on Delivery"] || 0)}% of total revenue</span>
+                  <span className="text-muted-foreground">
+                    {calculatePercentage(methods["Cash on Delivery"] || 0)}% of total revenue
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -149,7 +155,9 @@ export function DokanxPaymentMethods() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm">
-                  <span className="text-muted-foreground">{calculatePercentage(methods["bKash"] || 0)}% of total revenue</span>
+                  <span className="text-muted-foreground">
+                    {calculatePercentage(methods["bKash"] || 0)}% of total revenue
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -158,7 +166,11 @@ export function DokanxPaymentMethods() {
               <CardHeader>
                 <CardTitle className="font-normal text-sm">Rocket</CardTitle>
                 <CardDescription className="text-3xl text-foreground tabular-nums leading-none tracking-tight">
-                  {isLoading ? <Skeleton className="h-8 w-24" /> : `৳${Number(methods["Rocket"] || 0).toLocaleString()}`}
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    `৳${Number(methods["Rocket"] || 0).toLocaleString()}`
+                  )}
                 </CardDescription>
                 <CardAction className="grid size-6 place-items-center rounded-sm bg-muted">
                   <Rocket className="size-3 text-foreground" />
@@ -166,7 +178,9 @@ export function DokanxPaymentMethods() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm">
-                  <span className="text-muted-foreground">{calculatePercentage(methods["Rocket"] || 0)}% of total revenue</span>
+                  <span className="text-muted-foreground">
+                    {calculatePercentage(methods["Rocket"] || 0)}% of total revenue
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -183,7 +197,9 @@ export function DokanxPaymentMethods() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm">
-                  <span className="text-muted-foreground">{calculatePercentage(methods["Upay"] || 0)}% of total revenue</span>
+                  <span className="text-muted-foreground">
+                    {calculatePercentage(methods["Upay"] || 0)}% of total revenue
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -200,7 +216,9 @@ export function DokanxPaymentMethods() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm">
-                  <span className="text-muted-foreground">{calculatePercentage(methods["Nagad"] || 0)}% of total revenue</span>
+                  <span className="text-muted-foreground">
+                    {calculatePercentage(methods["Nagad"] || 0)}% of total revenue
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -214,11 +232,7 @@ export function DokanxPaymentMethods() {
 
             <CardContent>
               <ChartContainer config={paymentTrendConfig} className="h-74 w-full">
-                <ComposedChart
-                  accessibilityLayer
-                  data={chartData}
-                  margin={{ bottom: 0, left: 0, right: 0, top: 0 }}
-                >
+                <ComposedChart accessibilityLayer data={chartData} margin={{ bottom: 0, left: 0, right: 0, top: 0 }}>
                   <defs>
                     <filter id="payment-line-glow" x="-20%" y="-20%" width="140%" height="140%">
                       <feGaussianBlur stdDeviation="4" result="blur" />

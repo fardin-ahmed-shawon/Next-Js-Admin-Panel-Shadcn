@@ -15,22 +15,22 @@ export function BlocklistStats({ data }: BlocklistStatsProps) {
     },
     {
       title: "Active Blocks",
-      value: data.filter(item => item.status === "Active").length.toString(),
+      value: data.filter((item) => item.status === "Active").length.toString(),
       icon: ShieldCheck,
     },
     {
       title: "Inactive",
-      value: data.filter(item => item.status === "Inactive").length.toString(),
+      value: data.filter((item) => item.status === "Inactive").length.toString(),
       icon: ShieldOff,
     },
     {
       title: "Phone Blocks",
-      value: data.filter(item => item.type === "Phone").length.toString(),
+      value: data.filter((item) => item.type === "Phone").length.toString(),
       icon: PhoneCall,
     },
     {
       title: "IP Blocks",
-      value: data.filter(item => item.type === "IP").length.toString(),
+      value: data.filter((item) => item.type === "IP").length.toString(),
       icon: Monitor,
     },
   ];

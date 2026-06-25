@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 export const fetchClient = async (url: string, options: RequestInit = {}) => {
   const token = Cookies.get("auth_token");
   const headers = new Headers(options.headers);
-  
+
   headers.set("Accept", "application/json");
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);

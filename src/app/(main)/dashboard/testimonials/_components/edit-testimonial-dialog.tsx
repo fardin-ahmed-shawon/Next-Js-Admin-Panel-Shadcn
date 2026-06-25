@@ -64,7 +64,7 @@ export function EditTestimonialDialog({
         toast.error("File size must be less than 2MB");
         return;
       }
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+      const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"];
       if (!allowedTypes.includes(file.type)) {
         toast.error("Please upload a valid image file (JPEG, PNG, JPG, GIF, WEBP)");
         return;
@@ -96,25 +96,25 @@ export function EditTestimonialDialog({
 
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('user_name', formData.name);
-      formDataToSend.append('user_position', formData.position);
-      formDataToSend.append('testimonial_text', formData.text);
-      formDataToSend.append('ratings', formData.rating);
-      
+      formDataToSend.append("user_name", formData.name);
+      formDataToSend.append("user_position", formData.position);
+      formDataToSend.append("testimonial_text", formData.text);
+      formDataToSend.append("ratings", formData.rating);
+
       if (selectedImage) {
-        formDataToSend.append('user_photo', selectedImage);
+        formDataToSend.append("user_photo", selectedImage);
       }
 
-      let apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin';
-      const testimonialEndpoint = process.env.NEXT_PUBLIC_API_TESTIMONIAL_URL || 'testimonials';
-      
-      const baseUrl = apiUrl.replace(/\/$/, '');
+      let apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin";
+      const testimonialEndpoint = process.env.NEXT_PUBLIC_API_TESTIMONIAL_URL || "testimonials";
+
+      const baseUrl = apiUrl.replace(/\/$/, "");
       const url = `${baseUrl}/${testimonialEndpoint}/${testimonial.id}`;
 
       const response = await fetch(url, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'X-HTTP-Method-Override': 'PUT',
+          "X-HTTP-Method-Override": "PUT",
         },
         body: formDataToSend,
       });
@@ -191,11 +191,7 @@ export function EditTestimonialDialog({
             <div className="flex items-center gap-4 border rounded-lg p-4 bg-muted/20">
               {imagePreview ? (
                 <div className="relative">
-                  <img 
-                    src={imagePreview} 
-                    alt="Preview" 
-                    className="h-16 w-16 object-cover rounded-full border" 
-                  />
+                  <img src={imagePreview} alt="Preview" className="h-16 w-16 object-cover rounded-full border" />
                   <button
                     type="button"
                     onClick={removeImage}
@@ -211,9 +207,9 @@ export function EditTestimonialDialog({
                 </Avatar>
               )}
               <div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="mb-1"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isSubmitting}
@@ -230,8 +226,8 @@ export function EditTestimonialDialog({
             <Label htmlFor="edit-rating">
               Rating <span className="text-destructive">*</span>
             </Label>
-            <Select 
-              value={formData.rating} 
+            <Select
+              value={formData.rating}
               onValueChange={(val) => setFormData({ ...formData, rating: val })}
               disabled={isSubmitting}
             >

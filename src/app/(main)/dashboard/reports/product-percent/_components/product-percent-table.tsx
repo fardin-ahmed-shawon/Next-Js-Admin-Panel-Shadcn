@@ -19,7 +19,7 @@ interface ProductPercentTableProps {
   from: number;
   to: number;
   onPageChange: (page: number) => void;
-  
+
   // Filters & Sorting
   searchVal: string;
   setSearchVal: (val: string) => void;
@@ -27,7 +27,7 @@ interface ProductPercentTableProps {
   setSortBy: (val: string) => void;
   sortDir: string;
   setSortDir: (val: string) => void;
-  
+
   onFilterSubmit: () => void;
   onReset: () => void;
 }
@@ -35,13 +35,33 @@ interface ProductPercentTableProps {
 const statusCols = [
   { key: "pending", label: "Pending", colorClass: "text-amber-600 dark:text-amber-500", barColor: "bg-amber-500" },
   { key: "confirmed", label: "Confirmed", colorClass: "text-blue-600 dark:text-blue-500", barColor: "bg-blue-500" },
-  { key: "ready_to_ship", label: "Ready to Ship", colorClass: "text-sky-600 dark:text-sky-500", barColor: "bg-sky-400" },
-  { key: "in_courier", label: "In Courier", colorClass: "text-indigo-600 dark:text-indigo-500", barColor: "bg-indigo-500" },
+  {
+    key: "ready_to_ship",
+    label: "Ready to Ship",
+    colorClass: "text-sky-600 dark:text-sky-500",
+    barColor: "bg-sky-400",
+  },
+  {
+    key: "in_courier",
+    label: "In Courier",
+    colorClass: "text-indigo-600 dark:text-indigo-500",
+    barColor: "bg-indigo-500",
+  },
   { key: "ship_later", label: "Ship Later", colorClass: "text-teal-600 dark:text-teal-500", barColor: "bg-teal-500" },
   { key: "hold", label: "Hold", colorClass: "text-orange-600 dark:text-orange-500", barColor: "bg-orange-500" },
   { key: "returned", label: "Returned", colorClass: "text-purple-600 dark:text-purple-500", barColor: "bg-purple-500" },
-  { key: "pre_order", label: "Pre Order", colorClass: "text-violet-600 dark:text-violet-500", barColor: "bg-violet-400" },
-  { key: "delivered", label: "Delivered", colorClass: "text-emerald-600 dark:text-emerald-500", barColor: "bg-emerald-500" },
+  {
+    key: "pre_order",
+    label: "Pre Order",
+    colorClass: "text-violet-600 dark:text-violet-500",
+    barColor: "bg-violet-400",
+  },
+  {
+    key: "delivered",
+    label: "Delivered",
+    colorClass: "text-emerald-600 dark:text-emerald-500",
+    barColor: "bg-emerald-500",
+  },
   { key: "cancelled", label: "Cancelled", colorClass: "text-red-600 dark:text-red-500", barColor: "bg-red-500" },
   { key: "missing", label: "Missing", colorClass: "text-pink-600 dark:text-pink-500", barColor: "bg-pink-500" },
   { key: "lost", label: "Lost", colorClass: "text-rose-600 dark:text-rose-500", barColor: "bg-rose-500" },
@@ -204,38 +224,29 @@ export function ProductPercentTable({
                 data.map((row, index) => {
                   return (
                     <TableRow key={row.product_id}>
-                      <TableCell className="font-medium text-muted-foreground">
-                        {from + index}
-                      </TableCell>
+                      <TableCell className="font-medium text-muted-foreground">{from + index}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="size-10 overflow-hidden rounded-lg border bg-muted">
-                            <img
-                              src={getImageUrl(row.img)}
-                              alt={row.product_name}
-                              className="size-full object-cover"
-                            />
+                            <img src={getImageUrl(row.img)} alt={row.product_name} className="size-full object-cover" />
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-medium text-sm line-clamp-1 max-w-[200px]">
-                              {row.product_name}
-                            </span>
-                            <span className="font-mono text-[10px] text-muted-foreground">
-                              {row.sku}
-                            </span>
+                            <span className="font-medium text-sm line-clamp-1 max-w-[200px]">{row.product_name}</span>
+                            <span className="font-mono text-[10px] text-muted-foreground">{row.sku}</span>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium tabular-nums text-center">
-                        {row.orders}
-                      </TableCell>
+                      <TableCell className="font-medium tabular-nums text-center">{row.orders}</TableCell>
                       <TableCell>
                         <StackedStatusBar row={row} />
                       </TableCell>
                       {statusCols.map((col) => {
                         const val = (row as any)[col.key] as ProductStatusMetric | undefined;
                         return (
-                          <TableCell key={col.key} className={`text-center tabular-nums ${col.colorClass} whitespace-nowrap`}>
+                          <TableCell
+                            key={col.key}
+                            className={`text-center tabular-nums ${col.colorClass} whitespace-nowrap`}
+                          >
                             <div className="flex flex-col">
                               <span className="font-medium text-sm">{val?.count || 0}</span>
                               <span className="text-xs text-muted-foreground">{val?.percentage || 0}%</span>

@@ -9,7 +9,7 @@ import { AssignOrderDialog } from "./_components/assign-order-dialog";
 
 export default function AssignOrdersPage() {
   const { data: assignments, isLoading, deleteAssignment } = useEmployeeOrders();
-  
+
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [editingAssignment, setEditingAssignment] = React.useState<EmployeeOrder | null>(null);
 
@@ -54,17 +54,9 @@ export default function AssignOrdersPage() {
         </div>
       </div>
 
-      <AssignOrdersTable 
-        data={assignments} 
-        onEdit={handleEdit} 
-        onDelete={handleDelete} 
-      />
+      <AssignOrdersTable data={assignments} onEdit={handleEdit} onDelete={handleDelete} />
 
-      <AssignOrderDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        assignmentToEdit={editingAssignment}
-      />
+      <AssignOrderDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} assignmentToEdit={editingAssignment} />
     </div>
   );
 }

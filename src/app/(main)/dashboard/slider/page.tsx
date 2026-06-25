@@ -12,11 +12,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "";
 const SLIDER_API_URL = process.env.NEXT_PUBLIC_API_SLIDER_URL || "sliders";
 
-const getSliderUrl = (path: string = '') => {
+const getSliderUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) baseUrl += '/';
-  const sliderPath = SLIDER_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+  if (!baseUrl.endsWith("/")) baseUrl += "/";
+  const sliderPath = SLIDER_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${sliderPath}/${cleanPath}` : sliderPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
@@ -25,14 +25,14 @@ const getSliderUrl = (path: string = '') => {
 const getFullImageUrl = (imagePath: string) => {
   if (!imagePath) return "";
   if (imagePath.startsWith("http")) return imagePath;
-  
+
   // Remove any leading slashes
-  const cleanPath = imagePath.replace(/^\/+/, '');
-  
+  const cleanPath = imagePath.replace(/^\/+/, "");
+
   // Construct full URL using APP_URL
   let appUrl = APP_URL;
-  if (!appUrl.endsWith('/')) appUrl += '/';
-  
+  if (!appUrl.endsWith("/")) appUrl += "/";
+
   // Your images are in public/img/ directory
   return `${appUrl}${cleanPath}`;
 };
@@ -175,11 +175,11 @@ export default function SliderPage() {
     try {
       const url = getSliderUrl();
       console.log("Fetching sliders from:", url);
-      
+
       const response = await fetch(url, {
-        headers: { 
-          Accept: "application/json", 
-          "Content-Type": "application/json" 
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
       });
 
@@ -187,9 +187,9 @@ export default function SliderPage() {
 
       const result = await response.json();
       console.log("API Response:", result);
-      
+
       let slidersData = [];
-      
+
       if (result.data && Array.isArray(result.data)) {
         slidersData = result.data;
       } else if (Array.isArray(result)) {
@@ -237,22 +237,22 @@ export default function SliderPage() {
   };
 
   const handleRemoveSlider = async (id: string) => {
-    const slider = sliders.find(s => s.id === id);
-    
+    const slider = sliders.find((s) => s.id === id);
+
     // If slider has an existing ID, delete it from the server
     if (slider?.existingId) {
       try {
         const url = getSliderUrl(slider.existingId.toString());
         const response = await fetch(url, {
           method: "DELETE",
-          headers: { 
-            Accept: "application/json", 
-            "Content-Type": "application/json" 
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
           },
         });
 
         if (!response.ok) throw new Error("Failed to delete slider");
-        
+
         toast.success("Slider deleted successfully");
         await fetchSliders(); // Refresh the list
       } catch (error) {
@@ -261,7 +261,7 @@ export default function SliderPage() {
         return;
       }
     }
-    
+
     setSliders((prev) => prev.filter((s) => s.id !== id));
   };
 
@@ -283,17 +283,17 @@ export default function SliderPage() {
         if (slider.file) {
           // Create form data for image upload
           const formData = new FormData();
-          formData.append('slider_img', slider.file);
-          
+          formData.append("slider_img", slider.file);
+
           if (slider.existingId) {
             // Update existing slider - use POST with _method PUT for file upload
-            formData.append('_method', 'PUT');
+            formData.append("_method", "PUT");
             const url = getSliderUrl(slider.existingId.toString());
             const response = await fetch(url, {
               method: "POST",
               body: formData,
             });
-            
+
             if (!response.ok) throw new Error("Failed to update slider");
           } else {
             // Create new slider
@@ -302,7 +302,7 @@ export default function SliderPage() {
               method: "POST",
               body: formData,
             });
-            
+
             if (!response.ok) throw new Error("Failed to create slider");
           }
         }
@@ -310,14 +310,15 @@ export default function SliderPage() {
 
       toast.success("Sliders saved successfully");
       await fetchSliders(); // Refresh the list
-      
+
       // Clear file inputs after successful save
-      setSliders(prev => prev.map(slider => ({
-        ...slider,
-        file: null,
-        preview: ""
-      })));
-      
+      setSliders((prev) =>
+        prev.map((slider) => ({
+          ...slider,
+          file: null,
+          preview: "",
+        })),
+      );
     } catch (error) {
       console.error("Error saving sliders:", error);
       toast.error("Failed to save sliders");

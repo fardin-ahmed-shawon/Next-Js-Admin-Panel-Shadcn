@@ -28,11 +28,11 @@ export function TestimonialsStats({ testimonials }: TestimonialsStatsProps) {
   useEffect(() => {
     const total = testimonials.length;
     const average = testimonials.reduce((acc, curr) => acc + curr.rating, 0) / (total || 1);
-    const fiveStar = testimonials.filter(t => t.rating === 5).length;
-    
+    const fiveStar = testimonials.filter((t) => t.rating === 5).length;
+
     // Recent reviews from last 7 days (if you have created_at field)
     // For now, showing all as recent since no date field
-    
+
     setStats({
       totalTestimonials: total.toString(),
       averageRating: average.toFixed(1),

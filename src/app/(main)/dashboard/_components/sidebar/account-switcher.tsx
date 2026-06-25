@@ -47,11 +47,7 @@ export function AccountSwitcher() {
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="min-w-56 space-y-1 rounded-lg" side="bottom" align="end" sideOffset={4}>
-        <DropdownMenuItem
-          key={activeUser.email}
-          className="p-0 bg-accent/50"
-          aria-current="true"
-        >
+        <DropdownMenuItem key={activeUser.email} className="p-0 bg-accent/50" aria-current="true">
           <div className="flex w-full items-center gap-2 px-1 py-1.5">
             <Avatar className="size-9 rounded-lg">
               <AvatarImage src={activeUser.avatar || undefined} alt={activeUser.name} />
@@ -61,11 +57,7 @@ export function AccountSwitcher() {
               <span className="truncate font-semibold">{activeUser.name}</span>
               <span className="truncate text-xs capitalize">{activeUser.role}</span>
             </div>
-            <span
-              className={cn(
-                "mr-1 flex size-5 items-center justify-center rounded-full text-primary opacity-100",
-              )}
-            >
+            <span className={cn("mr-1 flex size-5 items-center justify-center rounded-full text-primary opacity-100")}>
               <Check aria-hidden="true" />
             </span>
           </div>

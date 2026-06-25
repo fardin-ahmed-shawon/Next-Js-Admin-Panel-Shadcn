@@ -42,7 +42,7 @@ export default function CustomerReportPage() {
 
   // Process and sort for Best Customers
   const rankedCustomers = [...customers]
-    .filter(c => c.parcel_history?.total_spent > 0)
+    .filter((c) => c.parcel_history?.total_spent > 0)
     .sort((a, b) => (b.parcel_history?.total_spent || 0) - (a.parcel_history?.total_spent || 0))
     .map((c, i) => {
       const bestRow: BestCustomerRow = {
@@ -68,11 +68,11 @@ export default function CustomerReportPage() {
     } else {
       lastOrderTime = new Date(c.created_at).getTime();
     }
-    
+
     const daysSince = Math.floor((now - lastOrderTime) / (1000 * 60 * 60 * 24));
     let status: EngagementStatus;
     let meta = "";
-    
+
     if (c.status === "inactive") {
       status = "Banned";
       meta = "Account deactivated by admin";
@@ -106,15 +106,33 @@ export default function CustomerReportPage() {
       subtitle: "Total customers in the system",
       color: "text-foreground",
     },
-    { title: "Active", value: activeCount.toString(), icon: UserCheck, subtitle: "Ordered in last 30 days", color: "text-emerald-600" },
-    { title: "Inactive", value: inactiveCount.toString(), icon: UserMinus, subtitle: "No recent activity", color: "text-amber-600" },
-    { title: "Banned", value: bannedCount.toString(), icon: Ban, subtitle: "Permanently restricted", color: "text-destructive" },
-    { 
-      title: "Top Spender", 
-      value: topSpender ? `৳${topSpender.spent.toLocaleString()}` : "৳0", 
-      icon: Trophy, 
-      subtitle: topSpender ? `${topSpender.name} — all time` : "No purchases yet", 
-      color: "text-primary" 
+    {
+      title: "Active",
+      value: activeCount.toString(),
+      icon: UserCheck,
+      subtitle: "Ordered in last 30 days",
+      color: "text-emerald-600",
+    },
+    {
+      title: "Inactive",
+      value: inactiveCount.toString(),
+      icon: UserMinus,
+      subtitle: "No recent activity",
+      color: "text-amber-600",
+    },
+    {
+      title: "Banned",
+      value: bannedCount.toString(),
+      icon: Ban,
+      subtitle: "Permanently restricted",
+      color: "text-destructive",
+    },
+    {
+      title: "Top Spender",
+      value: topSpender ? `৳${topSpender.spent.toLocaleString()}` : "৳0",
+      icon: Trophy,
+      subtitle: topSpender ? `${topSpender.name} — all time` : "No purchases yet",
+      color: "text-primary",
     },
   ];
 

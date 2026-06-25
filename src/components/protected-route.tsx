@@ -23,13 +23,11 @@ export function ProtectedRoute({ module, children, fallback }: ProtectedRoutePro
 
   if (!hasAccess) {
     if (fallback) return <>{fallback}</>;
-    
+
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center border rounded-lg bg-muted/20">
         <h2 className="text-2xl font-bold tracking-tight">Access Denied</h2>
-        <p className="text-muted-foreground mt-2">
-          You do not have permission to view the {module} module.
-        </p>
+        <p className="text-muted-foreground mt-2">You do not have permission to view the {module} module.</p>
       </div>
     );
   }

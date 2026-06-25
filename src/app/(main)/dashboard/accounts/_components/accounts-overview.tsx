@@ -29,18 +29,18 @@ export function AccountsOverview() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/admin/';
-        const DASHBOARD_URL = process.env.NEXT_PUBLIC_API_ACCOUNTS_DASHBOARD_URL || 'accounts-dashboard';
-        const cleanBase = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
-        const cleanPath = DASHBOARD_URL.startsWith('/') ? DASHBOARD_URL.slice(1) : DASHBOARD_URL;
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+        const DASHBOARD_URL = process.env.NEXT_PUBLIC_API_ACCOUNTS_DASHBOARD_URL || "accounts-dashboard";
+        const cleanBase = API_BASE_URL.endsWith("/") ? API_BASE_URL : `${API_BASE_URL}/`;
+        const cleanPath = DASHBOARD_URL.startsWith("/") ? DASHBOARD_URL.slice(1) : DASHBOARD_URL;
         const API_URL = `${cleanBase}${cleanPath}`;
 
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         const headers: Record<string, string> = {
-          'Accept': 'application/json',
+          Accept: "application/json",
         };
         if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
+          headers["Authorization"] = `Bearer ${token}`;
         }
 
         const response = await fetch(API_URL, { headers });
@@ -63,7 +63,7 @@ export function AccountsOverview() {
   }, []);
 
   const formatCurrency = (amount: number) => {
-    return `৳${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    return `৳${amount.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
   };
 
   const formatPercent = (value: number) => {
@@ -112,7 +112,9 @@ export function AccountsOverview() {
               <CardTitle className="text-sm font-normal text-muted-foreground">Total Expenses</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold tracking-tight text-destructive">{formatCurrency(data.all_time.expenses)}</div>
+              <div className="text-2xl font-bold tracking-tight text-destructive">
+                {formatCurrency(data.all_time.expenses)}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -120,7 +122,9 @@ export function AccountsOverview() {
               <CardTitle className="text-sm font-normal text-muted-foreground">Net Profit</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">{formatCurrency(data.all_time.net_profit)}</div>
+              <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">
+                {formatCurrency(data.all_time.net_profit)}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -188,7 +192,9 @@ export function AccountsOverview() {
             </div>
             <div className="flex justify-between border-t pt-2 mt-2">
               <span className="font-medium">Net Profit</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-500">{formatCurrency(data.this_month.net_profit)}</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-500">
+                {formatCurrency(data.this_month.net_profit)}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -217,7 +223,9 @@ export function AccountsOverview() {
             </div>
             <div className="flex justify-between border-t pt-2 mt-2">
               <span className="font-medium">Net Profit</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-500">{formatCurrency(data.this_year.net_profit)}</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-500">
+                {formatCurrency(data.this_year.net_profit)}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -246,10 +254,13 @@ export function AccountsOverview() {
             </div>
             <div className="flex justify-between border-t pt-2 mt-2">
               <span className="font-medium">Net Profit</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-500">{formatCurrency(data.all_time.net_profit)}</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-500">
+                {formatCurrency(data.all_time.net_profit)}
+              </span>
             </div>
             <div className="pt-2 text-xs text-muted-foreground text-center">
-              Gross Margin: {formatPercent(data.all_time.gross_margin)} · Net Margin: {formatPercent(data.all_time.net_margin)}
+              Gross Margin: {formatPercent(data.all_time.gross_margin)} · Net Margin:{" "}
+              {formatPercent(data.all_time.net_margin)}
             </div>
           </CardContent>
         </Card>
@@ -270,7 +281,8 @@ export function AccountsOverview() {
           <div>
             <p className="font-medium mb-1">Cost & Expenses</p>
             <p className="text-muted-foreground">
-              <span className="font-medium text-foreground">COGS:</span> Purchase price × quantity sold (Delivered Products)
+              <span className="font-medium text-foreground">COGS:</span> Purchase price × quantity sold (Delivered
+              Products)
             </p>
             <p className="text-muted-foreground mt-1">
               <span className="font-medium text-foreground">Expenses:</span> Rent, salary, utilities, etc.

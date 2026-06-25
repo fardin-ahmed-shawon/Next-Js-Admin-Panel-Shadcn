@@ -32,15 +32,15 @@ export const useAuth = create<AuthState>((set, get) => ({
         await fetch(`${API_URL}logout`, {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${token}`,
-            "Accept": "application/json",
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
           },
         });
       } catch (error) {
         console.error("Logout request failed:", error);
       }
     }
-    
+
     Cookies.remove("auth_token", { path: "/" });
     set({ user: null, token: null, isAuthenticated: false, isLoading: false });
   },
@@ -57,8 +57,8 @@ export const useAuth = create<AuthState>((set, get) => ({
     try {
       const response = await fetch(`${API_URL}me`, {
         headers: {
-          "Authorization": `Bearer ${token}`,
-          "Accept": "application/json",
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
         },
       });
 

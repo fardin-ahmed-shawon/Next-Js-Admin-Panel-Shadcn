@@ -78,7 +78,7 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
       const endpoint = process.env.NEXT_PUBLIC_API_EXPENSES_URL || "expenses";
-      
+
       let url = `${baseUrl}${endpoint}`;
       let method = "POST";
 
@@ -131,7 +131,9 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
+            <Label htmlFor="title">
+              Title <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="title"
               placeholder="e.g. November Headquarters Rent"
@@ -143,7 +145,9 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="category">Category <span className="text-destructive">*</span></Label>
+              <Label htmlFor="category">
+                Category <span className="text-destructive">*</span>
+              </Label>
               <Select
                 value={formData.expense_category_id.toString()}
                 onValueChange={(val) => setFormData({ ...formData, expense_category_id: Number(val) })}
@@ -163,13 +167,17 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="amount">Amount (৳) <span className="text-destructive">*</span></Label>
+              <Label htmlFor="amount">
+                Amount (৳) <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="amount"
                 type="number"
                 placeholder="0.00"
                 value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value === "" ? "" : Number(e.target.value) })}
+                onChange={(e) =>
+                  setFormData({ ...formData, amount: e.target.value === "" ? "" : Number(e.target.value) })
+                }
                 disabled={loading}
               />
             </div>

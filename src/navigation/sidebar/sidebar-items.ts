@@ -1,5 +1,4 @@
 import {
-  AppWindow,
   Archive,
   Award,
   BadgePercent,
@@ -99,16 +98,16 @@ export const sidebarItems: NavGroup[] = [
           { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", module: "orders", comingSoon: true },
         ],
       },
-      {
-        title: "Landing Page",
-        url: "/dashboard/landing-pages",
-        icon: AppWindow,
-        module: "landing_pages",
-        subItems: [
-          { title: "Create Landing Page", url: "/dashboard/landing-pages/create", module: "landing_pages_create" },
-          { title: "All Landing Pages", url: "/dashboard/landing-pages", module: "landing_pages" },
-        ],
-      },
+      // {
+      //   title: "Landing Page",
+      //   url: "/dashboard/landing-pages",
+      //   icon: AppWindow,
+      //   module: "landing_pages",
+      //   subItems: [
+      //     { title: "Create Landing Page", url: "/dashboard/landing-pages/create", module: "landing_pages_create" },
+      //     { title: "All Landing Pages", url: "/dashboard/landing-pages", module: "landing_pages" },
+      //   ],
+      // },
       {
         title: "Customers",
         url: "/dashboard/customers",

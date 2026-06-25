@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
+
 import { useRouter } from "next/navigation";
 
-import { CirclePlus, ImagePlus, Package, RefreshCw, Save, Upload, X, Loader2 } from "lucide-react";
+import { CirclePlus, ImagePlus, Loader2, Package, RefreshCw, Save, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,9 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-
-import useCategories from "@/hooks/useCategories";
 import useAttributes from "@/hooks/useAttributes";
+import useCategories from "@/hooks/useCategories";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -44,7 +44,7 @@ interface MediaItem {
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
-const generateSKU = () => 'SKU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+const generateSKU = () => "SKU-" + Math.random().toString(36).substring(2, 8).toUpperCase();
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -62,6 +62,7 @@ export function AddProductForm() {
   const [productName, setProductName] = React.useState("");
   const [category, setCategory] = React.useState("");
   const [subCategory, setSubCategory] = React.useState("");
+  const [productType, setProductType] = React.useState("none");
   const [shortDescription, setShortDescription] = React.useState("");
   const [longDescription, setLongDescription] = React.useState("");
   const [isActive, setIsActive] = React.useState(true);
@@ -150,6 +151,7 @@ export function AddProductForm() {
     setLongDescription("");
     setCategory("");
     setSubCategory("");
+    setProductType("none");
     setThumbnailUrl(null);
     setThumbnailFile(null);
     setIsActive(true);
@@ -175,20 +177,44 @@ export function AddProductForm() {
     toast.success("Product saved as draft.");
   }
   async function handleSaveProduct() {
-    if (!thumbnailFile) { toast.error("Thumbnail image is required."); return; }
-    if (!productName.trim()) { toast.error("Product name is required."); return; }
-    if (!category) { toast.error("Main category is required."); return; }
-    if (!subCategory) { toast.error("Sub category is required."); return; }
-    if (!shortDescription.trim()) { toast.error("Short description is required."); return; }
-    if (!longDescription.trim()) { toast.error("Long description is required."); return; }
+    if (!thumbnailFile) {
+      toast.error("Thumbnail image is required.");
+      return;
+    }
+    if (!productName.trim()) {
+      toast.error("Product name is required.");
+      return;
+    }
+    if (!category) {
+      toast.error("Main category is required.");
+      return;
+    }
+    if (!subCategory) {
+      toast.error("Sub category is required.");
+      return;
+    }
+    if (!shortDescription.trim()) {
+      toast.error("Short description is required.");
+      return;
+    }
+    if (!longDescription.trim()) {
+      toast.error("Long description is required.");
+      return;
+    }
     if (!hasVariantWisePricing && (!purchasePrice || !regularPrice || !sellingPrice)) {
       toast.error("Pricing (Purchase, Regular, Selling) is required.");
       return;
     }
-    
+
     if (!hasVariants) {
-      if (!sku.trim()) { toast.error("SKU is required when there are no variants."); return; }
-      if (!availableStock) { toast.error("Available stock is required when there are no variants."); return; }
+      if (!sku.trim()) {
+        toast.error("SKU is required when there are no variants.");
+        return;
+      }
+      if (!availableStock) {
+        toast.error("Available stock is required when there are no variants.");
+        return;
+      }
     } else {
       if (variants.length === 0) {
         toast.error("Please add at least one variant since 'Has Variants' is enabled.");
@@ -207,17 +233,18 @@ export function AddProductForm() {
         }
       }
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const formData = new FormData();
       formData.append("name", productName.trim());
       formData.append("status", isActive ? "Active" : "Inactive");
-      
+
       if (category) formData.append("main_category_id", category);
       if (subCategory) formData.append("sub_category_id", subCategory);
-      
+      formData.append("product_type", productType && productType !== "none" ? productType : "");
+
       if (!hasVariantWisePricing) {
         if (purchasePrice) formData.append("purchase_price", purchasePrice);
         if (regularPrice) formData.append("regular_price", regularPrice);
@@ -225,27 +252,27 @@ export function AddProductForm() {
       }
       if (availableStock) formData.append("available_stock", availableStock);
       formData.append("is_preorder", isPreOrder ? "true" : "false");
-      
+
       if (shortDescription) formData.append("short_description", shortDescription);
       if (longDescription) formData.append("long_description", longDescription);
       if (sku) formData.append("sku", sku);
-      
+
       if (metaTitle) formData.append("meta_title", metaTitle);
       if (metaDescription) formData.append("meta_description", metaDescription);
       if (metaKeywords) formData.append("meta_keywords", metaKeywords);
       if (canonicalUrl) formData.append("canonical_url", canonicalUrl);
-      
+
       formData.append("has_variants", hasVariants ? "1" : "0");
       formData.append("has_variant_wise_pricing", hasVariantWisePricing ? "1" : "0");
-      
+
       if (thumbnailFile) {
         formData.append("thumbnail", thumbnailFile);
       }
-      
+
       media.forEach((item) => {
         formData.append(`gallery_images[]`, item.file);
       });
-      
+
       if (hasVariants && variants.length > 0) {
         const mappedVariants = variants.map((v) => ({
           sku: v.sku,
@@ -260,21 +287,21 @@ export function AddProductForm() {
       }
 
       const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_PRODUCT_URL || "product"}`;
-      
+
       // Retrieve token from your preferred storage, e.g., localStorage or cookies
       const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
-      
+
       const res = await fetch(API_URL, {
         method: "POST",
         headers: {
-          "Accept": "application/json",
-          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: formData,
       });
 
       const data = await res.json();
-      
+
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Failed to create product");
       }
@@ -308,11 +335,7 @@ export function AddProductForm() {
             Save draft
           </Button>
           <Button size="sm" onClick={handleSaveProduct} disabled={isSubmitting}>
-            {isSubmitting ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
-            ) : (
-              <Upload className="mr-2 size-4" />
-            )}
+            {isSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Upload className="mr-2 size-4" />}
             Upload Product
           </Button>
         </div>
@@ -400,8 +423,8 @@ export function AddProductForm() {
                 />
               </div>
 
-              {/* Category & Sub */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              {/* Category, Sub & Product Type */}
+              <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Main Category</Label>
                   <Select
@@ -436,6 +459,20 @@ export function AddProductForm() {
                           {c.name}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Product Type</Label>
+                  <Select value={productType} onValueChange={setProductType}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select product type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="new_arrival">New Arrival</SelectItem>
+                      <SelectItem value="top_selling">Top Selling</SelectItem>
+                      <SelectItem value="trending">Trending</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -614,7 +651,12 @@ export function AddProductForm() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="base-sku">Base SKU</Label>
-                      <Input id="base-sku" placeholder="eg. SKU-001" value={sku} onChange={(e) => setSku(e.target.value)} />
+                      <Input
+                        id="base-sku"
+                        placeholder="eg. SKU-001"
+                        value={sku}
+                        onChange={(e) => setSku(e.target.value)}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="base-stock">Base Available Stock</Label>
@@ -634,140 +676,140 @@ export function AddProductForm() {
                 <>
                   <Separator />
 
-              {/* Variants list or empty state */}
-              {variants.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-3 py-10">
-                  <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-                    <Package className="size-6 text-muted-foreground" />
-                  </div>
-                  <div className="space-y-1 text-center">
-                    <p className="text-sm font-medium">No variants added</p>
-                    <p className="text-xs text-muted-foreground">
-                      Add variants to offer different sizes or colors.
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={addVariant}>
-                    <CirclePlus className="mr-2 size-4" />
-                    Add Variant
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  {variants.map((v, idx) => (
-                    <div key={v.id} className="space-y-4 rounded-lg border p-4">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium">Variant {idx + 1}</p>
-                        <Button variant="ghost" size="icon-sm" onClick={() => removeVariant(v.id)}>
-                          <X className="size-4" />
-                        </Button>
+                  {/* Variants list or empty state */}
+                  {variants.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-3 py-10">
+                      <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+                        <Package className="size-6 text-muted-foreground" />
                       </div>
-                      {/* Color, Size */}
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">
-                            Color <span className="text-muted-foreground">(optional)</span>
-                          </Label>
-                          <Select value={v.color} onValueChange={(val) => updateVariant(v.id, "color", val)}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select color" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {colors.map((o: any) => (
-                                <SelectItem key={o.label} value={o.label}>
-                                  <div className="flex items-center gap-2">
-                                    {o.hex_value && (
-                                      <div
-                                        className="size-3 rounded-full border border-black/10"
-                                        style={{ backgroundColor: o.hex_value }}
-                                      />
-                                    )}
-                                    {o.label}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">
-                            Size <span className="text-muted-foreground">(optional)</span>
-                          </Label>
-                          <Select value={v.size} onValueChange={(val) => updateVariant(v.id, "size", val)}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select size" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {sizes.map((o: any) => (
-                                <SelectItem key={o.label} value={o.label}>
-                                  {o.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div className="space-y-1 text-center">
+                        <p className="text-sm font-medium">No variants added</p>
+                        <p className="text-xs text-muted-foreground">
+                          Add variants to offer different sizes or colors.
+                        </p>
                       </div>
-                      {/* SKU, Stock */}
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">SKU</Label>
-                          <Input
-                            placeholder="SKU-001-RED-M"
-                            value={v.sku}
-                            onChange={(e) => updateVariant(v.id, "sku", e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">Available Stock</Label>
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            value={v.stock}
-                            onChange={(e) => updateVariant(v.id, "stock", e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      {hasVariantWisePricing && (
-                        <div className="grid gap-3 sm:grid-cols-3 bg-muted/30 p-3 rounded-md border border-dashed">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-primary">Purchase Price (৳)</Label>
-                            <Input
-                              type="number"
-                              placeholder="0.00"
-                              value={v.purchasePrice || ""}
-                              onChange={(e) => updateVariant(v.id, "purchasePrice", e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-primary">Regular Price (৳)</Label>
-                            <Input
-                              type="number"
-                              placeholder="0.00"
-                              value={v.regularPrice || ""}
-                              onChange={(e) => updateVariant(v.id, "regularPrice", e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-primary">Selling Price (৳)</Label>
-                            <Input
-                              type="number"
-                              placeholder="0.00"
-                              value={v.sellingPrice || ""}
-                              onChange={(e) => updateVariant(v.id, "sellingPrice", e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* End Variant Fields */}
+                      <Button variant="outline" size="sm" onClick={addVariant}>
+                        <CirclePlus className="mr-2 size-4" />
+                        Add Variant
+                      </Button>
                     </div>
-                  ))}
-                  <Button variant="ghost" size="sm" className="w-fit" onClick={addVariant}>
-                    <CirclePlus className="mr-2 size-4" />
-                    Add Variant
-                  </Button>
-                </>
-              )}
+                  ) : (
+                    <>
+                      {variants.map((v, idx) => (
+                        <div key={v.id} className="space-y-4 rounded-lg border p-4">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">Variant {idx + 1}</p>
+                            <Button variant="ghost" size="icon-sm" onClick={() => removeVariant(v.id)}>
+                              <X className="size-4" />
+                            </Button>
+                          </div>
+                          {/* Color, Size */}
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">
+                                Color <span className="text-muted-foreground">(optional)</span>
+                              </Label>
+                              <Select value={v.color} onValueChange={(val) => updateVariant(v.id, "color", val)}>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select color" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {colors.map((o: any) => (
+                                    <SelectItem key={o.label} value={o.label}>
+                                      <div className="flex items-center gap-2">
+                                        {o.hex_value && (
+                                          <div
+                                            className="size-3 rounded-full border border-black/10"
+                                            style={{ backgroundColor: o.hex_value }}
+                                          />
+                                        )}
+                                        {o.label}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">
+                                Size <span className="text-muted-foreground">(optional)</span>
+                              </Label>
+                              <Select value={v.size} onValueChange={(val) => updateVariant(v.id, "size", val)}>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select size" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {sizes.map((o: any) => (
+                                    <SelectItem key={o.label} value={o.label}>
+                                      {o.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          {/* SKU, Stock */}
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">SKU</Label>
+                              <Input
+                                placeholder="SKU-001-RED-M"
+                                value={v.sku}
+                                onChange={(e) => updateVariant(v.id, "sku", e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Available Stock</Label>
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                value={v.stock}
+                                onChange={(e) => updateVariant(v.id, "stock", e.target.value)}
+                              />
+                            </div>
+                          </div>
+
+                          {hasVariantWisePricing && (
+                            <div className="grid gap-3 sm:grid-cols-3 bg-muted/30 p-3 rounded-md border border-dashed">
+                              <div className="space-y-1.5">
+                                <Label className="text-xs text-primary">Purchase Price (৳)</Label>
+                                <Input
+                                  type="number"
+                                  placeholder="0.00"
+                                  value={v.purchasePrice || ""}
+                                  onChange={(e) => updateVariant(v.id, "purchasePrice", e.target.value)}
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-xs text-primary">Regular Price (৳)</Label>
+                                <Input
+                                  type="number"
+                                  placeholder="0.00"
+                                  value={v.regularPrice || ""}
+                                  onChange={(e) => updateVariant(v.id, "regularPrice", e.target.value)}
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-xs text-primary">Selling Price (৳)</Label>
+                                <Input
+                                  type="number"
+                                  placeholder="0.00"
+                                  value={v.sellingPrice || ""}
+                                  onChange={(e) => updateVariant(v.id, "sellingPrice", e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* End Variant Fields */}
+                        </div>
+                      ))}
+                      <Button variant="ghost" size="sm" className="w-fit" onClick={addVariant}>
+                        <CirclePlus className="mr-2 size-4" />
+                        Add Variant
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
             </CardContent>
@@ -781,44 +823,44 @@ export function AddProductForm() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base text-primary">Pricing</CardTitle>
-              <CardDescription>Set the base pricing for this product.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <div className="space-y-2">
-                <Label htmlFor="purchase-price" className="text-primary font-medium">
-                  Purchase Price (৳)
-                </Label>
-                <Input
-                  id="purchase-price"
-                  placeholder="0.00"
-                  value={purchasePrice}
-                  onChange={(e) => setPurchasePrice(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="regular-price" className="text-primary font-medium">
-                  Regular Price (৳)
-                </Label>
-                <Input
-                  id="regular-price"
-                  placeholder="0.00"
-                  value={regularPrice}
-                  onChange={(e) => setRegularPrice(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="selling-price" className="text-primary font-medium">
-                  Selling Price (৳)
-                </Label>
-                <Input
-                  id="selling-price"
-                  placeholder="0.00"
-                  value={sellingPrice}
-                  onChange={(e) => setSellingPrice(e.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
+                <CardDescription>Set the base pricing for this product.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-5">
+                <div className="space-y-2">
+                  <Label htmlFor="purchase-price" className="text-primary font-medium">
+                    Purchase Price (৳)
+                  </Label>
+                  <Input
+                    id="purchase-price"
+                    placeholder="0.00"
+                    value={purchasePrice}
+                    onChange={(e) => setPurchasePrice(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="regular-price" className="text-primary font-medium">
+                    Regular Price (৳)
+                  </Label>
+                  <Input
+                    id="regular-price"
+                    placeholder="0.00"
+                    value={regularPrice}
+                    onChange={(e) => setRegularPrice(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="selling-price" className="text-primary font-medium">
+                    Selling Price (৳)
+                  </Label>
+                  <Input
+                    id="selling-price"
+                    placeholder="0.00"
+                    value={sellingPrice}
+                    onChange={(e) => setSellingPrice(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* ---- Pre-Order ---- */}

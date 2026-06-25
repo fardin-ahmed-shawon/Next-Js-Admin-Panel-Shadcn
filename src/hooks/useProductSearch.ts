@@ -5,8 +5,7 @@ import useSWR from "swr";
 
 import { type RecommendationProduct } from "./useProductRecommendations";
 
-const BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
 
 const fetcher = async (url: string) => {
   const res = await fetchClient(url);
@@ -28,9 +27,7 @@ export function useProductSearch(query: string) {
   }, [query]);
 
   const url =
-    debounced.trim().length >= 1
-      ? `${BASE}products?search=${encodeURIComponent(debounced.trim())}&per_page=20`
-      : null;
+    debounced.trim().length >= 1 ? `${BASE}products?search=${encodeURIComponent(debounced.trim())}&per_page=20` : null;
 
   const { data, error, isLoading } = useSWR(url, fetcher, {
     revalidateOnFocus: false,
@@ -39,11 +36,7 @@ export function useProductSearch(query: string) {
 
   // Backend returns: { success: true, data: { data: Product[], ... } }
   const raw = data?.data;
-  const products: RecommendationProduct[] = Array.isArray(raw)
-    ? raw
-    : Array.isArray(raw?.data)
-    ? raw.data
-    : [];
+  const products: RecommendationProduct[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
 
   return { products, error, isLoading };
 }

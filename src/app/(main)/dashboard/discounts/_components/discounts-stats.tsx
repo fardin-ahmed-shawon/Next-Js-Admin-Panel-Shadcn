@@ -9,14 +9,14 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8
 const DISCOUNT_API_URL = process.env.NEXT_PUBLIC_API_DISCOUNT_URL || "discounts";
 
 // Helper function for discount-specific URLs
-const getDiscountUrl = (path: string = '') => {
+const getDiscountUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) {
-    baseUrl += '/';
+  if (!baseUrl.endsWith("/")) {
+    baseUrl += "/";
   }
-  
-  const discountPath = DISCOUNT_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+
+  const discountPath = DISCOUNT_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${discountPath}/${cleanPath}` : discountPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
@@ -44,7 +44,7 @@ export function DiscountsStats({ refreshTrigger }: DiscountsStatsProps) {
     try {
       const url = getDiscountUrl();
       console.log("Fetching stats from:", url);
-      
+
       const response = await fetch(url, {
         headers: {
           Accept: "application/json",
@@ -58,7 +58,7 @@ export function DiscountsStats({ refreshTrigger }: DiscountsStatsProps) {
 
       const data = await response.json();
       console.log("Stats API Response:", data);
-      
+
       // Handle different response structures
       let discountsData = [];
       if (data.data) {
@@ -71,8 +71,8 @@ export function DiscountsStats({ refreshTrigger }: DiscountsStatsProps) {
 
       // Calculate statistics
       const total = discountsData.length;
-      const active = discountsData.filter((d: any) => d.status === 'active').length;
-      
+      const active = discountsData.filter((d: any) => d.status === "active").length;
+
       // Count free shipping - handles both 1/0 and true/false
       const freeShipping = discountsData.filter((d: any) => {
         return d.has_free_shipping === 1 || d.has_free_shipping === true;
@@ -85,7 +85,6 @@ export function DiscountsStats({ refreshTrigger }: DiscountsStatsProps) {
         active,
         freeShipping,
       });
-      
     } catch (error) {
       console.error("Error fetching stats:", error);
     } finally {
@@ -144,8 +143,8 @@ export function DiscountsStats({ refreshTrigger }: DiscountsStatsProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {statItems.map((stat, i) => (
-        <Card 
-          key={i} 
+        <Card
+          key={i}
           className="bg-linear-to-t from-primary/5 to-card shadow-xs hover:shadow-md transition-shadow duration-200"
         >
           <CardHeader>
@@ -157,9 +156,7 @@ export function DiscountsStats({ refreshTrigger }: DiscountsStatsProps) {
             <CardDescription>{stat.title}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-1">
-            <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">
-              {stat.value}
-            </div>
+            <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">{stat.value}</div>
             <p className="text-muted-foreground text-sm">{stat.subtitle}</p>
           </CardContent>
         </Card>

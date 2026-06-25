@@ -10,7 +10,7 @@ export function RolesStats() {
 
   const totalRoles = roles.length || 0;
   // Based on the 26 permission items
-  const permissionSlots = 26; 
+  const permissionSlots = 26;
 
   const stats = [
     {

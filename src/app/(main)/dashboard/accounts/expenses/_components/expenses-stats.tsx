@@ -9,7 +9,7 @@ export function ExpensesStats() {
   const { expenses, isLoading } = useExpenses();
 
   const totalAmount = expenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0);
-  
+
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   const thisMonthAmount = expenses
@@ -19,7 +19,7 @@ export function ExpensesStats() {
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     })
     .reduce((sum: number, exp: any) => sum + Number(exp.amount), 0);
-    
+
   const averageAmount = expenses.length > 0 ? totalAmount / expenses.length : 0;
 
   const stats = [

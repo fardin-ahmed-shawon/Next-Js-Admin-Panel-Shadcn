@@ -173,15 +173,7 @@ function exportToExcel(data: StatementItem[]) {
   const csvRows = [
     headers.join(","),
     ...data.map((row) =>
-      [
-        row.date,
-        row.trx_id || "",
-        row.type,
-        `"${row.details}"`,
-        row.credit,
-        row.debit,
-        row.balance,
-      ].join(","),
+      [row.date, row.trx_id || "", row.type, `"${row.details}"`, row.credit, row.debit, row.balance].join(","),
     ),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });

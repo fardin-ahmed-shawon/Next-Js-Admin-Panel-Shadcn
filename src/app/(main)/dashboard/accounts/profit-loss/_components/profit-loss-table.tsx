@@ -75,11 +75,7 @@ const columns: ColumnDef<ProfitLossItem>[] = [
   {
     accessorKey: "month",
     header: "Month",
-    cell: ({ row }) => (
-      <span className="font-medium">
-        {row.original.month}
-      </span>
-    ),
+    cell: ({ row }) => <span className="font-medium">{row.original.month}</span>,
   },
   {
     accessorKey: "revenue",
@@ -103,7 +99,9 @@ const columns: ColumnDef<ProfitLossItem>[] = [
     accessorKey: "expenses",
     header: "Expenses",
     cell: ({ row }) => (
-      <span className="tabular-nums font-medium text-destructive">৳{Number(row.original.expenses || 0).toLocaleString()}</span>
+      <span className="tabular-nums font-medium text-destructive">
+        ৳{Number(row.original.expenses || 0).toLocaleString()}
+      </span>
     ),
   },
   {
@@ -155,15 +153,7 @@ function exportToExcel(data: ProfitLossItem[]) {
     ...data.map((row) => {
       const isLoss = Number(row.net_profit || 0) < 0;
       const s = isLoss ? "Loss" : "Profit";
-      return [
-        `"${row.month}"`,
-        row.revenue,
-        row.cogs,
-        row.expenses,
-        row.net_profit,
-        `"${row.margin}%"`,
-        s,
-      ].join(",");
+      return [`"${row.month}"`, row.revenue, row.cogs, row.expenses, row.net_profit, `"${row.margin}%"`, s].join(",");
     }),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });

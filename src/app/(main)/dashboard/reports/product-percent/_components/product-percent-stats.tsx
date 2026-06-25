@@ -40,7 +40,9 @@ export function ProductPercentStats({ summary }: ProductPercentStatsProps) {
 
   return (
     <div className="overflow-hidden rounded-xl bg-card shadow-xs ring-1 ring-foreground/10">
-      <div className={`grid grid-cols-1 *:data-[slot=card]:rounded-none *:data-[slot=card]:ring-0 [&>*]:border-b md:grid-cols-3 xl:grid-cols-6 md:[&>*]:border-b-0 md:[&>*:not(:last-child)]:border-r md:[&>*:last-child]:border-r-0`}>
+      <div
+        className={`grid grid-cols-1 *:data-[slot=card]:rounded-none *:data-[slot=card]:ring-0 [&>*]:border-b md:grid-cols-3 xl:grid-cols-6 md:[&>*]:border-b-0 md:[&>*:not(:last-child)]:border-r md:[&>*:last-child]:border-r-0`}
+      >
         {stats.map((stat, i) => (
           <Card key={i}>
             <CardHeader>
@@ -50,7 +52,9 @@ export function ProductPercentStats({ summary }: ProductPercentStatsProps) {
               </CardAction>
             </CardHeader>
             <CardContent className="flex flex-col gap-1">
-              <div className={`font-medium text-xl tabular-nums leading-none tracking-tight ${stat.color}`}>{stat.value}</div>
+              <div className={`font-medium text-xl tabular-nums leading-none tracking-tight ${stat.color}`}>
+                {stat.value}
+              </div>
               <p className="text-muted-foreground text-xs">{stat.subtitle}</p>
             </CardContent>
           </Card>

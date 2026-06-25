@@ -19,12 +19,7 @@ export function AddCategoryButton() {
         <Plus className="mr-2 size-4" />
         Add Category
       </Button>
-      <CategoryDialog
-        open={open}
-        onOpenChange={setOpen}
-        mode="add"
-        onSuccess={() => mutate()}
-      />
+      <CategoryDialog open={open} onOpenChange={setOpen} mode="add" onSuccess={() => mutate()} />
     </>
   );
 }

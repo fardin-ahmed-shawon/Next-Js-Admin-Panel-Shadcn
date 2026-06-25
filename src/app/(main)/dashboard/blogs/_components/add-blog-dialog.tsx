@@ -95,7 +95,13 @@ export function AddBlogDialog({ onCreated }: { onCreated?: () => void }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) resetForm();
+      }}
+    >
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 size-4" />
@@ -148,18 +154,9 @@ export function AddBlogDialog({ onCreated }: { onCreated?: () => void }) {
               {imagePreview ? (
                 <div className="flex flex-col items-center gap-3">
                   <div className="h-32 w-full rounded-lg border overflow-hidden bg-muted p-1">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="size-full object-cover rounded-md"
-                    />
+                    <img src={imagePreview} alt="Preview" className="size-full object-cover rounded-md" />
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
+                  <Button variant="outline" size="sm" type="button" onClick={() => fileInputRef.current?.click()}>
                     <UploadCloud className="mr-2 size-4" />
                     Change Image
                   </Button>
@@ -174,9 +171,7 @@ export function AddBlogDialog({ onCreated }: { onCreated?: () => void }) {
                   </div>
                   <div>
                     <p className="text-sm font-medium">Click to upload image</p>
-                    <p className="text-xs text-muted-foreground">
-                      Accepted: JPEG, PNG, JPG, GIF · Max 3MB
-                    </p>
+                    <p className="text-xs text-muted-foreground">Accepted: JPEG, PNG, JPG, GIF · Max 3MB</p>
                   </div>
                 </div>
               )}
@@ -186,7 +181,10 @@ export function AddBlogDialog({ onCreated }: { onCreated?: () => void }) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => { setOpen(false); resetForm(); }}
+              onClick={() => {
+                setOpen(false);
+                resetForm();
+              }}
               disabled={isSubmitting}
             >
               Cancel

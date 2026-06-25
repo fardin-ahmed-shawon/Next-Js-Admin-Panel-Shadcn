@@ -141,7 +141,7 @@ export function RolesGrid() {
       {roles.map((role) => {
         // Compute granted permissions from page_access object (1 = granted, 0 = denied)
         const grantedPermissionsIds = ALL_PERMISSIONS.filter(
-          (p) => role.page_access && role.page_access[p.id as keyof PageAccess] === 1
+          (p) => role.page_access && role.page_access[p.id as keyof PageAccess] === 1,
         ).map((p) => p.id);
 
         const grantedCount = grantedPermissionsIds.length;
@@ -150,7 +150,7 @@ export function RolesGrid() {
 
         // Hardcoding users count for visual purposes as API doesn't provide it in the example,
         // or one could compute it if the API returned it.
-        const usersCount = role.role_name === "Admin" ? 1 : 0; 
+        const usersCount = role.role_name === "Admin" ? 1 : 0;
 
         return (
           <Card key={role.id} className="flex flex-col">
@@ -197,8 +197,8 @@ export function RolesGrid() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Role</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete the <strong>{role.role_name}</strong> role? This action cannot be
-                        undone.
+                        Are you sure you want to delete the <strong>{role.role_name}</strong> role? This action cannot
+                        be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -304,4 +304,3 @@ function X(props: React.ComponentProps<"svg">) {
     </svg>
   );
 }
-

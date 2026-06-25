@@ -11,7 +11,7 @@ import {
   TrendingUp,
   Users,
   Wallet,
-  Activity
+  Activity,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function DokanxMetricCards() {
   const { user } = useAuth();
   const { data, isLoading } = useAdminDashboard();
-  
+
   const metrics = data?.metrics;
   const orderOverview = data?.order_overview || {};
 

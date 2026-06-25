@@ -36,8 +36,8 @@ export default function InventoryPage() {
       </div>
 
       <InventoryStats summary={data?.summary} loading={loading} />
-      <InventoryTable 
-        records={data?.records} 
+      <InventoryTable
+        records={data?.records}
         loading={loading}
         page={page}
         setPage={setPage}

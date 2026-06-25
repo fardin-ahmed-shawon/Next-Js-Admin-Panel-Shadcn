@@ -23,30 +23,30 @@ const PRODUCT_API_URL = process.env.NEXT_PUBLIC_API_ALL_PRODUCT_URL || "products
 const CUSTOMER_API_URL = process.env.NEXT_PUBLIC_API_CUSTOMER_URL || "customers";
 const REVIEW_API_URL = process.env.NEXT_PUBLIC_API_REVIEW_URL || "reviews";
 
-const getProductUrl = (path: string = '') => {
+const getProductUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) baseUrl += '/';
-  const productPath = PRODUCT_API_URL.replace(/^\/|\/$/g, '');
+  if (!baseUrl.endsWith("/")) baseUrl += "/";
+  const productPath = PRODUCT_API_URL.replace(/^\/|\/$/g, "");
   console.log("NEXT_PUBLIC_API_ALL_PRODUCT_URL:", PRODUCT_API_URL);
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${productPath}/${cleanPath}` : productPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
-const getCustomerUrl = (path: string = '') => {
+const getCustomerUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) baseUrl += '/';
-  const customerPath = CUSTOMER_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+  if (!baseUrl.endsWith("/")) baseUrl += "/";
+  const customerPath = CUSTOMER_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${customerPath}/${cleanPath}` : customerPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
-const getReviewUrl = (path: string = '') => {
+const getReviewUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) baseUrl += '/';
-  const reviewPath = REVIEW_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+  if (!baseUrl.endsWith("/")) baseUrl += "/";
+  const reviewPath = REVIEW_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${reviewPath}/${cleanPath}` : reviewPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
@@ -85,11 +85,11 @@ export function AddReviewDialog({ onReviewAdded }: AddReviewDialogProps) {
     try {
       const url = getProductUrl();
       console.log("Fetching products from:", url);
-      
+
       const response = await fetch(url, {
-        headers: { 
-          Accept: "application/json", 
-          "Content-Type": "application/json" 
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
       });
 
@@ -99,47 +99,47 @@ export function AddReviewDialog({ onReviewAdded }: AddReviewDialogProps) {
 
       const result = await response.json();
       console.log("Products API response:", result);
-      
+
       let productsData = [];
-      
+
       // Handle the nested pagination structure from your API
       if (result.data && result.data.data && Array.isArray(result.data.data)) {
         productsData = result.data.data;
-      } 
+      }
       // Handle direct data array
       else if (result.data && Array.isArray(result.data)) {
         productsData = result.data;
-      } 
+      }
       // Handle array response
       else if (Array.isArray(result)) {
         productsData = result;
-      } 
+      }
       // Handle products wrapper
       else if (result.products && Array.isArray(result.products)) {
         productsData = result.products;
       }
 
       console.log(`Raw products count: ${productsData.length}`);
-      
+
       // Log first product to see structure
       if (productsData.length > 0) {
         console.log("Sample product structure:", productsData[0]);
       }
-      
+
       // Filter active products and map to expected format
       const activeProducts = productsData
-        .filter((p: any) => p.status === 'active')
+        .filter((p: any) => p.status === "active")
         .map((p: any) => ({
           id: p.id,
           // Use product_short_description as the display name since title is just a number
           title: p.product_short_description || p.title || `Product #${p.id}`,
         }));
-      
+
       console.log(`Active products count: ${activeProducts.length}`);
       console.log("Active products:", activeProducts);
-      
+
       setProducts(activeProducts);
-      
+
       if (activeProducts.length === 0) {
         toast.info("No active products found. Please add some products first.");
       }
@@ -157,11 +157,11 @@ export function AddReviewDialog({ onReviewAdded }: AddReviewDialogProps) {
     try {
       const url = getCustomerUrl();
       console.log("Fetching customers from:", url);
-      
+
       const response = await fetch(url, {
-        headers: { 
-          Accept: "application/json", 
-          "Content-Type": "application/json" 
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
       });
 
@@ -171,9 +171,9 @@ export function AddReviewDialog({ onReviewAdded }: AddReviewDialogProps) {
 
       const result = await response.json();
       console.log("Customers API response:", result);
-      
+
       let customersData = [];
-      
+
       // Handle different response structures
       if (result.data && Array.isArray(result.data)) {
         customersData = result.data;
@@ -184,15 +184,15 @@ export function AddReviewDialog({ onReviewAdded }: AddReviewDialogProps) {
       }
 
       console.log(`Customers count: ${customersData.length}`);
-      
+
       // Map customers to expected format
       const mappedCustomers = customersData.map((c: any) => ({
         id: c.id,
         full_name: c.full_name || c.name || `Customer #${c.id}`,
       }));
-      
+
       setCustomers(mappedCustomers);
-      
+
       if (mappedCustomers.length === 0) {
         toast.info("No customers found. Please add some customers first.");
       }
@@ -240,12 +240,12 @@ export function AddReviewDialog({ onReviewAdded }: AddReviewDialogProps) {
         ratings: parseInt(formData.rating),
         review_text: formData.text.trim(),
       });
-      
+
       const response = await fetch(url, {
         method: "POST",
-        headers: { 
-          Accept: "application/json", 
-          "Content-Type": "application/json" 
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           product_id: parseInt(formData.productId),
@@ -265,7 +265,7 @@ export function AddReviewDialog({ onReviewAdded }: AddReviewDialogProps) {
       toast.success(result.message || "Review added successfully.");
       setOpen(false);
       setFormData({ productId: "", customerId: "", rating: "", text: "" });
-      
+
       if (onReviewAdded) {
         onReviewAdded();
       }
@@ -295,27 +295,25 @@ export function AddReviewDialog({ onReviewAdded }: AddReviewDialogProps) {
             <Label htmlFor="product">
               Select Product <span className="text-destructive">*</span>
             </Label>
-            <Select 
-              value={formData.productId} 
+            <Select
+              value={formData.productId}
               onValueChange={(val) => setFormData({ ...formData, productId: val })}
               disabled={isLoadingProducts}
             >
               <SelectTrigger className="w-full" id="product">
-                <SelectValue 
+                <SelectValue
                   placeholder={
-                    isLoadingProducts 
-                      ? "Loading products..." 
-                      : products.length === 0 
-                        ? "No products available" 
+                    isLoadingProducts
+                      ? "Loading products..."
+                      : products.length === 0
+                        ? "No products available"
                         : "-- Select Product --"
-                  } 
+                  }
                 />
               </SelectTrigger>
               <SelectContent>
                 {isLoadingProducts && (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">
-                    Loading products...
-                  </div>
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">Loading products...</div>
                 )}
                 {!isLoadingProducts && products.length === 0 && (
                   <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">
@@ -335,32 +333,28 @@ export function AddReviewDialog({ onReviewAdded }: AddReviewDialogProps) {
             <Label htmlFor="customer">
               Select Customer <span className="text-destructive">*</span>
             </Label>
-            <Select 
-              value={formData.customerId} 
+            <Select
+              value={formData.customerId}
               onValueChange={(val) => setFormData({ ...formData, customerId: val })}
               disabled={isLoadingCustomers}
             >
               <SelectTrigger className="w-full" id="customer">
-                <SelectValue 
+                <SelectValue
                   placeholder={
-                    isLoadingCustomers 
-                      ? "Loading customers..." 
-                      : customers.length === 0 
-                        ? "No customers available" 
+                    isLoadingCustomers
+                      ? "Loading customers..."
+                      : customers.length === 0
+                        ? "No customers available"
                         : "-- Select Customer --"
-                  } 
+                  }
                 />
               </SelectTrigger>
               <SelectContent>
                 {isLoadingCustomers && (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">
-                    Loading customers...
-                  </div>
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">Loading customers...</div>
                 )}
                 {!isLoadingCustomers && customers.length === 0 && (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">
-                    No customers available
-                  </div>
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">No customers available</div>
                 )}
                 {customers.map((c) => (
                   <SelectItem key={c.id} value={c.id.toString()}>

@@ -122,8 +122,8 @@ export function UsersTable({ users, loading, refetch }: UsersTableProps) {
         const user = row.original;
         return (
           <div className="flex items-center justify-end gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="icon-sm"
               onClick={() => {
                 setEditUser(user);
@@ -285,9 +285,7 @@ export function UsersTable({ users, loading, refetch }: UsersTableProps) {
                           <UserX className="size-6 text-muted-foreground" />
                         </div>
                         <p className="text-sm font-medium">No users found</p>
-                        <p className="text-xs text-muted-foreground">
-                          Try adjusting your search or add a new user.
-                        </p>
+                        <p className="text-xs text-muted-foreground">Try adjusting your search or add a new user.</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -359,12 +357,7 @@ export function UsersTable({ users, loading, refetch }: UsersTableProps) {
         </CardContent>
       </Card>
 
-      <EditUserDialog 
-        open={isEditOpen} 
-        onOpenChange={setIsEditOpen} 
-        user={editUser}
-        onSuccess={refetch}
-      />
+      <EditUserDialog open={isEditOpen} onOpenChange={setIsEditOpen} user={editUser} onSuccess={refetch} />
     </>
   );
 }

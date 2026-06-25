@@ -217,7 +217,7 @@ export default function AddRolePage() {
 
     try {
       const pageAccessPayload: Record<string, number> = {};
-      
+
       // Populate payload with explicitly 1 or 0
       PERMISSION_GROUPS.forEach((group) => {
         group.items.forEach((item) => {
@@ -235,7 +235,7 @@ export default function AddRolePage() {
       };
 
       const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ROLES || ""}`;
-      
+
       const response = await fetch(API_URL, {
         method: "POST",
         headers: {
@@ -306,9 +306,7 @@ export default function AddRolePage() {
                 value={roleName}
                 onChange={(e) => setRoleName(e.target.value)}
               />
-              {errors.role_name && (
-                <p className="text-sm font-medium text-destructive">{errors.role_name[0]}</p>
-              )}
+              {errors.role_name && <p className="text-sm font-medium text-destructive">{errors.role_name[0]}</p>}
             </div>
           </CardContent>
         </Card>

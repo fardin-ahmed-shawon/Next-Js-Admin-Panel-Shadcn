@@ -25,7 +25,7 @@ const fetcher = async (key: string | [string, number | undefined]) => {
       last_page: json.data?.last_page,
       per_page: json.data?.per_page,
       total: json.data?.total,
-    }
+    },
   };
 };
 
@@ -33,10 +33,7 @@ export default function useDueCollection() {
   const { user } = useAuth();
   const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ACCOUNTS_DUE_URL || "due-collection"}`;
 
-  const { data, error, isLoading, mutate } = useSWR(
-    user?.id ? [url, user.id] : url,
-    fetcher
-  );
+  const { data, error, isLoading, mutate } = useSWR(user?.id ? [url, user.id] : url, fetcher);
 
   return {
     summary: data?.summary || {},

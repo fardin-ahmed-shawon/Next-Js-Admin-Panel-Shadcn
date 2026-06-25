@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -16,10 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-
-import useProduct from "@/hooks/useProduct";
-import useCategories from "@/hooks/useCategories";
 import useAttributes from "@/hooks/useAttributes";
+import useCategories from "@/hooks/useCategories";
+import useProduct from "@/hooks/useProduct";
 
 /* ---- Types ---- */
 interface Variant {
@@ -39,8 +39,6 @@ interface MediaItem {
   name: string;
 }
 
-
-
 const getImageUrl = (path: string | null) => {
   if (!path) return "";
   if (path.startsWith("http")) return path;
@@ -48,7 +46,7 @@ const getImageUrl = (path: string | null) => {
   return `${baseUrl}${path}`;
 };
 
-const generateSKU = () => 'SKU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+const generateSKU = () => "SKU-" + Math.random().toString(36).substring(2, 8).toUpperCase();
 
 export function EditProductForm({ productId }: { productId: string }) {
   const router = useRouter();
@@ -67,6 +65,7 @@ export function EditProductForm({ productId }: { productId: string }) {
   const [subCategoryId, setSubCategoryId] = React.useState("");
   const [shortDescription, setShortDescription] = React.useState("");
   const [longDescription, setLongDescription] = React.useState("");
+  const [productType, setProductType] = React.useState("none");
   const [isActive, setIsActive] = React.useState(true);
 
   // Media (Existing + New)
@@ -110,8 +109,9 @@ export function EditProductForm({ productId }: { productId: string }) {
       setSubCategoryId(product.sub_category_id?.toString() || "");
       setShortDescription(product.product_short_description || "");
       setLongDescription(product.product_long_description || "");
+      setProductType(product.product_type || "none");
       setIsActive(product.status !== "Inactive");
-      
+
       setSku(product.sku || "");
       setAvailableStock(product.available_stock?.toString() || "0");
       setPurchasePrice(product.purchase_price?.toString() || "0");
@@ -123,32 +123,36 @@ export function EditProductForm({ productId }: { productId: string }) {
       }
 
       if (product.gallery && Array.isArray(product.gallery)) {
-        setExistingMedia(product.gallery.map((g: any) => ({
-          id: g.id,
-          url: getImageUrl(g.product_img || g.image),
-          name: `Image ${g.id}`
-        })));
+        setExistingMedia(
+          product.gallery.map((g: any) => ({
+            id: g.id,
+            url: getImageUrl(g.product_img || g.image),
+            name: `Image ${g.id}`,
+          })),
+        );
       }
 
       setHasVariants(!!product.has_variants);
       setHasVariantWisePricing(!!product.has_variant_wise_pricing);
 
       if (product.variants && Array.isArray(product.variants)) {
-        setVariants(product.variants.map((v: any) => {
-          const colorLabel = colors.find((c: any) => c.id == v.color_id)?.label || v.color?.name || v.color || "";
-          const sizeLabel = sizes.find((s: any) => s.id == v.size_id)?.label || v.size?.name || v.size || "";
-          
-          return {
-            id: v.id,
-            color: colorLabel,
-            size: sizeLabel,
-            sku: v.sku || "",
-            available_stock: v.available_stock || 0,
-            purchasePrice: v.variant_pricing?.purchase_price?.toString() || "",
-            regularPrice: v.variant_pricing?.regular_price?.toString() || "",
-            sellingPrice: v.variant_pricing?.selling_price?.toString() || "",
-          };
-        }));
+        setVariants(
+          product.variants.map((v: any) => {
+            const colorLabel = colors.find((c: any) => c.id == v.color_id)?.label || v.color?.name || v.color || "";
+            const sizeLabel = sizes.find((s: any) => s.id == v.size_id)?.label || v.size?.name || v.size || "";
+
+            return {
+              id: v.id,
+              color: colorLabel,
+              size: sizeLabel,
+              sku: v.sku || "",
+              available_stock: v.available_stock || 0,
+              purchasePrice: v.variant_pricing?.purchase_price?.toString() || "",
+              regularPrice: v.variant_pricing?.regular_price?.toString() || "",
+              sellingPrice: v.variant_pricing?.selling_price?.toString() || "",
+            };
+          }),
+        );
       }
 
       setIsPreOrder(!!product.is_preorder_active);
@@ -162,22 +166,22 @@ export function EditProductForm({ productId }: { productId: string }) {
   }, [product, initialized, attributesLoading, colors, sizes]);
 
   const filteredSubCategories = React.useMemo(() => {
-    const main = categories.find(c => c.id.toString() === categoryId);
+    const main = categories.find((c) => c.id.toString() === categoryId);
     return main?.["sub-categories"] || [];
   }, [categories, categoryId]);
 
   function addVariant() {
     setVariants((p) => [
       ...p,
-      { 
-        id: `new_${Date.now()}`, 
-        color: "", 
-        size: "", 
-        sku: generateSKU(), 
+      {
+        id: `new_${Date.now()}`,
+        color: "",
+        size: "",
+        sku: generateSKU(),
         available_stock: 0,
         purchasePrice: purchasePrice,
         regularPrice: regularPrice,
-        sellingPrice: sellingPrice
+        sellingPrice: sellingPrice,
       },
     ]);
   }
@@ -228,9 +232,10 @@ export function EditProductForm({ productId }: { productId: string }) {
       formData.append("name", productName);
       if (categoryId) formData.append("main_category_id", categoryId);
       if (subCategoryId) formData.append("sub_category_id", subCategoryId);
+      formData.append("product_type", productType && productType !== "none" ? productType : "");
       if (shortDescription) formData.append("short_description", shortDescription);
       if (longDescription) formData.append("long_description", longDescription);
-      
+
       formData.append("status", isActive ? "Active" : "Inactive");
       formData.append("sku", sku);
       formData.append("available_stock", availableStock.toString());
@@ -239,7 +244,7 @@ export function EditProductForm({ productId }: { productId: string }) {
         formData.append("regular_price", regularPrice.toString());
         formData.append("selling_price", sellingPrice.toString());
       }
-      
+
       formData.append("is_preorder", isPreOrder ? "true" : "false");
       if (metaTitle) formData.append("meta_title", metaTitle);
       if (metaDescription) formData.append("meta_description", metaDescription);
@@ -263,25 +268,25 @@ export function EditProductForm({ productId }: { productId: string }) {
 
       if (hasVariants && variants.length > 0) {
         // Filter out temporary string IDs for new variants
-        const mappedVariants = variants.map(v => {
+        const mappedVariants = variants.map((v) => {
           const mapped: any = { ...v };
-          if (typeof mapped.id === 'string' && mapped.id.startsWith('new_')) {
+          if (typeof mapped.id === "string" && mapped.id.startsWith("new_")) {
             delete mapped.id;
           }
           mapped.color = mapped.color || null;
           mapped.size = mapped.size || null;
           mapped.available_stock = mapped.available_stock ? Number(mapped.available_stock) : undefined;
-          
+
           if (hasVariantWisePricing) {
             mapped.purchase_price = mapped.purchasePrice ? Number(mapped.purchasePrice) : undefined;
             mapped.regular_price = mapped.regularPrice ? Number(mapped.regularPrice) : undefined;
             mapped.selling_price = mapped.sellingPrice ? Number(mapped.sellingPrice) : undefined;
           }
-          
+
           delete mapped.purchasePrice;
           delete mapped.regularPrice;
           delete mapped.sellingPrice;
-          
+
           return mapped;
         });
         formData.append("variants", JSON.stringify(mappedVariants));
@@ -290,7 +295,7 @@ export function EditProductForm({ productId }: { productId: string }) {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}product/${productId}`, {
         method: "POST", // POST with _method=PUT
         headers: {
-          "Accept": "application/json",
+          Accept: "application/json",
         },
         body: formData,
       });
@@ -332,7 +337,13 @@ export function EditProductForm({ productId }: { productId: string }) {
             <Link href={`/dashboard/products`}>Cancel</Link>
           </Button>
           <Button size="sm" onClick={handleUpdate} disabled={saving}>
-            {saving ? "Saving..." : <><Save className="mr-2 size-4" /> Update Product</>}
+            {saving ? (
+              "Saving..."
+            ) : (
+              <>
+                <Save className="mr-2 size-4" /> Update Product
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -359,23 +370,42 @@ export function EditProductForm({ productId }: { productId: string }) {
                   <div className="space-y-1">
                     <p className="text-sm font-medium">Product thumbnail</p>
                     <div className="flex items-center gap-2 pt-1">
-                      <Button variant="link" size="sm" className="h-auto p-0 text-xs text-primary" onClick={() => thumbnailRef.current?.click()}>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs text-primary"
+                        onClick={() => thumbnailRef.current?.click()}
+                      >
                         {thumbnailPreview ? "Replace image" : "Upload image"}
                       </Button>
                       {thumbnailPreview && (
-                        <Button variant="link" size="sm" className="h-auto p-0 text-xs text-primary" onClick={() => { setThumbnailPreview(null); setThumbnailFile(null); }}>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-primary"
+                          onClick={() => {
+                            setThumbnailPreview(null);
+                            setThumbnailFile(null);
+                          }}
+                        >
                           Remove
                         </Button>
                       )}
                     </div>
                   </div>
-                  <input ref={thumbnailRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) {
-                      setThumbnailFile(f);
-                      setThumbnailPreview(URL.createObjectURL(f));
-                    }
-                  }} />
+                  <input
+                    ref={thumbnailRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        setThumbnailFile(f);
+                        setThumbnailPreview(URL.createObjectURL(f));
+                      }
+                    }}
+                  />
                 </div>
               </div>
               <Separator />
@@ -383,72 +413,148 @@ export function EditProductForm({ productId }: { productId: string }) {
                 <Label htmlFor="product-name">Product Name</Label>
                 <Input id="product-name" value={productName} onChange={(e) => setProductName(e.target.value)} />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Main Category</Label>
-                  <Select value={categoryId} onValueChange={(v) => { setCategoryId(v); setSubCategoryId(""); }}>
-                    <SelectTrigger className="w-full"><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <Select
+                    value={categoryId}
+                    onValueChange={(v) => {
+                      setCategoryId(v);
+                      setSubCategoryId("");
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {categories.map((c) => (<SelectItem key={c.id} value={c.id.toString()}>{c.main_category_name}</SelectItem>))}
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id.toString()}>
+                          {c.main_category_name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Sub Category</Label>
                   <Select value={subCategoryId} onValueChange={setSubCategoryId} disabled={!categoryId}>
-                    <SelectTrigger className="w-full"><SelectValue placeholder="Select sub category" /></SelectTrigger>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select sub category" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {filteredSubCategories.map((c) => (<SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>))}
+                      {filteredSubCategories.map((c) => (
+                        <SelectItem key={c.id} value={c.id.toString()}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Product Type</Label>
+                  <Select value={productType} onValueChange={setProductType}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select product type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="new_arrival">New Arrival</SelectItem>
+                      <SelectItem value="top_selling">Top Selling</SelectItem>
+                      <SelectItem value="trending">Trending</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="short-desc">Short Description</Label>
-                <Textarea id="short-desc" className="min-h-[80px]" value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} />
+                <Textarea
+                  id="short-desc"
+                  className="min-h-[80px]"
+                  value={shortDescription}
+                  onChange={(e) => setShortDescription(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="long-desc">Long Description</Label>
-                <Textarea id="long-desc" className="min-h-[140px]" value={longDescription} onChange={(e) => setLongDescription(e.target.value)} />
+                <Textarea
+                  id="long-desc"
+                  className="min-h-[140px]"
+                  value={longDescription}
+                  onChange={(e) => setLongDescription(e.target.value)}
+                />
               </div>
               <Separator />
               <div className="flex items-start gap-3">
                 <Switch id="is-active" checked={isActive} onCheckedChange={setIsActive} className="mt-0.5" />
                 <div className="space-y-0.5">
-                  <Label htmlFor="is-active" className="text-sm font-medium">Is Active</Label>
-                  <p className="text-xs text-muted-foreground">Turn this off to keep the product visible but unavailable.</p>
+                  <Label htmlFor="is-active" className="text-sm font-medium">
+                    Is Active
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Turn this off to keep the product visible but unavailable.
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Media</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Media</CardTitle>
+            </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                 {existingMedia.map((item) => (
-                  <div key={item.id} className="group relative aspect-square overflow-hidden rounded-lg border bg-muted">
+                  <div
+                    key={item.id}
+                    className="group relative aspect-square overflow-hidden rounded-lg border bg-muted"
+                  >
                     <img src={item.url} alt={item.name} className="size-full object-cover" />
-                    <button onClick={() => removeExistingMedia(item.id)} className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100"><X className="size-3.5" /></button>
+                    <button
+                      onClick={() => removeExistingMedia(item.id)}
+                      className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+                    >
+                      <X className="size-3.5" />
+                    </button>
                   </div>
                 ))}
                 {newMediaFiles.map((item) => (
-                  <div key={item.id} className="group relative aspect-square overflow-hidden rounded-lg border bg-muted">
+                  <div
+                    key={item.id}
+                    className="group relative aspect-square overflow-hidden rounded-lg border bg-muted"
+                  >
                     <img src={item.url} alt="New Upload" className="size-full object-cover" />
-                    <button onClick={() => removeNewMedia(item.id)} className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100"><X className="size-3.5" /></button>
+                    <button
+                      onClick={() => removeNewMedia(item.id)}
+                      className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+                    >
+                      <X className="size-3.5" />
+                    </button>
                   </div>
                 ))}
-                <button onClick={() => mediaRef.current?.click()} className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary">
+                <button
+                  onClick={() => mediaRef.current?.click()}
+                  className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                >
                   <ImagePlus className="size-6" />
                   <span className="text-xs font-medium">Add images</span>
                 </button>
               </div>
-              <input ref={mediaRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleMediaFiles(e.target.files)} />
+              <input
+                ref={mediaRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleMediaFiles(e.target.files)}
+              />
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Variants & Stock</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Variants & Stock</CardTitle>
+            </CardHeader>
             <CardContent className="flex flex-col gap-5">
               <div className="flex flex-col gap-4 mb-4">
                 <div className="flex items-start gap-3">
@@ -496,45 +602,119 @@ export function EditProductForm({ productId }: { productId: string }) {
                 <>
                   <Separator />
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2"><Label>Base SKU</Label><Input value={sku} onChange={(e) => setSku(e.target.value)} /></div>
-                    <div className="space-y-2"><Label>Base Available Stock</Label><Input type="number" value={availableStock} onChange={(e) => setAvailableStock(e.target.value)} /></div>
+                    <div className="space-y-2">
+                      <Label>Base SKU</Label>
+                      <Input value={sku} onChange={(e) => setSku(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Base Available Stock</Label>
+                      <Input type="number" value={availableStock} onChange={(e) => setAvailableStock(e.target.value)} />
+                    </div>
                   </div>
                 </>
               )}
               {hasVariants && (
                 <>
                   <Separator />
-              {variants.map((v, idx) => (
-                <div key={v.id} className="space-y-4 rounded-lg border p-4">
-                  <div className="flex items-center justify-between"><p className="text-sm font-medium">Variant {idx + 1}</p><Button variant="ghost" size="icon-sm" onClick={() => removeVariant(v.id!)}><X className="size-4" /></Button></div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1.5"><Label className="text-xs">Color</Label><Select value={v.color} onValueChange={(val) => updateVariant(v.id!, "color", val)}><SelectTrigger><SelectValue placeholder="Color" /></SelectTrigger><SelectContent>{colors.map((o: any) => <SelectItem key={o.label} value={o.label}><div className="flex items-center gap-2">{o.hex_value && <div className="size-3 rounded-full border border-black/10" style={{ backgroundColor: o.hex_value }} />}{o.label}</div></SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-1.5"><Label className="text-xs">Size</Label><Select value={v.size} onValueChange={(val) => updateVariant(v.id!, "size", val)}><SelectTrigger><SelectValue placeholder="Size" /></SelectTrigger><SelectContent>{sizes.map((o: any) => <SelectItem key={o.label} value={o.label}>{o.label}</SelectItem>)}</SelectContent></Select></div>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1.5"><Label className="text-xs">SKU</Label><Input value={v.sku} onChange={(e) => updateVariant(v.id!, "sku", e.target.value)} /></div>
-                    <div className="space-y-1.5"><Label className="text-xs">Stock</Label><Input type="number" value={v.available_stock} onChange={(e) => updateVariant(v.id!, "available_stock", e.target.value)} /></div>
-                  </div>
-                  {hasVariantWisePricing && (
-                    <div className="grid gap-3 sm:grid-cols-3 bg-muted/30 p-3 rounded-md border border-dashed">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-primary">Purchase Price (৳)</Label>
-                        <Input type="number" placeholder="0.00" value={v.purchasePrice || ""} onChange={(e) => updateVariant(v.id!, "purchasePrice", e.target.value)} />
+                  {variants.map((v, idx) => (
+                    <div key={v.id} className="space-y-4 rounded-lg border p-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Variant {idx + 1}</p>
+                        <Button variant="ghost" size="icon-sm" onClick={() => removeVariant(v.id!)}>
+                          <X className="size-4" />
+                        </Button>
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-primary">Regular Price (৳)</Label>
-                        <Input type="number" placeholder="0.00" value={v.regularPrice || ""} onChange={(e) => updateVariant(v.id!, "regularPrice", e.target.value)} />
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Color</Label>
+                          <Select value={v.color} onValueChange={(val) => updateVariant(v.id!, "color", val)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Color" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {colors.map((o: any) => (
+                                <SelectItem key={o.label} value={o.label}>
+                                  <div className="flex items-center gap-2">
+                                    {o.hex_value && (
+                                      <div
+                                        className="size-3 rounded-full border border-black/10"
+                                        style={{ backgroundColor: o.hex_value }}
+                                      />
+                                    )}
+                                    {o.label}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Size</Label>
+                          <Select value={v.size} onValueChange={(val) => updateVariant(v.id!, "size", val)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Size" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {sizes.map((o: any) => (
+                                <SelectItem key={o.label} value={o.label}>
+                                  {o.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-primary">Selling Price (৳)</Label>
-                        <Input type="number" placeholder="0.00" value={v.sellingPrice || ""} onChange={(e) => updateVariant(v.id!, "sellingPrice", e.target.value)} />
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">SKU</Label>
+                          <Input value={v.sku} onChange={(e) => updateVariant(v.id!, "sku", e.target.value)} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Stock</Label>
+                          <Input
+                            type="number"
+                            value={v.available_stock}
+                            onChange={(e) => updateVariant(v.id!, "available_stock", e.target.value)}
+                          />
+                        </div>
                       </div>
+                      {hasVariantWisePricing && (
+                        <div className="grid gap-3 sm:grid-cols-3 bg-muted/30 p-3 rounded-md border border-dashed">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-primary">Purchase Price (৳)</Label>
+                            <Input
+                              type="number"
+                              placeholder="0.00"
+                              value={v.purchasePrice || ""}
+                              onChange={(e) => updateVariant(v.id!, "purchasePrice", e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-primary">Regular Price (৳)</Label>
+                            <Input
+                              type="number"
+                              placeholder="0.00"
+                              value={v.regularPrice || ""}
+                              onChange={(e) => updateVariant(v.id!, "regularPrice", e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-primary">Selling Price (৳)</Label>
+                            <Input
+                              type="number"
+                              placeholder="0.00"
+                              value={v.sellingPrice || ""}
+                              onChange={(e) => updateVariant(v.id!, "sellingPrice", e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
-              <Button variant="ghost" size="sm" className="w-fit" onClick={addVariant}><CirclePlus className="mr-2 size-4" /> Add Variant</Button>
-              </>
+                  ))}
+                  <Button variant="ghost" size="sm" className="w-fit" onClick={addVariant}>
+                    <CirclePlus className="mr-2 size-4" /> Add Variant
+                  </Button>
+                </>
               )}
             </CardContent>
           </Card>
@@ -543,32 +723,66 @@ export function EditProductForm({ productId }: { productId: string }) {
         <div className="flex flex-col gap-6">
           {!hasVariantWisePricing && (
             <Card>
-              <CardHeader><CardTitle className="text-base text-primary">Pricing</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-base text-primary">Pricing</CardTitle>
+              </CardHeader>
               <CardContent className="flex flex-col gap-5">
-                <div className="space-y-2"><Label>Purchase Price (৳)</Label><Input value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} /></div>
-                <div className="space-y-2"><Label>Regular Price (৳)</Label><Input value={regularPrice} onChange={(e) => setRegularPrice(e.target.value)} /></div>
-                <div className="space-y-2"><Label>Selling Price (৳)</Label><Input value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} /></div>
+                <div className="space-y-2">
+                  <Label>Purchase Price (৳)</Label>
+                  <Input value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Regular Price (৳)</Label>
+                  <Input value={regularPrice} onChange={(e) => setRegularPrice(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Selling Price (৳)</Label>
+                  <Input value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} />
+                </div>
               </CardContent>
             </Card>
           )}
 
           <Card>
-            <CardHeader><CardTitle className="text-base text-primary">Pre-Order</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base text-primary">Pre-Order</CardTitle>
+            </CardHeader>
             <CardContent className="flex flex-col gap-5">
               <div className="flex items-start gap-3">
-                <Checkbox id="is-preorder" checked={isPreOrder} onCheckedChange={(v) => setIsPreOrder(v === true)} className="mt-0.5" />
-                <div className="space-y-0.5"><Label htmlFor="is-preorder">Is Pre-Order</Label></div>
+                <Checkbox
+                  id="is-preorder"
+                  checked={isPreOrder}
+                  onCheckedChange={(v) => setIsPreOrder(v === true)}
+                  className="mt-0.5"
+                />
+                <div className="space-y-0.5">
+                  <Label htmlFor="is-preorder">Is Pre-Order</Label>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base text-primary">SEO Settings</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base text-primary">SEO Settings</CardTitle>
+            </CardHeader>
             <CardContent className="flex flex-col gap-5">
-              <div className="space-y-2"><Label>Meta Title</Label><Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Meta Description</Label><Textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Meta Keywords</Label><Input value={metaKeywords} onChange={(e) => setMetaKeywords(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Youtube URL</Label><Input value={canonicalUrl} onChange={(e) => setCanonicalUrl(e.target.value)} /></div>
+              <div className="space-y-2">
+                <Label>Meta Title</Label>
+                <Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Meta Description</Label>
+                <Textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Meta Keywords</Label>
+                <Input value={metaKeywords} onChange={(e) => setMetaKeywords(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Youtube URL</Label>
+                <Input value={canonicalUrl} onChange={(e) => setCanonicalUrl(e.target.value)} />
+              </div>
             </CardContent>
           </Card>
         </div>

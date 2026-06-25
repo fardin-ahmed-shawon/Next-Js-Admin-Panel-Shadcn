@@ -7,11 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
 const COUPON_API_URL = process.env.NEXT_PUBLIC_API_COUPON_URL || "coupons";
 
-const getCouponUrl = (path: string = '') => {
+const getCouponUrl = (path: string = "") => {
   let baseUrl = API_BASE_URL;
-  if (!baseUrl.endsWith('/')) baseUrl += '/';
-  const couponPath = COUPON_API_URL.replace(/^\/|\/$/g, '');
-  const cleanPath = path.replace(/^\/|\/$/g, '');
+  if (!baseUrl.endsWith("/")) baseUrl += "/";
+  const couponPath = COUPON_API_URL.replace(/^\/|\/$/g, "");
+  const cleanPath = path.replace(/^\/|\/$/g, "");
   const fullPath = cleanPath ? `${couponPath}/${cleanPath}` : couponPath;
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
@@ -51,15 +51,15 @@ export function CouponsStats({ refreshTrigger }: CouponsStatsProps) {
       else if (data.coupons) couponsData = data.coupons;
 
       const now = new Date();
-      
+
       // Active coupons: status is 'active' AND expiry_date is in the future
       const active = couponsData.filter((c: any) => {
-        const isActive = c.status === 'active';
+        const isActive = c.status === "active";
         const expiryDate = c.expiry_date ? new Date(c.expiry_date) : null;
         const isNotExpired = !expiryDate || expiryDate > now;
         return isActive && isNotExpired;
       }).length;
-      
+
       // Expired coupons: expiry_date has passed (regardless of status)
       const expired = couponsData.filter((c: any) => {
         const expiryDate = c.expiry_date ? new Date(c.expiry_date) : null;
@@ -109,10 +109,16 @@ export function CouponsStats({ refreshTrigger }: CouponsStatsProps) {
         {[...Array(3)].map((_, i) => (
           <Card key={i} className="animate-pulse">
             <CardHeader>
-              <CardTitle><div className="flex size-7 items-center justify-center rounded-lg border bg-muted"><div className="size-4" /></div></CardTitle>
+              <CardTitle>
+                <div className="flex size-7 items-center justify-center rounded-lg border bg-muted">
+                  <div className="size-4" />
+                </div>
+              </CardTitle>
               <CardDescription>Loading...</CardDescription>
             </CardHeader>
-            <CardContent><div className="h-9 w-16 bg-muted rounded"></div></CardContent>
+            <CardContent>
+              <div className="h-9 w-16 bg-muted rounded"></div>
+            </CardContent>
           </Card>
         ))}
       </div>

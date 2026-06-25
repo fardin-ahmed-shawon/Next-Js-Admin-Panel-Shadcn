@@ -18,7 +18,10 @@ export function ReturnsTable() {
   const filteredData = data.filter((item: any) => {
     if (!searchInput) return true;
     const search = searchInput.toLowerCase();
-    return (item.consignment?.invoice || "").toLowerCase().includes(search) || (item.consignment?.tracking_code || "").toLowerCase().includes(search);
+    return (
+      (item.consignment?.invoice || "").toLowerCase().includes(search) ||
+      (item.consignment?.tracking_code || "").toLowerCase().includes(search)
+    );
   });
 
   return (
@@ -26,7 +29,13 @@ export function ReturnsTable() {
       <CardHeader>
         <CardTitle className="font-normal text-muted-foreground text-sm">Return Requests</CardTitle>
         <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
-          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : filteredData.length > 0 ? `${filteredData.length} returns` : "No returns"}
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : filteredData.length > 0 ? (
+            `${filteredData.length} returns`
+          ) : (
+            "No returns"
+          )}
         </CardDescription>
       </CardHeader>
 
@@ -73,17 +82,28 @@ export function ReturnsTable() {
                     <TableCell>{row.consignment?.tracking_code || "N/A"}</TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-medium text-sm leading-none">{row.consignment?.recipient_name || "N/A"}</span>
+                        <span className="font-medium text-sm leading-none">
+                          {row.consignment?.recipient_name || "N/A"}
+                        </span>
                         <span className="text-muted-foreground text-xs">{row.consignment?.recipient_phone}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="capitalize">{row.consignment?.status ? row.consignment.status.replace(/_/g, " ") : "Unknown"}</TableCell>
+                    <TableCell className="capitalize">
+                      {row.consignment?.status ? row.consignment.status.replace(/_/g, " ") : "Unknown"}
+                    </TableCell>
                     <TableCell>
-                      <Badge variant={row.status === "pending" ? "outline" : row.status === "approved" ? "default" : "secondary"} className="capitalize">
+                      <Badge
+                        variant={
+                          row.status === "pending" ? "outline" : row.status === "approved" ? "default" : "secondary"
+                        }
+                        className="capitalize"
+                      >
                         {row.status || "Unknown"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={row.reason}>{row.reason || "—"}</TableCell>
+                    <TableCell className="max-w-[200px] truncate" title={row.reason}>
+                      {row.reason || "—"}
+                    </TableCell>
                     <TableCell>{row.created_at ? new Date(row.created_at).toLocaleDateString() : "—"}</TableCell>
                   </TableRow>
                 ))
