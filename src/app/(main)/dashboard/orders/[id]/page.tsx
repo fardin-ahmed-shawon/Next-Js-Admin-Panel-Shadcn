@@ -31,6 +31,7 @@ import {
 import { toast } from "sonner";
 import { mutate as globalMutate } from "swr";
 
+import { districts } from "@/app/(main)/dashboard/orders/create/_components/bd-locations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,10 +49,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-
 import { useOrderDetail } from "@/hooks/useOrderDetail";
-import { UpdatePaymentModal } from "../_components/update-payment-modal";
 import { fetchClient } from "@/lib/fetch-client";
+
+import { UpdatePaymentModal } from "../_components/update-payment-modal";
 
 /* ---- constants ---- */
 
@@ -74,6 +75,8 @@ const orderStatuses = [
 
 const paymentStatuses = ["Full Paid", "Unpaid", "Partially Paid", "Refund"] as const;
 
+const allDistricts = Object.values(districts).flat().sort();
+
 /* ---- badge helpers ---- */
 
 function statusColor(s: string) {
@@ -94,9 +97,7 @@ function paymentColor(s: string) {
 function getImageUrl(path: string | null | undefined): string {
   if (!path) return "https://placehold.co/80x80/1a1a2e/e0e0e0?text=No+Img";
   if (path.startsWith("http")) return path;
-  const base =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    "http://127.0.0.1:8000";
+  const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "http://127.0.0.1:8000";
   return `${base}/${path.replace(/^\//, "")}`;
 }
 
@@ -116,9 +117,7 @@ function formatDate(dateStr: string) {
 /* ---- API helpers ---- */
 
 async function patchOrder(orderNo: string, payload: Record<string, unknown>) {
-  const base =
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    "http://127.0.0.1:8000/api/v1/admin/";
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const res = await fetchClient(`${base}orders/${orderNo}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -144,13 +143,7 @@ interface CustomerOrder {
   shipping_area: string;
 }
 
-function CustomerOrderHistory({
-  orders,
-  currentOrderNo,
-}: {
-  orders: CustomerOrder[];
-  currentOrderNo: string;
-}) {
+function CustomerOrderHistory({ orders, currentOrderNo }: { orders: CustomerOrder[]; currentOrderNo: string }) {
   if (!orders || orders.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground">
@@ -173,9 +166,7 @@ function CustomerOrderHistory({
           >
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-sm font-semibold text-foreground">
-                  {o.order_no}
-                </span>
+                <span className="font-mono text-sm font-semibold text-foreground">{o.order_no}</span>
                 {isCurrent && (
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                     Current
@@ -192,12 +183,8 @@ function CustomerOrderHistory({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <Badge variant={statusColor(o.order_status) as any}>
-                {o.order_status}
-              </Badge>
-              <Badge variant={paymentColor(o.payment_status) as any}>
-                {o.payment_status}
-              </Badge>
+              <Badge variant={statusColor(o.order_status) as any}>{o.order_status}</Badge>
+              <Badge variant={paymentColor(o.payment_status) as any}>{o.payment_status}</Badge>
               <span className="text-sm font-semibold tabular-nums text-foreground min-w-[72px] text-right">
                 ৳{Number(o.grand_total_amount).toLocaleString()}
               </span>
@@ -230,6 +217,8 @@ export default function OrderDetailPage() {
   const [modalOpen, setModalOpen] = React.useState(false);
   const [note, setNote] = React.useState("");
   const [isEditingNote, setIsEditingNote] = React.useState(false);
+  const [selectedDistrict, setSelectedDistrict] = React.useState("");
+  const [isSavingDistrict, setIsSavingDistrict] = React.useState(false);
 
   /* sync from API data */
   React.useEffect(() => {
@@ -237,10 +226,58 @@ export default function OrderDetailPage() {
       setOrderStatus(order.order_status ?? "");
       setPaymentStatus(order.payment_status ?? "");
       setNote(order.order_note ?? "");
+      setSelectedDistrict(order.district ?? "");
+
+      if (order.order_no) {
+        const fetchDistrict = async () => {
+          try {
+            const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+            const res = await fetchClient(`${base}orders/${order.order_no}/district`);
+            if (res.ok) {
+              const json = await res.json();
+              if (json.success && json.district) {
+                setSelectedDistrict(json.district);
+              }
+            }
+          } catch (err) {
+            console.error("Failed to fetch order district:", err);
+          }
+        };
+        fetchDistrict();
+      }
     }
   }, [order]);
 
   /* ---- handlers ---- */
+
+  const handleSaveDistrict = async () => {
+    if (!order || !order.order_no) return;
+    if (!selectedDistrict) {
+      toast.error("Please select a district.");
+      return;
+    }
+    setIsSavingDistrict(true);
+    const toastId = toast.loading("Updating order district…");
+    try {
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const res = await fetchClient(`${base}orders/${order.order_no}/district`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ district: selectedDistrict }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.message || "Failed to update district");
+      }
+      toast.success(json.message || "Order district updated!", { id: toastId });
+      mutate();
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to update district";
+      toast.error(message, { id: toastId });
+    } finally {
+      setIsSavingDistrict(false);
+    }
+  };
 
   const handleSaveOrderStatus = async () => {
     if (!order) return;
@@ -250,11 +287,7 @@ export default function OrderDetailPage() {
       await patchOrder(order.order_no, { order_status: orderStatus });
       toast.success("Order status updated!", { id: toastId });
       mutate();
-      globalMutate(
-        (key) => typeof key === "string" && key.includes("orders"),
-        undefined,
-        { revalidate: true }
-      );
+      globalMutate((key) => typeof key === "string" && key.includes("orders"), undefined, { revalidate: true });
     } catch (e: any) {
       toast.error(e?.message || "Failed to update order status", { id: toastId });
     } finally {
@@ -280,11 +313,7 @@ export default function OrderDetailPage() {
       await patchOrder(order.order_no, payload);
       toast.success("Payment status updated!", { id: toastId });
       mutate();
-      globalMutate(
-        (key) => typeof key === "string" && key.includes("orders"),
-        undefined,
-        { revalidate: true }
-      );
+      globalMutate((key) => typeof key === "string" && key.includes("orders"), undefined, { revalidate: true });
     } catch (e: any) {
       toast.error(e?.message || "Failed to update payment status", { id: toastId });
     } finally {
@@ -293,11 +322,7 @@ export default function OrderDetailPage() {
   };
 
   /* ---- derived values ---- */
-  const paidAmount =
-    order?.payments?.reduce(
-      (sum: number, p: any) => sum + Number(p.paid_amount ?? 0),
-      0
-    ) ?? 0;
+  const paidAmount = order?.payments?.reduce((sum: number, p: any) => sum + Number(p.paid_amount ?? 0), 0) ?? 0;
   const grandTotal = Number(order?.grand_total_amount ?? 0);
   const dueAmount = Math.max(0, grandTotal - paidAmount);
 
@@ -355,55 +380,35 @@ export default function OrderDetailPage() {
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
-          <span className="text-sm font-medium text-muted-foreground">
-            Order details
-          </span>
+          <span className="text-sm font-medium text-muted-foreground">Order details</span>
         </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col gap-1.5">
             <h1 className="text-3xl font-bold tracking-tight">{order.order_no}</h1>
             <p className="text-sm text-muted-foreground">
-              {formatDate(order.created_at)} · {order.customer_full_name} ·{" "}
-              {order.shipping_area || "—"}
+              {formatDate(order.created_at)} · {order.customer_full_name} · {order.shipping_area || "—"}
             </p>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant={statusColor(order.order_status) as any}>
-                {order.order_status}
-              </Badge>
-              <Badge variant={paymentColor(order.payment_status) as any}>
-                {order.payment_status}
-              </Badge>
-
+              <Badge variant={statusColor(order.order_status) as any}>{order.order_status}</Badge>
+              <Badge variant={paymentColor(order.payment_status) as any}>{order.payment_status}</Badge>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              asChild
-            >
+            <Button variant="outline" size="sm" asChild>
               <Link href={`/invoice/${order.order_no}`} target="_blank" rel="noopener noreferrer">
                 <FileText className="mr-2 size-4" />
                 Invoice
               </Link>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              asChild
-            >
+            <Button variant="outline" size="sm" asChild>
               <Link href={`/invoice/${order.order_no}/pos`} target="_blank" rel="noopener noreferrer">
                 <Printer className="mr-2 size-4" />
                 POS
               </Link>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              asChild
-            >
+            <Button variant="outline" size="sm" asChild>
               <Link href={`/invoice/${order.order_no}/label`} target="_blank" rel="noopener noreferrer">
                 <Truck className="mr-2 size-4" />
                 Label
@@ -434,12 +439,12 @@ export default function OrderDetailPage() {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                         });
-                        
+
                         if (!res.ok) {
                           const err = await res.json().catch(() => ({}));
                           throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
                         }
-                        
+
                         toast.success("Order sent to Steadfast successfully!", { id: toastId });
                       } catch (e: any) {
                         toast.error(e?.message || "Something went wrong.", { id: toastId });
@@ -449,19 +454,13 @@ export default function OrderDetailPage() {
                     <Truck className="mr-2 size-4" />
                     Steadfast
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="hidden"
-                    onClick={() => toast.success("Sent to Pathao!")}
-                  >
+                  <DropdownMenuItem className="hidden" onClick={() => toast.success("Sent to Pathao!")}>
                     <Truck className="mr-2 size-4" />
                     Pathao
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => toast.success("Customer blocked.")}
-                >
+                <DropdownMenuItem className="text-destructive" onClick={() => toast.success("Customer blocked.")}>
                   <Ban className="mr-2 size-4" />
                   Block Customer
                 </DropdownMenuItem>
@@ -512,16 +511,11 @@ export default function OrderDetailPage() {
                 <CardContent className="flex flex-col gap-6">
                   <div className="flex flex-col gap-5">
                     {(order.ordered_products ?? []).map((item: any, i: number) => (
-                      <div
-                        key={item.id ?? i}
-                        className="flex items-start justify-between gap-4"
-                      >
+                      <div key={item.id ?? i} className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-4">
                           <div className="size-16 shrink-0 overflow-hidden rounded-md border bg-muted">
                             <img
-                              src={getImageUrl(
-                                item.product?.product_thumbnail_img
-                              )}
+                              src={getImageUrl(item.product?.product_thumbnail_img)}
                               alt={item.product?.title ?? "Product"}
                               className="size-full object-cover"
                             />
@@ -530,9 +524,7 @@ export default function OrderDetailPage() {
                             <p className="text-base font-medium leading-none">
                               {item.product?.title ?? "Unknown Product"}
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                              SKU: {item.product?.sku ?? "—"}
-                            </p>
+                            <p className="text-xs text-muted-foreground">SKU: {item.product?.sku ?? "—"}</p>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                               {item.product?.main_category?.name && (
                                 <span className="rounded-sm bg-muted px-1.5 py-0.5">
@@ -558,8 +550,7 @@ export default function OrderDetailPage() {
                           </p>
                           {item.qty > 1 && (
                             <p className="text-xs text-muted-foreground tabular-nums">
-                              × {item.qty} = ৳
-                              {(Number(item.unit_price) * item.qty).toLocaleString()}
+                              × {item.qty} = ৳{(Number(item.unit_price) * item.qty).toLocaleString()}
                             </p>
                           )}
                         </div>
@@ -573,29 +564,21 @@ export default function OrderDetailPage() {
                   <div className="flex flex-col gap-3 text-sm ml-auto w-full sm:w-1/2">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Subtotal</span>
-                      <span className="tabular-nums">
-                        ৳{Number(order.subtotal_amount).toLocaleString()}
-                      </span>
+                      <span className="tabular-nums">৳{Number(order.subtotal_amount).toLocaleString()}</span>
                     </div>
                     {Number(order.discount_amount) > 0 && (
                       <div className="flex justify-between text-green-600 dark:text-green-400">
                         <span>Discount</span>
-                        <span className="tabular-nums">
-                          − ৳{Number(order.discount_amount).toLocaleString()}
-                        </span>
+                        <span className="tabular-nums">− ৳{Number(order.discount_amount).toLocaleString()}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Shipping</span>
-                      <span className="tabular-nums">
-                        ৳{Number(order.shipping_charge).toLocaleString()}
-                      </span>
+                      <span className="tabular-nums">৳{Number(order.shipping_charge).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between font-semibold text-base mt-1 pt-3 border-t">
                       <span>Grand Total</span>
-                      <span className="tabular-nums">
-                        ৳{grandTotal.toLocaleString()}
-                      </span>
+                      <span className="tabular-nums">৳{grandTotal.toLocaleString()}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -610,12 +593,8 @@ export default function OrderDetailPage() {
                   </CardHeader>
                   <CardContent className="flex flex-col gap-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">
-                        Grand Total
-                      </span>
-                      <span className="text-base font-medium tabular-nums">
-                        ৳{grandTotal.toLocaleString()}
-                      </span>
+                      <span className="text-sm text-muted-foreground">Grand Total</span>
+                      <span className="text-base font-medium tabular-nums">৳{grandTotal.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Paid</span>
@@ -637,13 +616,9 @@ export default function OrderDetailPage() {
                           Payment Records
                         </p>
                         {order.payments.map((p: any, i: number) => (
-                          <div
-                            key={i}
-                            className="flex justify-between text-xs text-muted-foreground"
-                          >
+                          <div key={i} className="flex justify-between text-xs text-muted-foreground">
                             <span>
-                              {p.payment_method ?? "Payment"} ·{" "}
-                              {p.transaction_id ?? "—"}
+                              {p.payment_method ?? "Payment"} · {p.transaction_id ?? "—"}
                             </span>
                             <span className="font-semibold text-foreground tabular-nums">
                               ৳{Number(p.paid_amount).toLocaleString()}
@@ -678,13 +653,8 @@ export default function OrderDetailPage() {
                   <CardContent className="flex flex-col gap-5">
                     {/* Order Status */}
                     <div className="flex flex-col gap-2">
-                      <Label className="text-sm text-muted-foreground">
-                        Fulfillment Status
-                      </Label>
-                      <Select
-                        value={orderStatus}
-                        onValueChange={setOrderStatus}
-                      >
+                      <Label className="text-sm text-muted-foreground">Fulfillment Status</Label>
+                      <Select value={orderStatus} onValueChange={setOrderStatus}>
                         <SelectTrigger className="h-9 text-sm">
                           <SelectValue />
                         </SelectTrigger>
@@ -715,9 +685,7 @@ export default function OrderDetailPage() {
 
                     {/* Payment Status */}
                     <div className="flex flex-col gap-2">
-                      <Label className="text-sm text-muted-foreground">
-                        Payment Status
-                      </Label>
+                      <Label className="text-sm text-muted-foreground">Payment Status</Label>
                       <Select
                         value={paymentStatus}
                         onValueChange={(val) => {
@@ -740,27 +708,17 @@ export default function OrderDetailPage() {
                       </Select>
                       <Button
                         size="sm"
-                        disabled={
-                          !paymentChanged ||
-                          isSavingPayment ||
-                          paymentStatus === "Partially Paid"
-                        }
+                        disabled={!paymentChanged || isSavingPayment || paymentStatus === "Partially Paid"}
                         onClick={handleSavePaymentStatus}
                         className="self-start h-8 text-xs"
-                        variant={
-                          paymentStatus === "Partially Paid"
-                            ? "secondary"
-                            : "default"
-                        }
+                        variant={paymentStatus === "Partially Paid" ? "secondary" : "default"}
                       >
                         {isSavingPayment ? (
                           <Loader2 className="mr-1.5 size-3.5 animate-spin" />
                         ) : (
                           <Save className="mr-1.5 size-3.5" />
                         )}
-                        {paymentStatus === "Partially Paid"
-                          ? "Open Payment Form"
-                          : "Save Payment"}
+                        {paymentStatus === "Partially Paid" ? "Open Payment Form" : "Save Payment"}
                       </Button>
                     </div>
                   </CardContent>
@@ -771,23 +729,13 @@ export default function OrderDetailPage() {
               <Card>
                 <CardHeader className="flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-lg">Order note</CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsEditingNote((v) => !v)}
-                  >
-                    {isEditingNote ? (
-                      <X className="size-4" />
-                    ) : (
-                      <Edit className="size-4" />
-                    )}
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditingNote((v) => !v)}>
+                    {isEditingNote ? <X className="size-4" /> : <Edit className="size-4" />}
                   </Button>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
                   {note && !isEditingNote ? (
-                    <div className="rounded-lg bg-muted/50 p-4 text-sm leading-relaxed text-foreground">
-                      {note}
-                    </div>
+                    <div className="rounded-lg bg-muted/50 p-4 text-sm leading-relaxed text-foreground">{note}</div>
                   ) : (
                     <Textarea
                       placeholder="Add a note for this order…"
@@ -833,22 +781,12 @@ export default function OrderDetailPage() {
                 <CardContent className="flex flex-col gap-5">
                   <div className="flex items-center gap-4">
                     <div className="size-12 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center">
-                      <span className="text-base font-bold text-muted-foreground">
-                        {initials}
-                      </span>
+                      <span className="text-base font-bold text-muted-foreground">{initials}</span>
                     </div>
                     <div>
-                      <p className="text-base font-medium">
-                        {order.customer_full_name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {order.customer_phone}
-                      </p>
-                      {order.customer_email && (
-                        <p className="text-xs text-muted-foreground">
-                          {order.customer_email}
-                        </p>
-                      )}
+                      <p className="text-base font-medium">{order.customer_full_name}</p>
+                      <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
+                      {order.customer_email && <p className="text-xs text-muted-foreground">{order.customer_email}</p>}
                     </div>
                   </div>
 
@@ -860,36 +798,24 @@ export default function OrderDetailPage() {
                       </p>
                       <div className="grid grid-cols-3 gap-2 text-center text-sm">
                         <div className="flex flex-col">
-                          <span className="font-semibold">
-                            {parcelHistory.total ?? 0}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground uppercase">
-                            Total
-                          </span>
+                          <span className="font-semibold">{parcelHistory.total ?? 0}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase">Total</span>
                         </div>
                         <div className="flex flex-col">
                           <span className="font-semibold text-green-600 dark:text-green-400">
                             {parcelHistory.delivered ?? 0}
                           </span>
-                          <span className="text-[10px] text-muted-foreground uppercase">
-                            Success
-                          </span>
+                          <span className="text-[10px] text-muted-foreground uppercase">Success</span>
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-semibold text-destructive">
-                            {parcelHistory.cancelled ?? 0}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground uppercase">
-                            Failed
-                          </span>
+                          <span className="font-semibold text-destructive">{parcelHistory.cancelled ?? 0}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase">Failed</span>
                         </div>
                       </div>
                       {parcelHistory.success_rate !== undefined && (
                         <p className="text-center text-xs text-muted-foreground">
                           Success rate:{" "}
-                          <span className="font-semibold text-foreground">
-                            {parcelHistory.success_rate}%
-                          </span>
+                          <span className="font-semibold text-foreground">{parcelHistory.success_rate}%</span>
                         </p>
                       )}
                     </div>
@@ -908,12 +834,7 @@ export default function OrderDetailPage() {
                       <Phone className="size-4 text-muted-foreground" />
                       Copy Phone Number
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="justify-start gap-2"
-                      asChild
-                    >
+                    <Button variant="outline" size="sm" className="justify-start gap-2" asChild>
                       <Link href="/dashboard/customers">
                         <User className="size-4 text-muted-foreground" />
                         View Profile
@@ -928,21 +849,48 @@ export default function OrderDetailPage() {
                 <CardHeader>
                   <CardTitle className="text-lg">Shipping address</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-3">
+                <CardContent className="flex flex-col gap-4">
                   <div className="flex items-start gap-2">
                     <MapPin className="size-4 text-muted-foreground mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-sm font-medium">
-                        {order.customer_full_name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {order.customer_shipping_address}
-                      </p>
+                      <p className="text-sm font-medium">{order.customer_full_name}</p>
+                      <p className="text-sm text-muted-foreground">{order.customer_shipping_address}</p>
                       {order.shipping_area && (
-                        <p className="text-xs text-muted-foreground">
-                          {order.shipping_area}
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">{order.shipping_area}</p>
                       )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-muted-foreground">Order District</Label>
+                    <div className="flex gap-2">
+                      <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
+                        <SelectTrigger className="h-9 text-sm flex-1">
+                          <SelectValue placeholder="Select district" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allDistricts.map((d) => (
+                            <SelectItem key={d} value={d} className="text-sm">
+                              {d}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        disabled={selectedDistrict === (order.district ?? "") || isSavingDistrict}
+                        onClick={handleSaveDistrict}
+                        className="h-9"
+                      >
+                        {isSavingDistrict ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Save className="size-3.5 mr-1" />
+                        )}
+                        Save
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -956,17 +904,11 @@ export default function OrderDetailPage() {
                 <CardContent className="flex flex-col gap-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <Label className="text-sm text-muted-foreground">
-                        Courier
-                      </Label>
-                      <span className="text-sm font-medium">
-                        {order.courier_details?.courier ?? "—"}
-                      </span>
+                      <Label className="text-sm text-muted-foreground">Courier</Label>
+                      <span className="text-sm font-medium">{order.courier_details?.courier ?? "—"}</span>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <Label className="text-sm text-muted-foreground">
-                        Parcel Status
-                      </Label>
+                      <Label className="text-sm text-muted-foreground">Parcel Status</Label>
                       <span className="text-sm font-medium">
                         {order.courier_details?.parcel_status ?? "Not dispatched"}
                       </span>
@@ -1010,17 +952,11 @@ export default function OrderDetailPage() {
                             <div className="size-2 rounded-full bg-primary" />
                           </div>
                           <div className="flex flex-col gap-1">
-                            <p className="text-sm font-medium leading-none">
-                              {log.status ?? log.label}
-                            </p>
+                            <p className="text-sm font-medium leading-none">{log.status ?? log.label}</p>
                             <p className="text-xs text-muted-foreground">
-                              {log.created_at
-                                ? formatDate(log.created_at)
-                                : "—"}
+                              {log.created_at ? formatDate(log.created_at) : "—"}
                             </p>
-                            {log.note && (
-                              <p className="text-sm mt-1">{log.note}</p>
-                            )}
+                            {log.note && <p className="text-sm mt-1">{log.note}</p>}
                           </div>
                         </li>
                       ))}
@@ -1041,9 +977,7 @@ export default function OrderDetailPage() {
                           desc: "Order details verified.",
                           date: formatDate(order.updated_at),
                           icon: CheckCircle2,
-                          show: ["Confirmed", "In-Courier", "Ready To Ship", "Delivered"].includes(
-                            order.order_status
-                          ),
+                          show: ["Confirmed", "In-Courier", "Ready To Ship", "Delivered"].includes(order.order_status),
                         },
                         {
                           label: "Dispatched",
@@ -1074,12 +1008,8 @@ export default function OrderDetailPage() {
                               <div className="size-2 rounded-full bg-primary" />
                             </div>
                             <div className="flex flex-col gap-1">
-                              <p className="text-sm font-medium leading-none">
-                                {item.label}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {item.date}
-                              </p>
+                              <p className="text-sm font-medium leading-none">{item.label}</p>
+                              <p className="text-xs text-muted-foreground">{item.date}</p>
                               <p className="text-sm mt-1">{item.desc}</p>
                             </div>
                           </li>
@@ -1104,10 +1034,7 @@ export default function OrderDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CustomerOrderHistory
-                    orders={customerOrders}
-                    currentOrderNo={order.order_no}
-                  />
+                  <CustomerOrderHistory orders={customerOrders} currentOrderNo={order.order_no} />
                 </CardContent>
               </Card>
             </div>
@@ -1121,15 +1048,11 @@ export default function OrderDetailPage() {
                 <CardContent className="flex flex-col gap-4">
                   <div className="flex items-center gap-4">
                     <div className="size-12 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center">
-                      <span className="text-base font-bold text-muted-foreground">
-                        {initials}
-                      </span>
+                      <span className="text-base font-bold text-muted-foreground">{initials}</span>
                     </div>
                     <div>
                       <p className="font-semibold">{order.customer_full_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {order.customer_phone}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
                     </div>
                   </div>
 
@@ -1143,40 +1066,24 @@ export default function OrderDetailPage() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Total spent</span>
                       <span className="font-semibold tabular-nums">
-                        ৳
-                        {customerOrders
-                          .reduce(
-                            (sum, o) => sum + Number(o.grand_total_amount),
-                            0
-                          )
-                          .toLocaleString()}
+                        ৳{customerOrders.reduce((sum, o) => sum + Number(o.grand_total_amount), 0).toLocaleString()}
                       </span>
                     </div>
                     {parcelHistory && (
                       <>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Delivered
-                          </span>
+                          <span className="text-muted-foreground">Delivered</span>
                           <span className="font-semibold text-green-600 dark:text-green-400">
                             {parcelHistory.delivered ?? 0}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Cancelled
-                          </span>
-                          <span className="font-semibold text-destructive">
-                            {parcelHistory.cancelled ?? 0}
-                          </span>
+                          <span className="text-muted-foreground">Cancelled</span>
+                          <span className="font-semibold text-destructive">{parcelHistory.cancelled ?? 0}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Success rate
-                          </span>
-                          <span className="font-semibold">
-                            {parcelHistory.success_rate ?? 0}%
-                          </span>
+                          <span className="text-muted-foreground">Success rate</span>
+                          <span className="font-semibold">{parcelHistory.success_rate ?? 0}%</span>
                         </div>
                       </>
                     )}
