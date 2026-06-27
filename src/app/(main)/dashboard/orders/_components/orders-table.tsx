@@ -70,6 +70,7 @@ import { UpdatePaymentModal } from "./update-payment-modal";
 
 /* ---- Data ---- */
 
+
 const orderStatuses = [
   "All",
   "Pending",
@@ -138,6 +139,60 @@ export const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL || "http
 export function invalidateOrders() {
   const ordersEndpoint = process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders";
   mutate((key) => typeof key === "string" && key.includes(ordersEndpoint), undefined, { revalidate: true });
+}
+
+function SendCourierCell({ row }: { row: any }) {
+  return (
+    <div className="flex flex-col gap-1.5 w-[100px]">
+      <Button
+        size="sm"
+        className="h-7 bg-[#00b074] hover:bg-[#00b074]/90 text-white text-[11px] px-2 justify-start font-medium"
+        onClick={async () => {
+          const toastId = toast.loading(`Sending Order ${row.original.id} to Steadfast...`);
+          try {
+            const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+            const res = await fetchClient(`${getApiBaseUrl()}${endpoint}/${row.original.id}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            });
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
+            }
+            toast.success(`Order ${row.original.id} sent to Steadfast`, { id: toastId });
+            invalidateOrders();
+          } catch (err: any) {
+            toast.error(err?.message || "Something went wrong.", { id: toastId });
+          }
+        }}
+      >
+        <Truck className="mr-1.5 size-3.5" /> Steadfast
+      </Button>
+      <Button
+        size="sm"
+        className="h-7 bg-[#ef4444] hover:bg-[#ef4444]/90 text-white text-[11px] px-2 justify-start font-medium"
+        onClick={async () => {
+          const toastId = toast.loading(`Sending Order ${row.original.id} to Pathao...`);
+          try {
+            const res = await fetchClient(`${getApiBaseUrl()}pathao-parcels/${row.original.id}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            });
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              throw new Error(err?.error || err?.message || "Failed to send to Pathao.");
+            }
+            toast.success(`Order ${row.original.id} sent to Pathao`, { id: toastId });
+            invalidateOrders();
+          } catch (err: any) {
+            toast.error(err?.message || "Something went wrong.", { id: toastId });
+          }
+        }}
+      >
+        <Truck className="mr-1.5 size-3.5" /> Pathao
+      </Button>
+    </div>
+  );
 }
 
 /* ---- Columns ---- */
@@ -395,41 +450,7 @@ const columns: ColumnDef<OrderRow>[] = [
   {
     id: "sendCourier",
     header: "Send Courier",
-    cell: ({ row }) => (
-      <div className="flex flex-col gap-1.5 w-[100px]">
-        <Button
-          size="sm"
-          className="h-7 bg-[#00b074] hover:bg-[#00b074]/90 text-white text-[11px] px-2 justify-start font-medium"
-          onClick={async () => {
-            const toastId = toast.loading(`Sending Order ${row.original.id} to Steadfast...`);
-            try {
-              const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
-              const res = await fetchClient(`${getApiBaseUrl()}${endpoint}/${row.original.id}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-              });
-              if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
-              }
-              toast.success(`Order ${row.original.id} sent to Steadfast`, { id: toastId });
-              invalidateOrders();
-            } catch (err: any) {
-              toast.error(err?.message || "Something went wrong.", { id: toastId });
-            }
-          }}
-        >
-          <Truck className="mr-1.5 size-3.5" /> Steadfast
-        </Button>
-        <Button
-          size="sm"
-          className="hidden h-7 bg-[#ef4444] hover:bg-[#ef4444]/90 text-white text-[11px] px-2 justify-start font-medium"
-          onClick={() => toast.success(`Order ${row.original.id} sent to Pathao`)}
-        >
-          <Truck className="mr-1.5 size-3.5" /> Pathao
-        </Button>
-      </div>
-    ),
+    cell: ({ row }) => <SendCourierCell row={row} />,
   },
 
   // Print Invoice column

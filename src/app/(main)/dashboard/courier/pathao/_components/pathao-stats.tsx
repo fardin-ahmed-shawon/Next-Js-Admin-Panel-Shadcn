@@ -1,35 +1,58 @@
+"use client";
+
 import { Package, PackageMinus, RefreshCcw, Truck } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-const stats = [
-  {
-    title: "Total Orders",
-    value: "51",
-    icon: Package,
-    subtitle: "All Pathao orders",
-  },
-  {
-    title: "Not Added",
-    value: "49",
-    icon: PackageMinus,
-    subtitle: "Pending to courier",
-  },
-  {
-    title: "Added to Courier",
-    value: "2",
-    icon: Truck,
-    subtitle: "Sent to Pathao",
-  },
-  {
-    title: "Returned Parcel",
-    value: "2",
-    icon: RefreshCcw,
-    subtitle: "Parcels returned",
-  },
-];
+import { usePathaoParcels } from "@/hooks/usePathaoParcels";
+import { useOrders } from "@/hooks/useOrders";
 
 export function PathaoStats() {
+  const { data: parcelsData, isLoading: loadingParcels } = usePathaoParcels();
+  const { data: ordersData, isLoading: loadingOrders } = useOrders({ page: 1, per_page: 1 });
+
+  const totalSystemOrders = ordersData?.meta?.total ?? 0;
+  const totalParcels = parcelsData?.data?.total ?? (Array.isArray(parcelsData?.data) ? parcelsData.data.length : 0);
+
+  // Filter dynamic counts if we have the items list array
+  const listItems = Array.isArray(parcelsData?.data?.data)
+    ? parcelsData.data.data
+    : Array.isArray(parcelsData?.data)
+      ? parcelsData.data
+      : [];
+
+  const returnedCount = listItems.filter(
+    (p: any) => p.parcel_status === "returned" || p.status === "returned"
+  ).length;
+
+  const notAddedCount = Math.max(0, totalSystemOrders - totalParcels);
+
+  const stats = [
+    {
+      title: "Total System Orders",
+      value: loadingOrders ? "..." : totalSystemOrders.toLocaleString(),
+      icon: Package,
+      subtitle: "All orders in dashboard",
+    },
+    {
+      title: "Not Shipped Yet",
+      value: loadingOrders || loadingParcels ? "..." : notAddedCount.toLocaleString(),
+      icon: PackageMinus,
+      subtitle: "Pending courier assignment",
+    },
+    {
+      title: "Sent to Pathao",
+      value: loadingParcels ? "..." : totalParcels.toLocaleString(),
+      icon: Truck,
+      subtitle: "Registered consignments",
+    },
+    {
+      title: "Returned Parcels",
+      value: loadingParcels ? "..." : returnedCount.toLocaleString(),
+      icon: RefreshCcw,
+      subtitle: "Parcels marked returned",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs sm:grid-cols-2 lg:grid-cols-4 dark:*:data-[slot=card]:bg-card">
       {stats.map((stat, i) => (

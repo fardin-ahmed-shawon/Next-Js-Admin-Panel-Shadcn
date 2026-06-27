@@ -54,6 +54,8 @@ import { fetchClient } from "@/lib/fetch-client";
 
 import { UpdatePaymentModal } from "../_components/update-payment-modal";
 
+
+
 /* ---- constants ---- */
 
 const orderStatuses = [
@@ -454,7 +456,28 @@ export default function OrderDetailPage() {
                     <Truck className="mr-2 size-4" />
                     Steadfast
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="hidden" onClick={() => toast.success("Sent to Pathao!")}>
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      const toastId = toast.loading("Sending order to Pathao...");
+                      try {
+                        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                        const res = await fetchClient(`${baseUrl}pathao-parcels/${order.order_no}`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                        });
+
+                        if (!res.ok) {
+                          const err = await res.json().catch(() => ({}));
+                          throw new Error(err?.error || err?.message || "Failed to send to Pathao.");
+                        }
+
+                        toast.success("Order sent to Pathao successfully!", { id: toastId });
+                        mutate();
+                      } catch (e: any) {
+                        toast.error(e?.message || "Something went wrong.", { id: toastId });
+                      }
+                    }}
+                  >
                     <Truck className="mr-2 size-4" />
                     Pathao
                   </DropdownMenuItem>
@@ -928,8 +951,27 @@ export default function OrderDetailPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="hidden w-full"
-                      onClick={() => toast.success("Sent to Pathao!")}
+                      className="w-full"
+                      onClick={async () => {
+                        const toastId = toast.loading("Sending order to Pathao...");
+                        try {
+                          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                          const res = await fetchClient(`${baseUrl}pathao-parcels/${order.order_no}`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                          });
+
+                          if (!res.ok) {
+                            const err = await res.json().catch(() => ({}));
+                            throw new Error(err?.error || err?.message || "Failed to send to Pathao.");
+                          }
+
+                          toast.success("Order sent to Pathao successfully!", { id: toastId });
+                          mutate();
+                        } catch (e: any) {
+                          toast.error(e?.message || "Something went wrong.", { id: toastId });
+                        }
+                      }}
                     >
                       <Send className="mr-2 size-4 text-muted-foreground" />
                       Send via Pathao

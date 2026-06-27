@@ -175,7 +175,7 @@ export const sidebarItems: NavGroup[] = [
         module: "courier",
         subItems: [
           { title: "Steadfast", url: "/dashboard/courier/steadfast" },
-          { title: "Pathao", url: "/dashboard/courier/pathao", comingSoon: true },
+          { title: "Pathao", url: "/dashboard/courier/pathao" },
         ],
       },
       { title: "Purchase History", url: "/dashboard/purchase-history", icon: History, module: "history" },
