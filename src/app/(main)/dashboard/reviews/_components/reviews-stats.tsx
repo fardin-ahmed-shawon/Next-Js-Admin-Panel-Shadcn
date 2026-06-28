@@ -1,13 +1,15 @@
 "use client";
 
 import * as React from "react";
+
 import { CheckCircle2, FileEdit, MessageSquare, Star } from "lucide-react";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
 const REVIEW_API_URL = process.env.NEXT_PUBLIC_API_REVIEW_URL || "reviews";
 
-const getReviewUrl = (path: string = "") => {
+const getReviewUrl = (path = "") => {
   let baseUrl = API_BASE_URL;
   if (!baseUrl.endsWith("/")) baseUrl += "/";
   const reviewPath = REVIEW_API_URL.replace(/^\/|\/$/g, "");
@@ -126,8 +128,8 @@ export function ReviewsStats({ refreshTrigger }: ReviewsStatsProps) {
               <CardDescription>Loading...</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-1">
-              <div className="h-9 w-16 bg-muted rounded"></div>
-              <div className="h-3 w-32 bg-muted rounded"></div>
+              <div className="h-9 w-16 bg-muted rounded" />
+              <div className="h-3 w-32 bg-muted rounded" />
             </CardContent>
           </Card>
         ))}

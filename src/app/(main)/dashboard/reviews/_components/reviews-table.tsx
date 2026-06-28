@@ -60,7 +60,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:8000";
 const REVIEW_API_URL = process.env.NEXT_PUBLIC_API_REVIEW_URL || "reviews";
 
-const getReviewUrl = (path: string = "") => {
+const getReviewUrl = (path = "") => {
   let baseUrl = API_BASE_URL;
   if (!baseUrl.endsWith("/")) baseUrl += "/";
   const reviewPath = REVIEW_API_URL.replace(/^\/|\/$/g, "");
@@ -83,6 +83,7 @@ type ReviewRow = {
   productId: string;
   productName: string;
   productImage: string;
+  productSku?: string;
   customerId: string;
   customerName: string;
   customerEmail: string;
@@ -227,8 +228,9 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
         id: review.id,
         productId: `PRD-${review.product_id}`,
         productName:
-          review.product?.product_short_description || review.product?.title || `Product #${review.product_id}`,
+          review.product?.title || review.product?.product_short_description || `Product #${review.product_id}`,
         productImage: review.product?.product_thumbnail_img || "",
+        productSku: review.product?.sku || "",
         customerId: `CUS-${review.customer_id}`,
         customerName: review.customer?.full_name || `Customer #${review.customer_id}`,
         customerEmail: review.customer?.email || "",
@@ -308,7 +310,7 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
       accessorKey: "product",
       header: "Product",
       cell: ({ row }) => (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-[200px] max-w-[250px]">
           <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
             {row.original.productImage ? (
               <img
@@ -322,8 +324,10 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
               </div>
             )}
           </div>
-          <div className="flex flex-col gap-0.5">
-            <div className="font-semibold leading-none text-sm">{row.original.productName}</div>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <div className="font-semibold leading-none text-sm truncate" title={row.original.productName}>
+              {row.original.productName}
+            </div>
             <div className="text-muted-foreground text-xs">{row.original.productId}</div>
           </div>
         </div>
@@ -333,14 +337,18 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
       accessorKey: "customer",
       header: "Customer",
       cell: ({ row }) => (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-[150px] max-w-[200px]">
           <Avatar className="size-10 border shadow-sm">
             <AvatarImage src={row.original.customerAvatar} />
             <AvatarFallback>{row.original.customerName.substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
-          <div className="flex flex-col">
-            <div className="font-semibold leading-none">{row.original.customerName}</div>
-            <div className="text-muted-foreground text-xs mt-0.5">{row.original.customerEmail}</div>
+          <div className="flex flex-col min-w-0">
+            <div className="font-semibold leading-none truncate" title={row.original.customerName}>
+              {row.original.customerName}
+            </div>
+            <div className="text-muted-foreground text-xs mt-0.5 truncate" title={row.original.customerEmail}>
+              {row.original.customerEmail}
+            </div>
           </div>
         </div>
       ),
@@ -348,25 +356,30 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
     {
       accessorKey: "rating",
       header: "Rating",
-      cell: ({ row }) => (
-        <div className="flex items-center text-amber-500">
-          {Array.from({ length: row.original.rating }).map((_, i) => (
-            <Star key={i} className="size-4 fill-current" />
-          ))}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const rating = row.original.rating;
+        return (
+          <div className="flex items-center gap-0.5 text-amber-500 min-w-[80px]">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star key={i} className={`size-4 ${i < rating ? "fill-amber-400 text-amber-400" : "text-muted/40"}`} />
+            ))}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "text",
       header: "Review Preview",
       cell: ({ row }) => (
-        <div className="text-muted-foreground text-sm line-clamp-2 max-w-[300px]">"{row.original.text}"</div>
+        <div className="text-muted-foreground text-sm line-clamp-2 max-w-[280px] min-w-[180px]">
+          "{row.original.text}"
+        </div>
       ),
     },
     {
       accessorKey: "date",
       header: "Date",
-      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.date}</span>,
+      cell: ({ row }) => <span className="text-sm text-muted-foreground min-w-[80px] block">{row.original.date}</span>,
     },
     {
       id: "actions",
@@ -429,25 +442,23 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4 px-0">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="h-8 w-48 rounded-[min(var(--radius-md),12px)] pl-8 sm:w-64"
-                placeholder="Search reviews..."
-                value={searchQuery}
-                onChange={(event) => {
-                  table.getColumn("search")?.setFilterValue(event.target.value || undefined);
-                  table.setPageIndex(0);
-                }}
-              />
-            </div>
+        <div className="flex flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="h-8 w-full rounded-[min(var(--radius-md),12px)] pl-8"
+              placeholder="Search reviews..."
+              value={searchQuery}
+              onChange={(event) => {
+                table.getColumn("search")?.setFilterValue(event.target.value || undefined);
+                table.setPageIndex(0);
+              }}
+            />
           </div>
           {selectedCount > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
+                <Button variant="destructive" size="sm" className="w-full sm:w-auto">
                   <Trash className="mr-2 size-4" />
                   Delete Selected ({selectedCount})
                 </Button>
@@ -515,8 +526,8 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between gap-4 px-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-4 px-4 py-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
             <span className="text-sm text-muted-foreground">Rows per page</span>
             <Select
               value={`${pagination.pageSize}`}
@@ -534,42 +545,44 @@ export function ReviewsTable({ refreshTrigger }: ReviewsTableProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-1">
+            <span className="text-sm text-muted-foreground mr-2">
               Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </span>
-            <Button
-              size="icon-sm"
-              variant="outline"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <ChevronsLeft className="size-4" />
-            </Button>
-            <Button
-              size="icon-sm"
-              variant="outline"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button
-              size="icon-sm"
-              variant="outline"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-            <Button
-              size="icon-sm"
-              variant="outline"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              <ChevronsRight className="size-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <ChevronsLeft className="size-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                <ChevronsRight className="size-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>

@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
+
+import { MessageSquare, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -12,16 +15,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useProductSearch } from "@/hooks/useProductSearch";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
 const PRODUCT_API_URL = process.env.NEXT_PUBLIC_API_ALL_PRODUCT_URL || "products";
 const CUSTOMER_API_URL = process.env.NEXT_PUBLIC_API_CUSTOMER_URL || "customers";
 const REVIEW_API_URL = process.env.NEXT_PUBLIC_API_REVIEW_URL || "reviews";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:8000";
 
-const getProductUrl = (path: string = "") => {
+const getProductUrl = (path = "") => {
   let baseUrl = API_BASE_URL;
   if (!baseUrl.endsWith("/")) baseUrl += "/";
   const productPath = PRODUCT_API_URL.replace(/^\/|\/$/g, "");
@@ -30,7 +36,7 @@ const getProductUrl = (path: string = "") => {
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
-const getCustomerUrl = (path: string = "") => {
+const getCustomerUrl = (path = "") => {
   let baseUrl = API_BASE_URL;
   if (!baseUrl.endsWith("/")) baseUrl += "/";
   const customerPath = CUSTOMER_API_URL.replace(/^\/|\/$/g, "");
@@ -39,7 +45,7 @@ const getCustomerUrl = (path: string = "") => {
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
-const getReviewUrl = (path: string = "") => {
+const getReviewUrl = (path = "") => {
   let baseUrl = API_BASE_URL;
   if (!baseUrl.endsWith("/")) baseUrl += "/";
   const reviewPath = REVIEW_API_URL.replace(/^\/|\/$/g, "");
@@ -48,9 +54,20 @@ const getReviewUrl = (path: string = "") => {
   return `${baseUrl}${fullPath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
+const getFullImageUrl = (imagePath: string) => {
+  if (!imagePath) return "";
+  if (imagePath.startsWith("http")) return imagePath;
+  const cleanPath = imagePath.replace(/^\/+/, "");
+  let appUrl = APP_URL;
+  if (!appUrl.endsWith("/")) appUrl += "/";
+  return `${appUrl}${cleanPath}`;
+};
+
 interface Product {
   id: number;
   title: string;
+  image: string;
+  sku: string;
 }
 
 interface Customer {
@@ -77,6 +94,32 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
     rating: "",
     text: "",
   });
+  const [searchQuery, setSearchQuery] = useState("");
+  const { products: searchedProducts, isLoading: isSearching } = useProductSearch(searchQuery);
+
+  const displayProducts =
+    searchQuery.trim().length > 0
+      ? searchedProducts.map((p) => ({
+          id: p.id,
+          title: p.title || p.product_short_description || `Product #${p.id}`,
+          image: p.product_thumbnail_img || "",
+          sku: p.sku || "",
+        }))
+      : products;
+
+  const isLoadingList = searchQuery.trim().length > 0 ? isSearching : isLoadingProducts;
+
+  const selectedProd =
+    products.find((p) => p.id.toString() === formData.productId) ||
+    searchedProducts.find((p) => p.id.toString() === formData.productId) ||
+    (review && review.productId?.replace("PRD-", "") === formData.productId
+      ? {
+          id: parseInt(formData.productId),
+          title: review.productName,
+          image: review.productImage,
+          sku: review.productSku || "",
+        }
+      : null);
 
   // Fetch products
   const fetchProducts = async () => {
@@ -110,7 +153,9 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
         .filter((p: any) => p.status === "active")
         .map((p: any) => ({
           id: p.id,
-          title: p.product_short_description || p.title || `Product #${p.id}`,
+          title: p.title || p.product_short_description || `Product #${p.id}`,
+          image: p.product_thumbnail_img || "",
+          sku: p.sku || "",
         }));
 
       setProducts(activeProducts);
@@ -246,7 +291,7 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Edit Review</DialogTitle>
           <DialogDescription>Modify the product review details below.</DialogDescription>
@@ -256,38 +301,109 @@ export function EditReviewDialog({ review, open, onOpenChange, onRefresh }: Edit
             <Label htmlFor="edit-product">
               Select Product <span className="text-destructive">*</span>
             </Label>
-            <Select
-              value={formData.productId}
-              onValueChange={(val) => setFormData({ ...formData, productId: val })}
-              disabled={isLoadingProducts}
-            >
-              <SelectTrigger className="w-full" id="edit-product">
-                <SelectValue
-                  placeholder={
-                    isLoadingProducts
-                      ? "Loading products..."
-                      : products.length === 0
-                        ? "No products available"
-                        : "-- Select Product --"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {isLoadingProducts && (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">Loading products...</div>
-                )}
-                {!isLoadingProducts && products.length === 0 && (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">
-                    No active products available
+
+            {selectedProd ? (
+              <div className="flex items-center gap-3 rounded-lg border bg-muted/40 p-3 animate-in fade-in duration-200">
+                {selectedProd.image ? (
+                  <img
+                    src={getFullImageUrl(selectedProd.image)}
+                    alt={selectedProd.title}
+                    className="size-14 rounded-md object-cover border shrink-0 bg-background"
+                  />
+                ) : (
+                  <div className="flex size-14 items-center justify-center rounded-md border bg-muted text-muted-foreground shrink-0">
+                    <MessageSquare className="size-6" />
                   </div>
                 )}
-                {products.map((p) => (
-                  <SelectItem key={p.id} value={p.id.toString()}>
-                    {p.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <div className="flex flex-col gap-1 flex-1 min-w-0">
+                  <span className="text-sm font-semibold leading-tight truncate animate-in" title={selectedProd.title}>
+                    {selectedProd.title}
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted-foreground">ID: PRD-{selectedProd.id}</span>
+                    {selectedProd.sku && (
+                      <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border">
+                        SKU: {selectedProd.sku}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 text-xs"
+                  onClick={() => {
+                    setFormData({ ...formData, productId: "" });
+                    setSearchQuery("");
+                  }}
+                >
+                  Change
+                </Button>
+              </div>
+            ) : (
+              <div className="relative flex flex-col gap-1.5">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="edit-product"
+                    className="pl-8"
+                    placeholder="Search product by title or SKU..."
+                    value={searchQuery}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+
+                {(searchQuery.trim().length > 0 || displayProducts.length > 0) && (
+                  <div className="z-10 mt-1 max-h-56 overflow-y-auto rounded-md border bg-popover text-popover-foreground shadow-md">
+                    {isLoadingList ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground text-center">Searching products...</div>
+                    ) : displayProducts.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground text-center">No products found</div>
+                    ) : (
+                      <div className="p-1">
+                        {displayProducts.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            className="flex w-full min-w-0 items-center gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent transition-colors"
+                            onClick={() => {
+                              setFormData({ ...formData, productId: p.id.toString() });
+                              setSearchQuery("");
+                            }}
+                          >
+                            {p.image ? (
+                              <img
+                                src={getFullImageUrl(p.image)}
+                                alt={p.title}
+                                className="size-8 rounded object-cover border shrink-0 bg-background"
+                              />
+                            ) : (
+                              <div className="flex size-8 items-center justify-center rounded border bg-muted text-muted-foreground shrink-0">
+                                <MessageSquare className="size-4" />
+                              </div>
+                            )}
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="block truncate font-medium text-sm" title={p.title}>
+                                {p.title}
+                              </span>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] text-muted-foreground">ID: {p.id}</span>
+                                {p.sku && (
+                                  <span className="text-[9px] font-mono text-muted-foreground bg-muted px-1.5 py-0.2 rounded border">
+                                    {p.sku}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
