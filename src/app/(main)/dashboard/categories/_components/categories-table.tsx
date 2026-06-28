@@ -60,6 +60,13 @@ import useCategories from "@/hooks/useCategories";
 import { EditMainCategoryDialog } from "./edit-main-category-dialog";
 import { EditSubCategoryDialog } from "./edit-sub-category-dialog";
 
+const getImageUrl = (path: string | null | undefined) => {
+  if (!path) return "https://placehold.co/80x80/1a1a2e/e0e0e0?text=No+Image";
+  if (path.startsWith("http")) return path;
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+  return `${baseUrl}${path}`;
+};
+
 // CategoryRow shape used by the table
 interface CategoryRow {
   id: string;
@@ -69,6 +76,7 @@ interface CategoryRow {
   subcategories: number;
   status: string;
   parent?: string;
+  image?: string | null;
 }
 
 type CategoryFilter = "All" | "Main" | "Sub";
@@ -116,13 +124,29 @@ const columns: ColumnDef<CategoryRow>[] = [
   },
   {
     accessorKey: "name",
-    header: "Name",
-    cell: ({ row }) => (
-      <div className="flex flex-col gap-0.5">
-        <div className="font-medium leading-none">{row.original.name}</div>
-        <div className="text-muted-foreground text-xs">{row.original.description}</div>
-      </div>
-    ),
+    header: "Category",
+    cell: ({ row }) => {
+      const isSub = row.original.type === "Sub";
+      return (
+        <div className="flex items-center gap-3">
+          <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted flex items-center justify-center">
+            {isSub ? (
+              <FolderOpen className="size-5 text-muted-foreground/75" />
+            ) : row.original.image ? (
+              <img src={getImageUrl(row.original.image)} alt={row.original.name} className="size-full object-cover" />
+            ) : (
+              <div className="flex size-full items-center justify-center text-[10px] font-bold text-muted-foreground bg-muted/50">
+                CAT
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <div className="font-medium leading-none">{row.original.name}</div>
+            <div className="text-muted-foreground text-xs">{row.original.description}</div>
+          </div>
+        </div>
+      );
+    },
   },
   {
     id: "categoryType",
@@ -298,6 +322,7 @@ export function CategoriesTable() {
         description: cat.main_category_slug,
         subcategories: cat["sub-categories"]?.length ?? 0,
         status: "Active",
+        image: cat.image,
       });
       // Sub category rows
       cat["sub-categories"]?.forEach((sub) => {
@@ -309,6 +334,7 @@ export function CategoriesTable() {
           subcategories: 0,
           status: "Active",
           parent: cat.main_category_name,
+          image: null,
         });
       });
     });

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
+
+import Image from "next/image";
+
 import { Plus, Upload, X } from "lucide-react";
 import { toast } from "sonner";
-import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import {
