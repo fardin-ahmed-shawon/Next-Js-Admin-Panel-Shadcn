@@ -105,7 +105,7 @@ function SplitImageUpload({
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium">Click or drag & drop</p>
-              <p className="text-xs text-muted-foreground">SVG, PNG, JPG or GIF (max. 2MB)</p>
+              <p className="text-xs text-muted-foreground">SVG, PNG, JPG or GIF</p>
             </div>
           </div>
           <input ref={inputRef} id={id} type="file" accept="image/*" className="sr-only" onChange={handleChange} />
