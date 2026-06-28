@@ -4,7 +4,6 @@ import { ArrowRightLeft, Package, Sparkles, TrendingUp } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-
 import { useProductRecommendations } from "@/hooks/useProductRecommendations";
 
 export function RecommendationsStats() {

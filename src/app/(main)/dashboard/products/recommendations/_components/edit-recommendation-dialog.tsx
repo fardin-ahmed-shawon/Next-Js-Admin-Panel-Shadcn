@@ -18,13 +18,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-
 import {
   type Recommendation,
   type RecommendationProduct,
   useProductRecommendations,
 } from "@/hooks/useProductRecommendations";
 import { useProductSearch } from "@/hooks/useProductSearch";
+
+const getImageUrl = (path: string | null | undefined) => {
+  if (!path) return "https://placehold.co/80x80/1a1a2e/e0e0e0?text=No+Image";
+  if (path.startsWith("http")) return path;
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+  return `${baseUrl}${path}`;
+};
 
 /* ── Inline product picker ─────────────────────────────────────── */
 
@@ -47,16 +53,18 @@ function ProductPicker({ label, id, selected, onSelect, disabledId }: ProductPic
       </Label>
 
       {selected ? (
-        <div className="flex items-center gap-3 rounded-lg border bg-muted/50 p-2">
+        <div className="flex items-center gap-3 rounded-lg border bg-muted/50 p-2 animate-in fade-in duration-200">
           {selected.product_thumbnail_img && (
             <img
-              src={selected.product_thumbnail_img}
+              src={getImageUrl(selected.product_thumbnail_img)}
               alt={selected.title}
               className="size-9 rounded-md object-cover border shrink-0"
             />
           )}
           <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-            <span className="text-sm font-medium leading-none truncate">{selected.title}</span>
+            <span className="text-sm font-medium leading-none block truncate" title={selected.title}>
+              {selected.title}
+            </span>
             <span className="text-xs text-muted-foreground">ID: {selected.id}</span>
           </div>
           <Button
@@ -73,7 +81,7 @@ function ProductPicker({ label, id, selected, onSelect, disabledId }: ProductPic
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 relative">
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -85,7 +93,7 @@ function ProductPicker({ label, id, selected, onSelect, disabledId }: ProductPic
             />
           </div>
           {query.length >= 1 && (
-            <div className="rounded-lg border bg-popover shadow-md">
+            <div className="absolute top-full left-0 z-50 w-full mt-1 rounded-lg border bg-popover shadow-md">
               {isLoading ? (
                 <div className="flex flex-col gap-2 p-2">
                   {[1, 2, 3].map((i) => (
@@ -106,16 +114,18 @@ function ProductPicker({ label, id, selected, onSelect, disabledId }: ProductPic
                           onSelect(p);
                           setQuery("");
                         }}
-                        className="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex w-full min-w-0 items-center gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {p.product_thumbnail_img && (
                           <img
-                            src={p.product_thumbnail_img}
+                            src={getImageUrl(p.product_thumbnail_img)}
                             alt={p.title}
                             className="size-8 rounded object-cover border shrink-0"
                           />
                         )}
-                        <span className="flex-1 truncate">{p.title}</span>
+                        <span className="flex-1 block truncate" title={p.title}>
+                          {p.title}
+                        </span>
                         {p.id === disabledId && <span className="text-xs text-muted-foreground">(current)</span>}
                       </button>
                     ))}
@@ -174,7 +184,7 @@ export function EditRecommendationDialog({ recommendation, open, onOpenChange }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Edit Recommendation</DialogTitle>
           <DialogDescription>
@@ -191,13 +201,16 @@ export function EditRecommendationDialog({ recommendation, open, onOpenChange }:
               <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-2 opacity-70">
                 {recommendation.product?.product_thumbnail_img && (
                   <img
-                    src={recommendation.product.product_thumbnail_img}
+                    src={getImageUrl(recommendation.product.product_thumbnail_img)}
                     alt={recommendation.product.title}
                     className="size-9 rounded-md object-cover border shrink-0"
                   />
                 )}
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-sm font-medium leading-none truncate">
+                <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                  <span
+                    className="text-sm font-medium leading-none block truncate"
+                    title={recommendation.product?.title}
+                  >
                     {recommendation.product?.title ?? `Product #${recommendation.product_id}`}
                   </span>
                   <span className="text-xs text-muted-foreground">ID: {recommendation.product_id}</span>
@@ -218,13 +231,16 @@ export function EditRecommendationDialog({ recommendation, open, onOpenChange }:
                 <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-2">
                   {recommendation.recommended_product?.product_thumbnail_img && (
                     <img
-                      src={recommendation.recommended_product.product_thumbnail_img}
+                      src={getImageUrl(recommendation.recommended_product.product_thumbnail_img)}
                       alt={recommendation.recommended_product.title}
                       className="size-9 rounded-md object-cover border shrink-0"
                     />
                   )}
                   <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                    <span className="text-sm font-medium leading-none truncate">
+                    <span
+                      className="text-sm font-medium leading-none block truncate"
+                      title={recommendation.recommended_product?.title}
+                    >
                       {recommendation.recommended_product?.title ?? `Product #${recommendation.recommended_product_id}`}
                     </span>
                     <span className="text-xs text-muted-foreground">ID: {recommendation.recommended_product_id}</span>

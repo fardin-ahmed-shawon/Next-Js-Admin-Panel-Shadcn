@@ -51,10 +51,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
 import { type Recommendation, useProductRecommendations } from "@/hooks/useProductRecommendations";
 
 import { EditRecommendationDialog } from "./edit-recommendation-dialog";
+
+const getImageUrl = (path: string | null | undefined) => {
+  if (!path) return "https://placehold.co/80x80/1a1a2e/e0e0e0?text=No+Image";
+  if (path.startsWith("http")) return path;
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+  return `${baseUrl}${path}`;
+};
 
 /* ── Columns ──────────────────────────────────────────────────── */
 
@@ -94,7 +100,7 @@ function buildColumns(
           <div className="flex items-center gap-3">
             {p?.product_thumbnail_img ? (
               <img
-                src={p.product_thumbnail_img}
+                src={getImageUrl(p.product_thumbnail_img)}
                 alt={p.title}
                 className="size-9 shrink-0 rounded-md border object-cover"
               />
@@ -152,7 +158,7 @@ function buildColumns(
           <div className="flex items-center gap-3">
             {p?.product_thumbnail_img ? (
               <img
-                src={p.product_thumbnail_img}
+                src={getImageUrl(p.product_thumbnail_img)}
                 alt={p.title}
                 className="size-9 shrink-0 rounded-md border object-cover"
               />
