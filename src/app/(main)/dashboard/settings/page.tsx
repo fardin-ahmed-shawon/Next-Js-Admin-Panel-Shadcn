@@ -3,10 +3,7 @@
 import * as React from "react";
 import { useState } from "react";
 
-import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-
-import { CreditCard, MessageSquare } from "lucide-react";
 
 import {
   AlertDialog,
@@ -21,7 +18,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 import { ChangeLogoTab } from "./_components/change-logo-tab";
@@ -138,6 +134,7 @@ export default function SettingsPage() {
             {allowedTabs.map((tab) => (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap",
@@ -158,20 +155,26 @@ export default function SettingsPage() {
           {displayTab === "change-logo" && <ChangeLogoTab />}
           {displayTab === "change-password" && <ChangePasswordTab />}
           {displayTab === "about-us" && (
-            <GenericContentTab title="About Us" description="Update the About Us page content." />
+            <GenericContentTab title="About Us" description="Update the About Us page content." fieldKey="about_us" />
           )}
           {displayTab === "contact-us" && (
-            <GenericContentTab title="Contact Us" description="Update your contact information." />
+            <GenericContentTab title="Contact Us" description="Update your contact information." fieldKey="contact_us" />
           )}
-          {displayTab === "faq" && <GenericContentTab title="FAQ" description="Manage frequently asked questions." />}
+          {displayTab === "faq" && (
+            <GenericContentTab title="FAQ" description="Manage frequently asked questions." fieldKey="faq" />
+          )}
           {displayTab === "terms-of-use" && (
-            <GenericContentTab title="Terms of Use" description="Update the terms of service." />
+            <GenericContentTab title="Terms of Use" description="Update the terms of service." fieldKey="terms_of_use" />
           )}
           {displayTab === "privacy-policy" && (
-            <GenericContentTab title="Privacy Policy" description="Update the privacy policy." />
+            <GenericContentTab title="Privacy Policy" description="Update the privacy policy." fieldKey="privacy_policy" />
           )}
           {displayTab === "shipping-delivery" && (
-            <GenericContentTab title="Shipping & Delivery" description="Manage shipping options and info." />
+            <GenericContentTab
+              title="Shipping & Delivery"
+              description="Manage shipping options and info."
+              fieldKey="shipping_delivery"
+            />
           )}
         </div>
       </div>
