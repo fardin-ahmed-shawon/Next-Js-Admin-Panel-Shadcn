@@ -48,6 +48,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { User } from "@/hooks/useUsers";
 import { useRoles } from "@/hooks/useRoles";
+import { useAuth } from "@/hooks/useAuth";
 import { EditUserDialog } from "./edit-user-dialog";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_USERS || "users"}`;
@@ -59,6 +60,7 @@ interface UsersTableProps {
 }
 
 export function UsersTable({ users, loading, refetch }: UsersTableProps) {
+  const { user: currentUser } = useAuth();
   const { roles, loading: rolesLoading } = useRoles();
   const [activeRoleFilter, setActiveRoleFilter] = React.useState<string>("All Roles");
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -120,43 +122,55 @@ export function UsersTable({ users, loading, refetch }: UsersTableProps) {
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => {
         const user = row.original;
+
+        const targetIsAdmin = user.role?.role_name === "Admin";
+        const currentUserIsAdmin = currentUser?.role?.role_name === "Admin";
+        const isSelf = currentUser?.id === user.id;
+
+        const canEdit = !(targetIsAdmin && currentUserIsAdmin && !isSelf);
+        const canDelete = !targetIsAdmin;
+
         return (
           <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="outline"
-              size="icon-sm"
-              onClick={() => {
-                setEditUser(user);
-                setIsEditOpen(true);
-              }}
-            >
-              <Edit className="size-4" />
-            </Button>
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => {
+                  setEditUser(user);
+                  setIsEditOpen(true);
+                }}
+              >
+                <Edit className="size-4" />
+              </Button>
+            )}
 
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="icon-sm">
-                  <Trash className="size-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete User</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete <strong>{user.full_name}</strong>? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => handleDelete(user.id)}
-                  >
-                    Yes, delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {canDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="icon-sm">
+                    <Trash className="size-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete User</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete <strong>{user.full_name}</strong>? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => handleDelete(user.id)}
+                    >
+                      Yes, delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         );
       },

@@ -71,61 +71,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Remove Account Card - Admin Only */}
-      {isAdmin && (
-        <div className="flex flex-col md:flex-row md:items-center justify-between rounded-lg border p-5 bg-card">
-          <div className="space-y-1 mb-4 md:mb-0">
-            <p className="text-base font-semibold text-foreground">Remove Account</p>
-            <p className="text-sm text-muted-foreground">You can do 'Disable account' to take a break from panel.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              variant="outline"
-              className="text-red-500 border-red-200 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-            >
-              Deactivate Account
-            </Button>
 
-            <AlertDialog
-              onOpenChange={(open) => {
-                if (!open) setDeleteConfirmation("");
-              }}
-            >
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">Delete Account</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription className="space-y-4">
-                    <p>
-                      This action cannot be undone. This will permanently delete your account and remove your data from
-                      our servers. All your active services will be canceled immediately.
-                    </p>
-                    <p className="text-foreground font-medium">
-                      Please type <strong>Delete</strong> to confirm.
-                    </p>
-                    <Input
-                      value={deleteConfirmation}
-                      onChange={(e) => setDeleteConfirmation(e.target.value)}
-                      placeholder="Type Delete"
-                    />
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    disabled={deleteConfirmation !== "Delete"}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Yes, delete account
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
-      )}
 
       <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0 mt-4">
         {/* Navigation Sidebar */}
