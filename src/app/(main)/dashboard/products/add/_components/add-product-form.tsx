@@ -85,6 +85,11 @@ export function AddProductForm() {
   const [availableStock, setAvailableStock] = React.useState("");
   const [variants, setVariants] = React.useState<Variant[]>([]);
 
+  // Lot Details
+  const [sourceType, setSourceType] = React.useState("vendor");
+  const [sourceName, setSourceName] = React.useState("");
+  const [lotComment, setLotComment] = React.useState("");
+
   // Pricing
   const [purchasePrice, setPurchasePrice] = React.useState("");
   const [regularPrice, setRegularPrice] = React.useState("");
@@ -167,6 +172,9 @@ export function AddProductForm() {
     setHasVariantWisePricing(false);
     setVariants([]);
     setAvailableStock("");
+    setSourceType("vendor");
+    setSourceName("");
+    setLotComment("");
     setPurchasePrice("");
     setRegularPrice("");
     setSellingPrice("");
@@ -258,6 +266,9 @@ export function AddProductForm() {
         if (sellingPrice) formData.append("selling_price", sellingPrice);
       }
       if (availableStock) formData.append("available_stock", availableStock);
+      if (sourceType) formData.append("source_type", sourceType);
+      if (sourceName) formData.append("source_name", sourceName);
+      if (lotComment) formData.append("comment", lotComment);
       formData.append("is_preorder", isPreOrder ? "true" : "false");
 
       if (shortDescription) formData.append("short_description", shortDescription);
@@ -865,6 +876,54 @@ export function AddProductForm() {
               </CardContent>
             </Card>
           )}
+
+          {/* ---- Lot Details ---- */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base text-primary">Lot Details</CardTitle>
+              <CardDescription>Specify the initial lot details for the inventory.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              <div className="space-y-2">
+                <Label htmlFor="source-type" className="text-primary font-medium">
+                  Source Type
+                </Label>
+                <Select value={sourceType} onValueChange={setSourceType}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select source type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="vendor">Vendor</SelectItem>
+                    <SelectItem value="return">Return</SelectItem>
+                    <SelectItem value="adjustment">Adjustment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="source-name" className="text-primary font-medium">
+                  Source Name / Vendor Name
+                </Label>
+                <Input
+                  id="source-name"
+                  placeholder="e.g. Vendor A, Invoice #102"
+                  value={sourceName}
+                  onChange={(e) => setSourceName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lot-comment" className="text-primary font-medium">
+                  Comment / Notes
+                </Label>
+                <Textarea
+                  id="lot-comment"
+                  placeholder="Optional notes about this lot entry..."
+                  className="min-h-[80px] resize-y"
+                  value={lotComment}
+                  onChange={(e) => setLotComment(e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           {/* ---- Pre-Order ---- */}
           <Card>

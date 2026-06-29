@@ -613,7 +613,7 @@ export function EditProductForm({ productId }: { productId: string }) {
                     </div>
                     <div className="space-y-2">
                       <Label>Base Available Stock</Label>
-                      <Input type="number" value={availableStock} onChange={(e) => setAvailableStock(e.target.value)} />
+                      <Input type="number" value={availableStock} disabled />
                     </div>
                   </div>
                 </>
@@ -679,7 +679,7 @@ export function EditProductForm({ productId }: { productId: string }) {
                           <Input
                             type="number"
                             value={v.available_stock}
-                            onChange={(e) => updateVariant(v.id!, "available_stock", e.target.value)}
+                            disabled
                           />
                         </div>
                       </div>
@@ -691,7 +691,7 @@ export function EditProductForm({ productId }: { productId: string }) {
                               type="number"
                               placeholder="0.00"
                               value={v.purchasePrice || ""}
-                              onChange={(e) => updateVariant(v.id!, "purchasePrice", e.target.value)}
+                              disabled
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -734,7 +734,7 @@ export function EditProductForm({ productId }: { productId: string }) {
               <CardContent className="flex flex-col gap-5">
                 <div className="space-y-2">
                   <Label>Purchase Price (৳)</Label>
-                  <Input value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
+                  <Input value={purchasePrice} disabled />
                 </div>
                 <div className="space-y-2">
                   <Label>Regular Price (৳)</Label>
