@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Plus } from "lucide-react";
+import { ChevronDown, Loader2, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -36,6 +38,7 @@ interface LookupProduct {
   id: number;
   title: string;
   has_variants: boolean | number;
+  product_thumbnail_img?: string | null;
   variants?: Variant[];
 }
 
@@ -43,10 +46,21 @@ interface ProcurementModalProps {
   onSuccess: () => void;
 }
 
+const getImageUrl = (path: string | null | undefined) => {
+  if (!path) return "https://placehold.co/80x80/1a1a2e/e0e0e0?text=No+Image";
+  if (path.startsWith("http")) return path;
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+  return `${baseUrl}${path}`;
+};
+
 export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
   const [open, setOpen] = React.useState(false);
   const [products, setProducts] = React.useState<LookupProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = React.useState(false);
+
+  // Search and selection popover state
+  const [isOpenProductList, setIsOpenProductList] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   // Form State
   const [selectedProductId, setSelectedProductId] = React.useState<string>("");
@@ -88,6 +102,13 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
     return products.find((p) => p.id.toString() === selectedProductId);
   }, [products, selectedProductId]);
 
+  const filteredProducts = React.useMemo(() => {
+    if (!searchQuery.trim()) return products;
+    return products.filter((p) =>
+      p.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [products, searchQuery]);
+
   const handleProductChange = (val: string) => {
     setSelectedProductId(val);
     setSelectedVariantId(""); // Reset variant selection
@@ -101,6 +122,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
     setSourceType("vendor");
     setSourceName("");
     setComment("");
+    setSearchQuery("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -173,7 +195,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
           <Plus className="mr-2 size-4" /> Procure Stock
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-w-full">
         <DialogHeader>
           <DialogTitle>Procure New Stock</DialogTitle>
           <DialogDescription>
@@ -181,29 +203,86 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          {/* Product Select */}
+          {/* Product Search & Selection Popover */}
           <div className="space-y-1.5">
             <Label>Select Product</Label>
-            <Select
-              value={selectedProductId}
-              onValueChange={handleProductChange}
-              disabled={loadingProducts || submitting}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={
-                    loadingProducts ? "Loading products..." : "Choose product..."
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {products.map((p) => (
-                  <SelectItem key={p.id} value={p.id.toString()}>
-                    {p.title} {p.has_variants ? "(Variants)" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={isOpenProductList} onOpenChange={setIsOpenProductList}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className="w-full justify-between font-normal text-left h-11"
+                  disabled={loadingProducts || submitting}
+                >
+                  {selectedProduct ? (
+                    <div className="flex items-center gap-2.5 truncate max-w-[90%]">
+                      <img
+                        src={getImageUrl(selectedProduct.product_thumbnail_img)}
+                        alt={selectedProduct.title}
+                        className="size-7 rounded object-cover border bg-muted shrink-0"
+                      />
+                      <span className="truncate block max-w-[450px]" title={selectedProduct.title}>
+                        {selectedProduct.title}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {loadingProducts ? "Loading products..." : "Choose product..."}
+                    </span>
+                  )}
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <div className="flex items-center border-b px-3 h-10">
+                  <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                  <input
+                    placeholder="Search product by title..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+                <ScrollArea className="h-64">
+                  {filteredProducts.length === 0 ? (
+                    <div className="p-4 text-sm text-center text-muted-foreground">
+                      No products found.
+                    </div>
+                  ) : (
+                    <div className="p-1 space-y-0.5">
+                      {filteredProducts.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className="flex items-center gap-3 w-full px-2.5 py-2 text-left text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                          onClick={() => {
+                            handleProductChange(p.id.toString());
+                            setIsOpenProductList(false);
+                            setSearchQuery("");
+                          }}
+                        >
+                          <img
+                            src={getImageUrl(p.product_thumbnail_img)}
+                            alt={p.title}
+                            className="size-8 rounded object-cover border bg-muted shrink-0"
+                          />
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-medium text-foreground truncate max-w-[450px]" title={p.title}>
+                              {p.title}
+                            </span>
+                            {p.has_variants ? (
+                              <span className="text-[10px] text-muted-foreground font-medium">
+                                Has Variants
+                              </span>
+                            ) : null}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Variant Select (Conditionally shown) */}

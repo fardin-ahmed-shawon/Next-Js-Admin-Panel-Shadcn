@@ -189,14 +189,14 @@ export default function ProcurementPage() {
                             <span>{formatDate(lot.created_at)}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">
+                        <TableCell className="max-w-[280px]">
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="font-medium text-sm text-foreground group-hover:text-primary transition-colors truncate block" title={lot.product?.title || ""}>
                               {lot.product?.title || "Unknown Product"}
                             </span>
                             {variantLabel ? (
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Layers className="size-3" /> {variantLabel}
+                              <span className="text-xs text-muted-foreground flex items-center gap-1 truncate block" title={variantLabel}>
+                                <Layers className="size-3 shrink-0" /> {variantLabel}
                               </span>
                             ) : null}
                           </div>
