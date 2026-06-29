@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Flag, Image as ImageIcon, Loader2, Save, UploadCloud } from "lucide-react";
+import { Flag, Image as ImageIcon, Loader2, Save, UploadCloud, Layers } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:8000";
@@ -74,7 +75,7 @@ function SplitImageUpload({
   return (
     <div className="grid md:grid-cols-2 gap-6">
       <div className="space-y-1.5">
-        <Label className="text-xs">Upload Image</Label>
+        <Label className="text-xs text-muted-foreground">Upload Image</Label>
         <div
           className={[
             "group relative flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-colors",
@@ -106,7 +107,7 @@ function SplitImageUpload({
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">Image Preview</Label>
+          <Label className="text-xs text-muted-foreground">Image Preview</Label>
           {displayImage && (
             <Button
               type="button"
@@ -148,17 +149,43 @@ export default function BannerPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [bannerId, setBannerId] = React.useState<number | null>(null);
 
-  // Banner 1 State
+  // Group 1
   const [banner1File, setBanner1File] = React.useState<File | null>(null);
   const [banner1Preview, setBanner1Preview] = React.useState("");
   const [banner1Default, setBanner1Default] = React.useState("");
   const [banner1Removed, setBanner1Removed] = React.useState(false);
 
-  // Banner 2 State
   const [banner2File, setBanner2File] = React.useState<File | null>(null);
   const [banner2Preview, setBanner2Preview] = React.useState("");
   const [banner2Default, setBanner2Default] = React.useState("");
   const [banner2Removed, setBanner2Removed] = React.useState(false);
+
+  // Group 2
+  const [banner3File, setBanner3File] = React.useState<File | null>(null);
+  const [banner3Preview, setBanner3Preview] = React.useState("");
+  const [banner3Default, setBanner3Default] = React.useState("");
+  const [banner3Removed, setBanner3Removed] = React.useState(false);
+
+  const [banner4File, setBanner4File] = React.useState<File | null>(null);
+  const [banner4Preview, setBanner4Preview] = React.useState("");
+  const [banner4Default, setBanner4Default] = React.useState("");
+  const [banner4Removed, setBanner4Removed] = React.useState(false);
+
+  // Group 3
+  const [banner5File, setBanner5File] = React.useState<File | null>(null);
+  const [banner5Preview, setBanner5Preview] = React.useState("");
+  const [banner5Default, setBanner5Default] = React.useState("");
+  const [banner5Removed, setBanner5Removed] = React.useState(false);
+
+  const [banner6File, setBanner6File] = React.useState<File | null>(null);
+  const [banner6Preview, setBanner6Preview] = React.useState("");
+  const [banner6Default, setBanner6Default] = React.useState("");
+  const [banner6Removed, setBanner6Removed] = React.useState(false);
+
+  const [banner7File, setBanner7File] = React.useState<File | null>(null);
+  const [banner7Preview, setBanner7Preview] = React.useState("");
+  const [banner7Default, setBanner7Default] = React.useState("");
+  const [banner7Removed, setBanner7Removed] = React.useState(false);
 
   // Fetch banners from API
   const fetchBanners = async () => {
@@ -184,6 +211,11 @@ export default function BannerPage() {
         setBannerId(data.id);
         if (data.banner_img_1) setBanner1Default(data.banner_img_1);
         if (data.banner_img_2) setBanner2Default(data.banner_img_2);
+        if (data.banner_img_3) setBanner3Default(data.banner_img_3);
+        if (data.banner_img_4) setBanner4Default(data.banner_img_4);
+        if (data.banner_img_5) setBanner5Default(data.banner_img_5);
+        if (data.banner_img_6) setBanner6Default(data.banner_img_6);
+        if (data.banner_img_7) setBanner7Default(data.banner_img_7);
       }
     } catch (error) {
       console.error("Error fetching banners:", error);
@@ -211,6 +243,41 @@ export default function BannerPage() {
     setBanner2Preview("");
   };
 
+  const handleRemoveBanner3 = () => {
+    setBanner3Default("");
+    setBanner3Removed(true);
+    setBanner3File(null);
+    setBanner3Preview("");
+  };
+
+  const handleRemoveBanner4 = () => {
+    setBanner4Default("");
+    setBanner4Removed(true);
+    setBanner4File(null);
+    setBanner4Preview("");
+  };
+
+  const handleRemoveBanner5 = () => {
+    setBanner5Default("");
+    setBanner5Removed(true);
+    setBanner5File(null);
+    setBanner5Preview("");
+  };
+
+  const handleRemoveBanner6 = () => {
+    setBanner6Default("");
+    setBanner6Removed(true);
+    setBanner6File(null);
+    setBanner6Preview("");
+  };
+
+  const handleRemoveBanner7 = () => {
+    setBanner7Default("");
+    setBanner7Removed(true);
+    setBanner7File(null);
+    setBanner7Preview("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -219,26 +286,63 @@ export default function BannerPage() {
       const formData = new FormData();
       let hasChanges = false;
 
-      // Handle Banner 1
+      // Group 1
       if (banner1File) {
         formData.append("banner_img_1", banner1File);
         hasChanges = true;
-        console.log("Uploading new banner 1 file:", banner1File.name);
       } else if (banner1Removed) {
         formData.append("remove_banner_img_1", "true");
         hasChanges = true;
-        console.log("Removing banner 1");
       }
 
-      // Handle Banner 2
       if (banner2File) {
         formData.append("banner_img_2", banner2File);
         hasChanges = true;
-        console.log("Uploading new banner 2 file:", banner2File.name);
       } else if (banner2Removed) {
         formData.append("remove_banner_img_2", "true");
         hasChanges = true;
-        console.log("Removing banner 2");
+      }
+
+      // Group 2
+      if (banner3File) {
+        formData.append("banner_img_3", banner3File);
+        hasChanges = true;
+      } else if (banner3Removed) {
+        formData.append("remove_banner_img_3", "true");
+        hasChanges = true;
+      }
+
+      if (banner4File) {
+        formData.append("banner_img_4", banner4File);
+        hasChanges = true;
+      } else if (banner4Removed) {
+        formData.append("remove_banner_img_4", "true");
+        hasChanges = true;
+      }
+
+      // Group 3
+      if (banner5File) {
+        formData.append("banner_img_5", banner5File);
+        hasChanges = true;
+      } else if (banner5Removed) {
+        formData.append("remove_banner_img_5", "true");
+        hasChanges = true;
+      }
+
+      if (banner6File) {
+        formData.append("banner_img_6", banner6File);
+        hasChanges = true;
+      } else if (banner6Removed) {
+        formData.append("remove_banner_img_6", "true");
+        hasChanges = true;
+      }
+
+      if (banner7File) {
+        formData.append("banner_img_7", banner7File);
+        hasChanges = true;
+      } else if (banner7Removed) {
+        formData.append("remove_banner_img_7", "true");
+        hasChanges = true;
       }
 
       if (!hasChanges) {
@@ -274,6 +378,21 @@ export default function BannerPage() {
       setBanner2File(null);
       setBanner2Preview("");
       setBanner2Removed(false);
+      setBanner3File(null);
+      setBanner3Preview("");
+      setBanner3Removed(false);
+      setBanner4File(null);
+      setBanner4Preview("");
+      setBanner4Removed(false);
+      setBanner5File(null);
+      setBanner5Preview("");
+      setBanner5Removed(false);
+      setBanner6File(null);
+      setBanner6Preview("");
+      setBanner6Removed(false);
+      setBanner7File(null);
+      setBanner7Preview("");
+      setBanner7Removed(false);
     } catch (error) {
       console.error("Error saving banners:", error);
       toast.error(error instanceof Error ? error.message : "Failed to save banners");
@@ -305,7 +424,7 @@ export default function BannerPage() {
       </div>
 
       <form className="grid gap-6">
-        {/* Banner 1 */}
+        {/* Banner Group 1 */}
         <Card className="ring-2 ring-transparent transition-all hover:ring-primary/20">
           <CardHeader>
             <div className="flex items-center gap-2.5">
@@ -313,53 +432,162 @@ export default function BannerPage() {
                 <Flag className="size-4.5" />
               </span>
               <div>
-                <CardTitle className="text-lg">Banner 1</CardTitle>
-                <CardDescription>Main promotional banner shown at the top.</CardDescription>
+                <CardTitle className="text-lg">Banner Group 1</CardTitle>
+                <CardDescription>Primary promotional banners (Recommended size: 1200px x 1000px)</CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <SplitImageUpload
-              id="banner1-image"
-              file={banner1File}
-              preview={banner1Preview}
-              defaultImage={banner1Default}
-              onChange={(f, p) => {
-                setBanner1File(f);
-                setBanner1Preview(p);
-                if (f) setBanner1Removed(false);
-              }}
-              onRemoveDefault={handleRemoveBanner1}
-            />
+          <CardContent className="space-y-8">
+            <div className="space-y-4">
+              <Label className="text-sm font-semibold">Banner Image 1</Label>
+              <SplitImageUpload
+                id="banner1-image"
+                file={banner1File}
+                preview={banner1Preview}
+                defaultImage={banner1Default}
+                aspectRatio="aspect-[6/5]"
+                onChange={(f, p) => {
+                  setBanner1File(f);
+                  setBanner1Preview(p);
+                  if (f) setBanner1Removed(false);
+                }}
+                onRemoveDefault={handleRemoveBanner1}
+              />
+            </div>
+            <Separator />
+            <div className="space-y-4">
+              <Label className="text-sm font-semibold">Banner Image 2</Label>
+              <SplitImageUpload
+                id="banner2-image"
+                file={banner2File}
+                preview={banner2Preview}
+                defaultImage={banner2Default}
+                aspectRatio="aspect-[6/5]"
+                onChange={(f, p) => {
+                  setBanner2File(f);
+                  setBanner2Preview(p);
+                  if (f) setBanner2Removed(false);
+                }}
+                onRemoveDefault={handleRemoveBanner2}
+              />
+            </div>
           </CardContent>
         </Card>
 
-        {/* Banner 2 */}
+        {/* Banner Group 2 */}
         <Card className="ring-2 ring-transparent transition-all hover:ring-primary/20">
           <CardHeader>
             <div className="flex items-center gap-2.5">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <ImageIcon className="size-4.5" />
               </span>
               <div>
-                <CardTitle className="text-lg">Banner 2</CardTitle>
-                <CardDescription>Additional banner for secondary promotions.</CardDescription>
+                <CardTitle className="text-lg">Banner Group 2</CardTitle>
+                <CardDescription>Secondary promotional banners (Recommended size: 1200px x 800px)</CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <SplitImageUpload
-              id="banner2-image"
-              file={banner2File}
-              preview={banner2Preview}
-              defaultImage={banner2Default}
-              onChange={(f, p) => {
-                setBanner2File(f);
-                setBanner2Preview(p);
-                if (f) setBanner2Removed(false);
-              }}
-              onRemoveDefault={handleRemoveBanner2}
-            />
+          <CardContent className="space-y-8">
+            <div className="space-y-4">
+              <Label className="text-sm font-semibold">Banner Image 3</Label>
+              <SplitImageUpload
+                id="banner3-image"
+                file={banner3File}
+                preview={banner3Preview}
+                defaultImage={banner3Default}
+                aspectRatio="aspect-[3/2]"
+                onChange={(f, p) => {
+                  setBanner3File(f);
+                  setBanner3Preview(p);
+                  if (f) setBanner3Removed(false);
+                }}
+                onRemoveDefault={handleRemoveBanner3}
+              />
+            </div>
+            <Separator />
+            <div className="space-y-4">
+              <Label className="text-sm font-semibold">Banner Image 4</Label>
+              <SplitImageUpload
+                id="banner4-image"
+                file={banner4File}
+                preview={banner4Preview}
+                defaultImage={banner4Default}
+                aspectRatio="aspect-[3/2]"
+                onChange={(f, p) => {
+                  setBanner4File(f);
+                  setBanner4Preview(p);
+                  if (f) setBanner4Removed(false);
+                }}
+                onRemoveDefault={handleRemoveBanner4}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Banner Group 3 */}
+        <Card className="ring-2 ring-transparent transition-all hover:ring-primary/20">
+          <CardHeader>
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Layers className="size-4.5" />
+              </span>
+              <div>
+                <CardTitle className="text-lg">Banner Group 3</CardTitle>
+                <CardDescription>Tertiary promotional banners (Recommended size: 1200px x 400px)</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            <div className="space-y-4">
+              <Label className="text-sm font-semibold">Banner Image 5</Label>
+              <SplitImageUpload
+                id="banner5-image"
+                file={banner5File}
+                preview={banner5Preview}
+                defaultImage={banner5Default}
+                aspectRatio="aspect-[3/1]"
+                onChange={(f, p) => {
+                  setBanner5File(f);
+                  setBanner5Preview(p);
+                  if (f) setBanner5Removed(false);
+                }}
+                onRemoveDefault={handleRemoveBanner5}
+              />
+            </div>
+            <Separator />
+            <div className="space-y-4">
+              <Label className="text-sm font-semibold">Banner Image 6</Label>
+              <SplitImageUpload
+                id="banner6-image"
+                file={banner6File}
+                preview={banner6Preview}
+                defaultImage={banner6Default}
+                aspectRatio="aspect-[3/1]"
+                onChange={(f, p) => {
+                  setBanner6File(f);
+                  setBanner6Preview(p);
+                  if (f) setBanner6Removed(false);
+                }}
+                onRemoveDefault={handleRemoveBanner6}
+              />
+            </div>
+            <Separator />
+            <div className="space-y-4">
+              <Label className="text-sm font-semibold">Banner Image 7</Label>
+              <SplitImageUpload
+                id="banner7-image"
+                file={banner7File}
+                preview={banner7Preview}
+                defaultImage={banner7Default}
+                aspectRatio="aspect-[3/1]"
+                onChange={(f, p) => {
+                  setBanner7File(f);
+                  setBanner7Preview(p);
+                  if (f) setBanner7Removed(false);
+                }}
+                onRemoveDefault={handleRemoveBanner7}
+              />
+            </div>
           </CardContent>
         </Card>
       </form>
