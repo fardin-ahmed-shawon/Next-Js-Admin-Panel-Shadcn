@@ -1,0 +1,345 @@
+"use client";
+
+import * as React from "react";
+import { Loader2, Plus } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { fetchClient } from "@/lib/fetch-client";
+
+interface Variant {
+  id: number;
+  sku: string;
+  size?: { id: number; label: string } | null;
+  color?: { id: number; label: string } | null;
+}
+
+interface LookupProduct {
+  id: number;
+  title: string;
+  has_variants: boolean | number;
+  variants?: Variant[];
+}
+
+interface ProcurementModalProps {
+  onSuccess: () => void;
+}
+
+export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
+  const [open, setOpen] = React.useState(false);
+  const [products, setProducts] = React.useState<LookupProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = React.useState(false);
+
+  // Form State
+  const [selectedProductId, setSelectedProductId] = React.useState<string>("");
+  const [selectedVariantId, setSelectedVariantId] = React.useState<string>("");
+  const [purchasePrice, setPurchasePrice] = React.useState<string>("");
+  const [quantity, setQuantity] = React.useState<string>("");
+  const [sourceType, setSourceType] = React.useState<string>("vendor");
+  const [sourceName, setSourceName] = React.useState<string>("");
+  const [comment, setComment] = React.useState<string>("");
+  const [submitting, setSubmitting] = React.useState(false);
+
+  // Fetch product lookup when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      const fetchLookup = async () => {
+        try {
+          setLoadingProducts(true);
+          const res = await fetchClient(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/products-lookup`
+          );
+          const data = await res.json();
+          if (res.ok && data.success) {
+            setProducts(data.data || []);
+          } else {
+            toast.error(data.message || "Failed to load product lookup list.");
+          }
+        } catch (err) {
+          console.error(err);
+          toast.error("Error loading products lookup.");
+        } finally {
+          setLoadingProducts(false);
+        }
+      };
+      fetchLookup();
+    }
+  }, [open]);
+
+  const selectedProduct = React.useMemo(() => {
+    return products.find((p) => p.id.toString() === selectedProductId);
+  }, [products, selectedProductId]);
+
+  const handleProductChange = (val: string) => {
+    setSelectedProductId(val);
+    setSelectedVariantId(""); // Reset variant selection
+  };
+
+  const resetForm = () => {
+    setSelectedProductId("");
+    setSelectedVariantId("");
+    setPurchasePrice("");
+    setQuantity("");
+    setSourceType("vendor");
+    setSourceName("");
+    setComment("");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedProductId) {
+      toast.error("Please select a product.");
+      return;
+    }
+
+    if (selectedProduct?.has_variants && !selectedVariantId) {
+      toast.error("This product has variants. Please select a variant.");
+      return;
+    }
+
+    if (!purchasePrice || Number(purchasePrice) < 0) {
+      toast.error("Please enter a valid purchase price.");
+      return;
+    }
+
+    if (!quantity || Number(quantity) <= 0 || !Number.isInteger(Number(quantity))) {
+      toast.error("Please enter a valid quantity (greater than 0).");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        product_id: Number(selectedProductId),
+        product_variant_id: selectedVariantId ? Number(selectedVariantId) : null,
+        purchase_price: Number(purchasePrice),
+        initial_qty: Number(quantity),
+        source_type: sourceType,
+        source_name: sourceName || null,
+        comment: comment || null,
+      };
+
+      const res = await fetchClient(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/lots`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || "Stock procured successfully.");
+        resetForm();
+        setOpen(false);
+        onSuccess();
+      } else {
+        toast.error(data.message || "Failed to submit procurement.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("An error occurred during procurement submission.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <Plus className="mr-2 size-4" /> Procure Stock
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Procure New Stock</DialogTitle>
+          <DialogDescription>
+            Acquire new stock lots. This will append a new lot record under the FIFO inventory system.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {/* Product Select */}
+          <div className="space-y-1.5">
+            <Label>Select Product</Label>
+            <Select
+              value={selectedProductId}
+              onValueChange={handleProductChange}
+              disabled={loadingProducts || submitting}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    loadingProducts ? "Loading products..." : "Choose product..."
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {products.map((p) => (
+                  <SelectItem key={p.id} value={p.id.toString()}>
+                    {p.title} {p.has_variants ? "(Variants)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Variant Select (Conditionally shown) */}
+          {selectedProduct?.has_variants ? (
+            <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+              <Label>Select Variant</Label>
+              <Select
+                value={selectedVariantId}
+                onValueChange={setSelectedVariantId}
+                disabled={submitting}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose variant option..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectedProduct.variants?.map((v) => {
+                    const sizeLabel = v.size?.label || "";
+                    const colorLabel = v.color?.label || "";
+                    const label = [
+                      sizeLabel && `Size: ${sizeLabel}`,
+                      colorLabel && `Color: ${colorLabel}`,
+                      v.sku && `SKU: ${v.sku}`,
+                    ]
+                      .filter(Boolean)
+                      .join(" / ");
+
+                    return (
+                      <SelectItem key={v.id} value={v.id.toString()}>
+                        {label || `Variant ${v.id}`}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+
+          {/* Quantity & Purchase Price */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="qty">Acquisition Quantity</Label>
+              <Input
+                id="qty"
+                type="number"
+                min="1"
+                placeholder="100"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                disabled={submitting}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="price">Purchase Price (৳)</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={purchasePrice}
+                onChange={(e) => setPurchasePrice(e.target.value)}
+                disabled={submitting}
+              />
+            </div>
+          </div>
+
+          {/* Source Type & Source Name */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Source Type</Label>
+              <Select
+                value={sourceType}
+                onValueChange={setSourceType}
+                disabled={submitting}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="vendor">Vendor / Purchase</SelectItem>
+                  <SelectItem value="return">Customer Return</SelectItem>
+                  <SelectItem value="adjustment">Stock Adjustment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="source-name">Vendor / Supplier Name</Label>
+              <Input
+                id="source-name"
+                placeholder="Vendor Inc."
+                value={sourceName}
+                onChange={(e) => setSourceName(e.target.value)}
+                disabled={submitting}
+              />
+            </div>
+          </div>
+
+          {/* Comments */}
+          <div className="space-y-1.5">
+            <Label htmlFor="comment">Procurement Note / Comments</Label>
+            <Textarea
+              id="comment"
+              placeholder="Supplier invoice reference, adjustments details, etc..."
+              rows={3}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              disabled={submitting}
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={submitting}
+              onClick={() => {
+                resetForm();
+                setOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Procure Stock"
+              )}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
