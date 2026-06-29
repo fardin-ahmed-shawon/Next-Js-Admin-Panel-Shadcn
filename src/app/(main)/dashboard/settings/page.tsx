@@ -32,7 +32,7 @@ const TABS = [
   { id: "about-us", label: "About Us" },
   { id: "contact-us", label: "Contact Us" },
   { id: "faq", label: "FAQ" },
-  { id: "terms-of-use", label: "Terms of Use" },
+  { id: "terms-of-use", label: "Terms & Condition" },
   { id: "privacy-policy", label: "Privacy Policy" },
   { id: "shipping-delivery", label: "Shipping & Delivery" },
 ] as const;

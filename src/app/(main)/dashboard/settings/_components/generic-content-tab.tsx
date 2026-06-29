@@ -2,8 +2,14 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { fetchClient } from "@/lib/fetch-client";
+
+const isDescriptionEmpty = (html: string) => {
+  if (!html) return true;
+  const stripped = html.replace(/<[^>]*>/g, "").trim();
+  return stripped.length === 0;
+};
 
 interface GenericContentTabProps {
   title: string;
@@ -49,7 +55,7 @@ export function GenericContentTab({ title, description, fieldKey }: GenericConte
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          [fieldKey]: content,
+          [fieldKey]: isDescriptionEmpty(content) ? "" : content,
         }),
       });
 
@@ -81,11 +87,10 @@ export function GenericContentTab({ title, description, fieldKey }: GenericConte
 
       <div className="space-y-4">
         <p className="text-sm font-medium text-foreground">Content</p>
-        <Textarea
-          placeholder={`Enter content for ${title}...`}
-          className="min-h-[300px] resize-y"
+        <RichTextEditor
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={setContent}
+          placeholder={`Enter content for ${title}...`}
         />
       </div>
 

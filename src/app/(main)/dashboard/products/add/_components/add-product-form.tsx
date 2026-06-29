@@ -16,8 +16,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import useAttributes from "@/hooks/useAttributes";
 import useCategories from "@/hooks/useCategories";
+
+const isDescriptionEmpty = (html: string) => {
+  if (!html) return true;
+  const stripped = html.replace(/<[^>]*>/g, "").trim();
+  return stripped.length === 0;
+};
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -193,11 +200,11 @@ export function AddProductForm() {
       toast.error("Sub category is required.");
       return;
     }
-    if (!shortDescription.trim()) {
+    if (isDescriptionEmpty(shortDescription)) {
       toast.error("Short description is required.");
       return;
     }
-    if (!longDescription.trim()) {
+    if (isDescriptionEmpty(longDescription)) {
       toast.error("Long description is required.");
       return;
     }
@@ -481,24 +488,20 @@ export function AddProductForm() {
               {/* Short Description */}
               <div className="space-y-2">
                 <Label htmlFor="short-desc">Short Description</Label>
-                <Textarea
-                  id="short-desc"
-                  placeholder="A brief one-liner about the product."
-                  className="min-h-[80px] resize-y"
+                <RichTextEditor
                   value={shortDescription}
-                  onChange={(e) => setShortDescription(e.target.value)}
+                  onChange={setShortDescription}
+                  placeholder="A brief one-liner about the product."
                 />
               </div>
 
               {/* Long Description */}
               <div className="space-y-2">
                 <Label htmlFor="long-desc">Long Description</Label>
-                <Textarea
-                  id="long-desc"
-                  placeholder="Detailed product information, features, materials, etc."
-                  className="min-h-[140px] resize-y"
+                <RichTextEditor
                   value={longDescription}
-                  onChange={(e) => setLongDescription(e.target.value)}
+                  onChange={setLongDescription}
+                  placeholder="Detailed product information, features, materials, etc."
                 />
               </div>
 
