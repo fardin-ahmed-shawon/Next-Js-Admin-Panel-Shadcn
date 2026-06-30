@@ -20,6 +20,25 @@ function formatDate(dateStr: string) {
   }
 }
 
+function Barcode({ align = "center" }: { align?: "left" | "center" | "right" }) {
+  // A clean series of vertical bars using solid borders to guarantee visibility in all browser print configurations
+  const bars = [
+    1, 2, 1, 3, 1, 2, 4, 1, 2, 1, 3, 2, 1, 1, 4, 2, 1, 3, 1, 2, 1, 3, 1, 2, 4, 1, 2, 1, 3, 2, 1, 1, 4, 2, 1, 3
+  ];
+  const alignClass = align === "left" ? "justify-start" : align === "right" ? "justify-end" : "justify-center";
+  return (
+    <div className={`flex items-end ${alignClass} h-6 gap-[1.5px] my-1 overflow-hidden select-none`} aria-hidden="true">
+      {bars.map((w, idx) => (
+        <div
+          key={idx}
+          className="h-full shrink-0"
+          style={{ width: "0px", borderLeft: `${w}px solid black` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function InvoicePage() {
@@ -32,13 +51,6 @@ export default function InvoicePage() {
 
   const settings = settingsRes?.data;
   const isLoading = orderLoading || settingsLoading;
-
-  React.useEffect(() => {
-    // Optionally trigger print automatically after loading
-    // if (order && !isLoading) {
-    //   window.print();
-    // }
-  }, [order, isLoading]);
 
   if (isLoading) {
     return (
@@ -55,9 +67,16 @@ export default function InvoicePage() {
     );
   }
 
-  const paidAmount = order?.payments?.reduce((sum: number, p: any) => sum + Number(p.paid_amount ?? 0), 0) ?? 0;
   const grandTotal = Number(order?.grand_total_amount ?? 0);
-  const dueAmount = Math.max(0, grandTotal - paidAmount);
+  const brandName = settings?.brand_name || "ARHAM Mart";
+  const hostUrl = baseUrl.replace(/\/api\/v1\/admin\/?$/, "");
+  const brandLogo = settings?.brand_logo ? `${hostUrl}/${settings.brand_logo}` : null;
+
+  // Build the courier routing line dynamically: e.g. "Pathao >> Rangpur >> Rangpur Sadar(Kotowali Thana)"
+  const courier = order.courier_name || "Courier";
+  const city = order.shipping_city || order.city?.name || "";
+  const zone = order.shipping_zone || order.zone?.name || order.shipping_area || "";
+  const courierPath = [courier, city, zone].filter(Boolean).join(" >> ");
 
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-neutral-900 py-8 print:py-0 print:bg-white text-black">
@@ -70,116 +89,142 @@ export default function InvoicePage() {
       </div>
 
       {/* A4 Container */}
-      <div className="max-w-[210mm] min-h-[297mm] mx-auto bg-white p-[20mm] shadow-sm print:shadow-none print:m-0 print:p-0">
-        {/* Header Section */}
-        <div className="flex justify-between items-start mb-12">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight text-neutral-900">INVOICE</h1>
-            <p className="text-sm text-neutral-500 mt-1">#{order.order_no}</p>
-          </div>
-          <div className="text-right">
-            <h2 className="text-2xl font-bold text-neutral-900">{settings?.brand_name || "DokanX"}</h2>
-            <p className="text-sm text-neutral-500 mt-1 whitespace-pre-line">
-              {settings?.address || "123 E-commerce Street\nDhaka, Bangladesh"}
+      <div className="max-w-[210mm] mx-auto bg-white p-[15mm] shadow-sm print:shadow-none print:m-0 print:p-0 print:min-h-0">
+        
+        {/* Custom Screenshot-styled Box Grid Header */}
+        <div className="w-full border-2 border-black grid grid-cols-12 mb-6">
+          {/* Logo Box */}
+          <div className="col-span-3 border-r-2 border-black p-4 flex flex-col items-center justify-center bg-white min-h-[100px]">
+            {brandLogo ? (
+              <img src={brandLogo} alt={brandName} className="max-h-[50px] max-w-full object-contain" />
+            ) : (
+              <span className="text-lg font-black uppercase text-neutral-900 tracking-wider text-center">{brandName}</span>
+            )}
+            <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest mt-1 text-center leading-none">
+              Trusted E-Commerce Platform
             </p>
-            {settings?.phone && <p className="text-sm text-neutral-500">{settings.phone}</p>}
-            <p className="text-sm text-neutral-500">{settings?.email || "support@dokanx.com"}</p>
           </div>
-        </div>
 
-        {/* Info Section */}
-        <div className="flex justify-between mb-12">
-          <div>
-            <h3 className="text-sm font-semibold text-neutral-900 mb-2 uppercase tracking-wider">Bill To</h3>
-            <p className="text-base font-medium text-neutral-800">{order.customer_full_name}</p>
-            <p className="text-sm text-neutral-600 mt-1">{order.customer_phone}</p>
-            <p className="text-sm text-neutral-600 mt-1 max-w-[250px]">{order.customer_shipping_address}</p>
-            {order.shipping_area && <p className="text-sm text-neutral-600">{order.shipping_area}</p>}
+          {/* Customer Info Box */}
+          <div className="col-span-5 border-r-2 border-black p-3.5 flex flex-col justify-between min-h-[100px] items-start">
+            <div className="space-y-0.5 text-left w-full">
+              <p className="font-bold text-xs uppercase text-neutral-900">{order.customer_full_name}</p>
+              <p className="font-semibold text-xs tabular-nums text-neutral-800">{order.customer_phone}</p>
+            </div>
+            
+            {/* Barcode left-aligned */}
+            <div className="w-full">
+              <Barcode align="left" />
+            </div>
+            
+            <p className="text-[10px] uppercase font-semibold text-neutral-700 leading-tight mt-1 line-clamp-2 text-left w-full">
+              {order.customer_shipping_address}
+            </p>
           </div>
-          <div className="text-right">
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold text-neutral-900 mb-1 uppercase tracking-wider">Date</h3>
-              <p className="text-sm text-neutral-600">{formatDate(order.created_at)}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-neutral-900 mb-1 uppercase tracking-wider">Status</h3>
-              <p className="text-sm font-medium text-neutral-800">{order.payment_status}</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Table Section */}
-        <div className="mb-12">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b-2 border-neutral-200 text-neutral-900">
-                <th className="py-3 font-semibold w-1/2">Item Description</th>
-                <th className="py-3 font-semibold text-right w-1/6">Qty</th>
-                <th className="py-3 font-semibold text-right w-1/6">Rate</th>
-                <th className="py-3 font-semibold text-right w-1/6">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(order.ordered_products ?? []).map((item: any, i: number) => (
-                <tr key={item.id ?? i} className="border-b border-neutral-100">
-                  <td className="py-4 align-top">
-                    <p className="font-medium text-neutral-800">{item.product?.title ?? "Unknown Product"}</p>
-                    <p className="text-xs text-neutral-500 mt-1">
-                      {item.product?.sku ? `SKU: ${item.product.sku}` : ""}
-                      {item.size_label ? ` | Size: ${item.size_label}` : ""}
-                      {item.color_label ? ` | Color: ${item.color_label}` : ""}
-                    </p>
-                  </td>
-                  <td className="py-4 align-top text-right text-neutral-600">{item.qty}</td>
-                  <td className="py-4 align-top text-right text-neutral-600">
-                    ৳{Number(item.unit_price).toLocaleString()}
-                  </td>
-                  <td className="py-4 align-top text-right font-medium text-neutral-800">
-                    ৳{(Number(item.unit_price) * item.qty).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Totals Section */}
-        <div className="flex justify-end mb-16">
-          <div className="w-1/2 space-y-3">
-            <div className="flex justify-between text-sm text-neutral-600">
-              <span>Subtotal</span>
-              <span>৳{Number(order.subtotal_amount).toLocaleString()}</span>
+          {/* Order Meta Box */}
+          <div className="col-span-4 p-3.5 flex flex-col justify-between min-h-[100px] text-right items-end">
+            <div className="w-full space-y-0.5">
+              <p className="font-bold text-xs text-neutral-900">Invoice #{order.order_no}</p>
+              
+              {/* Barcode right-aligned */}
+              <div className="w-full">
+                <Barcode align="right" />
+              </div>
+              
+              <p className="text-[10px] font-bold text-neutral-700">Order Date : {formatDate(order.created_at)}</p>
             </div>
-            {Number(order.discount_amount) > 0 && (
-              <div className="flex justify-between text-sm text-green-600">
-                <span>Discount</span>
-                <span>− ৳{Number(order.discount_amount).toLocaleString()}</span>
+            
+            {/* Courier Routing Info */}
+            {courierPath && (
+              <div className="mt-1 text-[10px] font-bold text-neutral-900 uppercase tracking-tight leading-snug">
+                {courierPath}
               </div>
             )}
-            <div className="flex justify-between text-sm text-neutral-600">
-              <span>Shipping</span>
-              <span>৳{Number(order.shipping_charge).toLocaleString()}</span>
+          </div>
+        </div>
+
+        {/* Custom Screenshot-styled Table Headers */}
+        <div className="w-full border-2 border-black border-b-0 grid grid-cols-12 text-xs font-bold uppercase tracking-wider text-neutral-900 bg-neutral-50">
+          <div className="col-span-7 border-r-2 border-black p-2.5">Product</div>
+          <div className="col-span-3 border-r-2 border-black p-2.5">Quantity</div>
+          <div className="col-span-2 p-2.5">Price</div>
+        </div>
+
+        {/* Product Items Rows */}
+        {(order.ordered_products ?? []).map((item: any, i: number) => {
+          const prodImg = item.product?.image || item.image || (item.product?.images?.[0]?.url) || "/media/placeholder.png";
+          return (
+            <div key={item.id ?? i} className="w-full border-2 border-black border-t-0 border-b-0 grid grid-cols-12 text-xs text-neutral-800 bg-white">
+              {/* Product Title */}
+              <div className="col-span-7 border-r-2 border-black p-2.5 flex items-center">
+                <div className="min-w-0">
+                  <p className="font-bold text-neutral-900 truncate" title={item.product?.title}>
+                    {item.product?.title || "Unknown Product"}
+                  </p>
+                  {(item.size_label || item.color_label) && (
+                    <p className="text-[9px] text-neutral-500 mt-0.5 font-medium">
+                      {item.size_label ? `Size: ${item.size_label}` : ""}
+                      {item.size_label && item.color_label ? " | " : ""}
+                      {item.color_label ? `Color: ${item.color_label}` : ""}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Qty x Price Rate */}
+              <div className="col-span-3 border-r-2 border-black p-2.5 flex items-center font-bold tabular-nums">
+                {item.qty} x {Number(item.unit_price ?? 0).toFixed(2)} TK
+              </div>
+              
+              {/* Total Line Amount */}
+              <div className="col-span-2 p-2.5 flex items-center font-bold tabular-nums text-neutral-900">
+                {(Number(item.unit_price ?? 0) * item.qty)} Tk
+              </div>
             </div>
-            <div className="flex justify-between border-t-2 border-neutral-200 pt-3 text-lg font-bold text-neutral-900">
-              <span>Grand Total</span>
-              <span>৳{grandTotal.toLocaleString()}</span>
+          );
+        })}
+
+        {/* Bottom Note & Summary Block */}
+        <div className="w-full border-2 border-black grid grid-cols-12 text-xs text-neutral-800 bg-white">
+          {/* Customer Note */}
+          <div className="col-span-7 border-r-2 border-black p-3 min-h-[90px]">
+            <span className="font-bold text-neutral-950">Customer Note:</span>
+            <p className="text-neutral-700 mt-1 font-medium leading-relaxed">
+              {order.customer_note || order.note || ""}
+            </p>
+          </div>
+          
+          {/* Totals Breakdown Column */}
+          <div className="col-span-5 flex flex-col font-bold">
+            {/* Delivery Charge */}
+            <div className="flex justify-between border-b border-neutral-300 p-2.5">
+              <span className="text-neutral-700">Delivery Charge</span>
+              <span className="tabular-nums">{Number(order.shipping_charge ?? 0)} Tk</span>
             </div>
-            <div className="flex justify-between text-sm text-neutral-600 pt-2">
-              <span>Paid</span>
-              <span>৳{paidAmount.toLocaleString()}</span>
+            
+            {/* Discount */}
+            <div className="flex justify-between border-b border-neutral-300 p-2.5">
+              <span className="text-neutral-700">Discount</span>
+              <span className="tabular-nums">{Number(order.discount_amount ?? 0)} Tk</span>
             </div>
-            <div className="flex justify-between text-sm font-semibold text-neutral-800 pt-1">
-              <span>Due Balance</span>
-              <span>৳{dueAmount.toLocaleString()}</span>
+            
+            {/* Grand Total payable */}
+            <div className="flex justify-between p-2.5 bg-neutral-50/50">
+              <span className="text-neutral-950 font-extrabold text-sm">Total</span>
+              <span className="font-extrabold text-sm tabular-nums text-neutral-950">{grandTotal} Tk</span>
             </div>
           </div>
         </div>
 
-        {/* Footer Section */}
-        <div className="border-t border-neutral-200 pt-8 mt-auto text-sm text-neutral-500 text-center">
-          <p>Thank you for your business!</p>
-          <p className="mt-1">If you have any questions concerning this invoice, contact our support.</p>
+        {/* Screenshot Specific Note & Red Dashed Line */}
+        <div className="mt-4 text-center">
+          <p className="text-[10px] font-extrabold text-red-600 leading-tight">
+            বিশেষ দ্রষ্টব্য: ডেলিভারি ম্যান সামনে থাকা অবস্থায় প্রোডাক্ট চেক করে নিবেন। ডেলিভারি ম্যান চলে আসার পর কোন অভিযোগ গ্রহণযোগ্য নয়।
+          </p>
+          <div className="w-full border-t border-dashed border-red-500 mt-3" />
         </div>
+
       </div>
     </div>
   );
