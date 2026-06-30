@@ -34,7 +34,7 @@ const TABS = [
   { id: "faq", label: "FAQ" },
   { id: "terms-of-use", label: "Terms & Condition" },
   { id: "privacy-policy", label: "Privacy Policy" },
-  { id: "shipping-delivery", label: "Refund and Return Policy" },
+  { id: "shipping-delivery", label: "Shipping & Delivery" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -110,16 +110,16 @@ export default function SettingsPage() {
             <GenericContentTab title="FAQ" description="Manage frequently asked questions." fieldKey="faq" />
           )}
           {displayTab === "terms-of-use" && (
-            <GenericContentTab title="Terms & Condition" description="Manage Terms & Condition." fieldKey="terms_of_use" />
+            <GenericContentTab title="Terms of Use" description="Update the terms of service." fieldKey="terms_of_use" />
           )}
           {displayTab === "privacy-policy" && (
             <GenericContentTab title="Privacy Policy" description="Update the privacy policy." fieldKey="privacy_policy" />
           )}
           {displayTab === "shipping-delivery" && (
             <GenericContentTab
-              title="Refund and Return Policy"
-              description="Manage Refund and Return Policy."
-              fieldKey="refund_and_return_policy"
+              title="Shipping & Delivery"
+              description="Manage shipping options and info."
+              fieldKey="shipping_delivery"
             />
           )}
         </div>
