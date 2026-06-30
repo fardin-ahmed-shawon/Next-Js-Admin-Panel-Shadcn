@@ -12,7 +12,7 @@ export function SidebarSupportCard() {
         <CardDescription>
           See how your store appears to customers.&nbsp;
           <Link
-            href="/"
+            href="https://uniquelifebd.com/"
             target="_blank"
             rel="noreferrer"
             aria-label="Visit Storefront"

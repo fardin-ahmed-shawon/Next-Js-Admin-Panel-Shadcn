@@ -327,9 +327,8 @@ function ProductsCell({ row }: { row: any }) {
   );
 }
 
-function ParcelHistoryCell({ row }: { row: any }) {
+function CourierHistoryCell({ row }: { row: any }) {
   const phone = row.original.phone;
-  const localHistory = row.original.parcelHistory || { total: 0, delivered: 0, cancelled: 0, successRate: "0" };
 
   const [loading, setLoading] = React.useState(false);
   const [liveData, setLiveData] = React.useState<any | null>(null);
@@ -388,7 +387,7 @@ function ParcelHistoryCell({ row }: { row: any }) {
     );
   }
 
-  const history = liveData || localHistory;
+  const history = liveData || { total: "-", delivered: "-", cancelled: "-", successRate: "-" };
 
   return (
     <div className="min-w-[120px] text-[11px] space-y-1">
@@ -410,7 +409,7 @@ function ParcelHistoryCell({ row }: { row: any }) {
       </div>
       <div className="flex items-center justify-between mt-1">
         <span className="font-semibold text-emerald-600 dark:text-emerald-500">
-          {history.successRate}% success
+          {history.successRate !== "-" ? `${history.successRate}% success` : "-"}
         </span>
       </div>
     </div>
@@ -526,11 +525,41 @@ const columns: ColumnDef<OrderRow>[] = [
   // Products column
   { id: "products", header: "Products", cell: ({ row }) => <ProductsCell row={row} /> },
 
-  // Parcel History column
+  // Courier History column
   {
-    id: "parcel",
-    header: "Parcel History",
-    cell: ({ row }) => <ParcelHistoryCell row={row} />,
+    id: "courierHistory",
+    header: "Courier History",
+    cell: ({ row }) => <CourierHistoryCell row={row} />,
+  },
+
+  // Order History column
+  {
+    id: "orderHistory",
+    header: "Order History",
+    cell: ({ row }) => {
+      const history = row.original.parcelHistory || { total: 0, delivered: 0, cancelled: 0, successRate: "0" };
+      return (
+        <div className="min-w-[120px] text-[11px] space-y-1">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Total:</span>
+            <span className="font-semibold tabular-nums">{history.total}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Delivered:</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-500 tabular-nums">
+              {history.delivered}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Cancelled:</span>
+            <span className="font-semibold text-destructive tabular-nums">
+              {history.cancelled}
+            </span>
+          </div>
+          <div className="font-semibold text-emerald-600 mt-1">{history.successRate}% success</div>
+        </div>
+      );
+    },
   },
 
   // Order Status column
@@ -815,28 +844,7 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
     }
   };
 
-  const handleBulkSteadfast = async () => {
-    const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
-    if (selectedIds.length === 0) return;
-    const toastId = toast.loading(`Sending ${selectedIds.length} orders to Steadfast...`);
-    try {
-      const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
-      const res = await fetchClient(`${getApiBaseUrl()}${endpoint}/bulk`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order_nos: selectedIds }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error || err?.message || "Failed to send bulk orders to Steadfast.");
-      }
-      toast.success(`Successfully sent ${selectedIds.length} orders to Steadfast.`, { id: toastId });
-      setRowSelection({});
-      invalidateOrders();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to bulk send to Steadfast.", { id: toastId });
-    }
-  };
+
 
   return (
     <Card>
@@ -993,16 +1001,6 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
                     <Ban className="mr-2 size-4" />
                     Clear Selection
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => {
-                      toast.success(`${selectedCount} order(s) deleted.`);
-                      setRowSelection({});
-                    }}
-                  >
-                    <Trash2 className="mr-2 size-4" />
-                    Delete Selected
-                  </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
@@ -1040,22 +1038,26 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel>Courier Integrations</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={handleBulkSteadfast}>
-                    <Truck className="mr-2 size-4" />
-                    Bulk Send to Steadfast
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
                   <DropdownMenuLabel>Bulk Print</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => toast.success("Printing all A4 invoices…")}>
-                    <FileText className="mr-2 size-4" />
-                    Print A4 Invoice
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href={`/invoice/bulk?ids=${table.getSelectedRowModel().rows.map((r) => r.original.id).join(",")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <FileText className="mr-2 size-4" />
+                      Print A4 Invoice
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => toast.success("Printing all parcel invoices…")}>
-                    <Printer className="mr-2 size-4" />
-                    Print Parcel Invoice
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href={`/invoice/bulk/pos?ids=${table.getSelectedRowModel().rows.map((r) => r.original.id).join(",")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Printer className="mr-2 size-4" />
+                      Print Parcel Invoice
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>

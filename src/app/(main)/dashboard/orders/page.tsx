@@ -161,7 +161,7 @@ export default function OrdersPage() {
     return allOrders.filter((o: any) => o.date >= from);
   }, [allOrders, timeRange, customFrom, customTo]);
 
-  if (isLoading) {
+  if (isLoading && !apiData) {
     return <OrdersSkeleton />;
   }
 
