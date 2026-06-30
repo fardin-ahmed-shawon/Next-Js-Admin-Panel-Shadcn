@@ -20,6 +20,8 @@ import { mutate } from "swr";
 import { fetchClient } from "@/lib/fetch-client";
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
 import { usePathaoSetup } from "@/hooks/usePathaoSetup";
+import { useAuth } from "@/hooks/useAuth";
+import { hasModuleAccess } from "@/hooks/useRoles";
 import {
   ArrowUpDown,
   Ban,
@@ -45,9 +47,11 @@ import {
   ShieldOff,
   Trash2,
   Truck,
+  UserPlus,
   UserX,
 } from "lucide-react";
 import { toast } from "sonner";
+import { AssignOrderDialog } from "../assign-orders/_components/assign-order-dialog";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -234,6 +238,53 @@ function SendCourierCell({ row }: { row: any }) {
         </Button>
       )}
     </div>
+  );
+}
+
+function AssignedEmployeeCell({ row }: { row: any }) {
+  const { user } = useAuth();
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const employeeName = row.original.assignedEmployee;
+  const hasAssignAccess = hasModuleAccess(user, "assign_orders");
+
+  if (!hasAssignAccess) {
+    return (
+      <div className="w-[120px] text-xs font-semibold text-neutral-600 pl-1">
+        {employeeName || "—"}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex flex-col gap-1 w-[120px]">
+        {employeeName ? (
+          <div
+            className="flex items-center gap-1 text-[11px] font-semibold text-neutral-800 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 px-2 py-1 rounded-md justify-between cursor-pointer transition-colors"
+            onClick={() => setDialogOpen(true)}
+          >
+            <span className="truncate">{employeeName}</span>
+            <Edit className="size-3 shrink-0 text-muted-foreground" />
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[10px] px-2 text-muted-foreground border-dashed border-muted-foreground/40 hover:text-foreground justify-center font-medium"
+            onClick={() => setDialogOpen(true)}
+          >
+            <UserPlus className="mr-1 size-3" /> Assign
+          </Button>
+        )}
+      </div>
+
+      <AssignOrderDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        prefilledOrderNo={row.original.id}
+        onSuccess={invalidateOrders}
+      />
+    </>
   );
 }
 
@@ -616,6 +667,13 @@ const columns: ColumnDef<OrderRow>[] = [
 
   // Payment Status column
   { id: "pStatus", header: "Payment Status", cell: ({ row }) => <PaymentStatusCell row={row} /> },
+
+  // Assigned Employee column
+  {
+    id: "assignedEmployee",
+    header: "Assigned To",
+    cell: ({ row }) => <AssignedEmployeeCell row={row} />,
+  },
 
   // Send Courier column
   {

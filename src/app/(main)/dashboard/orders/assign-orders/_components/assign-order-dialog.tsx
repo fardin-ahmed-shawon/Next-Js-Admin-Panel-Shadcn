@@ -21,9 +21,11 @@ interface AssignOrderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   assignmentToEdit?: EmployeeOrder | null;
+  prefilledOrderNo?: string;
+  onSuccess?: () => void;
 }
 
-export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit }: AssignOrderDialogProps) {
+export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit, prefilledOrderNo, onSuccess }: AssignOrderDialogProps) {
   const { users, loading: loadingUsers } = useUsers();
   const { createAssignment, updateAssignment } = useEmployeeOrders();
 
@@ -40,10 +42,10 @@ export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit }: Assi
         setOrderNo(assignmentToEdit.order_no);
       } else {
         setUserId("");
-        setOrderNo("");
+        setOrderNo(prefilledOrderNo || "");
       }
     }
-  }, [open, assignmentToEdit]);
+  }, [open, assignmentToEdit, prefilledOrderNo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +62,7 @@ export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit }: Assi
       } else {
         await createAssignment({ user_id: parseInt(userId), order_no: orderNo.trim() });
       }
+      onSuccess?.();
       onOpenChange(false);
     } catch (err: any) {
       setError(err.message || "Something went wrong.");

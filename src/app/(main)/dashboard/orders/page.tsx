@@ -117,6 +117,8 @@ export default function OrdersPage() {
           .toUpperCase() || "U";
       const avatarUrl = `https://placehold.co/40x40/1a1a2e/e0e0e0?text=${initials}`;
 
+      const assignedEmployee = order.employee_orders?.[0]?.user?.full_name || order.employeeOrders?.[0]?.user?.full_name || null;
+
       return {
         id: order.order_no,
         customer: order.customer_full_name || "Unknown",
@@ -140,6 +142,7 @@ export default function OrdersPage() {
         courier: "",
         steadfast_parcel: order.steadfast_parcel || order.steadfastParcel || null,
         pathao_parcel: order.pathao_parcel || order.pathaoParcel || null,
+        assignedEmployee: assignedEmployee,
         parcelHistory: {
           total: order.customer?.parcel_history?.total || 0,
           delivered: order.customer?.parcel_history?.delivered || 0,
