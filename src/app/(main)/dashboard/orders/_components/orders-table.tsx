@@ -350,16 +350,33 @@ const columns: ColumnDef<OrderRow>[] = [
         <div>
           <p className="text-sm font-medium leading-tight">{row.original.customer}</p>
           <p className="text-[11px] text-muted-foreground">{row.original.phone}</p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-1 h-6 gap-1 text-[10px] px-2"
-            asChild
-          >
-            <a href={`tel:${row.original.phone}`}>
-              <Phone className="size-3" /> Call
-            </a>
-          </Button>
+          <div className="flex items-center gap-1.5 mt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 gap-1 text-[10px] px-2"
+              asChild
+            >
+              <a href={`tel:${row.original.phone}`}>
+                <Phone className="size-3" /> Call
+              </a>
+            </Button>
+            {row.original.parcelHistory.total > 1 ? (
+              <Badge
+                variant="secondary"
+                className="text-[9px] h-5 px-1.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 border-none font-semibold uppercase tracking-wider"
+              >
+                Old
+              </Badge>
+            ) : (
+              <Badge
+                variant="secondary"
+                className="text-[9px] h-5 px-1.5 bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-500/15 border-none font-semibold uppercase tracking-wider"
+              >
+                New
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
     ),
@@ -535,13 +552,7 @@ const columns: ColumnDef<OrderRow>[] = [
               <Ban className="mr-2 size-4" />
               Block
             </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={() => toast.success(`Order ${row.original.id} deleted.`)}
-            >
-              <Trash2 className="mr-2 size-4" />
-              Delete
-            </DropdownMenuItem>
+
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
