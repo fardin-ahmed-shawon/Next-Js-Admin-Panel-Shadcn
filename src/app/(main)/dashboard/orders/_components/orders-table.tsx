@@ -23,6 +23,7 @@ import { usePathaoSetup } from "@/hooks/usePathaoSetup";
 import {
   ArrowUpDown,
   Ban,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -163,12 +164,24 @@ function SendCourierCell({ row }: { row: any }) {
   const isSteadfastActive = steadfastConfig?.status === "active";
   const isPathaoActive = pathaoConfig?.status === "active";
 
+  const hasSteadfastParcel = !!row.original.steadfast_parcel || !!row.original.steadfastParcel;
+  const hasPathaoParcel = !!row.original.pathao_parcel || !!row.original.pathaoParcel;
+
+  if (hasSteadfastParcel || hasPathaoParcel) {
+    return (
+      <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md justify-center w-[110px] select-none">
+        <Check className="size-3.5 shrink-0" />
+        <span className="truncate">Already Sent</span>
+      </div>
+    );
+  }
+
   if (!isSteadfastActive && !isPathaoActive) {
     return <span className="text-xs text-muted-foreground">—</span>;
   }
 
   return (
-    <div className="flex flex-col gap-1.5 w-[100px]">
+    <div className="flex flex-col gap-1.5 w-[110px]">
       {isSteadfastActive && (
         <Button
           size="sm"

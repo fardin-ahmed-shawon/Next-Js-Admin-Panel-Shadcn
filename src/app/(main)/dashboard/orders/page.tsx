@@ -138,6 +138,8 @@ export default function OrdersPage() {
         orderedProducts: mappedProducts,
         parcelStatus: "",
         courier: "",
+        steadfast_parcel: order.steadfast_parcel || order.steadfastParcel || null,
+        pathao_parcel: order.pathao_parcel || order.pathaoParcel || null,
         parcelHistory: {
           total: order.customer?.parcel_history?.total || 0,
           delivered: order.customer?.parcel_history?.delivered || 0,
