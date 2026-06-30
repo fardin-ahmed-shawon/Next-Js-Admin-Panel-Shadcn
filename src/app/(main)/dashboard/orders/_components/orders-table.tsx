@@ -18,6 +18,8 @@ import {
 } from "@tanstack/react-table";
 import { mutate } from "swr";
 import { fetchClient } from "@/lib/fetch-client";
+import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
+import { usePathaoSetup } from "@/hooks/usePathaoSetup";
 import {
   ArrowUpDown,
   Ban,
@@ -33,6 +35,7 @@ import {
   FileDown,
   FileText,
   Filter,
+  Loader2,
   MoreHorizontal,
   Phone,
   Printer,
@@ -138,59 +141,85 @@ export const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL || "http
 
 export function invalidateOrders() {
   const ordersEndpoint = process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders";
-  mutate((key) => typeof key === "string" && key.includes(ordersEndpoint), undefined, { revalidate: true });
+  mutate(
+    (key) => {
+      if (typeof key === "string") {
+        return key.includes(ordersEndpoint);
+      }
+      if (Array.isArray(key)) {
+        return key.some((k) => typeof k === "string" && k.includes(ordersEndpoint));
+      }
+      return false;
+    },
+    undefined,
+    { revalidate: true }
+  );
 }
 
 function SendCourierCell({ row }: { row: any }) {
+  const { data: steadfastConfig } = useSteadfastSetup();
+  const { data: pathaoConfig } = usePathaoSetup();
+
+  const isSteadfastActive = steadfastConfig?.status === "active";
+  const isPathaoActive = pathaoConfig?.status === "active";
+
+  if (!isSteadfastActive && !isPathaoActive) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+
   return (
     <div className="flex flex-col gap-1.5 w-[100px]">
-      <Button
-        size="sm"
-        className="h-7 bg-[#00b074] hover:bg-[#00b074]/90 text-white text-[11px] px-2 justify-start font-medium"
-        onClick={async () => {
-          const toastId = toast.loading(`Sending Order ${row.original.id} to Steadfast...`);
-          try {
-            const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
-            const res = await fetchClient(`${getApiBaseUrl()}${endpoint}/${row.original.id}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-            });
-            if (!res.ok) {
-              const err = await res.json().catch(() => ({}));
-              throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
+      {isSteadfastActive && (
+        <Button
+          size="sm"
+          className="h-7 bg-[#00b074] hover:bg-[#00b074]/90 text-white text-[11px] px-2 justify-start font-medium"
+          onClick={async () => {
+            const toastId = toast.loading(`Sending Order ${row.original.id} to Steadfast...`);
+            try {
+              const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+              const res = await fetchClient(`${getApiBaseUrl()}${endpoint}/${row.original.id}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              });
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
+              }
+              toast.success(`Order ${row.original.id} sent to Steadfast`, { id: toastId });
+              invalidateOrders();
+            } catch (err: any) {
+              toast.error(err?.message || "Something went wrong.", { id: toastId });
             }
-            toast.success(`Order ${row.original.id} sent to Steadfast`, { id: toastId });
-            invalidateOrders();
-          } catch (err: any) {
-            toast.error(err?.message || "Something went wrong.", { id: toastId });
-          }
-        }}
-      >
-        <Truck className="mr-1.5 size-3.5" /> Steadfast
-      </Button>
-      <Button
-        size="sm"
-        className="h-7 bg-[#ef4444] hover:bg-[#ef4444]/90 text-white text-[11px] px-2 justify-start font-medium"
-        onClick={async () => {
-          const toastId = toast.loading(`Sending Order ${row.original.id} to Pathao...`);
-          try {
-            const res = await fetchClient(`${getApiBaseUrl()}pathao-parcels/${row.original.id}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-            });
-            if (!res.ok) {
-              const err = await res.json().catch(() => ({}));
-              throw new Error(err?.error || err?.message || "Failed to send to Pathao.");
+          }}
+        >
+          <Truck className="mr-1.5 size-3.5" /> Steadfast
+        </Button>
+      )}
+      {isPathaoActive && (
+        <Button
+          size="sm"
+          className="h-7 bg-[#ef4444] hover:bg-[#ef4444]/90 text-white text-[11px] px-2 justify-start font-medium"
+          onClick={async () => {
+            const toastId = toast.loading(`Sending Order ${row.original.id} to Pathao...`);
+            try {
+              const res = await fetchClient(`${getApiBaseUrl()}pathao-parcels/${row.original.id}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              });
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err?.error || err?.message || "Failed to send to Pathao.");
+              }
+              toast.success(`Order ${row.original.id} sent to Pathao`, { id: toastId });
+              invalidateOrders();
+            } catch (err: any) {
+              toast.error(err?.message || "Something went wrong.", { id: toastId });
             }
-            toast.success(`Order ${row.original.id} sent to Pathao`, { id: toastId });
-            invalidateOrders();
-          } catch (err: any) {
-            toast.error(err?.message || "Something went wrong.", { id: toastId });
-          }
-        }}
-      >
-        <Truck className="mr-1.5 size-3.5" /> Pathao
-      </Button>
+          }}
+        >
+          <Truck className="mr-1.5 size-3.5" /> Pathao
+        </Button>
+      )}
     </div>
   );
 }
@@ -294,6 +323,96 @@ function ProductsCell({ row }: { row: any }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function ParcelHistoryCell({ row }: { row: any }) {
+  const phone = row.original.phone;
+  const localHistory = row.original.parcelHistory || { total: 0, delivered: 0, cancelled: 0, successRate: "0" };
+
+  const [loading, setLoading] = React.useState(false);
+  const [liveData, setLiveData] = React.useState<any | null>(null);
+
+  React.useEffect(() => {
+    if (!phone || !/^01[3-9]\d{8}$/.test(phone)) {
+      return;
+    }
+
+    let isMounted = true;
+    setLoading(true);
+
+    fetch("/api/fraud-check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((resData) => {
+        if (!isMounted) return;
+        if (resData && resData.apis) {
+          let total = 0;
+          let delivered = 0;
+          let cancelled = 0;
+
+          Object.values(resData.apis).forEach((raw: any) => {
+            total += Number(raw.total_parcels ?? raw.total ?? 0);
+            delivered += Number(raw.total_delivered_parcels ?? raw.success ?? raw.delivered ?? raw.total_delivered ?? 0);
+            cancelled += Number(raw.total_cancelled_parcels ?? raw.cancel ?? raw.cancelled ?? raw.total_cancelled ?? 0);
+          });
+
+          const successRate = total > 0 ? Math.round((delivered / total) * 100) : 0;
+
+          setLiveData({ total, delivered, cancelled, successRate });
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [phone]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-[120px]">
+        <Loader2 className="size-3 animate-spin text-primary shrink-0" />
+        <span>Scanning Customer</span>
+      </div>
+    );
+  }
+
+  const history = liveData || localHistory;
+
+  return (
+    <div className="min-w-[120px] text-[11px] space-y-1">
+      <div className="flex justify-between">
+        <span className="text-muted-foreground">Total:</span>
+        <span className="font-semibold tabular-nums">{history.total}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-muted-foreground">Delivered:</span>
+        <span className="font-semibold text-emerald-600 dark:text-emerald-500 tabular-nums">
+          {history.delivered}
+        </span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-muted-foreground">Cancelled:</span>
+        <span className="font-semibold text-destructive tabular-nums">
+          {history.cancelled}
+        </span>
+      </div>
+      <div className="flex items-center justify-between mt-1">
+        <span className="font-semibold text-emerald-600 dark:text-emerald-500">
+          {history.successRate}% success
+        </span>
+      </div>
     </div>
   );
 }
@@ -411,23 +530,7 @@ const columns: ColumnDef<OrderRow>[] = [
   {
     id: "parcel",
     header: "Parcel History",
-    cell: ({ row }) => (
-      <div className="min-w-[120px] text-[11px] space-y-1">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Total:</span>
-          <span className="font-semibold tabular-nums">{row.original.parcelHistory.total}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Delivered:</span>
-          <span className="font-semibold tabular-nums">{row.original.parcelHistory.delivered}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Cancelled:</span>
-          <span className="font-semibold tabular-nums">{row.original.parcelHistory.cancelled}</span>
-        </div>
-        <div className="font-semibold text-emerald-600 mt-1">{row.original.parcelHistory.successRate}% success</div>
-      </div>
-    ),
+    cell: ({ row }) => <ParcelHistoryCell row={row} />,
   },
 
   // Order Status column

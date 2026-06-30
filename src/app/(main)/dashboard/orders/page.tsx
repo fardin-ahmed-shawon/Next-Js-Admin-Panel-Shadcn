@@ -7,6 +7,7 @@ import Link from "next/link";
 import { CalendarIcon, Ellipsis, FileDown, FileText, Plus, Printer, RefreshCw, ShieldOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -161,11 +162,7 @@ export default function OrdersPage() {
   }, [allOrders, timeRange, customFrom, customTo]);
 
   if (isLoading) {
-    return (
-      <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center text-muted-foreground">
-        Loading orders...
-      </div>
-    );
+    return <OrdersSkeleton />;
   }
 
   return (
@@ -303,6 +300,75 @@ export default function OrdersPage() {
       {/* Table â€” driven by time-filtered data */}
       <div className="w-full min-w-0">
         <OrdersTable data={filteredByTime} />
+      </div>
+    </div>
+  );
+}
+
+function OrdersSkeleton() {
+  return (
+    <div className="flex flex-col gap-6 w-full animate-pulse">
+      {/* Header Skeleton */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48 rounded-md" />
+          <Skeleton className="h-4 w-72 rounded-md" />
+        </div>
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <Skeleton className="h-9 w-28 rounded-md" />
+          <Skeleton className="h-9 w-32 rounded-md" />
+          <Skeleton className="h-9 w-9 rounded-md" />
+        </div>
+      </div>
+
+      {/* Stats Skeleton */}
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="rounded-xl border bg-card p-4 space-y-3">
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-4 w-24 rounded" />
+              <Skeleton className="size-4 rounded-full" />
+            </div>
+            <Skeleton className="h-7 w-16 rounded" />
+            <Skeleton className="h-3 w-32 rounded" />
+          </div>
+        ))}
+      </div>
+
+      {/* Table Skeleton */}
+      <div className="rounded-xl border bg-card">
+        {/* Table Toolbar */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <Skeleton className="h-8 w-52 rounded-md" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-16 rounded-md" />
+            <Skeleton className="h-8 w-16 rounded-md" />
+          </div>
+        </div>
+        {/* Table Content */}
+        <div className="p-4 space-y-4">
+          <div className="flex justify-between border-b pb-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-4 w-20 rounded" />
+            ))}
+          </div>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex justify-between items-center py-2 border-b last:border-0">
+              <div className="flex items-center gap-2">
+                <Skeleton className="size-8 rounded-full" />
+                <div className="space-y-1">
+                  <Skeleton className="h-3.5 w-24 rounded" />
+                  <Skeleton className="h-3 w-16 rounded" />
+                </div>
+              </div>
+              <Skeleton className="h-4 w-16 rounded" />
+              <Skeleton className="h-4 w-24 rounded" />
+              <Skeleton className="h-4 w-12 rounded" />
+              <Skeleton className="h-6 w-20 rounded-md" />
+              <Skeleton className="h-8 w-8 rounded-md" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

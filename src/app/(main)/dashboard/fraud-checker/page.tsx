@@ -1,6 +1,8 @@
-import React from "react";
+"use client";
 
-import { AlertCircle, Package, PackageCheck, Phone, Search, ShieldAlert, TrendingUp, Truck } from "lucide-react";
+import React from "react";
+import { AlertCircle, Loader2, Package, Phone, Search, ShieldAlert, TrendingUp, Truck } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,18 +10,106 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-export const metadata = {
-  title: "Fraud Checker | Dashboard",
-  description: "Verify customer delivery history across multiple courier services",
-};
-
 export default function FraudCheckerPage() {
+  const [phone, setPhone] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [result, setResult] = React.useState<any | null>(null);
+
+  const handleScan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phone) return;
+
+    // Basic regex validation for Bangladesh phone number pattern
+    if (!/^01[3-9]\d{8}$/.test(phone)) {
+      toast.error("Please enter a valid Bangladesh phone number.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    const toastId = toast.loading("Scanning customer metrics...");
+
+    try {
+      const res = await fetch("/api/fraud-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.error || "Failed to scan phone number.");
+      }
+
+      setResult(resData);
+      toast.success("Scan completed successfully.", { id: toastId });
+    } catch (err: any) {
+      setError(err?.message || "Failed to contact proxy API");
+      toast.error(err?.message || "Scan failed.", { id: toastId });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCourierMetrics = (courierName: string) => {
+    if (!result || !result.apis) {
+      return { name: courierName, total: 0, delivered: 0, cancelled: 0, successRate: "-" };
+    }
+
+    // Find key in result.apis case-insensitively, matching "redx" to "redex"
+    const searchName = courierName.toLowerCase().replace(" ", "");
+    const matchedKey = Object.keys(result.apis).find((k) => {
+      const normalizedKey = k.toLowerCase().replace(" ", "");
+      if (searchName === "redx" && normalizedKey === "redex") return true;
+      if (searchName === "redex" && normalizedKey === "redx") return true;
+      return normalizedKey === searchName;
+    });
+
+    const raw = matchedKey ? result.apis[matchedKey] : {};
+
+    const total = Number(raw.total_parcels ?? raw.total ?? 0);
+    const delivered = Number(raw.total_delivered_parcels ?? raw.success ?? raw.delivered ?? raw.total_delivered ?? 0);
+    const cancelled = Number(raw.total_cancelled_parcels ?? raw.cancel ?? raw.cancelled ?? raw.total_cancelled ?? 0);
+
+    let successRate = "-";
+    if (total > 0) {
+      successRate = `${Math.round((delivered / total) * 100)}%`;
+    } else if (raw.success_rate || raw.successRate) {
+      successRate = String(raw.success_rate || raw.successRate);
+      if (!successRate.endsWith("%")) successRate += "%";
+    }
+
+    return { name: courierName, total, delivered, cancelled, successRate };
+  };
+
   const couriers = [
-    { name: "Pathao", total: 0, delivered: 0, cancelled: 0, successRate: "-" },
-    { name: "Steadfast", total: 0, delivered: 0, cancelled: 0, successRate: "-" },
-    { name: "Redx", total: 0, delivered: 0, cancelled: 0, successRate: "-" },
-    { name: "Paperfly", total: 0, delivered: 0, cancelled: 0, successRate: "-" },
+    getCourierMetrics("Pathao"),
+    getCourierMetrics("Steadfast"),
+    getCourierMetrics("Redx"),
+    getCourierMetrics("Paperfly"),
   ];
+
+  const aggregateTotal = couriers.reduce((sum, c) => sum + c.total, 0);
+  const aggregateDelivered = couriers.reduce((sum, c) => sum + c.delivered, 0);
+  const aggregateCancelled = couriers.reduce((sum, c) => sum + c.cancelled, 0);
+  const aggregateSuccessRate =
+    aggregateTotal > 0 ? `${Math.round((aggregateDelivered / aggregateTotal) * 100)}%` : "-";
+
+  // Determine dynamic badge status
+  let statusText = "Waiting";
+  let statusVariant: "outline" | "secondary" | "default" | "destructive" = "outline";
+  if (loading) {
+    statusText = "Scanning...";
+    statusVariant = "secondary";
+  } else if (error) {
+    statusText = "Error";
+    statusVariant = "destructive";
+  } else if (result) {
+    statusText = "Success";
+    statusVariant = "default";
+  }
 
   return (
     <div className="flex-1 space-y-8 p-4 md:p-8 max-w-4xl mx-auto w-full relative">
@@ -50,20 +140,37 @@ export default function FraudCheckerPage() {
           <CardDescription>Enter a customer's phone number to scan their past delivery metrics</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+          <form onSubmit={handleScan} className="flex flex-col sm:flex-row items-center gap-3 w-full">
             <div className="relative w-full flex-1">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
               <Input
                 placeholder="e.g., 01712345678"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 className="pl-10 h-12 text-base rounded-xl bg-muted/30 focus-visible:ring-primary focus-visible:bg-transparent transition-all"
+                disabled={loading}
+                required
               />
             </div>
-            <Button className="w-full sm:w-auto h-12 px-8 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full sm:w-auto h-12 px-8 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all"
+            >
+              {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
               Scan Customer
             </Button>
-          </div>
+          </form>
         </CardContent>
       </Card>
+
+      {/* Error display */}
+      {error && (
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-destructive/20 bg-destructive/5 text-destructive">
+          <AlertCircle className="size-5 shrink-0" />
+          <p className="text-sm font-medium">{error}</p>
+        </div>
+      )}
 
       {/* Results Section */}
       <Card className="shadow-md">
@@ -78,8 +185,8 @@ export default function FraudCheckerPage() {
                 Aggregated delivery metrics for the provided phone number
               </CardDescription>
             </div>
-            <Badge variant="outline" className="bg-background">
-              Status: Waiting
+            <Badge variant={statusVariant} className="bg-background">
+              Status: {statusText}
             </Badge>
           </div>
         </CardHeader>
@@ -129,15 +236,19 @@ export default function FraudCheckerPage() {
                       AGGREGATE TOTAL
                     </div>
                   </TableCell>
-                  <TableCell className="text-center py-3 font-bold text-foreground tabular-nums text-lg">0</TableCell>
+                  <TableCell className="text-center py-3 font-bold text-foreground tabular-nums text-lg text-primary">
+                    {aggregateTotal}
+                  </TableCell>
                   <TableCell className="text-center py-3 font-bold text-green-600 dark:text-green-500 tabular-nums text-lg">
-                    0
+                    {aggregateDelivered}
                   </TableCell>
                   <TableCell className="text-center py-3 font-bold text-red-600 dark:text-red-500 tabular-nums text-lg">
-                    0
+                    {aggregateCancelled}
                   </TableCell>
                   <TableCell className="text-center py-3 px-6">
-                    <Badge className="px-3 py-1 font-bold bg-primary text-primary-foreground hover:bg-primary">-</Badge>
+                    <Badge className="px-3 py-1 font-bold bg-primary text-primary-foreground hover:bg-primary">
+                      {aggregateSuccessRate}
+                    </Badge>
                   </TableCell>
                 </TableRow>
               </TableFooter>
