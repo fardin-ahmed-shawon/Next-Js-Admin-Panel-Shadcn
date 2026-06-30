@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { hasModuleAccess } from "@/hooks/useRoles";
 
 export function DokanxMetricCards() {
   const { user } = useAuth();
@@ -32,11 +33,7 @@ export function DokanxMetricCards() {
     return acc + (Number(orderOverview[status as keyof typeof orderOverview]) || 0);
   }, 0);
 
-  const hasAccess = (module: string) => {
-    if (!user) return false;
-    if (user?.role?.role_name === "Admin") return true;
-    return user?.role?.page_access && user.role.page_access[module as keyof typeof user.role.page_access] === 1;
-  };
+  const hasAccess = (module: string) => hasModuleAccess(user, module);
 
   const topCards = [
     {

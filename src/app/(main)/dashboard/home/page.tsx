@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { hasModuleAccess } from "@/hooks/useRoles";
 import { DokanxActiveOrders } from "./_components/dokanx-active-orders";
 import { DokanxMetricCards } from "./_components/dokanx-metric-cards";
 import { DokanxMonthlyPayment } from "./_components/dokanx-monthly-payment";
@@ -18,11 +19,7 @@ export default function DokanXDashboard() {
     return null;
   }
 
-  const hasAccess = (module: string) => {
-    if (!user) return false;
-    if (user?.role?.role_name === "Admin") return true;
-    return user?.role?.page_access && user.role.page_access[module as keyof typeof user.role.page_access] === 1;
-  };
+  const hasAccess = (module: string) => hasModuleAccess(user, module);
 
   const showAccounts = hasAccess("accounts") || hasAccess("revenue");
   const showOrders = hasAccess("orders");

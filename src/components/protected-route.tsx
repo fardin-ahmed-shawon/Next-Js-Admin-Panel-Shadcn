@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { PageAccess } from "@/hooks/useRoles";
+import { PageAccess, hasModuleAccess } from "@/hooks/useRoles";
 
 interface ProtectedRouteProps {
   module: keyof PageAccess;
@@ -18,8 +18,7 @@ export function ProtectedRoute({ module, children, fallback }: ProtectedRoutePro
   }
 
   // Admin bypass or proper access check
-  const hasAccess =
-    user?.role?.role_name === "Admin" || (user?.role?.page_access && user.role.page_access[module] === 1);
+  const hasAccess = hasModuleAccess(user, module);
 
   if (!hasAccess) {
     if (fallback) return <>{fallback}</>;

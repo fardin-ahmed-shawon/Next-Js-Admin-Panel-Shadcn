@@ -25,6 +25,7 @@ export interface PageAccess {
   coupons: number;
   customers: number;
   orders: number;
+  all_orders: number;
   create_orders: number;
   assign_orders: number;
   accounts: number;
@@ -92,4 +93,33 @@ export function useRoles() {
   }, []);
 
   return { roles, loading, error, setRoles };
+}
+
+export const ORDER_CONNECTED_MODULES = [
+  "orders",
+  "create_orders",
+  "assign_orders",
+  "courier",
+  "history",
+  "due",
+  "revenue",
+  "payment_report",
+  "parcel_report",
+  "courier_report",
+];
+
+export function hasModuleAccess(user: any, module: string): boolean {
+  if (!user || !user.role) return false;
+  if (user.role.role_name === "Admin") return true;
+  if (!user.role.page_access) return false;
+
+  // Exact permission match
+  if (user.role.page_access[module as keyof PageAccess] === 1) return true;
+
+  // all_orders check for order-connected modules
+  if (user.role.page_access.all_orders === 1 && ORDER_CONNECTED_MODULES.includes(module)) {
+    return true;
+  }
+
+  return false;
 }

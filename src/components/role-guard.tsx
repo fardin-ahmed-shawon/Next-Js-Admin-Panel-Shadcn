@@ -4,7 +4,7 @@ import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
-import { PageAccess } from "@/hooks/useRoles";
+import { PageAccess, hasModuleAccess } from "@/hooks/useRoles";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -69,13 +69,8 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Admin bypass
-  if (user?.role?.role_name === "Admin") {
-    return <>{children}</>;
-  }
-
   // Check specific page access
-  const hasAccess = user?.role?.page_access && user.role.page_access[requiredModule as keyof PageAccess] === 1;
+  const hasAccess = hasModuleAccess(user, requiredModule);
 
   if (!hasAccess) {
     return (

@@ -102,6 +102,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     icon: ShoppingCart,
     items: [
       { id: "orders", label: "Order Management", icon: ShoppingCart },
+      { id: "all_orders", label: "Show All Orders", icon: ShoppingCart },
       { id: "create_orders", label: "Create Order", icon: ShoppingCart },
       { id: "assign_orders", label: "Assign Orders", icon: ShoppingCart },
       { id: "discounts", label: "Discounts", icon: Percent },

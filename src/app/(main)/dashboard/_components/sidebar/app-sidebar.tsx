@@ -19,6 +19,7 @@ import { rootUser } from "@/data/users";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 import { useAuth } from "@/hooks/useAuth";
+import { hasModuleAccess } from "@/hooks/useRoles";
 
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -83,14 +84,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           filteredSubItems = item.subItems.filter((subItem) => {
             const requiredModule = subItem.module || item.module;
             if (!requiredModule) return true;
-            if (user?.role?.role_name === "Admin") return true;
-            if (
-              user?.role?.page_access &&
-              user.role.page_access[requiredModule as keyof typeof user.role.page_access] === 1
-            ) {
-              return true;
-            }
-            return false;
+            return hasModuleAccess(user, requiredModule);
           });
         }
 
@@ -98,20 +92,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         let isParentAllowed = false;
         if (!item.module) {
           isParentAllowed = true;
-        } else if (user?.role?.role_name === "Admin") {
+        } else if (hasModuleAccess(user, item.module)) {
           isParentAllowed = true;
-        } else {
-          // Allowed if user has access to parent module
-          if (
-            user?.role?.page_access &&
-            user.role.page_access[item.module as keyof typeof user.role.page_access] === 1
-          ) {
-            isParentAllowed = true;
-          }
-          // Or if they have access to at least one sub-item
-          else if (filteredSubItems && filteredSubItems.length > 0) {
-            isParentAllowed = true;
-          }
+        } else if (filteredSubItems && filteredSubItems.length > 0) {
+          isParentAllowed = true;
         }
 
         if (isParentAllowed) {

@@ -67,6 +67,7 @@ const ALL_PERMISSIONS = [
   { id: "testimonials", label: "Testimonials", icon: MessageSquare },
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "orders", label: "Orders", icon: ShoppingCart },
+  { id: "all_orders", label: "Show All Orders", icon: ShoppingCart },
   { id: "payments", label: "Payments", icon: CreditCard },
   { id: "discounts", label: "Discounts", icon: Percent },
   { id: "coupons", label: "Coupons", icon: Ticket },
