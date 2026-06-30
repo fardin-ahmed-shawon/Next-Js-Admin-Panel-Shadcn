@@ -16,7 +16,7 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import useSWR, { mutate } from "swr";
+import { mutate } from "swr";
 import { fetchClient } from "@/lib/fetch-client";
 import {
   ArrowUpDown,
@@ -65,7 +65,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { ProductsModal } from "./products-modal";
+
 import { UpdatePaymentModal } from "./update-payment-modal";
 
 /* ---- Data ---- */
@@ -264,27 +264,37 @@ function PaymentStatusCell({ row }: { row: any }) {
 }
 
 function ProductsCell({ row }: { row: any }) {
-  const [modalOpen, setModalOpen] = React.useState(false);
+  const products = row.original.orderedProducts || [];
   return (
-    <>
-      <div
-        className="flex -space-x-2 cursor-pointer hover:opacity-80 transition-opacity w-fit"
-        onClick={() => setModalOpen(true)}
-        title="View all products"
-      >
-        {row.original.productImages.slice(0, 3).map((img: string, i: number) => (
-          <div key={i} className="size-8 shrink-0 overflow-hidden rounded-full border-2 border-background bg-muted">
-            <img src={img} alt="" className="size-full object-cover" />
+    <div className="flex flex-col gap-2 min-w-[220px] max-w-[280px]">
+      {products.map((prod: any, idx: number) => (
+        <div key={idx} className="flex items-center gap-2">
+          <div className="size-8 shrink-0 overflow-hidden rounded border bg-muted border-border/50">
+            <img src={prod.image} alt="" className="size-full object-cover" />
           </div>
-        ))}
-        {row.original.productImages.length > 3 && (
-          <div className="flex size-8 items-center justify-center rounded-full border-2 border-background bg-muted text-[10px] font-medium">
-            +{row.original.productImages.length - 3}
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold leading-tight text-foreground truncate" title={prod.name}>
+              {prod.name}
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Qty: <span className="font-semibold text-foreground">{prod.qty}</span>
+              {prod.size && prod.size !== "—" && (
+                <>
+                  {" · "}
+                  Size: <span className="font-medium text-foreground">{prod.size}</span>
+                </>
+              )}
+              {prod.color && prod.color !== "—" && (
+                <>
+                  {" · "}
+                  Color: <span className="font-medium text-foreground">{prod.color}</span>
+                </>
+              )}
+            </p>
           </div>
-        )}
-      </div>
-      <ProductsModal order={row.original} open={modalOpen} onOpenChange={setModalOpen} />
-    </>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -344,12 +354,11 @@ const columns: ColumnDef<OrderRow>[] = [
             variant="outline"
             size="sm"
             className="mt-1 h-6 gap-1 text-[10px] px-2"
-            onClick={() => {
-              navigator.clipboard.writeText(row.original.phone);
-              toast.success("Phone copied!");
-            }}
+            asChild
           >
-            <Phone className="size-3" /> Call
+            <a href={`tel:${row.original.phone}`}>
+              <Phone className="size-3" /> Call
+            </a>
           </Button>
         </div>
       </div>
@@ -588,44 +597,17 @@ function exportOrders(data: OrderRow[]) {
 /* ---- Component ---- */
 
 export function OrdersTable({ data }: { data: OrderRow[] }) {
-  const [activeOrderFilter, setActiveOrderFilter] = React.useState<OrderStatus>("All");
+  const [activeOrderFilter, setActiveOrderFilter] = React.useState<OrderStatus>("Pending");
   const [activePaymentFilter, setActivePaymentFilter] = React.useState<PaymentStatus>("All");
-  const [activeCatFilter, setActiveCatFilter] = React.useState("All");
-  const [activeSubCatFilter, setActiveSubCatFilter] = React.useState("All");
   const [showFiltersMobile, setShowFiltersMobile] = React.useState(false);
   const [showStatusFilter, setShowStatusFilter] = React.useState(true);
   const [showPaymentFilter, setShowPaymentFilter] = React.useState(true);
   const [rowSelection, setRowSelection] = React.useState({});
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([
+    { id: "orderStatus", value: "Pending" },
+  ]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
-
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
-  const mainCatUrl = process.env.NEXT_PUBLIC_API_MAIN_CATEGORIES_URL
-    ? `${baseUrl}api/v1/admin/${process.env.NEXT_PUBLIC_API_MAIN_CATEGORIES_URL}`
-    : null;
-  const subCatUrl = process.env.NEXT_PUBLIC_API_SUB_CATEGORIES_URL
-    ? `${baseUrl}api/v1/admin/${process.env.NEXT_PUBLIC_API_SUB_CATEGORIES_URL}`
-    : null;
-
-  const { data: mainCatsRaw } = useSWR(mainCatUrl);
-  const { data: subCatsRaw } = useSWR(subCatUrl);
-
-  const mainCategories = React.useMemo(() => {
-    if (!mainCatsRaw?.data) return ["All"];
-    return ["All", ...mainCatsRaw.data.map((c: any) => c.name)];
-  }, [mainCatsRaw]);
-
-  const subCategories = React.useMemo(() => {
-    if (!subCatsRaw?.data) return {} as Record<string, string[]>;
-    const subs: Record<string, string[]> = {};
-    subCatsRaw.data.forEach((sub: any) => {
-      const mainName = sub.main_category?.name || "Uncategorized";
-      if (!subs[mainName]) subs[mainName] = [];
-      subs[mainName].push(sub.name);
-    });
-    return subs;
-  }, [subCatsRaw]);
 
   const table = useReactTable({
     data,
@@ -686,34 +668,17 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
     table.setPageIndex(0);
     setRowSelection({});
   }
-  function applyCatFilter(v: string) {
-    setActiveCatFilter(v);
-    setActiveSubCatFilter("All");
-    table.getColumn("category")?.setFilterValue(v === "All" ? undefined : v);
-    table.getColumn("subCategory")?.setFilterValue(undefined);
-    table.setPageIndex(0);
-    setRowSelection({});
-  }
-  function applySubCatFilter(v: string) {
-    setActiveSubCatFilter(v);
-    table.getColumn("subCategory")?.setFilterValue(v === "All" ? undefined : v);
-    table.setPageIndex(0);
-    setRowSelection({});
-  }
   function clearAllFilters() {
     setActiveOrderFilter("All");
     setActivePaymentFilter("All");
-    setActiveCatFilter("All");
-    setActiveSubCatFilter("All");
     table.resetColumnFilters();
     table.setPageIndex(0);
     setRowSelection({});
     table.getColumn("search")?.setFilterValue(undefined);
   }
 
-  const availableSubs = activeCatFilter !== "All" ? subCategories[activeCatFilter] || [] : [];
   const hasFilters =
-    activeOrderFilter !== "All" || activePaymentFilter !== "All" || activeCatFilter !== "All" || searchQuery;
+    activeOrderFilter !== "All" || activePaymentFilter !== "All" || searchQuery;
 
   const handleBulkUpdate = async (type: "status" | "payment", val: string) => {
     const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
@@ -794,35 +759,9 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
               }}
             />
           </div>
-          <Select value={activeCatFilter} onValueChange={applyCatFilter}>
-            <SelectTrigger className="h-8 w-[calc(50%-0.375rem)] sm:w-36 text-xs">
-              <SelectValue placeholder="Main Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {mainCategories.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {availableSubs.length > 0 && (
-            <Select value={activeSubCatFilter} onValueChange={applySubCatFilter}>
-              <SelectTrigger className="h-8 w-[calc(50%-0.375rem)] sm:w-36 text-xs">
-                <SelectValue placeholder="Sub Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All</SelectItem>
-                {availableSubs.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+
           {hasFilters && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={clearAllFilters}>
+            <Button variant="secondary" size="sm" className="h-8 text-xs" onClick={clearAllFilters}>
               Clear filters
             </Button>
           )}
