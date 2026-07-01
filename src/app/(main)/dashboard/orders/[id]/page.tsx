@@ -8,6 +8,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Ban,
+  Check,
   CheckCircle2,
   ChevronDown,
   ClipboardList,
@@ -23,6 +24,7 @@ import {
   RotateCcw,
   Save,
   Send,
+  ShieldAlert,
   ShoppingBag,
   Truck,
   User,
@@ -50,11 +52,11 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useOrderDetail } from "@/hooks/useOrderDetail";
+import { usePathaoSetup } from "@/hooks/usePathaoSetup";
+import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
 import { fetchClient } from "@/lib/fetch-client";
 
 import { UpdatePaymentModal } from "../_components/update-payment-modal";
-
-
 
 /* ---- constants ---- */
 
@@ -113,6 +115,34 @@ function formatDate(dateStr: string) {
     });
   } catch {
     return dateStr;
+  }
+}
+
+function getRelativeTime(dateStr?: string) {
+  if (!dateStr) return "";
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    if (isNaN(diffMs) || diffMs < 0) return "just now";
+
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return "yesterday";
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+    });
+  } catch {
+    return "";
   }
 }
 
@@ -210,6 +240,11 @@ export default function OrderDetailPage() {
   const router = useRouter();
 
   const { data: order, isLoading, mutate } = useOrderDetail(id ?? null);
+  const { data: steadfastConfig } = useSteadfastSetup();
+  const { data: pathaoConfig } = usePathaoSetup();
+
+  const isSteadfastActive = steadfastConfig?.status === "active";
+  const isPathaoActive = pathaoConfig?.status === "active";
 
   /* local state for editable dropdowns */
   const [orderStatus, setOrderStatus] = React.useState("");
@@ -221,6 +256,74 @@ export default function OrderDetailPage() {
   const [isEditingNote, setIsEditingNote] = React.useState(false);
   const [selectedDistrict, setSelectedDistrict] = React.useState("");
   const [isSavingDistrict, setIsSavingDistrict] = React.useState(false);
+
+  const [fraudData, setFraudData] = React.useState<any>(null);
+  const [fraudLoading, setFraudLoading] = React.useState(false);
+  const [fraudError, setFraudError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (order?.customer_phone) {
+      const fetchFraudData = async () => {
+        setFraudLoading(true);
+        setFraudError(null);
+        try {
+          const res = await fetch("/api/fraud-check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: order.customer_phone }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setFraudData(data);
+          } else {
+            const err = await res.json().catch(() => ({}));
+            setFraudError(err.error || "Failed to load fraud checker data");
+          }
+        } catch (err: any) {
+          setFraudError(err.message || "Failed to scan phone number");
+        } finally {
+          setFraudLoading(false);
+        }
+      };
+      fetchFraudData();
+    }
+  }, [order?.customer_phone]);
+
+  const getFraudCourierMetrics = (courierName: string, data: any) => {
+    if (!data || !data.apis) {
+      return { name: courierName, total: 0, delivered: 0, cancelled: 0 };
+    }
+    const searchName = courierName.toLowerCase().replace(" ", "");
+    const matchedKey = Object.keys(data.apis).find((k) => {
+      const normalizedKey = k.toLowerCase().replace(" ", "");
+      if (searchName === "redx" && normalizedKey === "redex") return true;
+      if (searchName === "redex" && normalizedKey === "redx") return true;
+      return normalizedKey === searchName;
+    });
+
+    const raw = matchedKey ? data.apis[matchedKey] : {};
+    const total = Number(raw.total_parcels ?? raw.total ?? 0);
+    const delivered = Number(raw.total_delivered_parcels ?? raw.success ?? raw.delivered ?? raw.total_delivered ?? 0);
+    const cancelled = Number(raw.total_cancelled_parcels ?? raw.cancel ?? raw.cancelled ?? raw.total_cancelled ?? 0);
+
+    return { name: courierName, total, delivered, cancelled };
+  };
+
+  let fraudTotal = 0;
+  let fraudDelivered = 0;
+  let fraudCancelled = 0;
+  let fraudSuccessRate = "-";
+
+  if (fraudData) {
+    const courierNames = ["Pathao", "Steadfast", "Redx", "Paperfly"];
+    const metrics = courierNames.map((name) => getFraudCourierMetrics(name, fraudData));
+    fraudTotal = metrics.reduce((sum, c) => sum + c.total, 0);
+    fraudDelivered = metrics.reduce((sum, c) => sum + c.delivered, 0);
+    fraudCancelled = metrics.reduce((sum, c) => sum + c.cancelled, 0);
+    if (fraudTotal > 0) {
+      fraudSuccessRate = `${Math.round((fraudDelivered / fraudTotal) * 100)}%`;
+    }
+  }
 
   /* sync from API data */
   React.useEffect(() => {
@@ -365,6 +468,18 @@ export default function OrderDetailPage() {
   const customerOrders: CustomerOrder[] = order.customer?.orders ?? [];
   const parcelHistory = order.customer?.parcel_history;
 
+  const steadfastParcel = order?.steadfast_parcel || order?.steadfastParcel || null;
+  const pathaoParcel = order?.pathao_parcel || order?.pathaoParcel || null;
+  const hasSteadfastParcel = !!steadfastParcel;
+  const hasPathaoParcel = !!pathaoParcel;
+
+  const determinedCourier = steadfastParcel ? "Steadfast" : pathaoParcel ? "Pathao" : (order?.courier_details?.courier ?? "—");
+
+  let genuineStatus = "Not dispatched";
+  if (order?.courier_details?.parcel_status) {
+    genuineStatus = order.courier_details.parcel_status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase());
+  }
+
   const initials = (order.customer_full_name || "U")
     .split(" ")
     .map((n: string) => n[0])
@@ -387,9 +502,28 @@ export default function OrderDetailPage() {
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col gap-1.5">
-            <h1 className="text-3xl font-bold tracking-tight">{order.order_no}</h1>
-            <p className="text-sm text-muted-foreground">
-              {formatDate(order.created_at)} · {order.customer_full_name} · {order.shipping_area || "—"}
+            <div className="flex flex-wrap items-baseline gap-2">
+              <h1 className="text-3xl font-bold tracking-tight">{order.order_no}</h1>
+              {order.created_at && (
+                <span className="text-xs font-semibold text-muted-foreground/80 bg-muted/60 px-2 py-0.5 rounded-full select-none">
+                  {getRelativeTime(order.created_at)}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground flex flex-wrap gap-x-2 gap-y-1 items-center">
+              <span>{formatDate(order.created_at)}</span>
+              <span>·</span>
+              <span>{order.customer_full_name}</span>
+              <span>·</span>
+              <span>{order.shipping_area || "—"}</span>
+              {(order.customer_ip_address || order.customerIpAddress) && (
+                <>
+                  <span>·</span>
+                  <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
+                    IP: {order.customer_ip_address || order.customerIpAddress}
+                  </span>
+                </>
+              )}
             </p>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant={statusColor(order.order_status) as any}>{order.order_status}</Badge>
@@ -813,37 +947,6 @@ export default function OrderDetailPage() {
                     </div>
                   </div>
 
-                  {/* Parcel history */}
-                  {parcelHistory && (
-                    <div className="rounded-lg border bg-muted/30 p-3 flex flex-col gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Parcel History
-                      </p>
-                      <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                        <div className="flex flex-col">
-                          <span className="font-semibold">{parcelHistory.total ?? 0}</span>
-                          <span className="text-[10px] text-muted-foreground uppercase">Total</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-green-600 dark:text-green-400">
-                            {parcelHistory.delivered ?? 0}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground uppercase">Success</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-destructive">{parcelHistory.cancelled ?? 0}</span>
-                          <span className="text-[10px] text-muted-foreground uppercase">Failed</span>
-                        </div>
-                      </div>
-                      {parcelHistory.success_rate !== undefined && (
-                        <p className="text-center text-xs text-muted-foreground">
-                          Success rate:{" "}
-                          <span className="font-semibold text-foreground">{parcelHistory.success_rate}%</span>
-                        </p>
-                      )}
-                    </div>
-                  )}
-
                   <div className="flex flex-col gap-2">
                     <Button
                       variant="outline"
@@ -864,6 +967,121 @@ export default function OrderDetailPage() {
                       </Link>
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Parcel History (Courier) */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <ShieldAlert className="size-4 text-primary" />
+                    Parcel History (Courier)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {fraudLoading ? (
+                    <div className="flex items-center justify-center py-6 gap-2 text-xs text-muted-foreground">
+                      <Loader2 className="size-4 animate-spin text-primary" />
+                      Scanning courier metrics...
+                    </div>
+                  ) : fraudError ? (
+                    <div className="text-center py-2">
+                      <p className="text-xs text-destructive font-medium">{fraudError}</p>
+                    </div>
+                  ) : fraudData ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                        <div className="flex flex-col rounded-lg bg-muted/40 p-2">
+                          <span className="font-semibold text-base">{fraudTotal}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase">Total</span>
+                        </div>
+                        <div className="flex flex-col rounded-lg bg-muted/40 p-2">
+                          <span className="font-semibold text-base text-green-600 dark:text-green-400">
+                            {fraudDelivered}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground uppercase">Success</span>
+                        </div>
+                        <div className="flex flex-col rounded-lg bg-muted/40 p-2">
+                          <span className="font-semibold text-base text-destructive">{fraudCancelled}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase">Failed</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs border-t pt-2.5">
+                        <span className="text-muted-foreground">Global Success Rate:</span>
+                        <Badge
+                          variant="outline"
+                          className={`font-mono font-semibold border-none ${
+                            fraudTotal === 0
+                              ? "bg-muted text-muted-foreground"
+                              : fraudDelivered / fraudTotal >= 0.8
+                                ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                                : fraudDelivered / fraudTotal >= 0.5
+                                  ? "bg-yellow-500/10 text-yellow-600"
+                                  : "bg-destructive/10 text-destructive"
+                          }`}
+                        >
+                          {fraudSuccessRate}
+                        </Badge>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground text-center">
+                        Scanned from Pathao, Steadfast, Redx & Paperfly
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic text-center py-2">No courier metrics scanned.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Customer History (System Summary) */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <History className="size-4 text-muted-foreground" />
+                    Customer History (System)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {parcelHistory ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                        <div className="flex flex-col rounded-lg bg-muted/40 p-2">
+                          <span className="font-semibold text-base">{parcelHistory.total ?? 0}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase">Total</span>
+                        </div>
+                        <div className="flex flex-col rounded-lg bg-muted/40 p-2">
+                          <span className="font-semibold text-base text-green-600 dark:text-green-400">
+                            {parcelHistory.delivered ?? 0}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground uppercase">Success</span>
+                        </div>
+                        <div className="flex flex-col rounded-lg bg-muted/40 p-2">
+                          <span className="font-semibold text-base text-destructive">
+                            {parcelHistory.cancelled ?? 0}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground uppercase">Failed</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs border-t pt-2.5">
+                        <span className="text-muted-foreground">Success Rate:</span>
+                        <Badge variant="secondary" className="font-mono font-semibold">
+                          {parcelHistory.success_rate ?? 0}%
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Total Spent:</span>
+                        <span className="font-semibold text-foreground">
+                          ৳{Number(parcelHistory.total_spent ?? 0).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic text-center py-2">
+                      No system order metrics available.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -928,57 +1146,89 @@ export default function OrderDetailPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
                       <Label className="text-sm text-muted-foreground">Courier</Label>
-                      <span className="text-sm font-medium">{order.courier_details?.courier ?? "—"}</span>
+                      <span className="text-sm font-medium">{determinedCourier}</span>
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <Label className="text-sm text-muted-foreground">Parcel Status</Label>
                       <span className="text-sm font-medium">
-                        {order.courier_details?.parcel_status ?? "Not dispatched"}
+                        {genuineStatus}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => toast.success("Sent to Steadfast!")}
-                    >
-                      <Truck className="mr-2 size-4 text-muted-foreground" />
-                      Send via Steadfast
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full"
-                      onClick={async () => {
-                        const toastId = toast.loading("Sending order to Pathao...");
-                        try {
-                          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-                          const res = await fetchClient(`${baseUrl}pathao-parcels/${order.order_no}`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                          });
-
-                          if (!res.ok) {
-                            const err = await res.json().catch(() => ({}));
-                            throw new Error(err?.error || err?.message || "Failed to send to Pathao.");
-                          }
-
-                          toast.success("Order sent to Pathao successfully!", { id: toastId });
-                          mutate();
-                        } catch (e: any) {
-                          toast.error(e?.message || "Something went wrong.", { id: toastId });
-                        }
-                      }}
-                    >
-                      <Send className="mr-2 size-4 text-muted-foreground" />
-                      Send via Pathao
-                    </Button>
+                    {hasSteadfastParcel || hasPathaoParcel ? (
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-md justify-center w-full select-none">
+                        <Check className="size-4 shrink-0" />
+                        <span>Already Sent</span>
+                      </div>
+                    ) : (
+                      <>
+                        {isSteadfastActive && (
+                          <Button
+                            size="sm"
+                            className="w-full bg-[#00b074] hover:bg-[#00b074]/90 text-white font-medium gap-2"
+                            onClick={async () => {
+                              const toastId = toast.loading(`Sending Order ${order.order_no} to Steadfast...`);
+                              try {
+                                const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                                const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+                                const res = await fetchClient(`${baseUrl}${endpoint}/${order.order_no}`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                });
+                                if (!res.ok) {
+                                  const err = await res.json().catch(() => ({}));
+                                  throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
+                                }
+                                toast.success(`Order ${order.order_no} sent to Steadfast`, { id: toastId });
+                                mutate();
+                              } catch (err: any) {
+                                toast.error(err?.message || "Something went wrong.", { id: toastId });
+                              }
+                            }}
+                          >
+                            <Truck className="size-4" /> Send via Steadfast
+                          </Button>
+                        )}
+                        {isPathaoActive && (
+                          <Button
+                            size="sm"
+                            className="w-full bg-[#ef4444] hover:bg-[#ef4444]/90 text-white font-medium gap-2"
+                            onClick={async () => {
+                              const toastId = toast.loading(`Sending Order ${order.order_no} to Pathao...`);
+                              try {
+                                const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                                const res = await fetchClient(`${baseUrl}pathao-parcels/${order.order_no}`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                });
+                                if (!res.ok) {
+                                  const err = await res.json().catch(() => ({}));
+                                  throw new Error(err?.error || err?.message || "Failed to send to Pathao.");
+                                }
+                                toast.success(`Order ${order.order_no} sent to Pathao`, { id: toastId });
+                                mutate();
+                              } catch (err: any) {
+                                toast.error(err?.message || "Something went wrong.", { id: toastId });
+                              }
+                            }}
+                          >
+                            <Send className="size-4" /> Send via Pathao
+                          </Button>
+                        )}
+                        {!isSteadfastActive && !isPathaoActive && (
+                          <span className="text-xs text-muted-foreground text-center italic py-2">
+                            Courier integrations are not active.
+                          </span>
+                        )}
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
+
+
 
               {/* Order Activity / Status logs */}
               <Card>
@@ -1023,10 +1273,10 @@ export default function OrderDetailPage() {
                         },
                         {
                           label: "Dispatched",
-                          desc: `Handed to ${order.courier_details?.courier ?? "courier"}.`,
+                          desc: `Handed to ${determinedCourier === "—" ? "courier" : determinedCourier}.`,
                           date: formatDate(order.updated_at),
                           icon: Truck,
-                          show: !!order.courier_details?.courier,
+                          show: determinedCourier !== "—",
                         },
                         {
                           label: "Delivered",
@@ -1082,7 +1332,7 @@ export default function OrderDetailPage() {
             </div>
 
             <div className="flex flex-col gap-6">
-              {/* Customer summary card */}
+              {/* Customer Summary Card inside history tab */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Customer Summary</CardTitle>

@@ -7,7 +7,6 @@ import Link from "next/link";
 import { CalendarIcon, Ellipsis, FileDown, FileText, Plus, Printer, RefreshCw, ShieldOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,11 +18,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useOrders } from "@/hooks/useOrders";
 
 import { OrderStats } from "./_components/order-stats";
 import { OrdersTable } from "./_components/orders-table";
 
-import { useOrders } from "@/hooks/useOrders";
 /* ---- Time range helpers ---- */
 
 type TimeRange = "daily" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
@@ -117,7 +117,8 @@ export default function OrdersPage() {
           .toUpperCase() || "U";
       const avatarUrl = `https://placehold.co/40x40/1a1a2e/e0e0e0?text=${initials}`;
 
-      const assignedEmployee = order.employee_orders?.[0]?.user?.full_name || order.employeeOrders?.[0]?.user?.full_name || null;
+      const assignedEmployee =
+        order.employee_orders?.[0]?.user?.full_name || order.employeeOrders?.[0]?.user?.full_name || null;
 
       return {
         id: order.order_no,
@@ -149,6 +150,8 @@ export default function OrdersPage() {
           cancelled: order.customer?.parcel_history?.cancelled || 0,
           successRate: order.customer?.parcel_history?.success_rate || "0",
         },
+        ipAddress: order.customer_ip_address || "—",
+        createdAt: order.created_at,
       };
     });
   }, [apiData, getImageUrl]);

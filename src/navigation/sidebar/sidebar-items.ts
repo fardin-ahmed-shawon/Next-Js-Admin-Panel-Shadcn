@@ -131,7 +131,7 @@ export const sidebarItems: NavGroup[] = [
           { title: "Profit & Loss", url: "/dashboard/accounts/profit-loss", module: "profit_loss" },
           { title: "Statements", url: "/dashboard/accounts/statements", module: "statements" },
           { title: "Due", url: "/dashboard/accounts/due", module: "due" },
-          { title: "Refund History", url: "/dashboard/accounts/refund-history", module: "refund_history" },
+          { title: "Refund History", url: "/dashboard/accounts/refund-history", module: "refund_history", comingSoon: true },
         ],
       },
       { title: "Inventory", url: "/dashboard/inventory", icon: Archive, module: "inventory" },

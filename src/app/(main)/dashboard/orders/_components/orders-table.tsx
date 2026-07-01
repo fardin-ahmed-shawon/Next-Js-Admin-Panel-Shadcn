@@ -16,12 +16,6 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { mutate } from "swr";
-import { fetchClient } from "@/lib/fetch-client";
-import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
-import { usePathaoSetup } from "@/hooks/usePathaoSetup";
-import { useAuth } from "@/hooks/useAuth";
-import { hasModuleAccess } from "@/hooks/useRoles";
 import {
   ArrowUpDown,
   Ban,
@@ -51,7 +45,7 @@ import {
   UserX,
 } from "lucide-react";
 import { toast } from "sonner";
-import { AssignOrderDialog } from "../assign-orders/_components/assign-order-dialog";
+import { mutate } from "swr";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,12 +66,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useAuth } from "@/hooks/useAuth";
+import { usePathaoSetup } from "@/hooks/usePathaoSetup";
+import { hasModuleAccess } from "@/hooks/useRoles";
+import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
+import { fetchClient } from "@/lib/fetch-client";
 
-
+import { AssignOrderDialog } from "../assign-orders/_components/assign-order-dialog";
 import { UpdatePaymentModal } from "./update-payment-modal";
 
 /* ---- Data ---- */
-
 
 const orderStatuses = [
   "All",
@@ -123,6 +121,8 @@ export interface OrderRow {
   parcelStatus: string;
   courier: string;
   parcelHistory: { total: number; delivered: number; cancelled: number; successRate: string };
+  ipAddress?: string;
+  createdAt?: string;
 }
 
 /* ---- Status badge colors ---- */
@@ -157,7 +157,7 @@ export function invalidateOrders() {
       return false;
     },
     undefined,
-    { revalidate: true }
+    { revalidate: true },
   );
 }
 
@@ -248,11 +248,7 @@ function AssignedEmployeeCell({ row }: { row: any }) {
   const hasAssignAccess = hasModuleAccess(user, "assign_orders");
 
   if (!hasAssignAccess) {
-    return (
-      <div className="w-[120px] text-xs font-semibold text-neutral-600 pl-1">
-        {employeeName || "—"}
-      </div>
-    );
+    return <div className="w-[120px] text-xs font-semibold text-neutral-600 pl-1">{employeeName || "—"}</div>;
   }
 
   return (
@@ -423,7 +419,9 @@ function CourierHistoryCell({ row }: { row: any }) {
 
           Object.values(resData.apis).forEach((raw: any) => {
             total += Number(raw.total_parcels ?? raw.total ?? 0);
-            delivered += Number(raw.total_delivered_parcels ?? raw.success ?? raw.delivered ?? raw.total_delivered ?? 0);
+            delivered += Number(
+              raw.total_delivered_parcels ?? raw.success ?? raw.delivered ?? raw.total_delivered ?? 0,
+            );
             cancelled += Number(raw.total_cancelled_parcels ?? raw.cancel ?? raw.cancelled ?? raw.total_cancelled ?? 0);
           });
 
@@ -461,15 +459,11 @@ function CourierHistoryCell({ row }: { row: any }) {
       </div>
       <div className="flex justify-between">
         <span className="text-muted-foreground">Delivered:</span>
-        <span className="font-semibold text-emerald-600 dark:text-emerald-500 tabular-nums">
-          {history.delivered}
-        </span>
+        <span className="font-semibold text-emerald-600 dark:text-emerald-500 tabular-nums">{history.delivered}</span>
       </div>
       <div className="flex justify-between">
         <span className="text-muted-foreground">Cancelled:</span>
-        <span className="font-semibold text-destructive tabular-nums">
-          {history.cancelled}
-        </span>
+        <span className="font-semibold text-destructive tabular-nums">{history.cancelled}</span>
       </div>
       <div className="flex items-center justify-between mt-1">
         <span className="font-semibold text-emerald-600 dark:text-emerald-500">
@@ -510,14 +504,50 @@ const columns: ColumnDef<OrderRow>[] = [
   {
     id: "order",
     header: "Orders",
-    cell: ({ row }) => (
-      <div className="min-w-[120px]">
-        <p className="font-mono text-sm font-semibold">{row.original.id}</p>
-        <p className="text-[11px] text-muted-foreground">
-          {row.original.date} · {row.original.time}
-        </p>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const getRelativeTime = (dateStr?: string) => {
+        if (!dateStr) return "";
+        try {
+          const date = new Date(dateStr);
+          const now = new Date();
+          const diffMs = now.getTime() - date.getTime();
+          if (isNaN(diffMs) || diffMs < 0) return "just now";
+
+          const diffMins = Math.floor(diffMs / 60000);
+          if (diffMins < 1) return "just now";
+          if (diffMins < 60) return `${diffMins}m ago`;
+
+          const diffHours = Math.floor(diffMins / 60);
+          if (diffHours < 24) return `${diffHours}h ago`;
+
+          const diffDays = Math.floor(diffHours / 24);
+          if (diffDays === 1) return "yesterday";
+          if (diffDays < 7) return `${diffDays}d ago`;
+
+          return date.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+          });
+        } catch {
+          return "";
+        }
+      };
+
+      return (
+        <div className="min-w-[120px] flex flex-col gap-0.5 text-left">
+          <p className="font-mono text-sm font-semibold">{row.original.id}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {row.original.date} · {row.original.time}
+          </p>
+          <p className="text-[11px] text-muted-foreground/80 font-mono">IP: {row.original.ipAddress || "—"}</p>
+          {row.original.createdAt && (
+            <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+              {getRelativeTime(row.original.createdAt)}
+            </p>
+          )}
+        </div>
+      );
+    },
   },
 
   // Customer column
@@ -533,12 +563,7 @@ const columns: ColumnDef<OrderRow>[] = [
           <p className="text-sm font-medium leading-tight">{row.original.customer}</p>
           <p className="text-[11px] text-muted-foreground">{row.original.phone}</p>
           <div className="flex items-center gap-1.5 mt-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-6 gap-1 text-[10px] px-2"
-              asChild
-            >
+            <Button variant="outline" size="sm" className="h-6 gap-1 text-[10px] px-2" asChild>
               <a href={`tel:${row.original.phone}`}>
                 <Phone className="size-3" /> Call
               </a>
@@ -595,7 +620,6 @@ const columns: ColumnDef<OrderRow>[] = [
     header: "Courier History",
     cell: ({ row }) => <CourierHistoryCell row={row} />,
   },
-
 
   // Order Status column
   {
@@ -837,8 +861,7 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
     table.getColumn("search")?.setFilterValue(undefined);
   }
 
-  const hasFilters =
-    activeOrderFilter !== "All" || activePaymentFilter !== "All" || searchQuery;
+  const hasFilters = activeOrderFilter !== "All" || activePaymentFilter !== "All" || searchQuery;
 
   const handleBulkUpdate = async (type: "status" | "payment", val: string) => {
     const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
@@ -860,8 +883,6 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
       toast.error(`Failed to bulk update orders.`, { id: toastId });
     }
   };
-
-
 
   return (
     <Card>
@@ -1058,7 +1079,10 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
                   <DropdownMenuLabel>Bulk Print</DropdownMenuLabel>
                   <DropdownMenuItem asChild>
                     <Link
-                      href={`/invoice/bulk?ids=${table.getSelectedRowModel().rows.map((r) => r.original.id).join(",")}`}
+                      href={`/invoice/bulk?ids=${table
+                        .getSelectedRowModel()
+                        .rows.map((r) => r.original.id)
+                        .join(",")}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -1068,7 +1092,10 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link
-                      href={`/invoice/bulk/pos?ids=${table.getSelectedRowModel().rows.map((r) => r.original.id).join(",")}`}
+                      href={`/invoice/bulk/pos?ids=${table
+                        .getSelectedRowModel()
+                        .rows.map((r) => r.original.id)
+                        .join(",")}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

@@ -8,8 +8,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Phone number is required" }, { status: 400 });
     }
 
+    // Sanitize Bangladesh phone number (remove +88, 88, spaces, etc.)
+    let cleanPhone = phone.toString().trim().replace(/\D/g, ""); // keep only digits
+    if (cleanPhone.startsWith("880")) {
+      cleanPhone = cleanPhone.substring(2);
+    } else if (!cleanPhone.startsWith("0") && cleanPhone.length === 10) {
+      cleanPhone = "0" + cleanPhone;
+    }
+
     // Validate Bangladesh phone number pattern: /^01[3-9]\d{8}$/
-    if (!/^01[3-9]\d{8}$/.test(phone)) {
+    if (!/^01[3-9]\d{8}$/.test(cleanPhone)) {
       return NextResponse.json({ error: "Invalid Bangladesh phone number format" }, { status: 400 });
     }
 
@@ -27,7 +35,7 @@ export async function POST(req: Request) {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({ phone }).toString(),
+      body: new URLSearchParams({ phone: cleanPhone }).toString(),
     });
 
     if (!response.ok) {

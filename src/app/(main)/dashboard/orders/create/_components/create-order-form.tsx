@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 
 import { CreditCard, Minus, Package, Plus, RefreshCw, Search, Send, ShoppingCart, Truck, User, X } from "lucide-react";
 import { toast } from "sonner";
+/* ---- catalogue ---- */
+import useSWR from "swr";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,13 +17,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import useProducts, { type Product } from "@/hooks/useProducts";
 
 import { PartialPaymentForm } from "../../_components/partial-payment-form";
 import { districts, divisions, thanas } from "./bd-locations";
-import useProducts, { Product } from "@/hooks/useProducts";
-
-/* ---- catalogue ---- */
-import useSWR from "swr";
 
 interface CartItem {
   product: Product;
@@ -314,7 +313,7 @@ export function CreateOrderForm() {
   }, []);
 
   const [paymentMethod, setPaymentMethod] = React.useState("cod");
-  const [paymentStatus, setPaymentStatus] = React.useState("unpaid");
+  const [paymentStatus, setPaymentStatus] = React.useState("Unpaid");
   const [paidAmount, setPaidAmount] = React.useState<number | "">("");
 
   const [discountType, setDiscountType] = React.useState("fixed");
@@ -483,7 +482,7 @@ export function CreateOrderForm() {
                   ? "Bank Transfer"
                   : "Card Payment",
       paid_amount: Number(paidAmount) || 0,
-      payment_status: paymentStatus === "unpaid" ? "Unpaid" : paymentStatus === "paid" ? "Paid" : "Partial",
+      payment_status: paymentStatus,
       products: cart.map((item) => ({
         product_id: item.product.id,
         qty: item.quantity,
