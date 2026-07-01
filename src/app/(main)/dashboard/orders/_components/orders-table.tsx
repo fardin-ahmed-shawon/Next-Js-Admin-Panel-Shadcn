@@ -596,35 +596,6 @@ const columns: ColumnDef<OrderRow>[] = [
     cell: ({ row }) => <CourierHistoryCell row={row} />,
   },
 
-  // Order History column
-  {
-    id: "orderHistory",
-    header: "Order History",
-    cell: ({ row }) => {
-      const history = row.original.parcelHistory || { total: 0, delivered: 0, cancelled: 0, successRate: "0" };
-      return (
-        <div className="min-w-[120px] text-[11px] space-y-1">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Total:</span>
-            <span className="font-semibold tabular-nums">{history.total}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Delivered:</span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-500 tabular-nums">
-              {history.delivered}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Cancelled:</span>
-            <span className="font-semibold text-destructive tabular-nums">
-              {history.cancelled}
-            </span>
-          </div>
-          <div className="font-semibold text-emerald-600 mt-1">{history.successRate}% success</div>
-        </div>
-      );
-    },
-  },
 
   // Order Status column
   {
@@ -682,49 +653,6 @@ const columns: ColumnDef<OrderRow>[] = [
     cell: ({ row }) => <SendCourierCell row={row} />,
   },
 
-  // Print Invoice column
-  {
-    id: "printInvoice",
-    header: "Print Invoice",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-1">
-        <Button
-          variant="outline"
-          size="icon-sm"
-          className="h-8 w-8 border-muted-foreground/30 text-muted-foreground"
-          title="Regular A4"
-          asChild
-        >
-          <Link href={`/invoice/${row.original.id}`} target="_blank" rel="noopener noreferrer">
-            <FileText className="size-4" />
-          </Link>
-        </Button>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          className="h-8 w-8 border-muted-foreground/30 text-muted-foreground"
-          title="POS Receipt"
-          asChild
-        >
-          <Link href={`/invoice/${row.original.id}/pos`} target="_blank" rel="noopener noreferrer">
-            <Printer className="size-4" />
-          </Link>
-        </Button>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          className="h-8 w-8 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
-          title="Courier Label"
-          asChild
-        >
-          <Link href={`/invoice/${row.original.id}/label`} target="_blank" rel="noopener noreferrer">
-            <Truck className="size-4" />
-          </Link>
-        </Button>
-      </div>
-    ),
-  },
-
   // Actions column
   {
     id: "actions",
@@ -737,7 +665,7 @@ const columns: ColumnDef<OrderRow>[] = [
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem asChild>
               <Link href={`/dashboard/orders/${row.original.id}`}>
                 <Eye className="mr-2 size-4" />
@@ -751,11 +679,29 @@ const columns: ColumnDef<OrderRow>[] = [
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href={`/invoice/${row.original.id}`} target="_blank" rel="noopener noreferrer">
+                <FileText className="mr-2 size-4 text-muted-foreground" />
+                Print A4 Invoice
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/invoice/${row.original.id}/pos`} target="_blank" rel="noopener noreferrer">
+                <Printer className="mr-2 size-4 text-muted-foreground" />
+                Print POS Receipt
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/invoice/${row.original.id}/label`} target="_blank" rel="noopener noreferrer">
+                <Truck className="mr-2 size-4 text-muted-foreground" />
+                Print Courier Label
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => toast.warning(`Customer ${row.original.customer} blocked.`)}>
               <Ban className="mr-2 size-4" />
               Block
             </DropdownMenuItem>
-
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
