@@ -46,8 +46,8 @@ const NavItemExpanded = ({
   isSubmenuOpen: (subItems?: NavMainItem["subItems"]) => boolean;
 }) => {
   return (
-    <Collapsible key={item.title} asChild defaultOpen={isSubmenuOpen(item.subItems)} className="group/collapsible">
-      <SidebarMenuItem>
+    <Collapsible key={item.title} asChild defaultOpen={isSubmenuOpen(item.subItems)} className={`group/collapsible ${item.className || ""}`}>
+      <SidebarMenuItem className={item.className}>
         <CollapsibleTrigger asChild>
           {item.subItems ? (
             <SidebarMenuButton
@@ -115,7 +115,7 @@ const NavItemCollapsed = ({
   isActive: (url: string, subItems?: NavMainItem["subItems"]) => boolean;
 }) => {
   return (
-    <SidebarMenuItem key={item.title}>
+    <SidebarMenuItem key={item.title} className={item.className}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton
@@ -215,7 +215,7 @@ export function NavMain({ items }: NavMainProps) {
                   if (!item.subItems) {
                     if (item.title === "Logout") {
                       return (
-                        <SidebarMenuItem key={item.title}>
+                        <SidebarMenuItem key={item.title} className={item.className}>
                           <SidebarMenuButton onClick={handleLogout} tooltip={item.title}>
                             {item.icon && <item.icon />}
                             <span>{item.title}</span>
@@ -225,7 +225,7 @@ export function NavMain({ items }: NavMainProps) {
                     }
 
                     return (
-                      <SidebarMenuItem key={item.title}>
+                      <SidebarMenuItem key={item.title} className={item.className}>
                         <SidebarMenuButton
                           asChild
                           aria-disabled={item.comingSoon}
@@ -246,7 +246,7 @@ export function NavMain({ items }: NavMainProps) {
                 // Expanded view
                 if (!item.subItems && item.title === "Logout") {
                   return (
-                    <SidebarMenuItem key={item.title}>
+                    <SidebarMenuItem key={item.title} className={item.className}>
                       <SidebarMenuButton onClick={handleLogout} tooltip={item.title}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>

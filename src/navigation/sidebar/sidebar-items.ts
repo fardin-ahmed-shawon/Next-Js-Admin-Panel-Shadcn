@@ -37,6 +37,7 @@ export interface NavSubItem {
   newTab?: boolean;
   isNew?: boolean;
   module?: string; // Corresponds to PageAccess keys
+  className?: string;
 }
 
 export interface NavMainItem {
@@ -48,6 +49,7 @@ export interface NavMainItem {
   newTab?: boolean;
   isNew?: boolean;
   module?: string; // Corresponds to PageAccess keys
+  className?: string;
 }
 
 export interface NavGroup {
@@ -187,10 +189,10 @@ export const sidebarItems: NavGroup[] = [
         module: "roles_and_permission",
         subItems: [
           { title: "Add Role", url: "/dashboard/roles/add" },
-          { title: "View Roles", url: "/dashboard/roles" },
+          { title: "View Roles & Users", url: "/dashboard/roles" },
         ],
       },
-      { title: "Users", url: "/dashboard/users", icon: Users, module: "users" },
+      { title: "Users", url: "/dashboard/users", icon: Users, module: "users", className: "hidden" },
       { title: "Blocklist", url: "/dashboard/blocklist", icon: Ban, module: "blocklist" },
       { title: "Messages", url: "/dashboard/messages", icon: MessageCircle, module: "messages" },
       { title: "Settings", url: "/dashboard/settings", icon: Settings, module: "settings" },
