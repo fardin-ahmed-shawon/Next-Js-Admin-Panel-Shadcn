@@ -26,6 +26,7 @@ import {
   Send,
   ShieldAlert,
   ShoppingBag,
+  TrendingUp,
   Truck,
   User,
   X,
@@ -36,7 +37,7 @@ import { mutate as globalMutate } from "swr";
 import { districts } from "@/app/(main)/dashboard/orders/create/_components/bd-locations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +51,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useOrderDetail } from "@/hooks/useOrderDetail";
 import { usePathaoSetup } from "@/hooks/usePathaoSetup";
@@ -480,6 +482,62 @@ export default function OrderDetailPage() {
     genuineStatus = order.courier_details.parcel_status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase());
   }
 
+  const getFraudCourierMetricsDetailed = (courierName: string) => {
+    if (!fraudData || !fraudData.apis) {
+      return { name: courierName, total: 0, delivered: 0, cancelled: 0, successRate: "-" };
+    }
+
+    const searchName = courierName.toLowerCase().replace(" ", "");
+    const matchedKey = Object.keys(fraudData.apis).find((k) => {
+      const normalizedKey = k.toLowerCase().replace(" ", "");
+      if (searchName === "redx" && normalizedKey === "redex") return true;
+      if (searchName === "redex" && normalizedKey === "redx") return true;
+      return normalizedKey === searchName;
+    });
+
+    const raw = matchedKey ? fraudData.apis[matchedKey] : {};
+
+    const total = Number(raw.total_parcels ?? raw.total ?? 0);
+    const delivered = Number(raw.total_delivered_parcels ?? raw.success ?? raw.delivered ?? raw.total_delivered ?? 0);
+    const cancelled = Number(raw.total_cancelled_parcels ?? raw.cancel ?? raw.cancelled ?? raw.total_cancelled ?? 0);
+
+    let successRate = "-";
+    if (total > 0) {
+      successRate = `${Math.round((delivered / total) * 100)}%`;
+    } else if (raw.success_rate || raw.successRate) {
+      successRate = String(raw.success_rate || raw.successRate);
+      if (!successRate.endsWith("%")) successRate += "%";
+    }
+
+    return { name: courierName, total, delivered, cancelled, successRate };
+  };
+
+  const detailedCouriers = [
+    getFraudCourierMetricsDetailed("Pathao"),
+    getFraudCourierMetricsDetailed("Steadfast"),
+    getFraudCourierMetricsDetailed("Redx"),
+    getFraudCourierMetricsDetailed("Paperfly"),
+  ];
+
+  const aggregateTotal = detailedCouriers.reduce((sum, c) => sum + c.total, 0);
+  const aggregateDelivered = detailedCouriers.reduce((sum, c) => sum + c.delivered, 0);
+  const aggregateCancelled = detailedCouriers.reduce((sum, c) => sum + c.cancelled, 0);
+  const aggregateSuccessRate =
+    aggregateTotal > 0 ? `${Math.round((aggregateDelivered / aggregateTotal) * 100)}%` : "-";
+
+  let fraudStatusText = "Waiting";
+  let fraudStatusVariant: "outline" | "secondary" | "default" | "destructive" = "outline";
+  if (fraudLoading) {
+    fraudStatusText = "Scanning...";
+    fraudStatusVariant = "secondary";
+  } else if (fraudError) {
+    fraudStatusText = "Error";
+    fraudStatusVariant = "destructive";
+  } else if (fraudData) {
+    fraudStatusText = "Success";
+    fraudStatusVariant = "default";
+  }
+
   const initials = (order.customer_full_name || "U")
     .split(" ")
     .map((n: string) => n[0])
@@ -652,6 +710,10 @@ export default function OrderDetailPage() {
                 {customerOrders.length}
               </span>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="parcel-history">
+            <ShieldAlert className="mr-1.5 size-4 text-primary" />
+            Parcel History
           </TabsTrigger>
         </TabsList>
 
@@ -1384,6 +1446,93 @@ export default function OrderDetailPage() {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        {/* ─── PARCEL HISTORY TAB ─── */}
+        <TabsContent value="parcel-history">
+          <Card className="shadow-md">
+            <CardHeader className="pb-4 border-b bg-muted/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Truck className="size-5 text-muted-foreground" />
+                    Courier-wise Breakdown
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Aggregated delivery metrics for the provided phone number
+                  </CardDescription>
+                </div>
+                <Badge variant={fraudStatusVariant} className="bg-background">
+                  Status: {fraudStatusText}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-transparent">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="font-semibold text-foreground h-10 px-6">COURIER SERVICE</TableHead>
+                      <TableHead className="text-center font-semibold text-foreground h-10">TOTAL</TableHead>
+                      <TableHead className="text-center font-semibold text-foreground h-10">DELIVERED</TableHead>
+                      <TableHead className="text-center font-semibold text-foreground h-10">CANCELLED</TableHead>
+                      <TableHead className="text-center font-semibold text-foreground h-10 px-6">SUCCESS RATE</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {detailedCouriers.map((courier) => (
+                      <TableRow key={courier.name} className="transition-colors hover:bg-muted/40">
+                        <TableCell className="font-medium py-3 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="size-8 rounded-md bg-muted/50 border flex items-center justify-center shrink-0">
+                              <Package className="size-4 text-muted-foreground" />
+                            </div>
+                            {courier.name}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center py-3 font-medium tabular-nums">{courier.total}</TableCell>
+                        <TableCell className="text-center py-3 font-medium tabular-nums text-green-600 dark:text-green-500">
+                          {courier.delivered}
+                        </TableCell>
+                        <TableCell className="text-center py-3 font-medium tabular-nums text-red-600 dark:text-red-500">
+                          {courier.cancelled}
+                        </TableCell>
+                        <TableCell className="text-center py-3 px-6">
+                          <Badge variant="secondary" className="px-3 py-1 font-semibold tabular-nums text-muted-foreground">
+                            {courier.successRate}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter className="bg-primary/5 border-t-2 border-primary/20">
+                    <TableRow className="hover:bg-primary/5">
+                      <TableCell className="py-3 px-6 font-bold text-foreground">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="size-4 text-primary" />
+                          AGGREGATE TOTAL
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center py-3 font-bold text-foreground tabular-nums text-lg text-primary">
+                        {aggregateTotal}
+                      </TableCell>
+                      <TableCell className="text-center py-3 font-bold text-green-600 dark:text-green-500 tabular-nums text-lg">
+                        {aggregateDelivered}
+                      </TableCell>
+                      <TableCell className="text-center py-3 font-bold text-red-600 dark:text-red-500 tabular-nums text-lg">
+                        {aggregateCancelled}
+                      </TableCell>
+                      <TableCell className="text-center py-3 px-6">
+                        <Badge className="px-3 py-1 font-bold bg-primary text-primary-foreground hover:bg-primary">
+                          {aggregateSuccessRate}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
