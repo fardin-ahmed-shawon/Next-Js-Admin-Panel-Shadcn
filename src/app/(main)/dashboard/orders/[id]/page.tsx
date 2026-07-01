@@ -258,6 +258,10 @@ export default function OrderDetailPage() {
   const [isEditingNote, setIsEditingNote] = React.useState(false);
   const [selectedDistrict, setSelectedDistrict] = React.useState("");
   const [isSavingDistrict, setIsSavingDistrict] = React.useState(false);
+  const [isEditingCosts, setIsEditingCosts] = React.useState(false);
+  const [shippingChargeInput, setShippingChargeInput] = React.useState<number>(0);
+  const [discountAmountInput, setDiscountAmountInput] = React.useState<number>(0);
+  const [isSavingCosts, setIsSavingCosts] = React.useState(false);
 
   const [fraudData, setFraudData] = React.useState<any>(null);
   const [fraudLoading, setFraudLoading] = React.useState(false);
@@ -334,6 +338,8 @@ export default function OrderDetailPage() {
       setPaymentStatus(order.payment_status ?? "");
       setNote(order.order_note ?? "");
       setSelectedDistrict(order.district ?? "");
+      setShippingChargeInput(Number(order.shipping_charge ?? 0));
+      setDiscountAmountInput(Number(order.discount_amount ?? 0));
 
       if (order.order_no) {
         const fetchDistrict = async () => {
@@ -425,6 +431,26 @@ export default function OrderDetailPage() {
       toast.error(e?.message || "Failed to update payment status", { id: toastId });
     } finally {
       setIsSavingPayment(false);
+    }
+  };
+
+  const handleSaveCosts = async () => {
+    if (!order) return;
+    setIsSavingCosts(true);
+    const toastId = toast.loading("Saving charges…");
+    try {
+      await patchOrder(order.order_no, {
+        shipping_charge: shippingChargeInput,
+        discount_amount: discountAmountInput,
+      });
+      toast.success("Charges updated successfully!", { id: toastId });
+      setIsEditingCosts(false);
+      mutate();
+      globalMutate((key) => typeof key === "string" && key.includes("orders"), undefined, { revalidate: true });
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to update charges", { id: toastId });
+    } finally {
+      setIsSavingCosts(false);
     }
   };
 
@@ -781,23 +807,91 @@ export default function OrderDetailPage() {
 
                   {/* Totals */}
                   <div className="flex flex-col gap-3 text-sm ml-auto w-full sm:w-1/2">
-                    <div className="flex justify-between">
+                    <div className="flex items-center justify-between border-b pb-2 mb-1">
+                      <span className="font-semibold text-muted-foreground">Charges & Totals</span>
+                      {!isEditingCosts ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setShippingChargeInput(Number(order.shipping_charge ?? 0));
+                            setDiscountAmountInput(Number(order.discount_amount ?? 0));
+                            setIsEditingCosts(true);
+                          }}
+                          className="h-7 px-2 text-xs font-semibold"
+                        >
+                          <Edit className="mr-1 size-3" /> Edit
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleSaveCosts}
+                            disabled={isSavingCosts}
+                            className="h-7 px-2 text-xs font-bold text-green-600 hover:text-green-700"
+                          >
+                            {isSavingCosts ? <Loader2 className="size-3 animate-spin" /> : <Save className="size-3 mr-1" />} Save
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsEditingCosts(false)}
+                            disabled={isSavingCosts}
+                            className="h-7 px-2 text-xs font-medium text-muted-foreground"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center h-9">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span className="tabular-nums">৳{Number(order.subtotal_amount).toLocaleString()}</span>
                     </div>
-                    {Number(order.discount_amount) > 0 && (
-                      <div className="flex justify-between text-green-600 dark:text-green-400">
-                        <span>Discount</span>
-                        <span className="tabular-nums">− ৳{Number(order.discount_amount).toLocaleString()}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Shipping</span>
-                      <span className="tabular-nums">৳{Number(order.shipping_charge).toLocaleString()}</span>
+                    <div className="flex justify-between items-center h-9">
+                      <span className="text-muted-foreground">Discount</span>
+                      {isEditingCosts ? (
+                        <div className="relative w-28">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">৳</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={discountAmountInput}
+                            onChange={(e) => setDiscountAmountInput(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-full text-right pr-2 pl-6 h-8 text-sm rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                          />
+                        </div>
+                      ) : (
+                        <span className="tabular-nums text-green-600 dark:text-green-400">
+                          − ৳{Number(order.discount_amount).toLocaleString()}
+                        </span>
+                      )}
                     </div>
-                    <div className="flex justify-between font-semibold text-base mt-1 pt-3 border-t">
+                    <div className="flex justify-between items-center h-9">
+                      <span className="text-muted-foreground">Shipping</span>
+                      {isEditingCosts ? (
+                        <div className="relative w-28">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">৳</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={shippingChargeInput}
+                            onChange={(e) => setShippingChargeInput(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-full text-right pr-2 pl-6 h-8 text-sm rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                          />
+                        </div>
+                      ) : (
+                        <span className="tabular-nums">৳{Number(order.shipping_charge).toLocaleString()}</span>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center font-semibold text-base mt-1 pt-3 border-t h-9">
                       <span>Grand Total</span>
-                      <span className="tabular-nums">৳{grandTotal.toLocaleString()}</span>
+                      <span className="tabular-nums">
+                        ৳{isEditingCosts 
+                          ? (Number(order.subtotal_amount) - discountAmountInput + shippingChargeInput).toLocaleString()
+                          : grandTotal.toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
