@@ -148,7 +148,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
           />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{item.product.title}</p>
+          <p className="text-sm font-medium leading-snug">{item.product.title}</p>
           <p className="text-xs text-muted-foreground">
             {item.product.sku || "N/A"} · ৳{item.unitPrice.toLocaleString()} each
           </p>
@@ -600,7 +600,7 @@ export function CreateOrderForm() {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{p.title}</p>
+                            <p className="text-sm font-medium leading-snug">{p.title}</p>
                             <p className="text-xs text-muted-foreground">
                               {p.sku || "N/A"} · Stock: {p.available_stock}
                             </p>

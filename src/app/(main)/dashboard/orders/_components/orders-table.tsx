@@ -248,12 +248,12 @@ function AssignedEmployeeCell({ row }: { row: any }) {
   const hasAssignAccess = hasModuleAccess(user, "assign_orders");
 
   if (!hasAssignAccess) {
-    return <div className="w-[120px] text-xs font-semibold text-neutral-600 pl-1">{employeeName || "—"}</div>;
+    return <div className="w-[100px] text-xs font-semibold text-neutral-600 pl-1">{employeeName || "—"}</div>;
   }
 
   return (
     <>
-      <div className="flex flex-col gap-1 w-[120px]">
+      <div className="flex flex-col gap-1 w-[100px]">
         {employeeName ? (
           <div
             className="flex items-center gap-1 text-[11px] font-semibold text-neutral-800 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 px-2 py-1 rounded-md justify-between cursor-pointer transition-colors"
@@ -321,7 +321,7 @@ function PaymentStatusCell({ row }: { row: any }) {
           }
         }}
       >
-        <SelectTrigger className="h-7 w-[130px] text-xs border-border/60 rounded-md px-2 gap-1">
+        <SelectTrigger className="h-7 w-[115px] text-xs border-border/60 rounded-md px-2 gap-1">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -362,7 +362,7 @@ function ProductsCell({ row }: { row: any }) {
             <img src={prod.image} alt="" className="size-full object-cover" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold leading-tight text-foreground truncate" title={prod.name}>
+            <p className="text-[11px] font-semibold leading-snug text-foreground" title={prod.name}>
               {prod.name}
             </p>
             <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -556,9 +556,6 @@ const columns: ColumnDef<OrderRow>[] = [
     header: "Customer",
     cell: ({ row }) => (
       <div className="flex items-center gap-2.5">
-        <div className="size-8 shrink-0 overflow-hidden rounded-full border bg-muted">
-          <img src={row.original.avatar} alt="" className="size-full object-cover" />
-        </div>
         <div>
           <p className="text-sm font-medium leading-tight">{row.original.customer}</p>
           <p className="text-[11px] text-muted-foreground">{row.original.phone}</p>
@@ -644,7 +641,7 @@ const columns: ColumnDef<OrderRow>[] = [
           }
         }}
       >
-        <SelectTrigger className="h-7 w-[140px] text-xs border-border/60 rounded-md px-2 gap-1">
+        <SelectTrigger className="h-7 w-[115px] text-xs border-border/60 rounded-md px-2 gap-1">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -692,16 +689,16 @@ const columns: ColumnDef<OrderRow>[] = [
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem asChild>
               <Link href={`/dashboard/orders/${row.original.id}`}>
-                <Eye className="mr-2 size-4" />
-                View
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/dashboard/orders/${row.original.id}/edit`}>
                 <Edit className="mr-2 size-4" />
                 Edit
               </Link>
             </DropdownMenuItem>
+            {/* <DropdownMenuItem asChild>
+              <Link href={`/dashboard/orders/${row.original.id}/edit`}>
+                <Edit className="mr-2 size-4" />
+                Edit
+              </Link>
+            </DropdownMenuItem> */}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href={`/invoice/${row.original.id}`} target="_blank" rel="noopener noreferrer">
@@ -807,6 +804,7 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
         paymentStatus: false,
         category: false,
         subCategory: false,
+        courierHistory: false,
       },
     },
     getRowId: (r) => r.id,

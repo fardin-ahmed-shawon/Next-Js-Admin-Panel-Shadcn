@@ -362,7 +362,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
           />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{item.product.title}</p>
+          <p className="text-sm font-medium leading-snug">{item.product.title}</p>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-muted-foreground">
               {item.product.sku || "N/A"}
@@ -518,10 +518,62 @@ export default function OrderDetailPage() {
   const { data: productsData } = useProducts({ search: debouncedSearchQuery });
   const filteredProducts = productsData?.data || [];
 
+  const [isEditingShipping, setIsEditingShipping] = React.useState(false);
+  const [shippingAddressInput, setShippingAddressInput] = React.useState("");
+  const [shippingAreaInput, setShippingAreaInput] = React.useState("");
+  const [isSavingShipping, setIsSavingShipping] = React.useState(false);
+
+  const [isEditingCustomer, setIsEditingCustomer] = React.useState(false);
+  const [customerName, setCustomerName] = React.useState("");
+  const [customerPhone, setCustomerPhone] = React.useState("");
+  const [customerEmail, setCustomerEmail] = React.useState("");
+  const [customerSearchQuery, setCustomerSearchQuery] = React.useState("");
+  const [debouncedCustomerSearch, setDebouncedCustomerSearch] = React.useState("");
+  const [customerSearchFocused, setCustomerSearchFocused] = React.useState(false);
+  const [isSavingCustomer, setIsSavingCustomer] = React.useState(false);
+  const [customersData, setCustomersData] = React.useState<any[]>([]);
+
+  const customerSearchRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedCustomerSearch(customerSearchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [customerSearchQuery]);
+
+  React.useEffect(() => {
+    async function fetchCustomers() {
+      try {
+        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_CUSTOMERS || "customers"}`;
+        const res = await fetchClient(url);
+        if (res.ok) {
+          const json = await res.json();
+          setCustomersData(json.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch customers:", err);
+      }
+    }
+    fetchCustomers();
+  }, []);
+
+  const filteredCustomers = React.useMemo(() => {
+    if (!debouncedCustomerSearch.trim()) return [];
+    const query = debouncedCustomerSearch.toLowerCase();
+    return customersData.filter(
+      (c) =>
+        c.name?.toLowerCase().includes(query) ||
+        c.phone?.includes(query) ||
+        c.email?.toLowerCase().includes(query),
+    );
+  }, [debouncedCustomerSearch, customersData]);
+
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setSearchFocused(false);
+      }
+      if (customerSearchRef.current && !customerSearchRef.current.contains(e.target as Node)) {
+        setCustomerSearchFocused(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -605,6 +657,11 @@ export default function OrderDetailPage() {
       setSelectedDistrict(order.district ?? "");
       setShippingChargeInput(Number(order.shipping_charge ?? 0));
       setDiscountAmountInput(Number(order.discount_amount ?? 0));
+      setCustomerName(order.customer_full_name ?? "");
+      setCustomerPhone(order.customer_phone ?? "");
+      setCustomerEmail(order.customer_email ?? "");
+      setShippingAddressInput(order.customer_shipping_address ?? "");
+      setShippingAreaInput(order.shipping_area ?? "");
 
       if (order.ordered_products) {
         const mappedCart = order.ordered_products.map((op: any) => ({
@@ -716,6 +773,68 @@ export default function OrderDetailPage() {
       toast.error(e?.message || "Failed to update products", { id: toastId });
     } finally {
       setIsSavingProducts(false);
+    }
+  };
+
+  function selectCustomer(customer: any) {
+    setCustomerName(customer.full_name || customer.name || "");
+    setCustomerEmail(customer.email || "");
+    setCustomerPhone(customer.phone || "");
+    setCustomerSearchQuery("");
+    setCustomerSearchFocused(false);
+    toast.success("Customer details loaded.");
+  }
+
+  const handleSaveCustomer = async () => {
+    if (!order) return;
+    if (!customerName.trim()) {
+      toast.error("Customer name is required.");
+      return;
+    }
+    if (!customerPhone.trim()) {
+      toast.error("Customer phone is required.");
+      return;
+    }
+    setIsSavingCustomer(true);
+    const toastId = toast.loading("Saving customer details…");
+    try {
+      await patchOrder(order.order_no, {
+        customer_full_name: customerName,
+        customer_phone: customerPhone,
+        customer_email: customerEmail,
+      });
+      toast.success("Customer details updated successfully!", { id: toastId });
+      setIsEditingCustomer(false);
+      mutate();
+      globalMutate((key) => typeof key === "string" && key.includes("orders"), undefined, { revalidate: true });
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to update customer details", { id: toastId });
+    } finally {
+      setIsSavingCustomer(false);
+    }
+  };
+
+  const handleSaveShipping = async () => {
+    if (!order) return;
+    if (!shippingAddressInput.trim()) {
+      toast.error("Shipping address is required.");
+      return;
+    }
+    setIsSavingShipping(true);
+    const toastId = toast.loading("Saving shipping details…");
+    try {
+      await patchOrder(order.order_no, {
+        customer_shipping_address: shippingAddressInput,
+        shipping_area: shippingAreaInput,
+      });
+      toast.success("Shipping details updated successfully!", { id: toastId });
+      setIsEditingShipping(false);
+      mutate();
+      globalMutate((key) => typeof key === "string" && key.includes("orders"), undefined, { revalidate: true });
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to update shipping details", { id: toastId });
+    } finally {
+      setIsSavingShipping(false);
     }
   };
 
@@ -990,12 +1109,6 @@ export default function OrderDetailPage() {
                 Label
               </Link>
             </Button>
-            <Button variant="secondary" size="sm" asChild>
-              <Link href={`/dashboard/orders/${id}/edit`}>
-                <Edit className="mr-2 size-4" />
-                Edit
-              </Link>
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -1209,7 +1322,7 @@ export default function OrderDetailPage() {
                                     />
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">{p.title}</p>
+                                    <p className="text-sm font-medium leading-snug">{p.title}</p>
                                     <p className="text-xs text-muted-foreground">
                                       {p.sku || "N/A"} · Stock: {p.available_stock}
                                     </p>
@@ -1267,7 +1380,7 @@ export default function OrderDetailPage() {
                               />
                             </div>
                             <div className="flex flex-col gap-1">
-                              <p className="text-base font-medium leading-none">
+                              <p className="text-base font-medium leading-snug">
                                 {item.product?.title ?? "Unknown Product"}
                               </p>
                               <p className="text-xs text-muted-foreground">SKU: {item.product?.sku ?? "—"}</p>
@@ -1596,41 +1709,168 @@ export default function OrderDetailPage() {
             <div className="flex flex-col gap-6">
               {/* Customer Card */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                   <CardTitle className="text-lg">Customer</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-5">
-                  <div className="flex items-center gap-4">
-                    <div className="size-12 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center">
-                      <span className="text-base font-bold text-muted-foreground">{initials}</span>
-                    </div>
-                    <div>
-                      <p className="text-base font-medium">{order.customer_full_name}</p>
-                      <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
-                      {order.customer_email && <p className="text-xs text-muted-foreground">{order.customer_email}</p>}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
+                  {!isEditingCustomer ? (
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="justify-start gap-2"
                       onClick={() => {
-                        navigator.clipboard.writeText(order.customer_phone);
-                        toast.success("Phone copied!");
+                        setCustomerName(order.customer_full_name ?? "");
+                        setCustomerPhone(order.customer_phone ?? "");
+                        setCustomerEmail(order.customer_email ?? "");
+                        setIsEditingCustomer(true);
                       }}
+                      className="h-7 px-2 text-xs font-semibold"
                     >
-                      <Phone className="size-4 text-muted-foreground" />
-                      Copy Phone Number
+                      <Edit className="mr-1 size-3.5" /> Edit
                     </Button>
-                    <Button variant="outline" size="sm" className="justify-start gap-2" asChild>
-                      <Link href="/dashboard/customers">
-                        <User className="size-4 text-muted-foreground" />
-                        View Profile
-                      </Link>
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSaveCustomer}
+                        disabled={isSavingCustomer}
+                        className="h-7 px-2 text-xs font-bold text-green-600 hover:text-green-700"
+                      >
+                        {isSavingCustomer ? (
+                          <Loader2 className="size-3 animate-spin" />
+                        ) : (
+                          <Save className="size-3 mr-1" />
+                        )}
+                        Save
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsEditingCustomer(false)}
+                        disabled={isSavingCustomer}
+                        className="h-7 px-2 text-xs font-medium text-muted-foreground"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  {isEditingCustomer ? (
+                    <div className="flex flex-col gap-4">
+                      {/* Search registered customer */}
+                      <div ref={customerSearchRef} className="relative z-40">
+                        <div className="relative">
+                          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            className="pl-9 bg-muted/30 border-dashed text-sm h-9"
+                            placeholder="Search registered customer by name, phone, or email..."
+                            value={customerSearchQuery}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerSearchQuery(e.target.value)}
+                            onFocus={() => setCustomerSearchFocused(true)}
+                          />
+                        </div>
+                        {customerSearchFocused && filteredCustomers.length > 0 && (
+                          <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-lg">
+                            {filteredCustomers.map((c) => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                className="flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-muted/50"
+                                onClick={() => selectCustomer(c)}
+                              >
+                                <p className="text-sm font-semibold text-foreground">{c.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {c.phone} · {c.email}
+                                </p>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {customerSearchFocused && customerSearchQuery.trim() && filteredCustomers.length === 0 && (
+                          <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-popover p-4 shadow-lg text-center">
+                            <p className="text-sm font-medium">No registered customers found</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Inputs grid */}
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="customer-name" className="text-xs font-semibold text-muted-foreground">
+                            Full Name <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            id="customer-name"
+                            className="h-9 text-sm"
+                            placeholder="Customer Full Name"
+                            value={customerName}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerName(e.target.value)}
+                          />
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1">
+                            <Label htmlFor="customer-email" className="text-xs font-semibold text-muted-foreground">
+                              Email
+                            </Label>
+                            <Input
+                              id="customer-email"
+                              className="h-9 text-sm"
+                              type="email"
+                              placeholder="customer@example.com"
+                              value={customerEmail}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerEmail(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor="customer-phone" className="text-xs font-semibold text-muted-foreground">
+                              Phone <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              id="customer-phone"
+                              className="h-9 text-sm"
+                              type="tel"
+                              placeholder="+880 1XXX-XXXXXX"
+                              value={customerPhone}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerPhone(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-4">
+                        <div className="size-12 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center">
+                          <span className="text-base font-bold text-muted-foreground">{initials}</span>
+                        </div>
+                        <div>
+                          <p className="text-base font-medium">{order.customer_full_name}</p>
+                          <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
+                          {order.customer_email && <p className="text-xs text-muted-foreground">{order.customer_email}</p>}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="justify-start gap-2"
+                          onClick={() => {
+                            navigator.clipboard.writeText(order.customer_phone);
+                            toast.success("Phone copied!");
+                          }}
+                        >
+                          <Phone className="size-4 text-muted-foreground" />
+                          Copy Phone Number
+                        </Button>
+                        <Button variant="outline" size="sm" className="justify-start gap-2" asChild>
+                          <Link href="/dashboard/customers">
+                            <User className="size-4 text-muted-foreground" />
+                            View Profile
+                          </Link>
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -1751,20 +1991,89 @@ export default function OrderDetailPage() {
 
               {/* Shipping Address Card */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                   <CardTitle className="text-lg">Shipping address</CardTitle>
+                  {!isEditingShipping ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShippingAddressInput(order.customer_shipping_address ?? "");
+                        setShippingAreaInput(order.shipping_area ?? "");
+                        setIsEditingShipping(true);
+                      }}
+                      className="h-7 px-2 text-xs font-semibold"
+                    >
+                      <Edit className="mr-1 size-3.5" /> Edit
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSaveShipping}
+                        disabled={isSavingShipping}
+                        className="h-7 px-2 text-xs font-bold text-green-600 hover:text-green-700"
+                      >
+                        {isSavingShipping ? (
+                          <Loader2 className="size-3 animate-spin" />
+                        ) : (
+                          <Save className="size-3 mr-1" />
+                        )}
+                        Save
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsEditingShipping(false)}
+                        disabled={isSavingShipping}
+                        className="h-7 px-2 text-xs font-medium text-muted-foreground"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                  <div className="flex items-start gap-2">
-                    <MapPin className="size-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium">{order.customer_full_name}</p>
-                      <p className="text-sm text-muted-foreground">{order.customer_shipping_address}</p>
-                      {order.shipping_area && (
-                        <p className="text-xs text-muted-foreground mt-1">{order.shipping_area}</p>
-                      )}
+                  {isEditingShipping ? (
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="shipping-address-input" className="text-xs font-semibold text-muted-foreground">
+                          Street Address <span className="text-destructive">*</span>
+                        </Label>
+                        <Textarea
+                          id="shipping-address-input"
+                          className="min-h-[80px] text-sm resize-y"
+                          placeholder="House #, Road #, Block, Area..."
+                          value={shippingAddressInput}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setShippingAddressInput(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="shipping-area-input" className="text-xs font-semibold text-muted-foreground">
+                          Shipping Area
+                        </Label>
+                        <Input
+                          id="shipping-area-input"
+                          className="h-9 text-sm"
+                          placeholder="e.g. Mirpur, Uttara"
+                          value={shippingAreaInput}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShippingAreaInput(e.target.value)}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <MapPin className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">{order.customer_full_name}</p>
+                        <p className="text-sm text-muted-foreground">{order.customer_shipping_address}</p>
+                        {order.shipping_area && (
+                          <p className="text-xs text-muted-foreground mt-1">{order.shipping_area}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <Separator />
 
