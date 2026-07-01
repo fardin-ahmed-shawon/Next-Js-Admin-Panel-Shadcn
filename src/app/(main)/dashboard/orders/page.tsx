@@ -19,6 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useOrders } from "@/hooks/useOrders";
 
 import { OrderStats } from "./_components/order-stats";
@@ -66,7 +68,8 @@ const rangeLabels: Record<TimeRange, string> = {
 };
 
 export default function OrdersPage() {
-  const { data: apiData, isLoading } = useOrders({ per_page: 1000 });
+  const [allOrdersToggle, setAllOrdersToggle] = React.useState(false);
+  const { data: apiData, isLoading } = useOrders({ per_page: 1000, all_orders: allOrdersToggle });
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
@@ -202,6 +205,17 @@ export default function OrdersPage() {
 
             {/* Period select + 3-dot */}
             <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 border rounded-[min(var(--radius-md),12px)] px-3 h-9 bg-background select-none">
+                <Switch
+                  id="all-orders-toggle"
+                  checked={allOrdersToggle}
+                  onCheckedChange={setAllOrdersToggle}
+                />
+                <Label htmlFor="all-orders-toggle" className="text-xs font-semibold cursor-pointer whitespace-nowrap">
+                  All Orders
+                </Label>
+              </div>
+
               <Select value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
                 <SelectTrigger className="w-32 sm:w-36">
                   <SelectValue placeholder="Select period" />

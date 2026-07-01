@@ -180,6 +180,14 @@ function SendCourierCell({ row }: { row: any }) {
     );
   }
 
+  if (row.original.orderStatus === "Delivered") {
+    return (
+      <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-md justify-center w-[110px] select-none">
+        <span className="truncate">Office Delivered</span>
+      </div>
+    );
+  }
+
   if (!isSteadfastActive && !isPathaoActive) {
     return <span className="text-xs text-muted-foreground">—</span>;
   }

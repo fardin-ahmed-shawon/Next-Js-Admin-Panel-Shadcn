@@ -621,7 +621,11 @@ export default function OrderDetailPage() {
     const pathaoParcel = order.pathao_parcel || order.pathaoParcel || null;
 
     if (!steadfastParcel && !pathaoParcel) {
-      setCourierStatus("Not dispatched");
+      if (order.order_status === "Delivered") {
+        setCourierStatus("Office Delivered");
+      } else {
+        setCourierStatus("Not dispatched");
+      }
       return;
     }
 
@@ -1026,7 +1030,9 @@ export default function OrderDetailPage() {
 
   const determinedCourier = steadfastParcel ? "Steadfast" : pathaoParcel ? "Pathao" : (order?.courier_details?.courier ?? "—");
 
-  let genuineStatus = "Not dispatched";
+  let genuineStatus = order?.order_status === "Delivered" && !hasSteadfastParcel && !hasPathaoParcel
+    ? "Office Delivered"
+    : "Not dispatched";
   if (order?.courier_details?.parcel_status) {
     genuineStatus = order.courier_details.parcel_status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase());
   }

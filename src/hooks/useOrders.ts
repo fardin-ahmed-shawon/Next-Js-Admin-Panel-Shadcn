@@ -30,6 +30,7 @@ interface UseOrdersParams {
   search?: string;
   status?: string;
   payment_status?: string;
+  all_orders?: boolean;
 }
 
 export function useOrders(params?: UseOrdersParams) {
@@ -44,6 +45,7 @@ export function useOrders(params?: UseOrdersParams) {
   if (params?.status && params.status !== "All") searchParams.append("status", params.status);
   if (params?.payment_status && params.payment_status !== "All")
     searchParams.append("payment_status", params.payment_status);
+  if (params?.all_orders) searchParams.append("all_orders", "1");
 
   const queryString = searchParams.toString() ? `?${searchParams.toString()}` : "";
   const url = `${baseUrl}${ordersEndpoint}${queryString}`;
