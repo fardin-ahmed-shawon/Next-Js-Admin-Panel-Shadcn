@@ -18,25 +18,31 @@ import {
   History,
   Loader2,
   MapPin,
+  Minus,
   Package,
   Phone,
+  Plus,
   Printer,
+  RefreshCw,
   RotateCcw,
   Save,
+  Search,
   Send,
   ShieldAlert,
   ShoppingBag,
+  ShoppingCart,
   TrendingUp,
   Truck,
   User,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { mutate as globalMutate } from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 
 import { districts } from "@/app/(main)/dashboard/orders/create/_components/bd-locations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -57,6 +63,7 @@ import { useOrderDetail } from "@/hooks/useOrderDetail";
 import { usePathaoSetup } from "@/hooks/usePathaoSetup";
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
 import { fetchClient } from "@/lib/fetch-client";
+import useProducts, { Product } from "@/hooks/useProducts";
 
 import { UpdatePaymentModal } from "../_components/update-payment-modal";
 
@@ -235,6 +242,237 @@ function CustomerOrderHistory({ orders, currentOrderNo }: { orders: CustomerOrde
   );
 }
 
+interface CartItem {
+  product: Product;
+  quantity: number;
+  color: string;
+  size: string;
+  unitPrice: number;
+}
+
+const fetcher = async (url: string) => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) throw new Error("Failed to fetch");
+  const json = await res.json();
+  return json.data || [];
+};
+
+
+function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, updateUnitPrice }: any) {
+  const { data: sizesRes } = useSWR(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SIZES || "sizes"}`,
+    fetcher,
+  );
+  const { data: colorsRes } = useSWR(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_COLORS || "colors"}`,
+    fetcher,
+  );
+
+  const allSizes = React.useMemo(() => {
+    const list = Array.isArray(sizesRes) ? sizesRes : sizesRes?.data || [];
+    return list;
+  }, [sizesRes]);
+
+  const allColors = React.useMemo(() => {
+    const list = Array.isArray(colorsRes) ? colorsRes : colorsRes?.data || [];
+    return list;
+  }, [colorsRes]);
+
+  const variants = React.useMemo(() => {
+    return item.product.variants || [];
+  }, [item.product.variants]);
+
+  const sizes = React.useMemo(
+    () => allSizes.filter((s: any) => variants.some((v: any) => v.size_id === s.id)),
+    [allSizes, variants],
+  );
+  const colors = React.useMemo(
+    () => allColors.filter((c: any) => variants.some((v: any) => v.color_id === c.id)),
+    [allColors, variants],
+  );
+
+  const requiresVariant = Number(item.product.has_variants) === 1 && variants.length > 0;
+  let isValidVariant = true;
+
+  const availableColors = item.size
+    ? colors.filter((c: any) => {
+        const sizeId = sizes.find((s: any) => s.label === item.size)?.id;
+        return variants.some((v: any) => v.size_id === sizeId && v.color_id === c.id);
+      })
+    : colors;
+
+  const availableSizes = item.color
+    ? sizes.filter((s: any) => {
+        const colorId = colors.find((c: any) => c.label === item.color)?.id;
+        return variants.some((v: any) => v.color_id === colorId && v.size_id === s.id);
+      })
+    : sizes;
+
+  React.useEffect(() => {
+    if (requiresVariant && item.size && item.color) {
+      const selectedSizeId = sizes.find((s: any) => s.label === item.size)?.id || null;
+      const selectedColorId = colors.find((c: any) => c.label === item.color)?.id || null;
+      const variant = variants.find((v: any) => v.size_id === selectedSizeId && v.color_id === selectedColorId);
+
+      if (variant && variant.variant_pricing) {
+        updateUnitPrice(item.product.id, variant.variant_pricing.selling_price);
+      }
+    }
+  }, [item.size, item.color, sizes, colors, variants]);
+
+  React.useEffect(() => {
+    if (requiresVariant) {
+      if (availableSizes.length === 1 && item.size !== availableSizes[0].label) {
+        updateCartItem(item.product.id, "size", availableSizes[0].label);
+      }
+      if (availableColors.length === 1 && item.color !== availableColors[0].label) {
+        updateCartItem(item.product.id, "color", availableColors[0].label);
+      }
+    }
+  }, [availableSizes, availableColors, item.size, item.color, requiresVariant]);
+
+  const requiresSize = sizes.length > 0;
+  const requiresColor = colors.length > 0;
+  const isSizeComplete = !requiresSize || !!item.size;
+  const isColorComplete = !requiresColor || !!item.color;
+
+  if (requiresVariant && isSizeComplete && isColorComplete && (item.size || item.color)) {
+    const selectedSizeId = requiresSize ? sizes.find((s: any) => s.label === item.size)?.id : null;
+    const selectedColorId = requiresColor ? colors.find((c: any) => c.label === item.color)?.id : null;
+    isValidVariant = variants.some(
+      (v: any) =>
+        (requiresSize ? v.size_id === selectedSizeId : true) && (requiresColor ? v.color_id === selectedColorId : true),
+    );
+  }
+
+  return (
+    <div className="rounded-lg border p-3 transition-colors hover:bg-muted/30">
+      <div className="flex items-center gap-3">
+        <div className="size-12 shrink-0 overflow-hidden rounded-md border bg-muted">
+          <img
+            src={getImageUrl(item.product.product_thumbnail_img)}
+            alt={item.product.title}
+            className="size-full object-cover"
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{item.product.title}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs text-muted-foreground">
+              {item.product.sku || "N/A"}
+            </span>
+            <span className="text-xs text-muted-foreground">·</span>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground">৳</span>
+              <input
+                type="number"
+                min="0"
+                value={item.unitPrice}
+                onChange={(e) => updateUnitPrice(item.product.id, Math.max(0, parseFloat(e.target.value) || 0))}
+                className="w-16 h-6 text-xs text-right pr-1 rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+              />
+              <span className="text-xs text-muted-foreground">each</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, -1)}>
+            <Minus className="size-3" />
+          </Button>
+          <span className="w-8 text-center text-sm font-medium tabular-nums">{item.quantity}</span>
+          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, 1)}>
+            <Plus className="size-3" />
+          </Button>
+        </div>
+        <span className="w-20 text-right text-sm font-semibold tabular-nums">
+          ৳{(item.unitPrice * item.quantity).toLocaleString()}
+        </span>
+        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id)}>
+          <X className="size-4 text-muted-foreground" />
+        </Button>
+      </div>
+
+      {requiresVariant && (
+        <div className="mt-2 flex flex-col gap-2 pl-15">
+          <div className="flex items-center gap-3">
+            {availableColors.length > 1 ? (
+              <Select value={item.color} onValueChange={(v) => updateCartItem(item.product.id, "color", v)}>
+                <SelectTrigger
+                  className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}
+                >
+                  <SelectValue placeholder="Color" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableColors.map((c: any) => (
+                    <SelectItem key={c.id} value={c.label}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : availableColors.length === 1 ? (
+              <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">
+                Color: {availableColors[0].label}
+              </div>
+            ) : null}
+
+            {availableSizes.length > 1 ? (
+              <Select value={item.size} onValueChange={(v) => updateCartItem(item.product.id, "size", v)}>
+                <SelectTrigger
+                  className={`h-7 w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}
+                >
+                  <SelectValue placeholder="Size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSizes.map((s: any) => (
+                    <SelectItem key={s.id} value={s.label}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : availableSizes.length === 1 ? (
+              <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">
+                Size: {availableSizes[0].label}
+              </div>
+            ) : null}
+
+            {(item.color || item.size) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                onClick={() => {
+                  updateCartItem(item.product.id, "color", "");
+                  updateCartItem(item.product.id, "size", "");
+                  updateUnitPrice(
+                    item.product.id,
+                    item.product.has_variant_wise_pricing ? 0 : item.product.selling_price || 0,
+                  );
+                }}
+                title="Clear selections"
+              >
+                <X className="size-3.5" />
+              </Button>
+            )}
+          </div>
+          {!isValidVariant && (item.color || item.size) && (
+            <span className="text-[10px] text-destructive font-medium">
+              Selected combination is out of stock or unavailable.
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---- Page ---- */
 
 export default function OrderDetailPage() {
@@ -262,6 +500,33 @@ export default function OrderDetailPage() {
   const [shippingChargeInput, setShippingChargeInput] = React.useState<number>(0);
   const [discountAmountInput, setDiscountAmountInput] = React.useState<number>(0);
   const [isSavingCosts, setIsSavingCosts] = React.useState(false);
+
+  const [isEditingProducts, setIsEditingProducts] = React.useState(false);
+  const [cart, setCart] = React.useState<CartItem[]>([]);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = React.useState("");
+  const [searchFocused, setSearchFocused] = React.useState(false);
+  const [isSavingProducts, setIsSavingProducts] = React.useState(false);
+
+  const searchRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const { data: productsData } = useProducts({ search: debouncedSearchQuery });
+  const filteredProducts = productsData?.data || [];
+
+  React.useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchFocused(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const [fraudData, setFraudData] = React.useState<any>(null);
   const [fraudLoading, setFraudLoading] = React.useState(false);
@@ -341,6 +606,31 @@ export default function OrderDetailPage() {
       setShippingChargeInput(Number(order.shipping_charge ?? 0));
       setDiscountAmountInput(Number(order.discount_amount ?? 0));
 
+      if (order.ordered_products) {
+        const mappedCart = order.ordered_products.map((op: any) => ({
+          product: {
+            id: op.product_id || Math.random(),
+            title: op.product?.title || "Unknown Product",
+            sku: op.product?.sku || "",
+            selling_price: Number(op.unit_price) || 0,
+            available_stock: op.product?.available_stock || 0,
+            product_thumbnail_img: op.product?.product_thumbnail_img
+              ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/"}${op.product.product_thumbnail_img.startsWith("/") ? op.product.product_thumbnail_img.slice(1) : op.product.product_thumbnail_img}`
+              : "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NA",
+            status: "Active",
+            regular_price: Number(op.unit_price) || 0,
+            has_variants: op.product?.has_variants || 0,
+            has_variant_wise_pricing: op.product?.has_variant_wise_pricing || 0,
+            variants: op.product?.variants || [],
+          },
+          quantity: op.qty,
+          color: op.color_label || "",
+          size: op.size_label || "",
+          unitPrice: Number(op.unit_price) || 0,
+        }));
+        setCart(mappedCart);
+      }
+
       if (order.order_no) {
         const fetchDistrict = async () => {
           try {
@@ -362,6 +652,72 @@ export default function OrderDetailPage() {
   }, [order]);
 
   /* ---- handlers ---- */
+
+  function addToCart(product: Product) {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.product.id === product.id);
+      if (existing) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
+      const initialPrice = product.has_variant_wise_pricing ? 0 : product.selling_price || 0;
+      return [...prev, { product, quantity: 1, color: "", size: "", unitPrice: initialPrice }];
+    });
+    setSearchQuery("");
+    setSearchFocused(false);
+    toast.success(`${product.title} added to order.`);
+  }
+
+  function updateQuantity(productId: number, delta: number) {
+    setCart((prev) =>
+      prev
+        .map((i) => (i.product.id === productId ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i))
+        .filter((i) => i.quantity > 0),
+    );
+  }
+
+  function removeFromCart(productId: number) {
+    setCart((prev) => prev.filter((i) => i.product.id !== productId));
+  }
+
+  function updateCartItem(productId: number, field: "color" | "size", value: string) {
+    setCart((prev) => prev.map((i) => (i.product.id === productId ? { ...i, [field]: value } : i)));
+  }
+
+  function updateUnitPrice(productId: number, price: number) {
+    setCart((prev) =>
+      prev.map((i) => (i.product.id === productId ? { ...i, unitPrice: price } : i))
+    );
+  }
+
+  const handleSaveProducts = async () => {
+    if (!order) return;
+    setIsSavingProducts(true);
+    const toastId = toast.loading("Saving products & charges…");
+    const computedSubtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+    const computedGrandTotal = Math.max(0, computedSubtotal - discountAmountInput + shippingChargeInput);
+
+    try {
+      await patchOrder(order.order_no, {
+        shipping_charge: shippingChargeInput,
+        discount_amount: discountAmountInput,
+        subtotal_amount: computedSubtotal,
+        grand_total_amount: computedGrandTotal,
+        products: cart.map((item) => ({
+          product_id: item.product.id,
+          qty: item.quantity,
+          unit_price: item.unitPrice,
+          ...(item.size ? { size_label: item.size } : {}),
+          ...(item.color ? { color_label: item.color } : {}),
+        })),
+      });
+      toast.success("Order products updated successfully!", { id: toastId });
+      setIsEditingProducts(false);
+      mutate();
+      globalMutate((key) => typeof key === "string" && key.includes("orders"), undefined, { revalidate: true });
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to update products", { id: toastId });
+    } finally {
+      setIsSavingProducts(false);
+    }
+  };
 
   const handleSaveDistrict = async () => {
     if (!order || !order.order_no) return;
@@ -750,58 +1106,204 @@ export default function OrderDetailPage() {
             <div className="flex flex-col gap-6 lg:col-span-2">
               {/* Products Card */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Products</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg">Products</CardTitle>
+                    {isEditingProducts && (
+                      <CardDescription>Search and update products for this order.</CardDescription>
+                    )}
+                  </div>
+                  {!isEditingProducts ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (order.ordered_products) {
+                          const mappedCart = order.ordered_products.map((op: any) => ({
+                            product: {
+                              id: op.product_id || Math.random(),
+                              title: op.product?.title || "Unknown Product",
+                              sku: op.product?.sku || "",
+                              selling_price: Number(op.unit_price) || 0,
+                              available_stock: op.product?.available_stock || 0,
+                              product_thumbnail_img: op.product?.product_thumbnail_img
+                                ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/"}${op.product.product_thumbnail_img.startsWith("/") ? op.product.product_thumbnail_img.slice(1) : op.product.product_thumbnail_img}`
+                                : "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NA",
+                              status: "Active",
+                              regular_price: Number(op.unit_price) || 0,
+                              has_variants: op.product?.has_variants || 0,
+                              has_variant_wise_pricing: op.product?.has_variant_wise_pricing || 0,
+                              variants: op.product?.variants || [],
+                            },
+                            quantity: op.qty,
+                            color: op.color_label || "",
+                            size: op.size_label || "",
+                            unitPrice: Number(op.unit_price) || 0,
+                          }));
+                          setCart(mappedCart);
+                        }
+                        setShippingChargeInput(Number(order.shipping_charge ?? 0));
+                        setDiscountAmountInput(Number(order.discount_amount ?? 0));
+                        setIsEditingProducts(true);
+                      }}
+                      className="h-8 px-3 text-xs"
+                    >
+                      <Edit className="mr-1.5 size-3.5" /> Edit Products
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        onClick={handleSaveProducts}
+                        disabled={isSavingProducts}
+                        className="h-8 px-3 text-xs"
+                      >
+                        {isSavingProducts ? (
+                          <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                        ) : (
+                          <Save className="mr-1.5 size-3.5" />
+                        )}
+                        Save Changes
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditingProducts(false)}
+                        disabled={isSavingProducts}
+                        className="h-8 px-3 text-xs"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent className="flex flex-col gap-6">
-                  <div className="flex flex-col gap-5">
-                    {(order.ordered_products ?? []).map((item: any, i: number) => (
-                      <div key={item.id ?? i} className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-4">
-                          <div className="size-16 shrink-0 overflow-hidden rounded-md border bg-muted">
-                            <img
-                              src={getImageUrl(item.product?.product_thumbnail_img)}
-                              alt={item.product?.title ?? "Product"}
-                              className="size-full object-cover"
-                            />
+                  {isEditingProducts ? (
+                    <div className="flex flex-col gap-5">
+                      {/* Product search */}
+                      <div ref={searchRef} className="relative">
+                        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          className="pl-9 h-10"
+                          placeholder="Search by product name, SKU, or ID..."
+                          value={searchQuery}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                          onFocus={() => setSearchFocused(true)}
+                        />
+                        {searchFocused && filteredProducts.length > 0 && (
+                          <div className="absolute left-0 right-0 top-full z-55 mt-1 max-h-72 overflow-y-auto rounded-lg border bg-popover shadow-lg">
+                            {filteredProducts.map((p) => {
+                              const inCart = cart.find((i) => i.product.id === p.id);
+                              return (
+                                <button
+                                  key={p.id}
+                                  type="button"
+                                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
+                                  onClick={() => addToCart(p)}
+                                >
+                                  <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
+                                    <img
+                                      src={getImageUrl(p.product_thumbnail_img)}
+                                      alt={p.title}
+                                      className="size-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{p.title}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {p.sku || "N/A"} · Stock: {p.available_stock}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-sm font-semibold tabular-nums">
+                                      {p.has_variant_wise_pricing
+                                        ? "Variant Pricing"
+                                        : `৳${(p.selling_price || 0).toLocaleString()}`}
+                                    </span>
+                                    {inCart && (
+                                      <Badge variant="secondary" className="text-[10px]">
+                                        ×{inCart.quantity}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
-                          <div className="flex flex-col gap-1">
-                            <p className="text-base font-medium leading-none">
-                              {item.product?.title ?? "Unknown Product"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">SKU: {item.product?.sku ?? "—"}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                              {item.product?.main_category?.name && (
-                                <span className="rounded-sm bg-muted px-1.5 py-0.5">
-                                  {item.product.main_category.name}
-                                </span>
-                              )}
-                              {item.product?.sub_category?.name && (
-                                <span className="rounded-sm bg-muted px-1.5 py-0.5">
-                                  {item.product.sub_category.name}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {item.size_label ? `Size: ${item.size_label}` : ""}
-                              {item.color_label ? ` · Color: ${item.color_label}` : ""}
-                              {" · "} Qty: {item.qty}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-base font-medium tabular-nums">
-                            ৳{Number(item.unit_price).toLocaleString()}
-                          </p>
-                          {item.qty > 1 && (
-                            <p className="text-xs text-muted-foreground tabular-nums">
-                              × {item.qty} = ৳{(Number(item.unit_price) * item.qty).toLocaleString()}
-                            </p>
-                          )}
-                        </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
+
+                      {/* Cart items */}
+                      <div className="flex flex-col gap-4">
+                        {cart.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground bg-muted/20 border border-dashed rounded-lg">
+                            <ShoppingCart className="size-8 mb-2 stroke-[1.5]" />
+                            <p className="text-sm font-medium">No products in this order</p>
+                          </div>
+                        ) : (
+                          cart.map((item) => (
+                            <CartItemRow
+                              key={item.product.id}
+                              item={item}
+                              updateQuantity={updateQuantity}
+                              removeFromCart={removeFromCart}
+                              updateCartItem={updateCartItem}
+                              updateUnitPrice={updateUnitPrice}
+                            />
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-5">
+                      {(order.ordered_products ?? []).map((item: any, i: number) => (
+                        <div key={item.id ?? i} className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-4">
+                            <div className="size-16 shrink-0 overflow-hidden rounded-md border bg-muted">
+                              <img
+                                src={getImageUrl(item.product?.product_thumbnail_img)}
+                                alt={item.product?.title ?? "Product"}
+                                className="size-full object-cover"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <p className="text-base font-medium leading-none">
+                                {item.product?.title ?? "Unknown Product"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">SKU: {item.product?.sku ?? "—"}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                {item.product?.main_category?.name && (
+                                  <span className="rounded-sm bg-muted px-1.5 py-0.5">
+                                    {item.product.main_category.name}
+                                  </span>
+                                )}
+                                {item.product?.sub_category?.name && (
+                                  <span className="rounded-sm bg-muted px-1.5 py-0.5">
+                                    {item.product.sub_category.name}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {item.size_label ? `Size: ${item.size_label}` : ""}
+                                {item.color_label ? ` · Color: ${item.color_label}` : ""}
+                                {" · "} Qty: {item.qty}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-base font-medium tabular-nums">
+                              ৳{Number(item.unit_price).toLocaleString()}
+                            </p>
+                            {item.qty > 1 && (
+                              <p className="text-xs text-muted-foreground tabular-nums">
+                                × {item.qty} = ৳{(Number(item.unit_price) * item.qty).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   <Separator />
 
@@ -809,7 +1311,7 @@ export default function OrderDetailPage() {
                   <div className="flex flex-col gap-3 text-sm ml-auto w-full sm:w-1/2">
                     <div className="flex items-center justify-between border-b pb-2 mb-1">
                       <span className="font-semibold text-muted-foreground">Charges & Totals</span>
-                      {!isEditingCosts ? (
+                      {!isEditingProducts && !isEditingCosts ? (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -822,7 +1324,7 @@ export default function OrderDetailPage() {
                         >
                           <Edit className="mr-1 size-3" /> Edit
                         </Button>
-                      ) : (
+                      ) : isEditingCosts ? (
                         <div className="flex items-center gap-1.5">
                           <Button
                             variant="ghost"
@@ -843,15 +1345,19 @@ export default function OrderDetailPage() {
                             Cancel
                           </Button>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                     <div className="flex justify-between items-center h-9">
                       <span className="text-muted-foreground">Subtotal</span>
-                      <span className="tabular-nums">৳{Number(order.subtotal_amount).toLocaleString()}</span>
+                      <span className="tabular-nums">
+                        ৳{isEditingProducts
+                          ? cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0).toLocaleString()
+                          : Number(order.subtotal_amount).toLocaleString()}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center h-9">
                       <span className="text-muted-foreground">Discount</span>
-                      {isEditingCosts ? (
+                      {isEditingProducts || isEditingCosts ? (
                         <div className="relative w-28">
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">৳</span>
                           <input
@@ -870,7 +1376,7 @@ export default function OrderDetailPage() {
                     </div>
                     <div className="flex justify-between items-center h-9">
                       <span className="text-muted-foreground">Shipping</span>
-                      {isEditingCosts ? (
+                      {isEditingProducts || isEditingCosts ? (
                         <div className="relative w-28">
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">৳</span>
                           <input
@@ -888,9 +1394,11 @@ export default function OrderDetailPage() {
                     <div className="flex justify-between items-center font-semibold text-base mt-1 pt-3 border-t h-9">
                       <span>Grand Total</span>
                       <span className="tabular-nums">
-                        ৳{isEditingCosts 
-                          ? (Number(order.subtotal_amount) - discountAmountInput + shippingChargeInput).toLocaleString()
-                          : grandTotal.toLocaleString()}
+                        ৳{isEditingProducts
+                          ? Math.max(0, cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0) - discountAmountInput + shippingChargeInput).toLocaleString()
+                          : isEditingCosts
+                            ? (Number(order.subtotal_amount) - discountAmountInput + shippingChargeInput).toLocaleString()
+                            : grandTotal.toLocaleString()}
                       </span>
                     </div>
                   </div>
