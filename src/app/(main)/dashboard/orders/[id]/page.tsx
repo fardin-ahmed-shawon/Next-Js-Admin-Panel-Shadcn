@@ -518,6 +518,9 @@ export default function OrderDetailPage() {
   const { data: productsData } = useProducts({ search: debouncedSearchQuery });
   const filteredProducts = productsData?.data || [];
 
+  const [courierStatus, setCourierStatus] = React.useState<string | null>(null);
+  const [courierLoading, setCourierLoading] = React.useState(false);
+
   const [isEditingShipping, setIsEditingShipping] = React.useState(false);
   const [shippingAddressInput, setShippingAddressInput] = React.useState("");
   const [shippingAreaInput, setShippingAreaInput] = React.useState("");
@@ -611,6 +614,51 @@ export default function OrderDetailPage() {
       fetchFraudData();
     }
   }, [order?.customer_phone]);
+
+  React.useEffect(() => {
+    if (!order) return;
+    const steadfastParcel = order.steadfast_parcel || order.steadfastParcel || null;
+    const pathaoParcel = order.pathao_parcel || order.pathaoParcel || null;
+
+    if (!steadfastParcel && !pathaoParcel) {
+      setCourierStatus("Not dispatched");
+      return;
+    }
+
+    let isMounted = true;
+    const fetchCourierStatus = async () => {
+      setCourierLoading(true);
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+        const courier = steadfastParcel ? "steadfast" : "pathao";
+        const res = await fetchClient(`${baseUrl}${courier}-parcels/${order.order_no}/status`);
+        if (!isMounted) return;
+        if (res.ok) {
+          const json = await res.json();
+          const status = 
+            json.delivery_status || 
+            json.status || 
+            json.data?.delivery_status || 
+            json.data?.status || 
+            json.data?.parcel_status || 
+            "Unknown";
+          setCourierStatus(status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase()));
+        } else {
+          setCourierStatus(order.courier_details?.parcel_status ? order.courier_details.parcel_status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase()) : "Error");
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        setCourierStatus(order.courier_details?.parcel_status ? order.courier_details.parcel_status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase()) : "Error");
+      } finally {
+        if (isMounted) setCourierLoading(false);
+      }
+    };
+
+    fetchCourierStatus();
+    return () => {
+      isMounted = false;
+    };
+  }, [order?.order_no, order?.steadfast_parcel, order?.steadfastParcel, order?.pathao_parcel, order?.pathaoParcel, order?.courier_details?.parcel_status]);
 
   const getFraudCourierMetrics = (courierName: string, data: any) => {
     if (!data || !data.apis) {
@@ -768,7 +816,7 @@ export default function OrderDetailPage() {
       toast.success("Order products updated successfully!", { id: toastId });
       setIsEditingProducts(false);
       mutate();
-      globalMutate((key) => typeof key === "string" && key.includes("orders"), undefined, { revalidate: true });
+      globalMutate((key) => typeof key === "string" && key.includes("orders") && !key.includes(order.order_no));
     } catch (e: any) {
       toast.error(e?.message || "Failed to update products", { id: toastId });
     } finally {
@@ -806,7 +854,7 @@ export default function OrderDetailPage() {
       toast.success("Customer details updated successfully!", { id: toastId });
       setIsEditingCustomer(false);
       mutate();
-      globalMutate((key) => typeof key === "string" && key.includes("orders"), undefined, { revalidate: true });
+      globalMutate((key) => typeof key === "string" && key.includes("orders") && !key.includes(order.order_no));
     } catch (e: any) {
       toast.error(e?.message || "Failed to update customer details", { id: toastId });
     } finally {
@@ -830,7 +878,7 @@ export default function OrderDetailPage() {
       toast.success("Shipping details updated successfully!", { id: toastId });
       setIsEditingShipping(false);
       mutate();
-      globalMutate((key) => typeof key === "string" && key.includes("orders"), undefined, { revalidate: true });
+      globalMutate((key) => typeof key === "string" && key.includes("orders") && !key.includes(order.order_no));
     } catch (e: any) {
       toast.error(e?.message || "Failed to update shipping details", { id: toastId });
     } finally {
@@ -875,7 +923,7 @@ export default function OrderDetailPage() {
       await patchOrder(order.order_no, { order_status: orderStatus });
       toast.success("Order status updated!", { id: toastId });
       mutate();
-      globalMutate((key) => typeof key === "string" && key.includes("orders"), undefined, { revalidate: true });
+      globalMutate((key) => typeof key === "string" && key.includes("orders") && !key.includes(order.order_no));
     } catch (e: any) {
       toast.error(e?.message || "Failed to update order status", { id: toastId });
     } finally {
@@ -901,7 +949,7 @@ export default function OrderDetailPage() {
       await patchOrder(order.order_no, payload);
       toast.success("Payment status updated!", { id: toastId });
       mutate();
-      globalMutate((key) => typeof key === "string" && key.includes("orders"), undefined, { revalidate: true });
+      globalMutate((key) => typeof key === "string" && key.includes("orders") && !key.includes(order.order_no));
     } catch (e: any) {
       toast.error(e?.message || "Failed to update payment status", { id: toastId });
     } finally {
@@ -921,7 +969,7 @@ export default function OrderDetailPage() {
       toast.success("Charges updated successfully!", { id: toastId });
       setIsEditingCosts(false);
       mutate();
-      globalMutate((key) => typeof key === "string" && key.includes("orders"), undefined, { revalidate: true });
+      globalMutate((key) => typeof key === "string" && key.includes("orders") && !key.includes(order.order_no));
     } catch (e: any) {
       toast.error(e?.message || "Failed to update charges", { id: toastId });
     } finally {
@@ -2123,9 +2171,16 @@ export default function OrderDetailPage() {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <Label className="text-sm text-muted-foreground">Parcel Status</Label>
-                      <span className="text-sm font-medium">
-                        {genuineStatus}
-                      </span>
+                      {courierLoading ? (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground py-0.5">
+                          <Loader2 className="size-3.5 animate-spin text-primary shrink-0" />
+                          <span>Fetching status...</span>
+                        </div>
+                      ) : (
+                        <span className="text-sm font-medium">
+                          {courierStatus || genuineStatus}
+                        </span>
+                      )}
                     </div>
                   </div>
 
