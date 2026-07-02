@@ -123,6 +123,7 @@ export interface OrderRow {
   parcelHistory: { total: number; delivered: number; cancelled: number; successRate: string };
   ipAddress?: string;
   createdAt?: string;
+  shippingAddress?: string;
 }
 
 /* ---- Status badge colors ---- */
@@ -485,6 +486,70 @@ function CourierHistoryCell({ row }: { row: any }) {
   );
 }
 
+function CustomerFraudSuccessRate({ phone }: { phone: string }) {
+  const [loading, setLoading] = React.useState(false);
+  const [successRate, setSuccessRate] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    if (!phone || !/^01[3-9]\d{8}$/.test(phone)) {
+      return;
+    }
+
+    let isMounted = true;
+    setLoading(true);
+
+    fetch("/api/fraud-check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((resData) => {
+        if (!isMounted) return;
+        if (resData && resData.apis) {
+          let total = 0;
+          let delivered = 0;
+          Object.values(resData.apis).forEach((raw: any) => {
+            total += Number(raw.total_parcels ?? raw.total ?? 0);
+            delivered += Number(
+              raw.total_delivered_parcels ?? raw.success ?? raw.delivered ?? raw.total_delivered ?? 0,
+            );
+          });
+          const rate = total > 0 ? Math.round((delivered / total) * 100) : 0;
+          setSuccessRate(rate);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [phone]);
+
+  if (loading) {
+    return (
+      <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-1">
+        <Loader2 className="size-2.5 animate-spin shrink-0 text-primary" />
+        Scanning...
+      </span>
+    );
+  }
+
+  if (successRate === null) return null;
+
+  return (
+    <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-500 mt-1.5">
+      {successRate}% Success Rate
+    </div>
+  );
+}
+
 const columns: ColumnDef<OrderRow>[] = [
   {
     id: "select",
@@ -570,6 +635,11 @@ const columns: ColumnDef<OrderRow>[] = [
         <div>
           <p className="text-sm font-medium leading-tight">{row.original.customer}</p>
           <p className="text-[11px] text-muted-foreground">{row.original.phone}</p>
+          {row.original.shippingAddress && (
+            <p className="text-[10px] text-muted-foreground/80 mt-1 max-w-[200px] break-words whitespace-normal">
+              {row.original.shippingAddress}
+            </p>
+          )}
           <div className="flex items-center gap-1.5 mt-1">
             <Button variant="outline" size="sm" className="h-6 gap-1 text-[10px] px-2" asChild>
               <a href={`tel:${row.original.phone}`}>
@@ -592,6 +662,7 @@ const columns: ColumnDef<OrderRow>[] = [
               </Badge>
             )}
           </div>
+          <CustomerFraudSuccessRate phone={row.original.phone} />
         </div>
       </div>
     ),

@@ -42,7 +42,6 @@ import useSWR, { mutate as globalMutate } from "swr";
 import { districts } from "@/app/(main)/dashboard/orders/create/_components/bd-locations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -53,17 +52,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useOrderDetail } from "@/hooks/useOrderDetail";
 import { usePathaoSetup } from "@/hooks/usePathaoSetup";
+import useProducts, { type Product } from "@/hooks/useProducts";
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
 import { fetchClient } from "@/lib/fetch-client";
-import useProducts, { Product } from "@/hooks/useProducts";
 
 import { UpdatePaymentModal } from "../_components/update-payment-modal";
 
@@ -263,7 +263,6 @@ const fetcher = async (url: string) => {
   return json.data || [];
 };
 
-
 function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, updateUnitPrice }: any) {
   const { data: sizesRes } = useSWR(
     `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SIZES || "sizes"}`,
@@ -364,9 +363,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium leading-snug">{item.product.title}</p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground">
-              {item.product.sku || "N/A"}
-            </span>
+            <span className="text-xs text-muted-foreground">{item.product.sku || "N/A"}</span>
             <span className="text-xs text-muted-foreground">·</span>
             <div className="flex items-center gap-1">
               <span className="text-xs text-muted-foreground">৳</span>
@@ -489,24 +486,16 @@ export default function OrderDetailPage() {
   /* local state for editable dropdowns */
   const [orderStatus, setOrderStatus] = React.useState("");
   const [paymentStatus, setPaymentStatus] = React.useState("");
-  const [isSavingStatus, setIsSavingStatus] = React.useState(false);
-  const [isSavingPayment, setIsSavingPayment] = React.useState(false);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [note, setNote] = React.useState("");
-  const [isEditingNote, setIsEditingNote] = React.useState(false);
   const [selectedDistrict, setSelectedDistrict] = React.useState("");
-  const [isSavingDistrict, setIsSavingDistrict] = React.useState(false);
-  const [isEditingCosts, setIsEditingCosts] = React.useState(false);
   const [shippingChargeInput, setShippingChargeInput] = React.useState<number>(0);
   const [discountAmountInput, setDiscountAmountInput] = React.useState<number>(0);
-  const [isSavingCosts, setIsSavingCosts] = React.useState(false);
 
-  const [isEditingProducts, setIsEditingProducts] = React.useState(false);
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = React.useState("");
   const [searchFocused, setSearchFocused] = React.useState(false);
-  const [isSavingProducts, setIsSavingProducts] = React.useState(false);
 
   const searchRef = React.useRef<HTMLDivElement>(null);
 
@@ -521,19 +510,16 @@ export default function OrderDetailPage() {
   const [courierStatus, setCourierStatus] = React.useState<string | null>(null);
   const [courierLoading, setCourierLoading] = React.useState(false);
 
-  const [isEditingShipping, setIsEditingShipping] = React.useState(false);
   const [shippingAddressInput, setShippingAddressInput] = React.useState("");
   const [shippingAreaInput, setShippingAreaInput] = React.useState("");
-  const [isSavingShipping, setIsSavingShipping] = React.useState(false);
 
-  const [isEditingCustomer, setIsEditingCustomer] = React.useState(false);
   const [customerName, setCustomerName] = React.useState("");
   const [customerPhone, setCustomerPhone] = React.useState("");
   const [customerEmail, setCustomerEmail] = React.useState("");
   const [customerSearchQuery, setCustomerSearchQuery] = React.useState("");
   const [debouncedCustomerSearch, setDebouncedCustomerSearch] = React.useState("");
   const [customerSearchFocused, setCustomerSearchFocused] = React.useState(false);
-  const [isSavingCustomer, setIsSavingCustomer] = React.useState(false);
+  const [isSavingAll, setIsSavingAll] = React.useState(false);
   const [customersData, setCustomersData] = React.useState<any[]>([]);
 
   const customerSearchRef = React.useRef<HTMLDivElement>(null);
@@ -564,9 +550,7 @@ export default function OrderDetailPage() {
     const query = debouncedCustomerSearch.toLowerCase();
     return customersData.filter(
       (c) =>
-        c.name?.toLowerCase().includes(query) ||
-        c.phone?.includes(query) ||
-        c.email?.toLowerCase().includes(query),
+        c.name?.toLowerCase().includes(query) || c.phone?.includes(query) || c.email?.toLowerCase().includes(query),
     );
   }, [debouncedCustomerSearch, customersData]);
 
@@ -639,20 +623,28 @@ export default function OrderDetailPage() {
         if (!isMounted) return;
         if (res.ok) {
           const json = await res.json();
-          const status = 
-            json.delivery_status || 
-            json.status || 
-            json.data?.delivery_status || 
-            json.data?.status || 
-            json.data?.parcel_status || 
+          const status =
+            json.delivery_status ||
+            json.status ||
+            json.data?.delivery_status ||
+            json.data?.status ||
+            json.data?.parcel_status ||
             "Unknown";
           setCourierStatus(status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase()));
         } else {
-          setCourierStatus(order.courier_details?.parcel_status ? order.courier_details.parcel_status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase()) : "Error");
+          setCourierStatus(
+            order.courier_details?.parcel_status
+              ? order.courier_details.parcel_status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())
+              : "Error",
+          );
         }
       } catch (err) {
         if (!isMounted) return;
-        setCourierStatus(order.courier_details?.parcel_status ? order.courier_details.parcel_status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase()) : "Error");
+        setCourierStatus(
+          order.courier_details?.parcel_status
+            ? order.courier_details.parcel_status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())
+            : "Error",
+        );
       } finally {
         if (isMounted) setCourierLoading(false);
       }
@@ -662,7 +654,14 @@ export default function OrderDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [order?.order_no, order?.steadfast_parcel, order?.steadfastParcel, order?.pathao_parcel, order?.pathaoParcel, order?.courier_details?.parcel_status]);
+  }, [
+    order?.order_no,
+    order?.steadfast_parcel,
+    order?.steadfastParcel,
+    order?.pathao_parcel,
+    order?.pathaoParcel,
+    order?.courier_details?.parcel_status,
+  ]);
 
   const getFraudCourierMetrics = (courierName: string, data: any) => {
     if (!data || !data.apis) {
@@ -791,20 +790,44 @@ export default function OrderDetailPage() {
   }
 
   function updateUnitPrice(productId: number, price: number) {
-    setCart((prev) =>
-      prev.map((i) => (i.product.id === productId ? { ...i, unitPrice: price } : i))
-    );
+    setCart((prev) => prev.map((i) => (i.product.id === productId ? { ...i, unitPrice: price } : i)));
   }
 
-  const handleSaveProducts = async () => {
+  function selectCustomer(customer: any) {
+    setCustomerName(customer.full_name || customer.name || "");
+    setCustomerEmail(customer.email || "");
+    setCustomerPhone(customer.phone || "");
+    setCustomerSearchQuery("");
+    setCustomerSearchFocused(false);
+    toast.success("Customer details loaded.");
+  }
+
+  const handleSaveAllChanges = async () => {
     if (!order) return;
-    setIsSavingProducts(true);
-    const toastId = toast.loading("Saving products & charges…");
+    if (!customerName.trim()) {
+      toast.error("Customer name is required.");
+      return;
+    }
+    if (!customerPhone.trim()) {
+      toast.error("Customer phone is required.");
+      return;
+    }
+    if (!shippingAddressInput.trim()) {
+      toast.error("Shipping address is required.");
+      return;
+    }
+
+    setIsSavingAll(true);
+    const toastId = toast.loading("Saving all changes...");
+
     const computedSubtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
     const computedGrandTotal = Math.max(0, computedSubtotal - discountAmountInput + shippingChargeInput);
 
     try {
-      await patchOrder(order.order_no, {
+      const promises = [];
+
+      // Primary order PATCH payload
+      const payload: Record<string, any> = {
         shipping_charge: shippingChargeInput,
         discount_amount: discountAmountInput,
         subtotal_amount: computedSubtotal,
@@ -816,168 +839,46 @@ export default function OrderDetailPage() {
           ...(item.size ? { size_label: item.size } : {}),
           ...(item.color ? { color_label: item.color } : {}),
         })),
-      });
-      toast.success("Order products updated successfully!", { id: toastId });
-      setIsEditingProducts(false);
-      mutate();
-      globalMutate((key) => typeof key === "string" && key.includes("orders") && !key.includes(order.order_no));
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to update products", { id: toastId });
-    } finally {
-      setIsSavingProducts(false);
-    }
-  };
-
-  function selectCustomer(customer: any) {
-    setCustomerName(customer.full_name || customer.name || "");
-    setCustomerEmail(customer.email || "");
-    setCustomerPhone(customer.phone || "");
-    setCustomerSearchQuery("");
-    setCustomerSearchFocused(false);
-    toast.success("Customer details loaded.");
-  }
-
-  const handleSaveCustomer = async () => {
-    if (!order) return;
-    if (!customerName.trim()) {
-      toast.error("Customer name is required.");
-      return;
-    }
-    if (!customerPhone.trim()) {
-      toast.error("Customer phone is required.");
-      return;
-    }
-    setIsSavingCustomer(true);
-    const toastId = toast.loading("Saving customer details…");
-    try {
-      await patchOrder(order.order_no, {
         customer_full_name: customerName,
         customer_phone: customerPhone,
         customer_email: customerEmail,
-      });
-      toast.success("Customer details updated successfully!", { id: toastId });
-      setIsEditingCustomer(false);
-      mutate();
-      globalMutate((key) => typeof key === "string" && key.includes("orders") && !key.includes(order.order_no));
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to update customer details", { id: toastId });
-    } finally {
-      setIsSavingCustomer(false);
-    }
-  };
-
-  const handleSaveShipping = async () => {
-    if (!order) return;
-    if (!shippingAddressInput.trim()) {
-      toast.error("Shipping address is required.");
-      return;
-    }
-    setIsSavingShipping(true);
-    const toastId = toast.loading("Saving shipping details…");
-    try {
-      await patchOrder(order.order_no, {
         customer_shipping_address: shippingAddressInput,
         shipping_area: shippingAreaInput,
-      });
-      toast.success("Shipping details updated successfully!", { id: toastId });
-      setIsEditingShipping(false);
-      mutate();
-      globalMutate((key) => typeof key === "string" && key.includes("orders") && !key.includes(order.order_no));
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to update shipping details", { id: toastId });
-    } finally {
-      setIsSavingShipping(false);
-    }
-  };
+        order_status: orderStatus,
+        payment_status: paymentStatus,
+        order_note: note,
+      };
 
-  const handleSaveDistrict = async () => {
-    if (!order || !order.order_no) return;
-    if (!selectedDistrict) {
-      toast.error("Please select a district.");
-      return;
-    }
-    setIsSavingDistrict(true);
-    const toastId = toast.loading("Updating order district…");
-    try {
-      const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-      const res = await fetchClient(`${base}orders/${order.order_no}/district`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ district: selectedDistrict }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.message || "Failed to update district");
-      }
-      toast.success(json.message || "Order district updated!", { id: toastId });
-      mutate();
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Failed to update district";
-      toast.error(message, { id: toastId });
-    } finally {
-      setIsSavingDistrict(false);
-    }
-  };
-
-  const handleSaveOrderStatus = async () => {
-    if (!order) return;
-    setIsSavingStatus(true);
-    const toastId = toast.loading("Updating order status…");
-    try {
-      await patchOrder(order.order_no, { order_status: orderStatus });
-      toast.success("Order status updated!", { id: toastId });
-      mutate();
-      globalMutate((key) => typeof key === "string" && key.includes("orders") && !key.includes(order.order_no));
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to update order status", { id: toastId });
-    } finally {
-      setIsSavingStatus(false);
-    }
-  };
-
-  const handleSavePaymentStatus = async () => {
-    if (!order) return;
-    // If selecting "Partially Paid", open modal instead
-    if (paymentStatus === "Partially Paid") {
-      setModalOpen(true);
-      return;
-    }
-    setIsSavingPayment(true);
-    const toastId = toast.loading("Updating payment status…");
-    try {
-      const payload: Record<string, unknown> = { payment_status: paymentStatus };
-      // When marking as Full Paid, send the grand total as the paid amount
       if (paymentStatus === "Full Paid") {
-        payload.paid_amount = Number(order.grand_total_amount ?? 0);
+        payload.paid_amount = computedGrandTotal;
       }
-      await patchOrder(order.order_no, payload);
-      toast.success("Payment status updated!", { id: toastId });
-      mutate();
-      globalMutate((key) => typeof key === "string" && key.includes("orders") && !key.includes(order.order_no));
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to update payment status", { id: toastId });
-    } finally {
-      setIsSavingPayment(false);
-    }
-  };
 
-  const handleSaveCosts = async () => {
-    if (!order) return;
-    setIsSavingCosts(true);
-    const toastId = toast.loading("Saving charges…");
-    try {
-      await patchOrder(order.order_no, {
-        shipping_charge: shippingChargeInput,
-        discount_amount: discountAmountInput,
-      });
-      toast.success("Charges updated successfully!", { id: toastId });
-      setIsEditingCosts(false);
+      promises.push(patchOrder(order.order_no, payload));
+
+      // Check if district changed
+      if (selectedDistrict && selectedDistrict !== (order.district ?? "")) {
+        const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+        promises.push(
+          fetchClient(`${base}orders/${order.order_no}/district`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ district: selectedDistrict }),
+          }).then((res) => {
+            if (!res.ok) throw new Error("Failed to save district");
+            return res.json();
+          }),
+        );
+      }
+
+      await Promise.all(promises);
+
+      toast.success("Order changes saved successfully!", { id: toastId });
       mutate();
       globalMutate((key) => typeof key === "string" && key.includes("orders") && !key.includes(order.order_no));
     } catch (e: any) {
-      toast.error(e?.message || "Failed to update charges", { id: toastId });
+      toast.error(e?.message || "Failed to save order changes", { id: toastId });
     } finally {
-      setIsSavingCosts(false);
+      setIsSavingAll(false);
     }
   };
 
@@ -1028,13 +929,20 @@ export default function OrderDetailPage() {
   const hasSteadfastParcel = !!steadfastParcel;
   const hasPathaoParcel = !!pathaoParcel;
 
-  const determinedCourier = steadfastParcel ? "Steadfast" : pathaoParcel ? "Pathao" : (order?.courier_details?.courier ?? "—");
+  const determinedCourier = steadfastParcel
+    ? "Steadfast"
+    : pathaoParcel
+      ? "Pathao"
+      : (order?.courier_details?.courier ?? "—");
 
-  let genuineStatus = order?.order_status === "Delivered" && !hasSteadfastParcel && !hasPathaoParcel
-    ? "Office Delivered"
-    : "Not dispatched";
+  let genuineStatus =
+    order?.order_status === "Delivered" && !hasSteadfastParcel && !hasPathaoParcel
+      ? "Office Delivered"
+      : "Not dispatched";
   if (order?.courier_details?.parcel_status) {
-    genuineStatus = order.courier_details.parcel_status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase());
+    genuineStatus = order.courier_details.parcel_status
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (l: string) => l.toUpperCase());
   }
 
   const getFraudCourierMetricsDetailed = (courierName: string) => {
@@ -1077,8 +985,7 @@ export default function OrderDetailPage() {
   const aggregateTotal = detailedCouriers.reduce((sum, c) => sum + c.total, 0);
   const aggregateDelivered = detailedCouriers.reduce((sum, c) => sum + c.delivered, 0);
   const aggregateCancelled = detailedCouriers.reduce((sum, c) => sum + c.cancelled, 0);
-  const aggregateSuccessRate =
-    aggregateTotal > 0 ? `${Math.round((aggregateDelivered / aggregateTotal) * 100)}%` : "-";
+  const aggregateSuccessRate = aggregateTotal > 0 ? `${Math.round((aggregateDelivered / aggregateTotal) * 100)}%` : "-";
 
   let fraudStatusText = "Waiting";
   let fraudStatusVariant: "outline" | "secondary" | "default" | "destructive" = "outline";
@@ -1145,6 +1052,10 @@ export default function OrderDetailPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" onClick={handleSaveAllChanges} disabled={isSavingAll} className="gap-1.5">
+              {isSavingAll ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+              Save Changes
+            </Button>
             <Button variant="outline" size="sm" asChild>
               <Link href={`/invoice/${order.order_no}`} target="_blank" rel="noopener noreferrer">
                 <FileText className="mr-2 size-4" />
@@ -1273,204 +1184,88 @@ export default function OrderDetailPage() {
             <div className="flex flex-col gap-6 lg:col-span-2">
               {/* Products Card */}
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardHeader className="pb-3">
                   <div className="space-y-1">
                     <CardTitle className="text-lg">Products</CardTitle>
-                    {isEditingProducts && (
-                      <CardDescription>Search and update products for this order.</CardDescription>
-                    )}
+                    <CardDescription>Search and update products for this order.</CardDescription>
                   </div>
-                  {!isEditingProducts ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (order.ordered_products) {
-                          const mappedCart = order.ordered_products.map((op: any) => ({
-                            product: {
-                              id: op.product_id || Math.random(),
-                              title: op.product?.title || "Unknown Product",
-                              sku: op.product?.sku || "",
-                              selling_price: Number(op.unit_price) || 0,
-                              available_stock: op.product?.available_stock || 0,
-                              product_thumbnail_img: op.product?.product_thumbnail_img
-                                ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/"}${op.product.product_thumbnail_img.startsWith("/") ? op.product.product_thumbnail_img.slice(1) : op.product.product_thumbnail_img}`
-                                : "https://placehold.co/80x80/1a1a2e/e0e0e0?text=NA",
-                              status: "Active",
-                              regular_price: Number(op.unit_price) || 0,
-                              has_variants: op.product?.has_variants || 0,
-                              has_variant_wise_pricing: op.product?.has_variant_wise_pricing || 0,
-                              variants: op.product?.variants || [],
-                            },
-                            quantity: op.qty,
-                            color: op.color_label || "",
-                            size: op.size_label || "",
-                            unitPrice: Number(op.unit_price) || 0,
-                          }));
-                          setCart(mappedCart);
-                        }
-                        setShippingChargeInput(Number(order.shipping_charge ?? 0));
-                        setDiscountAmountInput(Number(order.discount_amount ?? 0));
-                        setIsEditingProducts(true);
-                      }}
-                      className="h-8 px-3 text-xs"
-                    >
-                      <Edit className="mr-1.5 size-3.5" /> Edit Products
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        size="sm"
-                        onClick={handleSaveProducts}
-                        disabled={isSavingProducts}
-                        className="h-8 px-3 text-xs"
-                      >
-                        {isSavingProducts ? (
-                          <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                        ) : (
-                          <Save className="mr-1.5 size-3.5" />
-                        )}
-                        Save Changes
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditingProducts(false)}
-                        disabled={isSavingProducts}
-                        className="h-8 px-3 text-xs"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
                 </CardHeader>
                 <CardContent className="flex flex-col gap-6">
-                  {isEditingProducts ? (
-                    <div className="flex flex-col gap-5">
-                      {/* Product search */}
-                      <div ref={searchRef} className="relative">
-                        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          className="pl-9 h-10"
-                          placeholder="Search by product name, SKU, or ID..."
-                          value={searchQuery}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                          onFocus={() => setSearchFocused(true)}
-                        />
-                        {searchFocused && filteredProducts.length > 0 && (
-                          <div className="absolute left-0 right-0 top-full z-55 mt-1 max-h-72 overflow-y-auto rounded-lg border bg-popover shadow-lg">
-                            {filteredProducts.map((p) => {
-                              const inCart = cart.find((i) => i.product.id === p.id);
-                              return (
-                                <button
-                                  key={p.id}
-                                  type="button"
-                                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
-                                  onClick={() => addToCart(p)}
-                                >
-                                  <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
-                                    <img
-                                      src={getImageUrl(p.product_thumbnail_img)}
-                                      alt={p.title}
-                                      className="size-full object-cover"
-                                    />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium leading-snug">{p.title}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {p.sku || "N/A"} · Stock: {p.available_stock}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <span className="text-sm font-semibold tabular-nums">
-                                      {p.has_variant_wise_pricing
-                                        ? "Variant Pricing"
-                                        : `৳${(p.selling_price || 0).toLocaleString()}`}
-                                    </span>
-                                    {inCart && (
-                                      <Badge variant="secondary" className="text-[10px]">
-                                        ×{inCart.quantity}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Cart items */}
-                      <div className="flex flex-col gap-4">
-                        {cart.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground bg-muted/20 border border-dashed rounded-lg">
-                            <ShoppingCart className="size-8 mb-2 stroke-[1.5]" />
-                            <p className="text-sm font-medium">No products in this order</p>
-                          </div>
-                        ) : (
-                          cart.map((item) => (
-                            <CartItemRow
-                              key={item.product.id}
-                              item={item}
-                              updateQuantity={updateQuantity}
-                              removeFromCart={removeFromCart}
-                              updateCartItem={updateCartItem}
-                              updateUnitPrice={updateUnitPrice}
-                            />
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-5">
-                      {(order.ordered_products ?? []).map((item: any, i: number) => (
-                        <div key={item.id ?? i} className="flex items-start justify-between gap-4">
-                          <div className="flex items-start gap-4">
-                            <div className="size-16 shrink-0 overflow-hidden rounded-md border bg-muted">
-                              <img
-                                src={getImageUrl(item.product?.product_thumbnail_img)}
-                                alt={item.product?.title ?? "Product"}
-                                className="size-full object-cover"
-                              />
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              <p className="text-base font-medium leading-snug">
-                                {item.product?.title ?? "Unknown Product"}
-                              </p>
-                              <p className="text-xs text-muted-foreground">SKU: {item.product?.sku ?? "—"}</p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                {item.product?.main_category?.name && (
-                                  <span className="rounded-sm bg-muted px-1.5 py-0.5">
-                                    {item.product.main_category.name}
+                  <div className="flex flex-col gap-5">
+                    {/* Product search */}
+                    <div ref={searchRef} className="relative">
+                      <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        className="pl-9 h-10"
+                        placeholder="Search by product name, SKU, or ID..."
+                        value={searchQuery}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                        onFocus={() => setSearchFocused(true)}
+                      />
+                      {searchFocused && filteredProducts.length > 0 && (
+                        <div className="absolute left-0 right-0 top-full z-55 mt-1 max-h-72 overflow-y-auto rounded-lg border bg-popover shadow-lg">
+                          {filteredProducts.map((p) => {
+                            const inCart = cart.find((i) => i.product.id === p.id);
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
+                                onClick={() => addToCart(p)}
+                              >
+                                <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
+                                  <img
+                                    src={getImageUrl(p.product_thumbnail_img)}
+                                    alt={p.title}
+                                    className="size-full object-cover"
+                                  />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium leading-snug">{p.title}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {p.sku || "N/A"} · Stock: {p.available_stock}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-sm font-semibold tabular-nums">
+                                    {p.has_variant_wise_pricing
+                                      ? "Variant Pricing"
+                                      : `৳${(p.selling_price || 0).toLocaleString()}`}
                                   </span>
-                                )}
-                                {item.product?.sub_category?.name && (
-                                  <span className="rounded-sm bg-muted px-1.5 py-0.5">
-                                    {item.product.sub_category.name}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {item.size_label ? `Size: ${item.size_label}` : ""}
-                                {item.color_label ? ` · Color: ${item.color_label}` : ""}
-                                {" · "} Qty: {item.qty}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-base font-medium tabular-nums">
-                              ৳{Number(item.unit_price).toLocaleString()}
-                            </p>
-                            {item.qty > 1 && (
-                              <p className="text-xs text-muted-foreground tabular-nums">
-                                × {item.qty} = ৳{(Number(item.unit_price) * item.qty).toLocaleString()}
-                              </p>
-                            )}
-                          </div>
+                                  {inCart && (
+                                    <Badge variant="secondary" className="text-[10px]">
+                                      ×{inCart.quantity}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
+
+                    {/* Cart items */}
+                    <div className="flex flex-col gap-4">
+                      {cart.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground bg-muted/20 border border-dashed rounded-lg">
+                          <ShoppingCart className="size-8 mb-2 stroke-[1.5]" />
+                          <p className="text-sm font-medium">No products in this order</p>
+                        </div>
+                      ) : (
+                        cart.map((item) => (
+                          <CartItemRow
+                            key={item.product.id}
+                            item={item}
+                            updateQuantity={updateQuantity}
+                            removeFromCart={removeFromCart}
+                            updateCartItem={updateCartItem}
+                            updateUnitPrice={updateUnitPrice}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </div>
 
                   <Separator />
 
@@ -1478,94 +1273,53 @@ export default function OrderDetailPage() {
                   <div className="flex flex-col gap-3 text-sm ml-auto w-full sm:w-1/2">
                     <div className="flex items-center justify-between border-b pb-2 mb-1">
                       <span className="font-semibold text-muted-foreground">Charges & Totals</span>
-                      {!isEditingProducts && !isEditingCosts ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setShippingChargeInput(Number(order.shipping_charge ?? 0));
-                            setDiscountAmountInput(Number(order.discount_amount ?? 0));
-                            setIsEditingCosts(true);
-                          }}
-                          className="h-7 px-2 text-xs font-semibold"
-                        >
-                          <Edit className="mr-1 size-3" /> Edit
-                        </Button>
-                      ) : isEditingCosts ? (
-                        <div className="flex items-center gap-1.5">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleSaveCosts}
-                            disabled={isSavingCosts}
-                            className="h-7 px-2 text-xs font-bold text-green-600 hover:text-green-700"
-                          >
-                            {isSavingCosts ? <Loader2 className="size-3 animate-spin" /> : <Save className="size-3 mr-1" />} Save
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setIsEditingCosts(false)}
-                            disabled={isSavingCosts}
-                            className="h-7 px-2 text-xs font-medium text-muted-foreground"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      ) : null}
                     </div>
                     <div className="flex justify-between items-center h-9">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span className="tabular-nums">
-                        ৳{isEditingProducts
-                          ? cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0).toLocaleString()
-                          : Number(order.subtotal_amount).toLocaleString()}
+                        ৳{cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0).toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between items-center h-9">
                       <span className="text-muted-foreground">Discount</span>
-                      {isEditingProducts || isEditingCosts ? (
-                        <div className="relative w-28">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">৳</span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={discountAmountInput}
-                            onChange={(e) => setDiscountAmountInput(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="w-full text-right pr-2 pl-6 h-8 text-sm rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
-                          />
-                        </div>
-                      ) : (
-                        <span className="tabular-nums text-green-600 dark:text-green-400">
-                          − ৳{Number(order.discount_amount).toLocaleString()}
+                      <div className="relative w-28">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                          ৳
                         </span>
-                      )}
+                        <input
+                          type="number"
+                          min="0"
+                          value={discountAmountInput}
+                          onChange={(e) => setDiscountAmountInput(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-full text-right pr-2 pl-6 h-8 text-sm rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
                     </div>
                     <div className="flex justify-between items-center h-9">
                       <span className="text-muted-foreground">Shipping</span>
-                      {isEditingProducts || isEditingCosts ? (
-                        <div className="relative w-28">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">৳</span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={shippingChargeInput}
-                            onChange={(e) => setShippingChargeInput(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="w-full text-right pr-2 pl-6 h-8 text-sm rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
-                          />
-                        </div>
-                      ) : (
-                        <span className="tabular-nums">৳{Number(order.shipping_charge).toLocaleString()}</span>
-                      )}
+                      <div className="relative w-28">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                          ৳
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={shippingChargeInput}
+                          onChange={(e) => setShippingChargeInput(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-full text-right pr-2 pl-6 h-8 text-sm rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
                     </div>
                     <div className="flex justify-between items-center font-semibold text-base mt-1 pt-3 border-t h-9">
                       <span>Grand Total</span>
                       <span className="tabular-nums">
-                        ৳{isEditingProducts
-                          ? Math.max(0, cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0) - discountAmountInput + shippingChargeInput).toLocaleString()
-                          : isEditingCosts
-                            ? (Number(order.subtotal_amount) - discountAmountInput + shippingChargeInput).toLocaleString()
-                            : grandTotal.toLocaleString()}
+                        ৳
+                        {Math.max(
+                          0,
+                          cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0) -
+                            discountAmountInput +
+                            shippingChargeInput,
+                        ).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -1654,19 +1408,6 @@ export default function OrderDetailPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button
-                        size="sm"
-                        disabled={!statusChanged || isSavingStatus}
-                        onClick={handleSaveOrderStatus}
-                        className="self-start h-8 text-xs"
-                      >
-                        {isSavingStatus ? (
-                          <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                        ) : (
-                          <Save className="mr-1.5 size-3.5" />
-                        )}
-                        Save Status
-                      </Button>
                     </div>
 
                     <Separator />
@@ -1694,20 +1435,6 @@ export default function OrderDetailPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button
-                        size="sm"
-                        disabled={!paymentChanged || isSavingPayment || paymentStatus === "Partially Paid"}
-                        onClick={handleSavePaymentStatus}
-                        className="self-start h-8 text-xs"
-                        variant={paymentStatus === "Partially Paid" ? "secondary" : "default"}
-                      >
-                        {isSavingPayment ? (
-                          <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                        ) : (
-                          <Save className="mr-1.5 size-3.5" />
-                        )}
-                        {paymentStatus === "Partially Paid" ? "Open Payment Form" : "Save Payment"}
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -1715,46 +1442,16 @@ export default function OrderDetailPage() {
 
               {/* Order Note */}
               <Card>
-                <CardHeader className="flex-row items-center justify-between space-y-0">
+                <CardHeader>
                   <CardTitle className="text-lg">Order note</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setIsEditingNote((v) => !v)}>
-                    {isEditingNote ? <X className="size-4" /> : <Edit className="size-4" />}
-                  </Button>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                  {note && !isEditingNote ? (
-                    <div className="rounded-lg bg-muted/50 p-4 text-sm leading-relaxed text-foreground">{note}</div>
-                  ) : (
-                    <Textarea
-                      placeholder="Add a note for this order…"
-                      className="min-h-[100px] resize-none text-sm"
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      readOnly={!isEditingNote}
-                    />
-                  )}
-                  {isEditingNote && (
-                    <Button
-                      size="sm"
-                      className="self-start"
-                      onClick={async () => {
-                        const toastId = toast.loading("Saving note…");
-                        try {
-                          await patchOrder(order.order_no, {
-                            order_note: note,
-                          });
-                          toast.success("Note saved.", { id: toastId });
-                          setIsEditingNote(false);
-                          mutate();
-                        } catch {
-                          toast.error("Failed to save note.", { id: toastId });
-                        }
-                      }}
-                    >
-                      <Save className="mr-2 size-4" />
-                      Save Note
-                    </Button>
-                  )}
+                  <Textarea
+                    placeholder="Add a note for this order…"
+                    className="min-h-[100px] resize-none text-sm"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -1763,168 +1460,91 @@ export default function OrderDetailPage() {
             <div className="flex flex-col gap-6">
               {/* Customer Card */}
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardHeader className="pb-3">
                   <CardTitle className="text-lg">Customer</CardTitle>
-                  {!isEditingCustomer ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setCustomerName(order.customer_full_name ?? "");
-                        setCustomerPhone(order.customer_phone ?? "");
-                        setCustomerEmail(order.customer_email ?? "");
-                        setIsEditingCustomer(true);
-                      }}
-                      className="h-7 px-2 text-xs font-semibold"
-                    >
-                      <Edit className="mr-1 size-3.5" /> Edit
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleSaveCustomer}
-                        disabled={isSavingCustomer}
-                        className="h-7 px-2 text-xs font-bold text-green-600 hover:text-green-700"
-                      >
-                        {isSavingCustomer ? (
-                          <Loader2 className="size-3 animate-spin" />
-                        ) : (
-                          <Save className="size-3 mr-1" />
-                        )}
-                        Save
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsEditingCustomer(false)}
-                        disabled={isSavingCustomer}
-                        className="h-7 px-2 text-xs font-medium text-muted-foreground"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                  {isEditingCustomer ? (
-                    <div className="flex flex-col gap-4">
-                      {/* Search registered customer */}
-                      <div ref={customerSearchRef} className="relative z-40">
-                        <div className="relative">
-                          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input
-                            className="pl-9 bg-muted/30 border-dashed text-sm h-9"
-                            placeholder="Search registered customer by name, phone, or email..."
-                            value={customerSearchQuery}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerSearchQuery(e.target.value)}
-                            onFocus={() => setCustomerSearchFocused(true)}
-                          />
-                        </div>
-                        {customerSearchFocused && filteredCustomers.length > 0 && (
-                          <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-lg">
-                            {filteredCustomers.map((c) => (
-                              <button
-                                key={c.id}
-                                type="button"
-                                className="flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-muted/50"
-                                onClick={() => selectCustomer(c)}
-                              >
-                                <p className="text-sm font-semibold text-foreground">{c.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {c.phone} · {c.email}
-                                </p>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        {customerSearchFocused && customerSearchQuery.trim() && filteredCustomers.length === 0 && (
-                          <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-popover p-4 shadow-lg text-center">
-                            <p className="text-sm font-medium">No registered customers found</p>
-                          </div>
-                        )}
+                  <div className="flex flex-col gap-4">
+                    {/* Search registered customer */}
+                    <div ref={customerSearchRef} className="relative z-40">
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          className="pl-9 bg-muted/30 border-dashed text-sm h-9"
+                          placeholder="Search registered customer by name, phone, or email..."
+                          value={customerSearchQuery}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerSearchQuery(e.target.value)}
+                          onFocus={() => setCustomerSearchFocused(true)}
+                        />
                       </div>
+                      {customerSearchFocused && filteredCustomers.length > 0 && (
+                        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-lg">
+                          {filteredCustomers.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              className="flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-muted/50"
+                              onClick={() => selectCustomer(c)}
+                            >
+                              <p className="text-sm font-semibold text-foreground">{c.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {c.phone} · {c.email}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {customerSearchFocused && customerSearchQuery.trim() && filteredCustomers.length === 0 && (
+                        <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-popover p-4 shadow-lg text-center">
+                          <p className="text-sm font-medium">No registered customers found</p>
+                        </div>
+                      )}
+                    </div>
 
-                      {/* Inputs grid */}
-                      <div className="space-y-3">
+                    {/* Inputs grid */}
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="customer-name" className="text-xs font-semibold text-muted-foreground">
+                          Full Name <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="customer-name"
+                          className="h-9 text-sm"
+                          placeholder="Customer Full Name"
+                          value={customerName}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerName(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1">
-                          <Label htmlFor="customer-name" className="text-xs font-semibold text-muted-foreground">
-                            Full Name <span className="text-destructive">*</span>
+                          <Label htmlFor="customer-email" className="text-xs font-semibold text-muted-foreground">
+                            Email
                           </Label>
                           <Input
-                            id="customer-name"
+                            id="customer-email"
                             className="h-9 text-sm"
-                            placeholder="Customer Full Name"
-                            value={customerName}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerName(e.target.value)}
+                            type="email"
+                            placeholder="customer@example.com"
+                            value={customerEmail}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerEmail(e.target.value)}
                           />
                         </div>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="space-y-1">
-                            <Label htmlFor="customer-email" className="text-xs font-semibold text-muted-foreground">
-                              Email
-                            </Label>
-                            <Input
-                              id="customer-email"
-                              className="h-9 text-sm"
-                              type="email"
-                              placeholder="customer@example.com"
-                              value={customerEmail}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerEmail(e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label htmlFor="customer-phone" className="text-xs font-semibold text-muted-foreground">
-                              Phone <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                              id="customer-phone"
-                              className="h-9 text-sm"
-                              type="tel"
-                              placeholder="+880 1XXX-XXXXXX"
-                              value={customerPhone}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerPhone(e.target.value)}
-                            />
-                          </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="customer-phone" className="text-xs font-semibold text-muted-foreground">
+                            Phone <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            id="customer-phone"
+                            className="h-9 text-sm"
+                            type="tel"
+                            placeholder="+880 1XXX-XXXXXX"
+                            value={customerPhone}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerPhone(e.target.value)}
+                          />
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-4">
-                        <div className="size-12 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center">
-                          <span className="text-base font-bold text-muted-foreground">{initials}</span>
-                        </div>
-                        <div>
-                          <p className="text-base font-medium">{order.customer_full_name}</p>
-                          <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
-                          {order.customer_email && <p className="text-xs text-muted-foreground">{order.customer_email}</p>}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="justify-start gap-2"
-                          onClick={() => {
-                            navigator.clipboard.writeText(order.customer_phone);
-                            toast.success("Phone copied!");
-                          }}
-                        >
-                          <Phone className="size-4 text-muted-foreground" />
-                          Copy Phone Number
-                        </Button>
-                        <Button variant="outline" size="sm" className="justify-start gap-2" asChild>
-                          <Link href="/dashboard/customers">
-                            <User className="size-4 text-muted-foreground" />
-                            View Profile
-                          </Link>
-                        </Button>
-                      </div>
-                    </>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
 
@@ -2045,121 +1665,55 @@ export default function OrderDetailPage() {
 
               {/* Shipping Address Card */}
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardHeader className="pb-3">
                   <CardTitle className="text-lg">Shipping address</CardTitle>
-                  {!isEditingShipping ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setShippingAddressInput(order.customer_shipping_address ?? "");
-                        setShippingAreaInput(order.shipping_area ?? "");
-                        setIsEditingShipping(true);
-                      }}
-                      className="h-7 px-2 text-xs font-semibold"
-                    >
-                      <Edit className="mr-1 size-3.5" /> Edit
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleSaveShipping}
-                        disabled={isSavingShipping}
-                        className="h-7 px-2 text-xs font-bold text-green-600 hover:text-green-700"
-                      >
-                        {isSavingShipping ? (
-                          <Loader2 className="size-3 animate-spin" />
-                        ) : (
-                          <Save className="size-3 mr-1" />
-                        )}
-                        Save
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsEditingShipping(false)}
-                        disabled={isSavingShipping}
-                        className="h-7 px-2 text-xs font-medium text-muted-foreground"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                  {isEditingShipping ? (
-                    <div className="space-y-3">
-                      <div className="space-y-1">
-                        <Label htmlFor="shipping-address-input" className="text-xs font-semibold text-muted-foreground">
-                          Street Address <span className="text-destructive">*</span>
-                        </Label>
-                        <Textarea
-                          id="shipping-address-input"
-                          className="min-h-[80px] text-sm resize-y"
-                          placeholder="House #, Road #, Block, Area..."
-                          value={shippingAddressInput}
-                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setShippingAddressInput(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="shipping-area-input" className="text-xs font-semibold text-muted-foreground">
-                          Shipping Area
-                        </Label>
-                        <Input
-                          id="shipping-area-input"
-                          className="h-9 text-sm"
-                          placeholder="e.g. Mirpur, Uttara"
-                          value={shippingAreaInput}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShippingAreaInput(e.target.value)}
-                        />
-                      </div>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="shipping-address-input" className="text-xs font-semibold text-muted-foreground">
+                        Street Address <span className="text-destructive">*</span>
+                      </Label>
+                      <Textarea
+                        id="shipping-address-input"
+                        className="min-h-[80px] text-sm resize-y"
+                        placeholder="House #, Road #, Block, Area..."
+                        value={shippingAddressInput}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                          setShippingAddressInput(e.target.value)
+                        }
+                      />
                     </div>
-                  ) : (
-                    <div className="flex items-start gap-2">
-                      <MapPin className="size-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium">{order.customer_full_name}</p>
-                        <p className="text-sm text-muted-foreground">{order.customer_shipping_address}</p>
-                        {order.shipping_area && (
-                          <p className="text-xs text-muted-foreground mt-1">{order.shipping_area}</p>
-                        )}
-                      </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="shipping-area-input" className="text-xs font-semibold text-muted-foreground">
+                        Shipping Area
+                      </Label>
+                      <Input
+                        id="shipping-area-input"
+                        className="h-9 text-sm"
+                        placeholder="e.g. Mirpur, Uttara"
+                        value={shippingAreaInput}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShippingAreaInput(e.target.value)}
+                      />
                     </div>
-                  )}
+                  </div>
 
                   <Separator />
 
                   <div className="space-y-2">
                     <Label className="text-xs font-semibold text-muted-foreground">Order District</Label>
-                    <div className="flex gap-2">
-                      <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-                        <SelectTrigger className="h-9 text-sm flex-1">
-                          <SelectValue placeholder="Select district" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {allDistricts.map((d) => (
-                            <SelectItem key={d} value={d} className="text-sm">
-                              {d}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        size="sm"
-                        disabled={selectedDistrict === (order.district ?? "") || isSavingDistrict}
-                        onClick={handleSaveDistrict}
-                        className="h-9"
-                      >
-                        {isSavingDistrict ? (
-                          <Loader2 className="size-3.5 animate-spin" />
-                        ) : (
-                          <Save className="size-3.5 mr-1" />
-                        )}
-                        Save
-                      </Button>
-                    </div>
+                    <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="Select district" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allDistricts.map((d) => (
+                          <SelectItem key={d} value={d} className="text-sm">
+                            {d}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </CardContent>
               </Card>
@@ -2183,9 +1737,7 @@ export default function OrderDetailPage() {
                           <span>Fetching status...</span>
                         </div>
                       ) : (
-                        <span className="text-sm font-medium">
-                          {courierStatus || genuineStatus}
-                        </span>
+                        <span className="text-sm font-medium">{courierStatus || genuineStatus}</span>
                       )}
                     </div>
                   </div>
@@ -2205,8 +1757,10 @@ export default function OrderDetailPage() {
                             onClick={async () => {
                               const toastId = toast.loading(`Sending Order ${order.order_no} to Steadfast...`);
                               try {
-                                const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-                                const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+                                const baseUrl =
+                                  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                                const endpoint =
+                                  process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
                                 const res = await fetchClient(`${baseUrl}${endpoint}/${order.order_no}`, {
                                   method: "POST",
                                   headers: { "Content-Type": "application/json" },
@@ -2232,7 +1786,8 @@ export default function OrderDetailPage() {
                             onClick={async () => {
                               const toastId = toast.loading(`Sending Order ${order.order_no} to Pathao...`);
                               try {
-                                const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                                const baseUrl =
+                                  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
                                 const res = await fetchClient(`${baseUrl}pathao-parcels/${order.order_no}`, {
                                   method: "POST",
                                   headers: { "Content-Type": "application/json" },
@@ -2261,8 +1816,6 @@ export default function OrderDetailPage() {
                   </div>
                 </CardContent>
               </Card>
-
-
 
               {/* Order Activity / Status logs */}
               <Card>
@@ -2448,7 +2001,9 @@ export default function OrderDetailPage() {
                       <TableHead className="text-center font-semibold text-foreground h-10">TOTAL</TableHead>
                       <TableHead className="text-center font-semibold text-foreground h-10">DELIVERED</TableHead>
                       <TableHead className="text-center font-semibold text-foreground h-10">CANCELLED</TableHead>
-                      <TableHead className="text-center font-semibold text-foreground h-10 px-6">SUCCESS RATE</TableHead>
+                      <TableHead className="text-center font-semibold text-foreground h-10 px-6">
+                        SUCCESS RATE
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -2470,7 +2025,10 @@ export default function OrderDetailPage() {
                           {courier.cancelled}
                         </TableCell>
                         <TableCell className="text-center py-3 px-6">
-                          <Badge variant="secondary" className="px-3 py-1 font-semibold tabular-nums text-muted-foreground">
+                          <Badge
+                            variant="secondary"
+                            className="px-3 py-1 font-semibold tabular-nums text-muted-foreground"
+                          >
                             {courier.successRate}
                           </Badge>
                         </TableCell>

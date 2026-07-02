@@ -17,10 +17,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { useOrders } from "@/hooks/useOrders";
 
 import { OrderStats } from "./_components/order-stats";
@@ -127,6 +127,7 @@ export default function OrdersPage() {
         id: order.order_no,
         customer: order.customer_full_name || "Unknown",
         phone: order.customer_phone || "",
+        shippingAddress: order.customer_shipping_address || "",
         items: itemsCount,
         total: order.grand_total_amount || 0,
         paid: paidAmount,
@@ -206,11 +207,7 @@ export default function OrdersPage() {
             {/* Period select + 3-dot */}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 border rounded-[min(var(--radius-md),12px)] px-3 h-9 bg-background select-none">
-                <Switch
-                  id="all-orders-toggle"
-                  checked={allOrdersToggle}
-                  onCheckedChange={setAllOrdersToggle}
-                />
+                <Switch id="all-orders-toggle" checked={allOrdersToggle} onCheckedChange={setAllOrdersToggle} />
                 <Label htmlFor="all-orders-toggle" className="text-xs font-semibold cursor-pointer whitespace-nowrap">
                   All Orders
                 </Label>
