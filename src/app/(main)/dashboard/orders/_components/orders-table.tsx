@@ -370,7 +370,10 @@ function ProductsCell({ row }: { row: any }) {
             <img src={prod.image} alt="" className="size-full object-cover" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold leading-snug text-foreground" title={prod.name}>
+            <p
+              className="text-[11px] font-semibold leading-snug text-foreground whitespace-normal break-words"
+              title={prod.name}
+            >
               {prod.name}
             </p>
             <p className="text-[10px] text-muted-foreground mt-0.5">
