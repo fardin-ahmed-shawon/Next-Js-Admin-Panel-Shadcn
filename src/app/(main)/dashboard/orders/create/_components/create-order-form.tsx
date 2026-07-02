@@ -444,17 +444,22 @@ export function CreateOrderForm() {
       toast.error("Customer phone is required.");
       return;
     }
-    if (!shippingAddress.trim() || !division || !district || !thana) {
-      toast.error("Complete shipping address is required.");
+    if (!shippingAddress.trim()) {
+      toast.error("Shipping address is required.");
       return;
     }
+
+    const addressParts = [shippingAddress.trim()];
+    if (thana) addressParts.push(thana);
+    if (district) addressParts.push(district);
+    if (division) addressParts.push(division);
 
     const payload = {
       customer_id: customerId || 0,
       customer_full_name: customerName,
       customer_phone: customerPhone,
       customer_email: customerEmail,
-      customer_shipping_address: `${shippingAddress}, ${thana}, ${district}, ${division}`,
+      customer_shipping_address: addressParts.join(", "),
       shipping_area:
         shippingMethod === "inside-dhaka"
           ? "Inside Dhaka"

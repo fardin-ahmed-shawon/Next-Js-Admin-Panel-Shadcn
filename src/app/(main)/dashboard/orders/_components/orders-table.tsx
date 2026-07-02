@@ -74,6 +74,7 @@ import { fetchClient } from "@/lib/fetch-client";
 
 import { AssignOrderDialog } from "../assign-orders/_components/assign-order-dialog";
 import { UpdatePaymentModal } from "./update-payment-modal";
+import { SendPathaoModal } from "./send-pathao-modal";
 
 /* ---- Data ---- */
 
@@ -165,6 +166,7 @@ export function invalidateOrders() {
 function SendCourierCell({ row }: { row: any }) {
   const { data: steadfastConfig } = useSteadfastSetup();
   const { data: pathaoConfig } = usePathaoSetup();
+  const [pathaoModalOpen, setPathaoModalOpen] = React.useState(false);
 
   const isSteadfastActive = steadfastConfig?.status === "active";
   const isPathaoActive = pathaoConfig?.status === "active";
@@ -194,59 +196,53 @@ function SendCourierCell({ row }: { row: any }) {
   }
 
   return (
-    <div className="flex flex-col gap-1.5 w-[110px]">
-      {isSteadfastActive && (
-        <Button
-          size="sm"
-          className="h-7 bg-[#00b074] hover:bg-[#00b074]/90 text-white text-[11px] px-2 justify-start font-medium"
-          onClick={async () => {
-            const toastId = toast.loading(`Sending Order ${row.original.id} to Steadfast...`);
-            try {
-              const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
-              const res = await fetchClient(`${getApiBaseUrl()}${endpoint}/${row.original.id}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-              });
-              if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
+    <>
+      <div className="flex flex-col gap-1.5 w-[110px]">
+        {isSteadfastActive && (
+          <Button
+            size="sm"
+            className="h-7 bg-[#00b074] hover:bg-[#00b074]/90 text-white text-[11px] px-2 justify-start font-medium"
+            onClick={async () => {
+              const toastId = toast.loading(`Sending Order ${row.original.id} to Steadfast...`);
+              try {
+                const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+                const res = await fetchClient(`${getApiBaseUrl()}${endpoint}/${row.original.id}`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                });
+                if (!res.ok) {
+                  const err = await res.json().catch(() => ({}));
+                  throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
+                }
+                toast.success(`Order ${row.original.id} sent to Steadfast`, { id: toastId });
+                invalidateOrders();
+              } catch (err: any) {
+                toast.error(err?.message || "Something went wrong.", { id: toastId });
               }
-              toast.success(`Order ${row.original.id} sent to Steadfast`, { id: toastId });
-              invalidateOrders();
-            } catch (err: any) {
-              toast.error(err?.message || "Something went wrong.", { id: toastId });
-            }
-          }}
-        >
-          <Truck className="mr-1.5 size-3.5" /> Steadfast
-        </Button>
-      )}
-      {isPathaoActive && (
-        <Button
-          size="sm"
-          className="h-7 bg-[#ef4444] hover:bg-[#ef4444]/90 text-white text-[11px] px-2 justify-start font-medium"
-          onClick={async () => {
-            const toastId = toast.loading(`Sending Order ${row.original.id} to Pathao...`);
-            try {
-              const res = await fetchClient(`${getApiBaseUrl()}pathao-parcels/${row.original.id}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-              });
-              if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err?.error || err?.message || "Failed to send to Pathao.");
-              }
-              toast.success(`Order ${row.original.id} sent to Pathao`, { id: toastId });
-              invalidateOrders();
-            } catch (err: any) {
-              toast.error(err?.message || "Something went wrong.", { id: toastId });
-            }
-          }}
-        >
-          <Truck className="mr-1.5 size-3.5" /> Pathao
-        </Button>
-      )}
-    </div>
+            }}
+          >
+            <Truck className="mr-1.5 size-3.5" /> Steadfast
+          </Button>
+        )}
+        {isPathaoActive && (
+          <Button
+            size="sm"
+            className="h-7 bg-[#ef4444] hover:bg-[#ef4444]/90 text-white text-[11px] px-2 justify-start font-medium"
+            onClick={() => setPathaoModalOpen(true)}
+          >
+            <Truck className="mr-1.5 size-3.5" /> Pathao
+          </Button>
+        )}
+      </div>
+
+      <SendPathaoModal
+        orderNo={row.original.id}
+        dueAmount={row.original.due ?? 0}
+        open={pathaoModalOpen}
+        onOpenChange={setPathaoModalOpen}
+        onSuccess={invalidateOrders}
+      />
+    </>
   );
 }
 
@@ -442,7 +438,7 @@ function CourierHistoryCell({ row }: { row: any }) {
           setLiveData({ total, delivered, cancelled, successRate });
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (isMounted) setLoading(false);
       });
@@ -522,7 +518,7 @@ function CustomerFraudSuccessRate({ phone }: { phone: string }) {
           setSuccessRate(rate);
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (isMounted) setLoading(false);
       });
