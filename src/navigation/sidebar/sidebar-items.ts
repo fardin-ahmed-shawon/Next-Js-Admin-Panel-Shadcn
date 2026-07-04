@@ -98,6 +98,7 @@ export const sidebarItems: NavGroup[] = [
           { title: "Create Order", url: "/dashboard/orders/create", module: "create_orders" },
           { title: "Assign Orders", url: "/dashboard/orders/assign-orders", module: "assign_orders" },
           { title: "Order Management", url: "/dashboard/orders", module: "orders" },
+          { title: "Invoice", url: "/dashboard/orders/invoice", module: "orders" },
           { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", module: "orders", comingSoon: true },
         ],
       },

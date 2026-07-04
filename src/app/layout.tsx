@@ -11,6 +11,7 @@ import { ThemeBootScript } from "@/scripts/theme-boot";
 import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provider";
 
 import "./globals.css";
+import { PrintInvoiceGlobalModal } from "@/components/modals/print-invoice-global-modal";
 
 export const metadata: Metadata = {
   title: APP_CONFIG.meta.title,
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           >
             {children}
             <Toaster />
+            <PrintInvoiceGlobalModal />
           </PreferencesStoreProvider>
         </TooltipProvider>
       </body>

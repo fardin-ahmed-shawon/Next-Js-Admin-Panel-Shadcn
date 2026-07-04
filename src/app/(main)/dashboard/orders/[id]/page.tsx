@@ -64,6 +64,7 @@ import { usePathaoSetup } from "@/hooks/usePathaoSetup";
 import useProducts, { type Product } from "@/hooks/useProducts";
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
 import { fetchClient } from "@/lib/fetch-client";
+import { usePrintModal } from "@/hooks/usePrintModal";
 
 import { UpdatePaymentModal } from "../_components/update-payment-modal";
 
@@ -1056,23 +1057,17 @@ export default function OrderDetailPage() {
               {isSavingAll ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               Save Changes
             </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/invoice/${order.order_no}`} target="_blank" rel="noopener noreferrer">
-                <FileText className="mr-2 size-4" />
-                Invoice
-              </Link>
+            <Button variant="outline" size="sm" onClick={() => usePrintModal.getState().openModal(order.order_no, "a4", `/invoice/${order.order_no}`)}>
+              <FileText className="mr-2 size-4" />
+              Invoice
             </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/invoice/${order.order_no}/pos`} target="_blank" rel="noopener noreferrer">
-                <Printer className="mr-2 size-4" />
-                POS
-              </Link>
+            <Button variant="outline" size="sm" onClick={() => usePrintModal.getState().openModal(order.order_no, "pos", `/invoice/${order.order_no}/pos`)}>
+              <Printer className="mr-2 size-4" />
+              POS
             </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/invoice/${order.order_no}/label`} target="_blank" rel="noopener noreferrer">
-                <Truck className="mr-2 size-4" />
-                Label
-              </Link>
+            <Button variant="outline" size="sm" onClick={() => usePrintModal.getState().openModal(order.order_no, "label", `/invoice/${order.order_no}/label`)}>
+              <Truck className="mr-2 size-4" />
+              Label
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -71,7 +71,7 @@ import { usePathaoSetup } from "@/hooks/usePathaoSetup";
 import { hasModuleAccess } from "@/hooks/useRoles";
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
 import { fetchClient } from "@/lib/fetch-client";
-
+import { usePrintModal } from "@/hooks/usePrintModal";
 import { AssignOrderDialog } from "../assign-orders/_components/assign-order-dialog";
 import { UpdatePaymentModal } from "./update-payment-modal";
 
@@ -782,23 +782,17 @@ const columns: ColumnDef<OrderRow>[] = [
               </Link>
             </DropdownMenuItem> */}
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href={`/invoice/${row.original.id}`} target="_blank" rel="noopener noreferrer">
-                <FileText className="mr-2 size-4 text-muted-foreground" />
-                Print A4 Invoice
-              </Link>
+            <DropdownMenuItem onClick={() => usePrintModal.getState().openModal(row.original.id, "a4", `/invoice/${row.original.id}`)}>
+              <FileText className="mr-2 size-4 text-muted-foreground" />
+              Print A4 Invoice
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/invoice/${row.original.id}/pos`} target="_blank" rel="noopener noreferrer">
-                <Printer className="mr-2 size-4 text-muted-foreground" />
-                Print POS Receipt
-              </Link>
+            <DropdownMenuItem onClick={() => usePrintModal.getState().openModal(row.original.id, "pos", `/invoice/${row.original.id}/pos`)}>
+              <Printer className="mr-2 size-4 text-muted-foreground" />
+              Print POS Receipt
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/invoice/${row.original.id}/label`} target="_blank" rel="noopener noreferrer">
-                <Truck className="mr-2 size-4 text-muted-foreground" />
-                Print Courier Label
-              </Link>
+            <DropdownMenuItem onClick={() => usePrintModal.getState().openModal(row.original.id, "label", `/invoice/${row.original.id}/label`)}>
+              <Truck className="mr-2 size-4 text-muted-foreground" />
+              Print Courier Label
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => toast.warning(`Customer ${row.original.customer} blocked.`)}>
@@ -1157,31 +1151,19 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Bulk Print</DropdownMenuLabel>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={`/invoice/bulk?ids=${table
-                        .getSelectedRowModel()
-                        .rows.map((r) => r.original.id)
-                        .join(",")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <FileText className="mr-2 size-4" />
-                      Print A4 Invoice
-                    </Link>
+                  <DropdownMenuItem onClick={() => {
+                    const ids = table.getSelectedRowModel().rows.map((r) => r.original.id);
+                    usePrintModal.getState().openModal(ids, "a4", `/invoice/bulk?ids=${ids.join(",")}`);
+                  }}>
+                    <FileText className="mr-2 size-4" />
+                    Print A4 Invoice
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={`/invoice/bulk/pos?ids=${table
-                        .getSelectedRowModel()
-                        .rows.map((r) => r.original.id)
-                        .join(",")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Printer className="mr-2 size-4" />
-                      Print Parcel Invoice
-                    </Link>
+                  <DropdownMenuItem onClick={() => {
+                    const ids = table.getSelectedRowModel().rows.map((r) => r.original.id);
+                    usePrintModal.getState().openModal(ids, "pos", `/invoice/bulk/pos?ids=${ids.join(",")}`);
+                  }}>
+                    <Printer className="mr-2 size-4" />
+                    Print Parcel Invoice
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
