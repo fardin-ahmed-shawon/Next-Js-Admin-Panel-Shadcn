@@ -201,9 +201,8 @@ function CustomerOrderHistory({ orders, currentOrderNo }: { orders: CustomerOrde
         return (
           <div
             key={o.id}
-            className={`rounded-lg border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors ${
-              isCurrent ? "bg-primary/5 border-primary/30" : "bg-muted/20"
-            }`}
+            className={`rounded-lg border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors ${isCurrent ? "bg-primary/5 border-primary/30" : "bg-muted/20"
+              }`}
           >
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
@@ -301,16 +300,16 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
 
   const availableColors = item.size
     ? colors.filter((c: any) => {
-        const sizeId = sizes.find((s: any) => s.label === item.size)?.id;
-        return variants.some((v: any) => v.size_id === sizeId && v.color_id === c.id);
-      })
+      const sizeId = sizes.find((s: any) => s.label === item.size)?.id;
+      return variants.some((v: any) => v.size_id === sizeId && v.color_id === c.id);
+    })
     : colors;
 
   const availableSizes = item.color
     ? sizes.filter((s: any) => {
-        const colorId = colors.find((c: any) => c.label === item.color)?.id;
-        return variants.some((v: any) => v.color_id === colorId && v.size_id === s.id);
-      })
+      const colorId = colors.find((c: any) => c.label === item.color)?.id;
+      return variants.some((v: any) => v.color_id === colorId && v.size_id === s.id);
+    })
     : sizes;
 
   React.useEffect(() => {
@@ -1317,8 +1316,8 @@ export default function OrderDetailPage() {
                         {Math.max(
                           0,
                           cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0) -
-                            discountAmountInput +
-                            shippingChargeInput,
+                          discountAmountInput +
+                          shippingChargeInput,
                         ).toLocaleString()}
                       </span>
                     </div>
@@ -1589,15 +1588,14 @@ export default function OrderDetailPage() {
                         <span className="text-muted-foreground">Global Success Rate:</span>
                         <Badge
                           variant="outline"
-                          className={`font-mono font-semibold border-none ${
-                            fraudTotal === 0
+                          className={`font-mono font-semibold border-none ${fraudTotal === 0
                               ? "bg-muted text-muted-foreground"
                               : fraudDelivered / fraudTotal >= 0.8
                                 ? "bg-green-500/10 text-green-600 dark:text-green-400"
                                 : fraudDelivered / fraudTotal >= 0.5
                                   ? "bg-yellow-500/10 text-yellow-600"
                                   : "bg-destructive/10 text-destructive"
-                          }`}
+                            }`}
                         >
                           {fraudSuccessRate}
                         </Badge>
