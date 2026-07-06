@@ -36,6 +36,10 @@ const IsComingSoon = () => (
   <span className="ml-auto rounded-md bg-gray-200 px-2 py-1 text-xs dark:text-gray-800">Soon</span>
 );
 
+const IsNewBadge = () => (
+  <span className="ml-auto rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-semibold text-white leading-none">New</span>
+);
+
 const NavItemExpanded = ({
   item,
   isActive,
@@ -58,6 +62,7 @@ const NavItemExpanded = ({
               {item.icon && <item.icon />}
               <span>{item.title}</span>
               {item.comingSoon && <IsComingSoon />}
+              {item.isNew && <IsNewBadge />}
               <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
             </SidebarMenuButton>
           ) : (
@@ -71,6 +76,7 @@ const NavItemExpanded = ({
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
                 {item.comingSoon && <IsComingSoon />}
+                {item.isNew && <IsNewBadge />}
               </Link>
             </SidebarMenuButton>
           )}
@@ -94,6 +100,7 @@ const NavItemExpanded = ({
                       <Link prefetch={false} href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
                         {subItem.icon && <subItem.icon />}
                         <span>{subItem.title}</span>
+                        {subItem.isNew && <IsNewBadge />}
                       </Link>
                     </SidebarMenuSubButton>
                   )}
@@ -151,6 +158,7 @@ const NavItemCollapsed = ({
                   <Link prefetch={false} href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
                     {subItem.icon && <subItem.icon className="[&>svg]:text-sidebar-foreground" />}
                     <span>{subItem.title}</span>
+                    {subItem.isNew && <IsNewBadge />}
                   </Link>
                 </SidebarMenuSubButton>
               )}
@@ -235,6 +243,8 @@ export function NavMain({ items }: NavMainProps) {
                           <Link prefetch={false} href={item.url} target={item.newTab ? "_blank" : undefined}>
                             {item.icon && <item.icon />}
                             <span>{item.title}</span>
+                            {item.comingSoon && <IsComingSoon />}
+                            {item.isNew && <IsNewBadge />}
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
