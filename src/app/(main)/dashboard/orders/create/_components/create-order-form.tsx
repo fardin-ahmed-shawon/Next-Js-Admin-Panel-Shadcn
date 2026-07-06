@@ -444,17 +444,22 @@ export function CreateOrderForm() {
       toast.error("Customer phone is required.");
       return;
     }
-    if (!shippingAddress.trim() || !division || !district || !thana) {
-      toast.error("Complete shipping address is required.");
+    if (!shippingAddress.trim()) {
+      toast.error("Shipping address is required.");
       return;
     }
+
+    const fullAddress = [shippingAddress, thana, district, division]
+      .map((part) => part?.trim())
+      .filter(Boolean)
+      .join(", ");
 
     const payload = {
       customer_id: customerId || 0,
       customer_full_name: customerName,
       customer_phone: customerPhone,
       customer_email: customerEmail,
-      customer_shipping_address: `${shippingAddress}, ${thana}, ${district}, ${division}`,
+      customer_shipping_address: fullAddress,
       shipping_area:
         shippingMethod === "inside-dhaka"
           ? "Inside Dhaka"
@@ -780,9 +785,9 @@ export function CreateOrderForm() {
                 <div className="space-y-2">
                   <Label>Division</Label>
                   <Select
-                    value={division}
+                    value={division || "none"}
                     onValueChange={(v) => {
-                      setDivision(v);
+                      setDivision(v === "none" ? "" : v);
                       setDistrict("");
                       setThana("");
                     }}
@@ -791,6 +796,7 @@ export function CreateOrderForm() {
                       <SelectValue placeholder="Select division" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Select division</SelectItem>
                       {divisions.map((d) => (
                         <SelectItem key={d} value={d}>
                           {d}
@@ -802,9 +808,9 @@ export function CreateOrderForm() {
                 <div className="space-y-2">
                   <Label>District</Label>
                   <Select
-                    value={district}
+                    value={district || "none"}
                     onValueChange={(v) => {
-                      setDistrict(v);
+                      setDistrict(v === "none" ? "" : v);
                       setThana("");
                     }}
                     disabled={!division}
@@ -813,6 +819,7 @@ export function CreateOrderForm() {
                       <SelectValue placeholder="Select district" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Select district</SelectItem>
                       {availableDistricts.map((d) => (
                         <SelectItem key={d} value={d}>
                           {d}
@@ -823,11 +830,16 @@ export function CreateOrderForm() {
                 </div>
                 <div className="space-y-2">
                   <Label>Thana</Label>
-                  <Select value={thana} onValueChange={setThana} disabled={!district}>
+                  <Select
+                    value={thana || "none"}
+                    onValueChange={(v) => setThana(v === "none" ? "" : v)}
+                    disabled={!district}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select thana" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Select thana</SelectItem>
                       {availableThanas.map((t) => (
                         <SelectItem key={t} value={t}>
                           {t}
