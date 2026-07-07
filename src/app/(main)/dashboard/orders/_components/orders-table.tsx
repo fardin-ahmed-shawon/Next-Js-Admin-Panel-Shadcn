@@ -177,6 +177,7 @@ function SendCourierCell({ row }: { row: any }) {
 
   const [courierStatus, setCourierStatus] = React.useState<string | null>(null);
   const [courierLoading, setCourierLoading] = React.useState(false);
+  const [payInfo, setPayInfo] = React.useState<{ invoiceId: string | null; paymentStatus: string | null } | null>(null);
 
   React.useEffect(() => {
     if (!hasSteadfastParcel && !hasPathaoParcel) return;
@@ -200,12 +201,25 @@ function SendCourierCell({ row }: { row: any }) {
             nested.parcel_status ||
             "Unknown";
           setCourierStatus(status.trim().toLowerCase());
+          
+          setPayInfo({
+            invoiceId: nested.invoice_id || null,
+            paymentStatus: nested.payment_status || null,
+          });
         } else {
           setCourierStatus(row.original.courier_details?.parcel_status || null);
+          setPayInfo({
+            invoiceId: row.original.courier_details?.invoice_id || null,
+            paymentStatus: row.original.courier_details?.payment_status || null,
+          });
         }
       } catch (err) {
         if (!isMounted) return;
         setCourierStatus(row.original.courier_details?.parcel_status || null);
+        setPayInfo({
+          invoiceId: row.original.courier_details?.invoice_id || null,
+          paymentStatus: row.original.courier_details?.payment_status || null,
+        });
       } finally {
         if (isMounted) setCourierLoading(false);
       }
@@ -220,9 +234,9 @@ function SendCourierCell({ row }: { row: any }) {
   if (hasSteadfastParcel || hasPathaoParcel) {
     if (courierLoading) {
       return (
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted border border-muted-foreground/10 px-2.5 py-1 rounded-md justify-center w-[110px] select-none">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted border border-muted-foreground/10 px-2.5 py-1 rounded-md justify-center w-[135px] select-none">
           <Loader2 className="size-3.5 animate-spin text-primary shrink-0" />
-          <span className="truncate">Fetching...</span>
+          <span className="truncate">Loading...</span>
         </div>
       );
     }
@@ -255,20 +269,46 @@ function SendCourierCell({ row }: { row: any }) {
     }
 
     return (
-      <div className="flex justify-center w-[110px] select-none">
+      <div className="flex flex-col gap-1.5 w-[135px] items-center select-none">
         <Badge
           variant="outline"
           className={`text-[11px] font-bold px-2 py-0.5 rounded border justify-center w-full text-center ${statusClass}`}
         >
           {statusText}
         </Badge>
+        {payInfo && (payInfo.invoiceId || payInfo.paymentStatus) && (
+          <div className="flex flex-col gap-0.5 w-full text-left px-1 mt-0.5 border-t border-dashed pt-1.5 border-muted-foreground/20">
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="font-semibold text-muted-foreground uppercase">Inv:</span>
+              <span className="font-mono font-medium text-foreground truncate max-w-[85px]" title={payInfo.invoiceId || "—"}>
+                {payInfo.invoiceId || "—"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[10px] mt-0.5">
+              <span className="font-semibold text-muted-foreground uppercase">Pay:</span>
+              {payInfo.paymentStatus ? (
+                <span className={`font-bold px-1 rounded-[3px] text-[9px] border ${
+                  payInfo.paymentStatus.toLowerCase().includes("paid")
+                    ? "border-green-500/30 text-green-600 bg-green-500/5"
+                    : payInfo.paymentStatus.toLowerCase().includes("cancel") || payInfo.paymentStatus.toLowerCase().includes("fail") || payInfo.paymentStatus.toLowerCase().includes("refund")
+                      ? "border-red-500/30 text-red-600 bg-red-500/5"
+                      : "border-amber-500/30 text-amber-600 bg-amber-500/5"
+                }`}>
+                  {payInfo.paymentStatus.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">—</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   if (row.original.orderStatus === "Delivered") {
     return (
-      <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-md justify-center w-[110px] select-none">
+      <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-md justify-center w-[135px] select-none">
         <span className="truncate">Office Delivered</span>
       </div>
     );
@@ -279,7 +319,7 @@ function SendCourierCell({ row }: { row: any }) {
   }
 
   return (
-    <div className="flex flex-col gap-1.5 w-[110px]">
+    <div className="flex flex-col gap-1.5 w-[135px]">
       {isSteadfastActive && (
         <Button
           size="sm"

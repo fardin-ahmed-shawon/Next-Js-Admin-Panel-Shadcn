@@ -278,7 +278,7 @@ function CourierPayStatusCell({ invoiceNo }: { invoiceNo: string }) {
     <div className="flex flex-col gap-1 max-w-[130px] py-1">
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-[10px] font-semibold text-muted-foreground uppercase">Inv:</span>
-        <span className="text-xs font-mono font-medium truncate max-w-[90px]" title={invoiceId || "Not generated"}>
+        <span className="text-xs font-mono font-medium max-w-[90px]" title={invoiceId || "Not generated"}>
           {invoiceId || "—"}
         </span>
       </div>
