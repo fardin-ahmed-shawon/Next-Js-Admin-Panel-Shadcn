@@ -218,6 +218,11 @@ const columns: ColumnDef<ParcelRow>[] = [
     },
   },
   {
+    id: "courierPayStatus",
+    header: "Courier Pay Status",
+    cell: ({ row }) => <CourierPayStatusCell invoiceNo={row.original.invoice_no} />,
+  },
+  {
     id: "actions",
     header: () => <div className="flex w-full justify-end">Actions</div>,
     cell: ({ row }) => <RowActions row={row.original} />,
@@ -225,6 +230,80 @@ const columns: ColumnDef<ParcelRow>[] = [
     enableSorting: false,
   },
 ];
+
+function CourierPayStatusCell({ invoiceNo }: { invoiceNo: string }) {
+  const [payInfo, setPayInfo] = React.useState<{ invoiceId: string | null; paymentStatus: string | null } | null>(null);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const fetchStatus = async () => {
+      setLoading(true);
+      try {
+        const res = await pathaoService.checkStatus(invoiceNo);
+        if (!isMounted) return;
+        // Handle both possible structures safely
+        const nestedData = res?.data?.data || res?.data || res;
+        const invoiceId = nestedData?.invoice_id || null;
+        const paymentStatus = nestedData?.payment_status || null;
+        setPayInfo({ invoiceId, paymentStatus });
+      } catch (err) {
+        if (!isMounted) return;
+        setPayInfo({ invoiceId: null, paymentStatus: "Error" });
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchStatus();
+    return () => {
+      isMounted = false;
+    };
+  }, [invoiceNo]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground py-1">
+        <Loader2 className="size-3 animate-spin text-primary shrink-0" />
+        <span>Loading...</span>
+      </div>
+    );
+  }
+
+  if (!payInfo) return <span className="text-xs text-muted-foreground">—</span>;
+
+  const { invoiceId, paymentStatus } = payInfo;
+  const formattedStatus = paymentStatus ? paymentStatus.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : null;
+
+  return (
+    <div className="flex flex-col gap-1 max-w-[130px] py-1">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase">Inv:</span>
+        <span className="text-xs font-mono font-medium truncate max-w-[90px]" title={invoiceId || "Not generated"}>
+          {invoiceId || "—"}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase">Pay:</span>
+        {formattedStatus ? (
+          <Badge
+            variant="outline"
+            className={`text-[9px] font-bold px-1 py-0 rounded border ${
+              formattedStatus.toLowerCase().includes("paid")
+                ? "border-green-500/30 text-green-600 bg-green-500/5 hover:bg-green-500/10"
+                : formattedStatus.toLowerCase().includes("cancel") || formattedStatus.toLowerCase().includes("fail") || formattedStatus.toLowerCase().includes("refund")
+                  ? "border-red-500/30 text-red-600 bg-red-500/5 hover:bg-red-500/10"
+                  : "border-amber-500/30 text-amber-600 bg-amber-500/5 hover:bg-amber-500/10"
+            }`}
+          >
+            {formattedStatus}
+          </Badge>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function RowActions({ row }: { row: ParcelRow }) {
   const handleCheckStatus = async () => {

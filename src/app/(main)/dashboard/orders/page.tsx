@@ -147,6 +147,7 @@ export default function OrdersPage() {
         courier: "",
         steadfast_parcel: order.steadfast_parcel || order.steadfastParcel || null,
         pathao_parcel: order.pathao_parcel || order.pathaoParcel || null,
+        courier_details: order.courier_details || null,
         assignedEmployee: assignedEmployee,
         parcelHistory: {
           total: order.customer?.parcel_history?.total || 0,

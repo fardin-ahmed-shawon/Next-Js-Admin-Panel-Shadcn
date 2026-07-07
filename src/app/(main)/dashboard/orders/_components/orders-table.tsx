@@ -124,6 +124,9 @@ export interface OrderRow {
   ipAddress?: string;
   createdAt?: string;
   shippingAddress?: string;
+  steadfast_parcel?: any;
+  pathao_parcel?: any;
+  courier_details?: any;
 }
 
 /* ---- Status badge colors ---- */
@@ -172,11 +175,93 @@ function SendCourierCell({ row }: { row: any }) {
   const hasSteadfastParcel = !!row.original.steadfast_parcel || !!row.original.steadfastParcel;
   const hasPathaoParcel = !!row.original.pathao_parcel || !!row.original.pathaoParcel;
 
+  const [courierStatus, setCourierStatus] = React.useState<string | null>(null);
+  const [courierLoading, setCourierLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!hasSteadfastParcel && !hasPathaoParcel) return;
+
+    let isMounted = true;
+    const fetchCourierStatus = async () => {
+      setCourierLoading(true);
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+        const courier = hasSteadfastParcel ? "steadfast" : "pathao";
+        const res = await fetchClient(`${baseUrl}${courier}-parcels/${row.original.id}/status`);
+        if (!isMounted) return;
+        if (res.ok) {
+          const json = await res.json();
+          const nested = json.data?.data || json.data || json;
+          const status =
+            nested.order_status_slug ||
+            nested.order_status ||
+            nested.delivery_status ||
+            nested.status ||
+            nested.parcel_status ||
+            "Unknown";
+          setCourierStatus(status.trim().toLowerCase());
+        } else {
+          setCourierStatus(row.original.courier_details?.parcel_status || null);
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        setCourierStatus(row.original.courier_details?.parcel_status || null);
+      } finally {
+        if (isMounted) setCourierLoading(false);
+      }
+    };
+
+    fetchCourierStatus();
+    return () => {
+      isMounted = false;
+    };
+  }, [row.original.id, hasSteadfastParcel, hasPathaoParcel, row.original.courier_details?.parcel_status]);
+
   if (hasSteadfastParcel || hasPathaoParcel) {
+    if (courierLoading) {
+      return (
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted border border-muted-foreground/10 px-2.5 py-1 rounded-md justify-center w-[110px] select-none">
+          <Loader2 className="size-3.5 animate-spin text-primary shrink-0" />
+          <span className="truncate">Fetching...</span>
+        </div>
+      );
+    }
+    const rawStatus = courierStatus || row.original.courier_details?.parcel_status || "pending";
+    const statusText = rawStatus.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase());
+
+    let statusClass = "border-blue-500 text-blue-600 bg-blue-500/5 hover:bg-blue-500/10";
+    if (hasPathaoParcel) {
+      if (rawStatus === "delivered") {
+        statusClass = "border-green-500 text-green-600 bg-green-500/5 hover:bg-green-500/10";
+      } else if (rawStatus === "cancelled" || rawStatus === "failed") {
+        statusClass = "border-red-500 text-red-600 bg-red-500/5 hover:bg-red-500/10";
+      } else if (rawStatus === "returned" || rawStatus === "return") {
+        statusClass = "border-orange-500 text-orange-600 bg-orange-500/5 hover:bg-orange-500/10";
+      }
+    } else if (hasSteadfastParcel) {
+      if (rawStatus === "delivered") {
+        statusClass = "border-green-500 text-green-600 bg-green-500/5 hover:bg-green-500/10";
+      } else if (rawStatus === "cancelled") {
+        statusClass = "border-red-500 text-red-600 bg-red-500/5 hover:bg-red-500/10";
+      } else if (rawStatus === "returned" || rawStatus === "in_return") {
+        statusClass = "border-orange-500 text-orange-600 bg-orange-500/5 hover:bg-orange-500/10";
+      } else if (
+        rawStatus === "delivered_approval_pending" ||
+        rawStatus === "partial_delivered_approval_pending" ||
+        rawStatus === "unknown_approval_pending"
+      ) {
+        statusClass = "border-yellow-500 text-yellow-600 bg-yellow-500/5 hover:bg-yellow-500/10";
+      }
+    }
+
     return (
-      <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md justify-center w-[110px] select-none">
-        <Check className="size-3.5 shrink-0" />
-        <span className="truncate">Already Sent</span>
+      <div className="flex justify-center w-[110px] select-none">
+        <Badge
+          variant="outline"
+          className={`text-[11px] font-bold px-2 py-0.5 rounded border justify-center w-full text-center ${statusClass}`}
+        >
+          {statusText}
+        </Badge>
       </div>
     );
   }
@@ -749,10 +834,10 @@ const columns: ColumnDef<OrderRow>[] = [
     cell: ({ row }) => <AssignedEmployeeCell row={row} />,
   },
 
-  // Send Courier column
+  // Courier column
   {
     id: "sendCourier",
-    header: "Send Courier",
+    header: "Courier",
     cell: ({ row }) => <SendCourierCell row={row} />,
   },
 
