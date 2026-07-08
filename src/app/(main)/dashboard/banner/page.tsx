@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:8000";
@@ -154,38 +155,52 @@ export default function BannerPage() {
   const [banner1Preview, setBanner1Preview] = React.useState("");
   const [banner1Default, setBanner1Default] = React.useState("");
   const [banner1Removed, setBanner1Removed] = React.useState(false);
+  const [banner1Url, setBanner1Url] = React.useState("");
+  const [banner1InitialUrl, setBanner1InitialUrl] = React.useState("");
 
   const [banner2File, setBanner2File] = React.useState<File | null>(null);
   const [banner2Preview, setBanner2Preview] = React.useState("");
   const [banner2Default, setBanner2Default] = React.useState("");
   const [banner2Removed, setBanner2Removed] = React.useState(false);
+  const [banner2Url, setBanner2Url] = React.useState("");
+  const [banner2InitialUrl, setBanner2InitialUrl] = React.useState("");
 
   // Group 2
   const [banner3File, setBanner3File] = React.useState<File | null>(null);
   const [banner3Preview, setBanner3Preview] = React.useState("");
   const [banner3Default, setBanner3Default] = React.useState("");
   const [banner3Removed, setBanner3Removed] = React.useState(false);
+  const [banner3Url, setBanner3Url] = React.useState("");
+  const [banner3InitialUrl, setBanner3InitialUrl] = React.useState("");
 
   const [banner4File, setBanner4File] = React.useState<File | null>(null);
   const [banner4Preview, setBanner4Preview] = React.useState("");
   const [banner4Default, setBanner4Default] = React.useState("");
   const [banner4Removed, setBanner4Removed] = React.useState(false);
+  const [banner4Url, setBanner4Url] = React.useState("");
+  const [banner4InitialUrl, setBanner4InitialUrl] = React.useState("");
 
   // Group 3
   const [banner5File, setBanner5File] = React.useState<File | null>(null);
   const [banner5Preview, setBanner5Preview] = React.useState("");
   const [banner5Default, setBanner5Default] = React.useState("");
   const [banner5Removed, setBanner5Removed] = React.useState(false);
+  const [banner5Url, setBanner5Url] = React.useState("");
+  const [banner5InitialUrl, setBanner5InitialUrl] = React.useState("");
 
   const [banner6File, setBanner6File] = React.useState<File | null>(null);
   const [banner6Preview, setBanner6Preview] = React.useState("");
   const [banner6Default, setBanner6Default] = React.useState("");
   const [banner6Removed, setBanner6Removed] = React.useState(false);
+  const [banner6Url, setBanner6Url] = React.useState("");
+  const [banner6InitialUrl, setBanner6InitialUrl] = React.useState("");
 
   const [banner7File, setBanner7File] = React.useState<File | null>(null);
   const [banner7Preview, setBanner7Preview] = React.useState("");
   const [banner7Default, setBanner7Default] = React.useState("");
   const [banner7Removed, setBanner7Removed] = React.useState(false);
+  const [banner7Url, setBanner7Url] = React.useState("");
+  const [banner7InitialUrl, setBanner7InitialUrl] = React.useState("");
 
   // Fetch banners from API
   const fetchBanners = async () => {
@@ -210,12 +225,40 @@ export default function BannerPage() {
         const data = result.data;
         setBannerId(data.id);
         if (data.banner_img_1) setBanner1Default(data.banner_img_1);
+        if (data.banner_url_1) {
+          setBanner1Url(data.banner_url_1);
+          setBanner1InitialUrl(data.banner_url_1);
+        }
         if (data.banner_img_2) setBanner2Default(data.banner_img_2);
+        if (data.banner_url_2) {
+          setBanner2Url(data.banner_url_2);
+          setBanner2InitialUrl(data.banner_url_2);
+        }
         if (data.banner_img_3) setBanner3Default(data.banner_img_3);
+        if (data.banner_url_3) {
+          setBanner3Url(data.banner_url_3);
+          setBanner3InitialUrl(data.banner_url_3);
+        }
         if (data.banner_img_4) setBanner4Default(data.banner_img_4);
+        if (data.banner_url_4) {
+          setBanner4Url(data.banner_url_4);
+          setBanner4InitialUrl(data.banner_url_4);
+        }
         if (data.banner_img_5) setBanner5Default(data.banner_img_5);
+        if (data.banner_url_5) {
+          setBanner5Url(data.banner_url_5);
+          setBanner5InitialUrl(data.banner_url_5);
+        }
         if (data.banner_img_6) setBanner6Default(data.banner_img_6);
+        if (data.banner_url_6) {
+          setBanner6Url(data.banner_url_6);
+          setBanner6InitialUrl(data.banner_url_6);
+        }
         if (data.banner_img_7) setBanner7Default(data.banner_img_7);
+        if (data.banner_url_7) {
+          setBanner7Url(data.banner_url_7);
+          setBanner7InitialUrl(data.banner_url_7);
+        }
       }
     } catch (error) {
       console.error("Error fetching banners:", error);
@@ -294,12 +337,20 @@ export default function BannerPage() {
         formData.append("remove_banner_img_1", "true");
         hasChanges = true;
       }
+      if (banner1Url !== banner1InitialUrl) {
+        formData.append("banner_url_1", banner1Url);
+        hasChanges = true;
+      }
 
       if (banner2File) {
         formData.append("banner_img_2", banner2File);
         hasChanges = true;
       } else if (banner2Removed) {
         formData.append("remove_banner_img_2", "true");
+        hasChanges = true;
+      }
+      if (banner2Url !== banner2InitialUrl) {
+        formData.append("banner_url_2", banner2Url);
         hasChanges = true;
       }
 
@@ -311,12 +362,20 @@ export default function BannerPage() {
         formData.append("remove_banner_img_3", "true");
         hasChanges = true;
       }
+      if (banner3Url !== banner3InitialUrl) {
+        formData.append("banner_url_3", banner3Url);
+        hasChanges = true;
+      }
 
       if (banner4File) {
         formData.append("banner_img_4", banner4File);
         hasChanges = true;
       } else if (banner4Removed) {
         formData.append("remove_banner_img_4", "true");
+        hasChanges = true;
+      }
+      if (banner4Url !== banner4InitialUrl) {
+        formData.append("banner_url_4", banner4Url);
         hasChanges = true;
       }
 
@@ -328,6 +387,10 @@ export default function BannerPage() {
         formData.append("remove_banner_img_5", "true");
         hasChanges = true;
       }
+      if (banner5Url !== banner5InitialUrl) {
+        formData.append("banner_url_5", banner5Url);
+        hasChanges = true;
+      }
 
       if (banner6File) {
         formData.append("banner_img_6", banner6File);
@@ -336,12 +399,20 @@ export default function BannerPage() {
         formData.append("remove_banner_img_6", "true");
         hasChanges = true;
       }
+      if (banner6Url !== banner6InitialUrl) {
+        formData.append("banner_url_6", banner6Url);
+        hasChanges = true;
+      }
 
       if (banner7File) {
         formData.append("banner_img_7", banner7File);
         hasChanges = true;
       } else if (banner7Removed) {
         formData.append("remove_banner_img_7", "true");
+        hasChanges = true;
+      }
+      if (banner7Url !== banner7InitialUrl) {
+        formData.append("banner_url_7", banner7Url);
         hasChanges = true;
       }
 
@@ -453,6 +524,15 @@ export default function BannerPage() {
                 }}
                 onRemoveDefault={handleRemoveBanner1}
               />
+              <div className="mt-2 space-y-1.5 max-w-xl">
+                <Label htmlFor="banner1-url" className="text-xs text-muted-foreground">Banner 1 Target URL</Label>
+                <Input
+                  id="banner1-url"
+                  placeholder="e.g. /shop or https://..."
+                  value={banner1Url}
+                  onChange={(e) => setBanner1Url(e.target.value)}
+                />
+              </div>
             </div>
             <Separator />
             <div className="space-y-4">
@@ -470,6 +550,15 @@ export default function BannerPage() {
                 }}
                 onRemoveDefault={handleRemoveBanner2}
               />
+              <div className="mt-2 space-y-1.5 max-w-xl">
+                <Label htmlFor="banner2-url" className="text-xs text-muted-foreground">Banner 2 Target URL</Label>
+                <Input
+                  id="banner2-url"
+                  placeholder="e.g. /shop or https://..."
+                  value={banner2Url}
+                  onChange={(e) => setBanner2Url(e.target.value)}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -503,6 +592,15 @@ export default function BannerPage() {
                 }}
                 onRemoveDefault={handleRemoveBanner3}
               />
+              <div className="mt-2 space-y-1.5 max-w-xl">
+                <Label htmlFor="banner3-url" className="text-xs text-muted-foreground">Banner 3 Target URL</Label>
+                <Input
+                  id="banner3-url"
+                  placeholder="e.g. /shop or https://..."
+                  value={banner3Url}
+                  onChange={(e) => setBanner3Url(e.target.value)}
+                />
+              </div>
             </div>
             <Separator />
             <div className="space-y-4">
@@ -520,6 +618,15 @@ export default function BannerPage() {
                 }}
                 onRemoveDefault={handleRemoveBanner4}
               />
+              <div className="mt-2 space-y-1.5 max-w-xl">
+                <Label htmlFor="banner4-url" className="text-xs text-muted-foreground">Banner 4 Target URL</Label>
+                <Input
+                  id="banner4-url"
+                  placeholder="e.g. /shop or https://..."
+                  value={banner4Url}
+                  onChange={(e) => setBanner4Url(e.target.value)}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -553,6 +660,15 @@ export default function BannerPage() {
                 }}
                 onRemoveDefault={handleRemoveBanner5}
               />
+              <div className="mt-2 space-y-1.5 max-w-xl">
+                <Label htmlFor="banner5-url" className="text-xs text-muted-foreground">Banner 5 Target URL</Label>
+                <Input
+                  id="banner5-url"
+                  placeholder="e.g. /shop or https://..."
+                  value={banner5Url}
+                  onChange={(e) => setBanner5Url(e.target.value)}
+                />
+              </div>
             </div>
             <Separator />
             <div className="space-y-4">
@@ -570,6 +686,15 @@ export default function BannerPage() {
                 }}
                 onRemoveDefault={handleRemoveBanner6}
               />
+              <div className="mt-2 space-y-1.5 max-w-xl">
+                <Label htmlFor="banner6-url" className="text-xs text-muted-foreground">Banner 6 Target URL</Label>
+                <Input
+                  id="banner6-url"
+                  placeholder="e.g. /shop or https://..."
+                  value={banner6Url}
+                  onChange={(e) => setBanner6Url(e.target.value)}
+                />
+              </div>
             </div>
             <Separator />
             <div className="space-y-4">
@@ -587,6 +712,15 @@ export default function BannerPage() {
                 }}
                 onRemoveDefault={handleRemoveBanner7}
               />
+              <div className="mt-2 space-y-1.5 max-w-xl">
+                <Label htmlFor="banner7-url" className="text-xs text-muted-foreground">Banner 7 Target URL</Label>
+                <Input
+                  id="banner7-url"
+                  placeholder="e.g. /shop or https://..."
+                  value={banner7Url}
+                  onChange={(e) => setBanner7Url(e.target.value)}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

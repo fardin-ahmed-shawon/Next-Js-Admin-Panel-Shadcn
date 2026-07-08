@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "";
@@ -162,6 +163,8 @@ interface SliderItem {
   preview: string;
   defaultImage: string;
   existingId?: number;
+  url?: string;
+  initialUrl?: string;
 }
 
 export default function SliderPage() {
@@ -207,6 +210,8 @@ export default function SliderPage() {
         preview: "",
         defaultImage: slider.slider_img || "",
         existingId: slider.id,
+        url: slider.url || "",
+        initialUrl: slider.url || "",
       }));
 
       console.log("Transformed data:", transformedData);
@@ -232,6 +237,8 @@ export default function SliderPage() {
         preview: "",
         defaultImage: "",
         existingId: undefined,
+        url: "",
+        initialUrl: "",
       },
     ]);
   };
@@ -269,6 +276,10 @@ export default function SliderPage() {
     setSliders((prev) => prev.map((s) => (s.id === id ? { ...s, file, preview } : s)));
   };
 
+  const updateSliderUrl = (id: string, url: string) => {
+    setSliders((prev) => prev.map((s) => (s.id === id ? { ...s, url } : s)));
+  };
+
   const removeDefaultImage = (id: string) => {
     setSliders((prev) => prev.map((s) => (s.id === id ? { ...s, defaultImage: "" } : s)));
   };
@@ -280,10 +291,19 @@ export default function SliderPage() {
     try {
       // Process each slider
       for (const slider of sliders) {
-        if (slider.file) {
+        const isNew = !slider.existingId;
+        const fileChanged = !!slider.file;
+        const urlChanged = slider.url !== slider.initialUrl;
+
+        if (isNew || fileChanged || urlChanged) {
           // Create form data for image upload
           const formData = new FormData();
-          formData.append("slider_img", slider.file);
+          if (slider.file) {
+            formData.append("slider_img", slider.file);
+          }
+          if (slider.url !== undefined) {
+            formData.append("url", slider.url);
+          }
 
           if (slider.existingId) {
             // Update existing slider - use POST with _method PUT for file upload
@@ -395,6 +415,15 @@ export default function SliderPage() {
                 onChange={(f, p) => updateSlider(slider.id, f, p)}
                 onRemoveDefault={() => removeDefaultImage(slider.id)}
               />
+              <div className="mt-4 space-y-1.5 max-w-xl">
+                <Label htmlFor={`slider-url-${slider.id}`} className="text-xs">Target URL</Label>
+                <Input
+                  id={`slider-url-${slider.id}`}
+                  placeholder="e.g. /shop or https://..."
+                  value={slider.url || ""}
+                  onChange={(e) => updateSliderUrl(slider.id, e.target.value)}
+                />
+              </div>
             </CardContent>
           </Card>
         ))}
