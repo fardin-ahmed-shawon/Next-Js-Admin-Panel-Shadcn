@@ -138,6 +138,7 @@ export default function OrdersPage() {
         date: dateString,
         time: timeString,
         orderType: "regular",
+        source: order.source || null,
         avatar: avatarUrl,
         category: mainCategory,
         subCategory: subCategory,

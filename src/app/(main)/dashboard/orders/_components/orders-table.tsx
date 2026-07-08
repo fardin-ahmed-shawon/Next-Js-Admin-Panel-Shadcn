@@ -127,6 +127,7 @@ export interface OrderRow {
   steadfast_parcel?: any;
   pathao_parcel?: any;
   courier_details?: any;
+  source?: string;
 }
 
 /* ---- Status badge colors ---- */
@@ -741,10 +742,28 @@ const columns: ColumnDef<OrderRow>[] = [
             {row.original.date} · {row.original.time}
           </p>
           <p className="text-[11px] text-muted-foreground/80 font-mono">IP: {row.original.ipAddress || "—"}</p>
-          {row.original.createdAt && (
-            <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-              {getRelativeTime(row.original.createdAt)}
-            </p>
+          {(row.original.createdAt || row.original.source) && (
+            <div className="flex items-center justify-between gap-2 mt-1">
+              {row.original.createdAt ? (
+                <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                  {getRelativeTime(row.original.createdAt)}
+                </p>
+              ) : (
+                <div />
+              )}
+              {row.original.source && (
+                <Badge
+                  variant="outline"
+                  className={`text-[9px] font-bold px-1.5 py-0 h-4 border leading-none shrink-0 ${
+                    row.original.source === "Website"
+                      ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/10"
+                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/10"
+                  }`}
+                >
+                  {row.original.source}
+                </Badge>
+              )}
+            </div>
           )}
         </div>
       );
