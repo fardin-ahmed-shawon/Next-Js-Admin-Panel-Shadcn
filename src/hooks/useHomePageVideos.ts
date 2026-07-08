@@ -5,6 +5,13 @@ import { fetchClient } from "@/lib/fetch-client";
 export interface HomePageVideo {
   id: number;
   vdo_url: string;
+  product_id?: number;
+  product?: {
+    id: number;
+    title: string;
+    selling_price: number;
+    product_thumbnail_img: string | null;
+  };
   created_at: string;
   updated_at: string;
 }
@@ -31,13 +38,13 @@ export function useHomePageVideos() {
     revalidateOnFocus: false,
   });
 
-  const addVideo = async (vdoUrl: string) => {
+  const addVideo = async (vdoUrl: string, productId: number) => {
     const res = await fetchClient(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ vdo_url: vdoUrl }),
+      body: JSON.stringify({ vdo_url: vdoUrl, product_id: productId }),
     });
 
     const json = await res.json();
