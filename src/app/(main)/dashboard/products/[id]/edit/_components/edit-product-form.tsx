@@ -21,6 +21,7 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import useAttributes from "@/hooks/useAttributes";
 import useCategories from "@/hooks/useCategories";
 import useProduct from "@/hooks/useProduct";
+import { ProductVariantsSection, Variant } from "../../../add/_components/product-variants-section";
 
 const isDescriptionEmpty = (html: string) => {
   if (!html) return true;
@@ -29,16 +30,6 @@ const isDescriptionEmpty = (html: string) => {
 };
 
 /* ---- Types ---- */
-interface Variant {
-  id?: number | string;
-  color: string;
-  size: string;
-  sku: string;
-  available_stock: string | number;
-  purchasePrice?: string;
-  regularPrice?: string;
-  sellingPrice?: string;
-}
 
 interface MediaItem {
   id: number;
@@ -149,11 +140,11 @@ export function EditProductForm({ productId }: { productId: string }) {
             const sizeLabel = sizes.find((s: any) => s.id == v.size_id)?.label || v.size?.name || v.size || "";
 
             return {
-              id: v.id,
+              id: v.id.toString(),
               color: colorLabel,
               size: sizeLabel,
               sku: v.sku || "",
-              available_stock: v.available_stock || 0,
+              stock: v.available_stock?.toString() || "0",
               purchasePrice: v.variant_pricing?.purchase_price?.toString() || "",
               regularPrice: v.variant_pricing?.regular_price?.toString() || "",
               sellingPrice: v.variant_pricing?.selling_price?.toString() || "",
@@ -176,30 +167,6 @@ export function EditProductForm({ productId }: { productId: string }) {
     const main = categories.find((c) => c.id.toString() === categoryId);
     return main?.["sub-categories"] || [];
   }, [categories, categoryId]);
-
-  function addVariant() {
-    setVariants((p) => [
-      ...p,
-      {
-        id: `new_${Date.now()}`,
-        color: "",
-        size: "",
-        sku: generateSKU(),
-        available_stock: 0,
-        purchasePrice: purchasePrice,
-        regularPrice: regularPrice,
-        sellingPrice: sellingPrice,
-      },
-    ]);
-  }
-
-  function removeVariant(id: number | string) {
-    setVariants((p) => p.filter((v) => v.id !== id));
-  }
-
-  function updateVariant(id: number | string, field: keyof Variant, val: string) {
-    setVariants((p) => p.map((v) => (v.id === id ? { ...v, [field]: val } : v)));
-  }
 
   function removeExistingMedia(id: number) {
     setExistingMedia((p) => p.filter((m) => m.id !== id));
@@ -277,12 +244,12 @@ export function EditProductForm({ productId }: { productId: string }) {
         // Filter out temporary string IDs for new variants
         const mappedVariants = variants.map((v) => {
           const mapped: any = { ...v };
-          if (typeof mapped.id === "string" && mapped.id.startsWith("new_")) {
+          if (typeof mapped.id === "string" && (mapped.id.startsWith("new_") || mapped.id.startsWith("v"))) {
             delete mapped.id;
           }
           mapped.color = mapped.color || null;
           mapped.size = mapped.size || null;
-          mapped.available_stock = mapped.available_stock ? Number(mapped.available_stock) : undefined;
+          mapped.available_stock = mapped.stock ? Number(mapped.stock) : undefined;
 
           if (hasVariantWisePricing) {
             mapped.purchase_price = mapped.purchasePrice ? Number(mapped.purchasePrice) : undefined;
@@ -293,6 +260,7 @@ export function EditProductForm({ productId }: { productId: string }) {
           delete mapped.purchasePrice;
           delete mapped.regularPrice;
           delete mapped.sellingPrice;
+          delete mapped.stock;
 
           return mapped;
         });
@@ -620,105 +588,13 @@ export function EditProductForm({ productId }: { productId: string }) {
               )}
               {hasVariants && (
                 <>
-                  <Separator />
-                  {variants.map((v, idx) => (
-                    <div key={v.id} className="space-y-4 rounded-lg border p-4">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium">Variant {idx + 1}</p>
-                        <Button variant="ghost" size="icon-sm" onClick={() => removeVariant(v.id!)}>
-                          <X className="size-4" />
-                        </Button>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">Color</Label>
-                          <Select value={v.color} onValueChange={(val) => updateVariant(v.id!, "color", val)}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Color" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {colors.map((o: any) => (
-                                <SelectItem key={o.label} value={o.label}>
-                                  <div className="flex items-center gap-2">
-                                    {o.hex_value && (
-                                      <div
-                                        className="size-3 rounded-full border border-black/10"
-                                        style={{ backgroundColor: o.hex_value }}
-                                      />
-                                    )}
-                                    {o.label}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">Size</Label>
-                          <Select value={v.size} onValueChange={(val) => updateVariant(v.id!, "size", val)}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Size" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {sizes.map((o: any) => (
-                                <SelectItem key={o.label} value={o.label}>
-                                  {o.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">SKU</Label>
-                          <Input value={v.sku} onChange={(e) => updateVariant(v.id!, "sku", e.target.value)} />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">Stock</Label>
-                          <Input
-                            type="number"
-                            value={v.available_stock}
-                            disabled
-                          />
-                        </div>
-                      </div>
-                      {hasVariantWisePricing && (
-                        <div className="grid gap-3 sm:grid-cols-3 bg-muted/30 p-3 rounded-md border border-dashed">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-primary">Purchase Price (৳)</Label>
-                            <Input
-                              type="number"
-                              placeholder="0.00"
-                              value={v.purchasePrice || ""}
-                              disabled
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-primary">Regular Price (৳)</Label>
-                            <Input
-                              type="number"
-                              placeholder="0.00"
-                              value={v.regularPrice || ""}
-                              onChange={(e) => updateVariant(v.id!, "regularPrice", e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-primary">Selling Price (৳)</Label>
-                            <Input
-                              type="number"
-                              placeholder="0.00"
-                              value={v.sellingPrice || ""}
-                              onChange={(e) => updateVariant(v.id!, "sellingPrice", e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <Button variant="ghost" size="sm" className="w-fit" onClick={addVariant}>
-                    <CirclePlus className="mr-2 size-4" /> Add Variant
-                  </Button>
+                  <Separator className="mb-4" />
+                  <ProductVariantsSection
+                    hasVariantWisePricing={hasVariantWisePricing}
+                    variants={variants}
+                    setVariants={setVariants}
+                    baseSku={sku}
+                  />
                 </>
               )}
             </CardContent>
