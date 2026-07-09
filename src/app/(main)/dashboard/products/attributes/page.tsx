@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 
-import { Loader2, Palette, Plus, Ruler, Search } from "lucide-react";
+import { Loader2, Palette, Plus, Ruler, Search, Edit, Trash } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -12,10 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import useAttributes, { type ColorAttribute, type SizeAttribute } from "@/hooks/useAttributes";
 
 export default function VariantAttributesPage() {
-  const { colors, sizes, loading, error, createColor, createSize } = useAttributes();
+  const { colors, sizes, loading, error, createColor, createSize, updateColor, deleteColor, updateSize, deleteSize } = useAttributes();
 
   // Color inputs state
   const [colorLabel, setColorLabel] = React.useState("");
@@ -23,10 +24,23 @@ export default function VariantAttributesPage() {
   const [isSubmittingColor, setIsSubmittingColor] = React.useState(false);
   const [colorSearch, setColorSearch] = React.useState("");
 
+  // Edit Color state
+  const [editingColor, setEditingColor] = React.useState<ColorAttribute | null>(null);
+  const [editColorLabel, setEditColorLabel] = React.useState("");
+  const [editColorHex, setEditColorHex] = React.useState("");
+  const [isUpdatingColor, setIsUpdatingColor] = React.useState(false);
+  const [colorToDelete, setColorToDelete] = React.useState<ColorAttribute | null>(null);
+
   // Size inputs state
   const [sizeLabel, setSizeLabel] = React.useState("");
   const [isSubmittingSize, setIsSubmittingSize] = React.useState(false);
   const [sizeSearch, setSizeSearch] = React.useState("");
+
+  // Edit Size state
+  const [editingSize, setEditingSize] = React.useState<SizeAttribute | null>(null);
+  const [editSizeLabel, setEditSizeLabel] = React.useState("");
+  const [isUpdatingSize, setIsUpdatingSize] = React.useState(false);
+  const [sizeToDelete, setSizeToDelete] = React.useState<SizeAttribute | null>(null);
 
   // Handle color form submit
   const handleAddColor = async (e: React.FormEvent) => {
@@ -58,6 +72,48 @@ export default function VariantAttributesPage() {
     }
   };
 
+  const handleUpdateColor = async () => {
+    if (!editingColor?.id) return;
+    if (!editColorLabel.trim()) {
+      toast.error("Color name is required");
+      return;
+    }
+    if (!editColorHex.match(/^#[0-9A-Fa-f]{6}$/)) {
+      toast.error("Valid hex color (e.g., #3b82f6) is required");
+      return;
+    }
+
+    try {
+      setIsUpdatingColor(true);
+      await updateColor(editingColor.id, {
+        label: editColorLabel.trim(),
+        hex_value: editColorHex,
+      });
+      toast.success("Color updated successfully!");
+      setEditingColor(null);
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Failed to update color");
+    } finally {
+      setIsUpdatingColor(false);
+    }
+  };
+
+  const handleDeleteColor = async () => {
+    if (!colorToDelete?.id) return;
+    try {
+      setIsUpdatingColor(true);
+      await deleteColor(colorToDelete.id);
+      toast.success("Color deleted successfully!");
+      setColorToDelete(null);
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Failed to delete color");
+    } finally {
+      setIsUpdatingColor(false);
+    }
+  };
+
   // Handle size form submit
   const handleAddSize = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +138,43 @@ export default function VariantAttributesPage() {
     }
   };
 
+  const handleUpdateSize = async () => {
+    if (!editingSize?.id) return;
+    if (!editSizeLabel.trim()) {
+      toast.error("Size label is required");
+      return;
+    }
+
+    try {
+      setIsUpdatingSize(true);
+      await updateSize(editingSize.id, {
+        label: editSizeLabel.trim(),
+      });
+      toast.success("Size updated successfully!");
+      setEditingSize(null);
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Failed to update size");
+    } finally {
+      setIsUpdatingSize(false);
+    }
+  };
+
+  const handleDeleteSize = async () => {
+    if (!sizeToDelete?.id) return;
+    try {
+      setIsUpdatingSize(true);
+      await deleteSize(sizeToDelete.id);
+      toast.success("Size deleted successfully!");
+      setSizeToDelete(null);
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Failed to delete size");
+    } finally {
+      setIsUpdatingSize(false);
+    }
+  };
+
   // Filter colors and sizes by local search
   const filteredColors = React.useMemo(() => {
     if (!colors) return [];
@@ -99,7 +192,6 @@ export default function VariantAttributesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header section */}
       <div className="space-y-1">
         <h1 className="font-medium text-3xl tracking-tight">Variant Attributes</h1>
         <p className="text-muted-foreground text-sm">
@@ -123,7 +215,6 @@ export default function VariantAttributesPage() {
             </Badge>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col justify-between space-y-6">
-            {/* Add color form */}
             <form onSubmit={handleAddColor} className="space-y-4">
               <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-12">
                 <div className="space-y-1.5 sm:col-span-6">
@@ -181,7 +272,6 @@ export default function VariantAttributesPage() {
 
             <Separator />
 
-            {/* Colors list section */}
             <div className="flex flex-1 flex-col space-y-3">
               <div className="relative">
                 <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
@@ -210,17 +300,36 @@ export default function VariantAttributesPage() {
                     {filteredColors.map((color: ColorAttribute) => (
                       <div
                         key={color.id ?? color.label}
-                        className="flex items-center gap-3 rounded-lg border bg-card p-2.5 shadow-xs transition-colors hover:bg-muted/40"
+                        className="group flex items-center justify-between gap-3 rounded-lg border bg-card p-2.5 shadow-xs transition-colors hover:bg-muted/40"
                       >
-                        <div
-                          className="size-7 shrink-0 rounded-full border border-black/10 shadow-inner"
-                          style={{ backgroundColor: color.hex_value ?? "#cccccc" }}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-sm">{color.label}</p>
-                          <p className="truncate font-mono text-muted-foreground text-xs uppercase">
-                            {color.hex_value}
-                          </p>
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div
+                            className="size-7 shrink-0 rounded-full border border-black/10 shadow-inner"
+                            style={{ backgroundColor: color.hex_value ?? "#cccccc" }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-sm">{color.label}</p>
+                            <p className="truncate font-mono text-muted-foreground text-xs uppercase">
+                              {color.hex_value}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="size-8" 
+                            onClick={() => {
+                              setEditingColor(color);
+                              setEditColorLabel(color.label);
+                              setEditColorHex(color.hex_value || "#000000");
+                            }}
+                          >
+                            <Edit className="size-4 text-muted-foreground" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="size-8" onClick={() => setColorToDelete(color)}>
+                            <Trash className="size-4 text-destructive" />
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -246,7 +355,6 @@ export default function VariantAttributesPage() {
             </Badge>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col justify-between space-y-6">
-            {/* Add size form */}
             <form onSubmit={handleAddSize} className="space-y-4">
               <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-12">
                 <div className="space-y-1.5 sm:col-span-10">
@@ -280,7 +388,6 @@ export default function VariantAttributesPage() {
 
             <Separator />
 
-            {/* Sizes list section */}
             <div className="flex flex-1 flex-col space-y-3">
               <div className="relative">
                 <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
@@ -310,9 +417,34 @@ export default function VariantAttributesPage() {
                       <Badge
                         key={size.id ?? size.label}
                         variant="outline"
-                        className="border bg-card px-3.5 py-1.5 font-medium text-sm shadow-xs transition-colors hover:bg-muted/40"
+                        className="group relative border bg-card pl-3.5 pr-2 py-1.5 font-medium text-sm shadow-xs transition-colors hover:bg-muted/40"
                       >
-                        {size.label}
+                        <span className="mr-6">{size.label}</span>
+                        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="size-5 rounded-full" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setEditingSize(size);
+                              setEditSizeLabel(size.label);
+                            }}
+                          >
+                            <Edit className="size-3 text-muted-foreground" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="size-5 rounded-full" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setSizeToDelete(size);
+                            }}
+                          >
+                            <Trash className="size-3 text-destructive" />
+                          </Button>
+                        </div>
                       </Badge>
                     ))}
                   </div>
@@ -322,6 +454,116 @@ export default function VariantAttributesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Color Dialog */}
+      <Dialog open={!!editingColor} onOpenChange={(open) => !open && setEditingColor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Color</DialogTitle>
+            <DialogDescription>Update the details for this color variant.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-1.5">
+              <Label>Color Name</Label>
+              <Input
+                value={editColorLabel}
+                onChange={(e) => setEditColorLabel(e.target.value)}
+                disabled={isUpdatingColor}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Hex Code</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={editColorHex}
+                  onChange={(e) => setEditColorHex(e.target.value)}
+                  disabled={isUpdatingColor}
+                  className="font-mono uppercase"
+                />
+                <div className="relative size-10 shrink-0 cursor-pointer overflow-hidden rounded-md border border-input focus-within:ring-2 focus-within:ring-ring">
+                  <input
+                    type="color"
+                    value={editColorHex}
+                    onChange={(e) => setEditColorHex(e.target.value)}
+                    disabled={isUpdatingColor}
+                    className="absolute inset-0 size-full cursor-pointer opacity-0"
+                  />
+                  <div className="size-full" style={{ backgroundColor: editColorHex }} />
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingColor(null)} disabled={isUpdatingColor}>Cancel</Button>
+            <Button onClick={handleUpdateColor} disabled={isUpdatingColor}>
+              {isUpdatingColor && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Color Dialog */}
+      <Dialog open={!!colorToDelete} onOpenChange={(open) => !open && setColorToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Color</DialogTitle>
+            <DialogDescription>Are you sure you want to delete the color "{colorToDelete?.label}"? This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setColorToDelete(null)} disabled={isUpdatingColor}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteColor} disabled={isUpdatingColor}>
+              {isUpdatingColor && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Size Dialog */}
+      <Dialog open={!!editingSize} onOpenChange={(open) => !open && setEditingSize(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Size</DialogTitle>
+            <DialogDescription>Update the label for this size variant.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-1.5">
+              <Label>Size Label</Label>
+              <Input
+                value={editSizeLabel}
+                onChange={(e) => setEditSizeLabel(e.target.value)}
+                disabled={isUpdatingSize}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingSize(null)} disabled={isUpdatingSize}>Cancel</Button>
+            <Button onClick={handleUpdateSize} disabled={isUpdatingSize}>
+              {isUpdatingSize && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Size Dialog */}
+      <Dialog open={!!sizeToDelete} onOpenChange={(open) => !open && setSizeToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Size</DialogTitle>
+            <DialogDescription>Are you sure you want to delete the size "{sizeToDelete?.label}"? This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSizeToDelete(null)} disabled={isUpdatingSize}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteSize} disabled={isUpdatingSize}>
+              {isUpdatingSize && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

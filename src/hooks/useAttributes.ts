@@ -75,6 +75,58 @@ export default function useAttributes() {
     return json;
   };
 
+  const updateColor = async (id: number | string, payload: { label: string; hex_value?: string }) => {
+    const res = await fetchClient(`${colorsUrl}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to update color");
+    }
+    await mutateColors();
+    return json;
+  };
+
+  const deleteColor = async (id: number | string) => {
+    const res = await fetchClient(`${colorsUrl}/${id}`, {
+      method: "DELETE",
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to delete color");
+    }
+    await mutateColors();
+    return json;
+  };
+
+  const updateSize = async (id: number | string, payload: { label: string }) => {
+    const res = await fetchClient(`${sizesUrl}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to update size");
+    }
+    await mutateSizes();
+    return json;
+  };
+
+  const deleteSize = async (id: number | string) => {
+    const res = await fetchClient(`${sizesUrl}/${id}`, {
+      method: "DELETE",
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to delete size");
+    }
+    await mutateSizes();
+    return json;
+  };
+
   return {
     colors: colors || [],
     sizes: sizes || [],
@@ -84,5 +136,9 @@ export default function useAttributes() {
     mutateSizes,
     createColor,
     createSize,
+    updateColor,
+    deleteColor,
+    updateSize,
+    deleteSize,
   };
 }
