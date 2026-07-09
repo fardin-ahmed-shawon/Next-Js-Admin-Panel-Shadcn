@@ -76,16 +76,16 @@ export function ProductStockAdjustmentModal({
       const fetchLots = async () => {
         setLoadingLots(true);
         try {
-          let url = `${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/lots?product_id=${productId}`;
+          let url = `${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/lots?product_id=${productId}&per_page=100`;
+          if (variantId) {
+            url += `&product_variant_id=${variantId}`;
+          } else {
+            url += `&product_variant_id=null`;
+          }
           const res = await fetchClient(url);
           const data = await res.json();
           if (res.ok && data.success) {
             let fetchedLots = data.data.data || [];
-            if (variantId) {
-              fetchedLots = fetchedLots.filter((lot: any) => lot.product_variant_id === Number(variantId));
-            } else {
-              fetchedLots = fetchedLots.filter((lot: any) => !lot.product_variant_id);
-            }
             setLots(fetchedLots);
 
             // Initialize adjustments state
