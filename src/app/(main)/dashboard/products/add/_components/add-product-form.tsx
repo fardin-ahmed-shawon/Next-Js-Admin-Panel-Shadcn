@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import useAttributes from "@/hooks/useAttributes";
 import useCategories from "@/hooks/useCategories";
+import { ProductVariantsSection, Variant } from "./product-variants-section";
 
 const isDescriptionEmpty = (html: string) => {
   if (!html) return true;
@@ -29,17 +30,6 @@ const isDescriptionEmpty = (html: string) => {
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
-
-interface Variant {
-  id: string;
-  color: string;
-  size: string;
-  sku: string;
-  stock: string;
-  purchasePrice?: string;
-  regularPrice?: string;
-  sellingPrice?: string;
-}
 
 interface MediaItem {
   id: string;
@@ -111,29 +101,6 @@ export function AddProductForm() {
 
   const selectedMainCategory = categories.find((c) => String(c.id) === category);
   const filteredSubCategories = selectedMainCategory?.["sub-categories"] || [];
-
-  /* ---- variant helpers ---- */
-  function addVariant() {
-    setVariants((p) => [
-      ...p,
-      {
-        id: `v${Date.now()}`,
-        color: "",
-        size: "",
-        sku: generateSKU(),
-        stock: "",
-        purchasePrice: purchasePrice,
-        regularPrice: regularPrice,
-        sellingPrice: sellingPrice,
-      },
-    ]);
-  }
-  function removeVariant(id: string) {
-    setVariants((p) => p.filter((v) => v.id !== id));
-  }
-  function updateVariant(id: string, field: keyof Variant, val: string) {
-    setVariants((p) => p.map((v) => (v.id === id ? { ...v, [field]: val } : v)));
-  }
 
   /* ---- media helpers ---- */
   function removeMedia(id: string) {
@@ -688,142 +655,13 @@ export function AddProductForm() {
 
               {hasVariants && (
                 <>
-                  <Separator />
-
-                  {/* Variants list or empty state */}
-                  {variants.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center gap-3 py-10">
-                      <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-                        <Package className="size-6 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1 text-center">
-                        <p className="text-sm font-medium">No variants added</p>
-                        <p className="text-xs text-muted-foreground">
-                          Add variants to offer different sizes or colors.
-                        </p>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={addVariant}>
-                        <CirclePlus className="mr-2 size-4" />
-                        Add Variant
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      {variants.map((v, idx) => (
-                        <div key={v.id} className="space-y-4 rounded-lg border p-4">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium">Variant {idx + 1}</p>
-                            <Button variant="ghost" size="icon-sm" onClick={() => removeVariant(v.id)}>
-                              <X className="size-4" />
-                            </Button>
-                          </div>
-                          {/* Color, Size */}
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">
-                                Color <span className="text-muted-foreground">(optional)</span>
-                              </Label>
-                              <Select value={v.color} onValueChange={(val) => updateVariant(v.id, "color", val)}>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select color" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {colors.map((o: any) => (
-                                    <SelectItem key={o.label} value={o.label}>
-                                      <div className="flex items-center gap-2">
-                                        {o.hex_value && (
-                                          <div
-                                            className="size-3 rounded-full border border-black/10"
-                                            style={{ backgroundColor: o.hex_value }}
-                                          />
-                                        )}
-                                        {o.label}
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">
-                                Size <span className="text-muted-foreground">(optional)</span>
-                              </Label>
-                              <Select value={v.size} onValueChange={(val) => updateVariant(v.id, "size", val)}>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select size" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {sizes.map((o: any) => (
-                                    <SelectItem key={o.label} value={o.label}>
-                                      {o.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          {/* SKU, Stock */}
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">SKU</Label>
-                              <Input
-                                placeholder="SKU-001-RED-M"
-                                value={v.sku}
-                                onChange={(e) => updateVariant(v.id, "sku", e.target.value)}
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">Available Stock</Label>
-                              <Input
-                                type="number"
-                                placeholder="0"
-                                value={v.stock}
-                                onChange={(e) => updateVariant(v.id, "stock", e.target.value)}
-                              />
-                            </div>
-                          </div>
-
-                          {hasVariantWisePricing && (
-                            <div className="grid gap-3 sm:grid-cols-3 bg-muted/30 p-3 rounded-md border border-dashed">
-                              <div className="space-y-1.5">
-                                <Label className="text-xs text-primary">Purchase Price (৳)</Label>
-                                <Input
-                                  type="number"
-                                  placeholder="0.00"
-                                  value={v.purchasePrice || ""}
-                                  onChange={(e) => updateVariant(v.id, "purchasePrice", e.target.value)}
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-xs text-primary">Regular Price (৳)</Label>
-                                <Input
-                                  type="number"
-                                  placeholder="0.00"
-                                  value={v.regularPrice || ""}
-                                  onChange={(e) => updateVariant(v.id, "regularPrice", e.target.value)}
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-xs text-primary">Selling Price (৳)</Label>
-                                <Input
-                                  type="number"
-                                  placeholder="0.00"
-                                  value={v.sellingPrice || ""}
-                                  onChange={(e) => updateVariant(v.id, "sellingPrice", e.target.value)}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {/* End Variant Fields */}
-                        </div>
-                      ))}
-                      <Button variant="ghost" size="sm" className="w-fit" onClick={addVariant}>
-                        <CirclePlus className="mr-2 size-4" />
-                        Add Variant
-                      </Button>
-                    </>
-                  )}
+                  <Separator className="mb-4" />
+                  <ProductVariantsSection
+                    hasVariantWisePricing={hasVariantWisePricing}
+                    variants={variants}
+                    setVariants={setVariants}
+                    baseSku={sku}
+                  />
                 </>
               )}
             </CardContent>
