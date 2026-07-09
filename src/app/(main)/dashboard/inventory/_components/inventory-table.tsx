@@ -29,6 +29,7 @@ import {
   Pen,
   Plus,
   Search,
+  Settings2,
   Trash,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -70,6 +71,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { ProductStockAdjustmentModal } from "./product-stock-adjustment-modal";
 
 import type { InventoryItem, InventoryRecords, InventoryVariant } from "@/hooks/useInventory";
 
@@ -160,8 +162,8 @@ const columns: ColumnDef<any>[] = [
               />
             )}
           </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="font-medium leading-none">{row.original.title}</span>
+          <div className="flex flex-col gap-0.5 overflow-hidden">
+            <span className="font-medium leading-none truncate" title={row.original.title || row.original.name}>{row.original.title || row.original.name}</span>
             {row.original.variants_count > 0 && (
               <Badge variant="outline" className="w-fit text-muted-foreground text-[10px] h-4 px-1.5 mt-1">
                 <Layers className="size-3 mr-1" /> {row.original.variants_count} variants
@@ -250,59 +252,12 @@ const columns: ColumnDef<any>[] = [
 /* ---- Row Actions ---- */
 
 function RowActions({ row, mutate }: { row: any; mutate?: () => void }) {
-  const [deleteOpen, setDeleteOpen] = React.useState(false);
-  const [stockOpen, setStockOpen] = React.useState(false);
-  const [stockMode, setStockMode] = React.useState<"add" | "reduce">("add");
-  const [quantity, setQuantity] = React.useState("");
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [adjustmentOpen, setAdjustmentOpen] = React.useState(false);
 
   const isVariant = row.depth > 0;
   const item = row.original;
   const productId = isVariant ? row.getParentRow()?.original.id : item.id;
   const variantId = isVariant ? item.id : undefined;
-
-  const handleStockUpdate = async () => {
-    if (!quantity || isNaN(Number(quantity)) || Number(quantity) <= 0) {
-      toast.error("Please enter a valid positive quantity");
-      return;
-    }
-
-    setIsSubmitting(true);
-    const toastId = toast.loading(`${stockMode === "add" ? "Adding" : "Reducing"} stock...`);
-
-    try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-      const productsEndpoint = process.env.NEXT_PUBLIC_API_PRODUCTS_URL || "products";
-      const endpoint = `${baseUrl}${productsEndpoint}/${productId}/stock/${stockMode}`;
-
-      const res = await fetchClient(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          quantity: Number(quantity),
-          ...(variantId ? { variant_id: variantId } : {}),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.message || data?.error || "Failed to update stock");
-      }
-
-      toast.success(data?.message || `Stock ${stockMode === "add" ? "added" : "reduced"} successfully!`, {
-        id: toastId,
-      });
-      setStockOpen(false);
-      setQuantity("");
-      if (mutate) mutate();
-      window.location.reload();
-    } catch (e: any) {
-      toast.error(e.message || "An error occurred.", { id: toastId });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   // If this item has variants itself, don't show actions, let them edit per variant or main product elsewhere
   if (!isVariant && item.variants && item.variants.length > 0) {
@@ -311,105 +266,26 @@ function RowActions({ row, mutate }: { row: any; mutate?: () => void }) {
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <div className="flex w-full justify-end">
-            <Button aria-label="Open actions" size="icon-sm" variant="ghost">
-              <MoreHorizontal />
-            </Button>
-          </div>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem
-            onSelect={() => {
-              setStockMode("add");
-              setStockOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Stock
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() => {
-              setStockMode("reduce");
-              setStockOpen(true);
-            }}
-          >
-            <Minus className="mr-2 h-4 w-4" />
-            Reduce Stock
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Item
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeleteOpen(true)}>
-            <Trash className="mr-2 h-4 w-4" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex w-full justify-end">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setAdjustmentOpen(true)}
+          className="h-8 text-xs font-medium"
+        >
+          <Settings2 className="mr-2 size-3.5" />
+          Stock Adjustment
+        </Button>
+      </div>
 
-      <Dialog open={stockOpen} onOpenChange={setStockOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{stockMode === "add" ? "Add Stock" : "Reduce Stock"}</DialogTitle>
-            <DialogDescription>
-              {stockMode === "add"
-                ? "Enter the quantity you want to add to the current inventory."
-                : "Enter the quantity you want to reduce from the current inventory."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="stock-quantity" className="mb-2 block">
-              Quantity
-            </Label>
-            <Input
-              id="stock-quantity"
-              type="number"
-              min="1"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              placeholder="e.g. 10"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStockOpen(false)} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button onClick={handleStockUpdate} disabled={isSubmitting}>
-              {stockMode === "add" ? "Add Stock" : "Reduce Stock"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
-              <Trash />
-            </AlertDialogMedia>
-            <AlertDialogTitle>Delete item?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this item from inventory. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel variant="outline">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={() => {
-                toast.success(`Item has been deleted successfully.`);
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ProductStockAdjustmentModal 
+        open={adjustmentOpen} 
+        onOpenChange={setAdjustmentOpen} 
+        item={item} 
+        variantId={variantId} 
+        productId={productId} 
+        mutate={mutate} 
+      />
     </>
   );
 }
