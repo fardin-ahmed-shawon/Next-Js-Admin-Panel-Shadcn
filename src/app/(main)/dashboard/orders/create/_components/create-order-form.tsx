@@ -440,8 +440,13 @@ export function CreateOrderForm() {
       toast.error("Customer name is required.");
       return;
     }
-    if (!customerPhone.trim()) {
+    const phoneTrimmed = customerPhone.trim();
+    if (!phoneTrimmed) {
       toast.error("Customer phone is required.");
+      return;
+    }
+    if (phoneTrimmed.length < 11) {
+      toast.error("Customer phone must be at least 11 digits.");
       return;
     }
     if (!shippingAddress.trim()) {
@@ -728,7 +733,7 @@ export function CreateOrderForm() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="customer-email">Email</Label>
+                  <Label htmlFor="customer-email">Email (Optional)</Label>
                   <Input
                     id="customer-email"
                     type="email"

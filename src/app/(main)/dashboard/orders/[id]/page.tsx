@@ -1513,7 +1513,7 @@ export default function OrderDetailPage() {
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1">
                           <Label htmlFor="customer-email" className="text-xs font-semibold text-muted-foreground">
-                            Email
+                            Email (Optional)
                           </Label>
                           <Input
                             id="customer-email"

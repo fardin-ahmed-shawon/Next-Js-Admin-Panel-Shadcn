@@ -800,7 +800,7 @@ export default function EditOrderPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="customer-email">Email</Label>
+                  <Label htmlFor="customer-email">Email (Optional)</Label>
                   <Input
                     id="customer-email"
                     type="email"
