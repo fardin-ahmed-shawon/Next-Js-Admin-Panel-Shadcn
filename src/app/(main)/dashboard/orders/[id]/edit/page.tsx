@@ -145,13 +145,19 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
   const isSizeComplete = !requiresSize || !!item.size;
   const isColorComplete = !requiresColor || !!item.color;
 
+  let availableStock: number | null = null;
+
   if (requiresVariant && isSizeComplete && isColorComplete && (item.size || item.color)) {
     const selectedSizeId = requiresSize ? sizes.find((s: any) => s.label === item.size)?.id : null;
     const selectedColorId = requiresColor ? colors.find((c: any) => c.label === item.color)?.id : null;
-    isValidVariant = variants.some(
+    const selectedVariant = variants.find(
       (v: any) =>
         (requiresSize ? v.size_id === selectedSizeId : true) && (requiresColor ? v.color_id === selectedColorId : true),
     );
+    isValidVariant = !!selectedVariant;
+    if (isValidVariant) {
+      availableStock = selectedVariant.available_stock || 0;
+    }
   }
 
   return (
@@ -231,6 +237,12 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 Size: {availableSizes[0].label}
               </div>
             ) : null}
+
+            {isValidVariant && availableStock !== null && (
+              <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">
+                Stock: {availableStock}
+              </div>
+            )}
 
             {(item.color || item.size) && (
               <Button

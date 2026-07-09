@@ -48,6 +48,8 @@ interface ProductVariantsSectionProps {
   variants: Variant[];
   setVariants: React.Dispatch<React.SetStateAction<Variant[]>>;
   baseSku: string;
+  hidePurchasePrice?: boolean;
+  disableStockEdit?: boolean;
 }
 
 const generateSKU = () => "SKU-" + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -57,6 +59,8 @@ export function ProductVariantsSection({
   variants,
   setVariants,
   baseSku,
+  hidePurchasePrice = false,
+  disableStockEdit = false,
 }: ProductVariantsSectionProps) {
   const { colors: availableColors, sizes: availableSizes } = useAttributes();
 
@@ -351,14 +355,16 @@ export function ProductVariantsSection({
               </h3>
               <p className="text-sm text-muted-foreground">Enter stock for each size and color quickly.</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={setAllMatrixStock}>
-                <Check className="size-4 mr-2" /> Set All
-              </Button>
-              <Button variant="outline" size="sm" onClick={clearAllMatrixStock} className="text-destructive hover:text-destructive">
-                <Ban className="size-4 mr-2" /> Clear All
-              </Button>
-            </div>
+            {!disableStockEdit && (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={setAllMatrixStock}>
+                  <Check className="size-4 mr-2" /> Set All
+                </Button>
+                <Button variant="outline" size="sm" onClick={clearAllMatrixStock} className="text-destructive hover:text-destructive">
+                  <Ban className="size-4 mr-2" /> Clear All
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="border rounded-lg overflow-x-auto">
@@ -396,6 +402,7 @@ export function ProductVariantsSection({
                               placeholder="0"
                               value={stockVal}
                               onChange={(e) => handleMatrixStockChange(size, color, e.target.value)}
+                              disabled={disableStockEdit}
                             />
                           </td>
                         );
@@ -441,20 +448,22 @@ export function ProductVariantsSection({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {hasVariantWisePricing && (
               <>
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Purchase Price</Label>
-                  <div className="flex">
-                    <Input 
-                      placeholder="0.00" 
-                      className="rounded-r-none h-9 border-r-0 focus-visible:ring-0" 
-                      value={bulkPurchasePrice}
-                      onChange={(e) => setBulkPurchasePrice(e.target.value)}
-                    />
-                    <Button variant="outline" className="rounded-l-none h-9 px-3 bg-muted/20 hover:bg-muted font-semibold text-xs" onClick={() => applyBulkPrice("purchasePrice", bulkPurchasePrice)}>
-                      Apply to all
-                    </Button>
+                {!hidePurchasePrice && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Purchase Price</Label>
+                    <div className="flex">
+                      <Input 
+                        placeholder="0.00" 
+                        className="rounded-r-none h-9 border-r-0 focus-visible:ring-0" 
+                        value={bulkPurchasePrice}
+                        onChange={(e) => setBulkPurchasePrice(e.target.value)}
+                      />
+                      <Button variant="outline" className="rounded-l-none h-9 px-3 bg-muted/20 hover:bg-muted font-semibold text-xs" onClick={() => applyBulkPrice("purchasePrice", bulkPurchasePrice)}>
+                        Apply to all
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Regular Price</Label>
                   <div className="flex">
@@ -485,21 +494,23 @@ export function ProductVariantsSection({
                 </div>
               </>
             )}
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Set Stock</Label>
-              <div className="flex">
-                <Input 
-                  placeholder="0" 
-                  type="number"
-                  className="rounded-r-none h-9 border-r-0 focus-visible:ring-0"
-                  value={bulkStock}
-                  onChange={(e) => setBulkStock(e.target.value)}
-                />
-                <Button variant="outline" className="rounded-l-none h-9 px-3 bg-muted/20 hover:bg-muted font-semibold text-xs" onClick={setAllMatrixStock}>
-                  Apply to all
-                </Button>
+            {!disableStockEdit && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Set Stock</Label>
+                <div className="flex">
+                  <Input 
+                    placeholder="0" 
+                    type="number"
+                    className="rounded-r-none h-9 border-r-0 focus-visible:ring-0"
+                    value={bulkStock}
+                    onChange={(e) => setBulkStock(e.target.value)}
+                  />
+                  <Button variant="outline" className="rounded-l-none h-9 px-3 bg-muted/20 hover:bg-muted font-semibold text-xs" onClick={setAllMatrixStock}>
+                    Apply to all
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -554,7 +565,7 @@ export function ProductVariantsSection({
                   <th className="p-4 text-left font-medium">SKU</th>
                   {hasVariantWisePricing && (
                     <>
-                      <th className="p-4 text-left font-medium">Purchase Price</th>
+                      {!hidePurchasePrice && <th className="p-4 text-left font-medium">Purchase Price</th>}
                       <th className="p-4 text-left font-medium">Regular Price</th>
                       <th className="p-4 text-left font-medium">Selling Price</th>
                     </>
@@ -593,14 +604,16 @@ export function ProductVariantsSection({
                       </td>
                       {hasVariantWisePricing && (
                         <>
-                          <td className="p-4">
-                            <Input 
-                              value={v.purchasePrice || ""} 
-                              onChange={(e) => updateVariant(v.id, "purchasePrice", e.target.value)} 
-                              className="h-8 w-24 bg-background" 
-                              placeholder="0.00"
-                            />
-                          </td>
+                          {!hidePurchasePrice && (
+                            <td className="p-4">
+                              <Input 
+                                value={v.purchasePrice || ""} 
+                                onChange={(e) => updateVariant(v.id, "purchasePrice", e.target.value)} 
+                                className="h-8 w-24 bg-background" 
+                                placeholder="0.00"
+                              />
+                            </td>
+                          )}
                           <td className="p-4">
                             <Input 
                               value={v.regularPrice || ""} 
@@ -621,11 +634,12 @@ export function ProductVariantsSection({
                       )}
                       <td className="p-4">
                         <Input 
+                          type="number"
                           value={v.stock} 
                           onChange={(e) => updateVariant(v.id, "stock", e.target.value)} 
                           className="h-8 w-20 bg-background" 
                           placeholder="0"
-                          type="number"
+                          disabled={disableStockEdit}
                         />
                       </td>
                       <td className="p-4 text-center">

@@ -594,6 +594,8 @@ export function EditProductForm({ productId }: { productId: string }) {
                     variants={variants}
                     setVariants={setVariants}
                     baseSku={sku}
+                    hidePurchasePrice={true}
+                    disableStockEdit={true}
                   />
                 </>
               )}
@@ -608,10 +610,7 @@ export function EditProductForm({ productId }: { productId: string }) {
                 <CardTitle className="text-base text-primary">Pricing</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-5">
-                <div className="space-y-2">
-                  <Label>Purchase Price (৳)</Label>
-                  <Input value={purchasePrice} disabled />
-                </div>
+
                 <div className="space-y-2">
                   <Label>Regular Price (৳)</Label>
                   <Input value={regularPrice} onChange={(e) => setRegularPrice(e.target.value)} />
