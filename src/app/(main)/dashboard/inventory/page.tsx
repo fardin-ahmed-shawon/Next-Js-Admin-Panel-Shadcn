@@ -13,6 +13,7 @@ export default function InventoryPage() {
   const [search, setSearch] = React.useState("");
   const [debouncedSearch, setDebouncedSearch] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("All");
+  const [sorting, setSorting] = React.useState<any>([]);
 
   React.useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -24,6 +25,8 @@ export default function InventoryPage() {
     per_page: perPage,
     search: debouncedSearch,
     status: statusFilter,
+    sort_by: sorting?.[0]?.id,
+    sort_order: sorting?.[0]?.desc ? "desc" : "asc",
   });
 
   return (
@@ -45,6 +48,8 @@ export default function InventoryPage() {
         setSearch={setSearch}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
+        sorting={sorting}
+        setSorting={setSorting}
         mutate={mutate}
       />
     </div>

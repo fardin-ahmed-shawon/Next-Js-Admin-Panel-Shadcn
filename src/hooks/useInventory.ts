@@ -8,6 +8,8 @@ export interface InventorySummary {
   potential_profit: number;
   low_stock: number;
   out_of_stock: number;
+  categories?: string[];
+  sub_categories?: string[];
 }
 
 export interface InventoryVariant {
@@ -61,6 +63,10 @@ interface UseInventoryOptions {
   per_page?: number;
   search?: string;
   status?: string;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+  category?: string;
+  sub_category?: string;
 }
 
 const fetcher = async (url: string) => {
@@ -88,6 +94,10 @@ export default function useInventory(options?: UseInventoryOptions) {
   if (options?.per_page) queryParams.append("per_page", options.per_page.toString());
   if (options?.search) queryParams.append("search", options.search);
   if (options?.status && options.status !== "All") queryParams.append("status", options.status);
+  if (options?.sort_by) queryParams.append("sort_by", options.sort_by);
+  if (options?.sort_order) queryParams.append("sort_order", options.sort_order);
+  if (options?.category && options.category !== "all") queryParams.append("category", options.category);
+  if (options?.sub_category && options.sub_category !== "all") queryParams.append("sub_category", options.sub_category);
 
   const url = `${baseUrl}?${queryParams.toString()}`;
 

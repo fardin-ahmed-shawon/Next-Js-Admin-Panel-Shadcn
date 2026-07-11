@@ -267,9 +267,9 @@ function RowActions({ row, mutate }: { row: any; mutate?: () => void }) {
   return (
     <>
       <div className="flex w-full justify-end">
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => setAdjustmentOpen(true)}
           className="h-8 text-xs font-medium"
         >
@@ -278,13 +278,13 @@ function RowActions({ row, mutate }: { row: any; mutate?: () => void }) {
         </Button>
       </div>
 
-      <ProductStockAdjustmentModal 
-        open={adjustmentOpen} 
-        onOpenChange={setAdjustmentOpen} 
-        item={item} 
-        variantId={variantId} 
-        productId={productId} 
-        mutate={mutate} 
+      <ProductStockAdjustmentModal
+        open={adjustmentOpen}
+        onOpenChange={setAdjustmentOpen}
+        item={item}
+        variantId={variantId}
+        productId={productId}
+        mutate={mutate}
       />
     </>
   );
@@ -328,6 +328,8 @@ interface InventoryTableProps {
   setSearch: (search: string) => void;
   statusFilter: string;
   setStatusFilter: (status: string) => void;
+  sorting: SortingState;
+  setSorting: (sorting: any) => void;
   mutate?: () => void;
 }
 
@@ -340,10 +342,11 @@ export function InventoryTable({
   setSearch,
   statusFilter,
   setStatusFilter,
+  sorting,
+  setSorting,
   mutate,
 }: InventoryTableProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [sorting, setSorting] = React.useState<SortingState>([]);
   const [expanded, setExpanded] = React.useState<ExpandedState>({});
 
   const tableData = React.useMemo(() => {
@@ -353,15 +356,6 @@ export function InventoryTable({
       subRows: item.variants || [], // For expander to work properly
     }));
   }, [records]);
-
-  const allCategories = React.useMemo(
-    () => [...new Set(tableData.map((p) => p.category?.main).filter(Boolean))] as string[],
-    [tableData],
-  );
-  const allSubCategories = React.useMemo(
-    () => [...new Set(tableData.map((p) => p.category?.sub).filter(Boolean))] as string[],
-    [tableData],
-  );
 
   const table = useReactTable({
     data: tableData,
@@ -377,10 +371,10 @@ export function InventoryTable({
     onSortingChange: setSorting,
     onExpandedChange: setExpanded,
     getSubRows: (row) => row.subRows,
+    manualSorting: true,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     meta: {
       mutate,
     },
@@ -424,42 +418,6 @@ export function InventoryTable({
                 }}
               />
             </div>
-
-            <Select
-              onValueChange={(value) => {
-                table.getColumn("categoryFilter")?.setFilterValue(value === "all" ? undefined : value);
-              }}
-            >
-              <SelectTrigger className="h-8 w-40">
-                <SelectValue placeholder="Main Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {allCategories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              onValueChange={(value) => {
-                table.getColumn("subCategoryFilter")?.setFilterValue(value === "all" ? undefined : value);
-              }}
-            >
-              <SelectTrigger className="h-8 w-40">
-                <SelectValue placeholder="Sub Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sub Categories</SelectItem>
-                {allSubCategories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
             <ToggleGroup
               className="bg-muted p-0.75 text-muted-foreground **:data-[slot=toggle-group-item]:rounded-md **:data-[slot=toggle-group-item]:border **:data-[slot=toggle-group-item]:border-transparent **:data-[slot=toggle-group-item]:text-foreground/60 **:data-[slot=toggle-group-item]:hover:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:bg-background [&_[data-slot=toggle-group-item][data-state=on]]:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:shadow-sm dark:[&_[data-slot=toggle-group-item][data-state=on]]:border-input dark:[&_[data-slot=toggle-group-item][data-state=on]]:bg-input/30"
