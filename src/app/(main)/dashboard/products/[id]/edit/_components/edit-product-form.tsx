@@ -35,6 +35,7 @@ interface MediaItem {
   id: number;
   url: string;
   name: string;
+  color?: string;
 }
 
 const getImageUrl = (path: string | null) => {
@@ -69,7 +70,7 @@ export function EditProductForm({ productId }: { productId: string }) {
   // Media (Existing + New)
   const [existingMedia, setExistingMedia] = React.useState<MediaItem[]>([]);
   const [deletedGalleryIds, setDeletedGalleryIds] = React.useState<number[]>([]);
-  const [newMediaFiles, setNewMediaFiles] = React.useState<{ id: string; file: File; url: string }[]>([]);
+  const [newMediaFiles, setNewMediaFiles] = React.useState<{ id: string; file: File; url: string; color?: string }[]>([]);
   const [isDragging, setIsDragging] = React.useState(false);
 
   // Pricing & Stock
@@ -126,6 +127,7 @@ export function EditProductForm({ productId }: { productId: string }) {
             id: g.id,
             url: getImageUrl(g.product_img || g.image),
             name: `Image ${g.id}`,
+            color: colors.find((c: any) => c.id == g.color_id)?.label || g.color?.name || g.color || "",
           })),
         );
       }
@@ -168,6 +170,12 @@ export function EditProductForm({ productId }: { productId: string }) {
     return main?.["sub-categories"] || [];
   }, [categories, categoryId]);
 
+  const availableColors = React.useMemo(() => {
+    if (!hasVariants) return [];
+    const usedColorLabels = new Set(variants.map(v => v.color).filter(Boolean));
+    return colors.filter(c => usedColorLabels.has(c.label));
+  }, [hasVariants, variants, colors]);
+
   function removeExistingMedia(id: number) {
     setExistingMedia((p) => p.filter((m) => m.id !== id));
     setDeletedGalleryIds((p) => [...p, id]);
@@ -183,6 +191,7 @@ export function EditProductForm({ productId }: { productId: string }) {
       id: `new_${Date.now()}_${Math.random()}`,
       file: f,
       url: URL.createObjectURL(f),
+      color: "",
     }));
     setNewMediaFiles((p) => [...p, ...newItems]);
   }
@@ -238,6 +247,12 @@ export function EditProductForm({ productId }: { productId: string }) {
 
       newMediaFiles.forEach((m) => {
         formData.append(`gallery_images[]`, m.file);
+        formData.append(`gallery_colors[]`, m.color || "null");
+      });
+
+      existingMedia.forEach((m) => {
+        formData.append(`existing_gallery_ids[]`, m.id.toString());
+        formData.append(`existing_gallery_colors[]`, m.color || "null");
       });
 
       if (hasVariants && variants.length > 0) {
@@ -473,59 +488,6 @@ export function EditProductForm({ productId }: { productId: string }) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Media</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                {existingMedia.map((item) => (
-                  <div
-                    key={item.id}
-                    className="group relative aspect-square overflow-hidden rounded-lg border bg-muted"
-                  >
-                    <img src={item.url} alt={item.name} className="size-full object-cover" />
-                    <button
-                      onClick={() => removeExistingMedia(item.id)}
-                      className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  </div>
-                ))}
-                {newMediaFiles.map((item) => (
-                  <div
-                    key={item.id}
-                    className="group relative aspect-square overflow-hidden rounded-lg border bg-muted"
-                  >
-                    <img src={item.url} alt="New Upload" className="size-full object-cover" />
-                    <button
-                      onClick={() => removeNewMedia(item.id)}
-                      className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => mediaRef.current?.click()}
-                  className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
-                >
-                  <ImagePlus className="size-6" />
-                  <span className="text-xs font-medium">Add images</span>
-                </button>
-              </div>
-              <input
-                ref={mediaRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => handleMediaFiles(e.target.files)}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle className="text-base">Variants & Stock</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
@@ -599,6 +561,107 @@ export function EditProductForm({ productId }: { productId: string }) {
                   />
                 </>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Media</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                {existingMedia.map((item) => (
+                  <div
+                    key={item.id}
+                    className="group relative flex flex-col gap-2 rounded-lg border bg-muted p-2"
+                  >
+                    <div className="relative aspect-square overflow-hidden rounded-md">
+                      <img src={item.url} alt={item.name} className="size-full object-cover" />
+                      <button
+                        onClick={() => removeExistingMedia(item.id)}
+                        className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                    <Select
+                      value={item.color || "none"}
+                      onValueChange={(val) => {
+                        setExistingMedia((prev) =>
+                          prev.map((m) =>
+                            m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m
+                          )
+                        );
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Color" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Color</SelectItem>
+                        {availableColors.map((c) => (
+                          <SelectItem key={c.id} value={c.label}>
+                            {c.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+                {newMediaFiles.map((item) => (
+                  <div
+                    key={item.id}
+                    className="group relative flex flex-col gap-2 rounded-lg border bg-muted p-2"
+                  >
+                    <div className="relative aspect-square overflow-hidden rounded-md">
+                      <img src={item.url} alt="New Upload" className="size-full object-cover" />
+                      <button
+                        onClick={() => removeNewMedia(item.id)}
+                        className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                    <Select
+                      value={item.color || "none"}
+                      onValueChange={(val) => {
+                        setNewMediaFiles((prev) =>
+                          prev.map((m) =>
+                            m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m
+                          )
+                        );
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Color" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Color</SelectItem>
+                        {availableColors.map((c) => (
+                          <SelectItem key={c.id} value={c.label}>
+                            {c.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+                <button
+                  onClick={() => mediaRef.current?.click()}
+                  className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                >
+                  <ImagePlus className="size-6" />
+                  <span className="text-xs font-medium">Add images</span>
+                </button>
+              </div>
+              <input
+                ref={mediaRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleMediaFiles(e.target.files)}
+              />
             </CardContent>
           </Card>
         </div>

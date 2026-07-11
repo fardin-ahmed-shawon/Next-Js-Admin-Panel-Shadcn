@@ -36,6 +36,7 @@ interface MediaItem {
   url: string;
   name: string;
   file: File;
+  color?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -102,6 +103,12 @@ export function AddProductForm() {
   const selectedMainCategory = categories.find((c) => String(c.id) === category);
   const filteredSubCategories = selectedMainCategory?.["sub-categories"] || [];
 
+  const availableColors = React.useMemo(() => {
+    if (!hasVariants) return [];
+    const usedColorLabels = new Set(variants.map(v => v.color).filter(Boolean));
+    return colors.filter(c => usedColorLabels.has(c.label));
+  }, [hasVariants, variants, colors]);
+
   /* ---- media helpers ---- */
   function removeMedia(id: string) {
     setMedia((p) => p.filter((m) => m.id !== id));
@@ -113,6 +120,7 @@ export function AddProductForm() {
       url: URL.createObjectURL(f),
       name: f.name,
       file: f,
+      color: "",
     }));
     setMedia((p) => [...p, ...items]);
   }
@@ -256,6 +264,7 @@ export function AddProductForm() {
 
       media.forEach((item) => {
         formData.append(`gallery_images[]`, item.file);
+        formData.append(`gallery_colors[]`, item.color || "null");
       });
 
       if (hasVariants && variants.length > 0) {
@@ -500,82 +509,6 @@ export function AddProductForm() {
             </CardContent>
           </Card>
 
-          {/* ---- Media ---- */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Media</CardTitle>
-              <CardDescription>Showcase the product from multiple angles before publishing.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              {media.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                    {media.map((item) => (
-                      <div
-                        key={item.id}
-                        className="group relative aspect-square overflow-hidden rounded-lg border bg-muted"
-                      >
-                        <img src={item.url} alt={item.name} className="size-full object-cover" />
-                        <button
-                          onClick={() => removeMedia(item.id)}
-                          className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100"
-                        >
-                          <X className="size-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => mediaRef.current?.click()}
-                      className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
-                    >
-                      <ImagePlus className="size-6" />
-                      <span className="text-xs font-medium">Add images</span>
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">{media.length} of 5 media assets selected.</p>
-                    <Button variant="outline" size="sm" onClick={() => mediaRef.current?.click()}>
-                      <Upload className="mr-2 size-4" />
-                      Add more images
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div
-                  className={`flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed py-16 transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-border"}`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={handleDrop}
-                >
-                  <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-                    <ImagePlus className="size-5 text-muted-foreground" />
-                  </div>
-                  <div className="space-y-1 text-center">
-                    <p className="text-sm font-semibold">Drop your images here</p>
-                    <p className="text-xs text-muted-foreground">
-                      PNG or JPG up to 5MB. Add up to 5 product media assets.
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => mediaRef.current?.click()}>
-                    <Upload className="mr-2 size-4" />
-                    Select images
-                  </Button>
-                </div>
-              )}
-              <input
-                ref={mediaRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => handleMediaFiles(e.target.files)}
-              />
-            </CardContent>
-          </Card>
-
           {/* ---- Variants & Stock ---- */}
           <Card>
             <CardHeader>
@@ -664,6 +597,106 @@ export function AddProductForm() {
                   />
                 </>
               )}
+            </CardContent>
+          </Card>
+
+          {/* ---- Media ---- */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Media</CardTitle>
+              <CardDescription>Showcase the product from multiple angles before publishing.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {media.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                    {media.map((item) => (
+                      <div
+                        key={item.id}
+                        className="group relative flex flex-col gap-2 rounded-lg border bg-muted p-2"
+                      >
+                        <div className="relative aspect-square overflow-hidden rounded-md">
+                          <img src={item.url} alt={item.name} className="size-full object-cover" />
+                          <button
+                            onClick={() => removeMedia(item.id)}
+                            className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+                        <Select
+                          value={item.color || "none"}
+                          onValueChange={(val) => {
+                            setMedia((prev) =>
+                              prev.map((m) =>
+                                m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m
+                              )
+                            );
+                          }}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Color" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No Color</SelectItem>
+                            {availableColors.map((c) => (
+                              <SelectItem key={c.id} value={c.label}>
+                                {c.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => mediaRef.current?.click()}
+                      className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                    >
+                      <ImagePlus className="size-6" />
+                      <span className="text-xs font-medium">Add images</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">{media.length} of 5 media assets selected.</p>
+                    <Button variant="outline" size="sm" onClick={() => mediaRef.current?.click()}>
+                      <Upload className="mr-2 size-4" />
+                      Add more images
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div
+                  className={`flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed py-16 transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-border"}`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                >
+                  <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+                    <ImagePlus className="size-5 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1 text-center">
+                    <p className="text-sm font-semibold">Drop your images here</p>
+                    <p className="text-xs text-muted-foreground">
+                      PNG or JPG up to 5MB. Add up to 5 product media assets.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => mediaRef.current?.click()}>
+                    <Upload className="mr-2 size-4" />
+                    Select images
+                  </Button>
+                </div>
+              )}
+              <input
+                ref={mediaRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleMediaFiles(e.target.files)}
+              />
             </CardContent>
           </Card>
         </div>
