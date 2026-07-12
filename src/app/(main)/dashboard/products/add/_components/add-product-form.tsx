@@ -191,8 +191,8 @@ export function AddProductForm() {
       toast.error("Long description is required.");
       return;
     }
-    if (!hasVariantWisePricing && (!purchasePrice || !regularPrice || !sellingPrice)) {
-      toast.error("Pricing (Purchase, Regular, Selling) is required.");
+    if (!hasVariantWisePricing && (!purchasePrice || !sellingPrice)) {
+      toast.error("Pricing (Purchase, Selling) is required.");
       return;
     }
 
@@ -216,8 +216,8 @@ export function AddProductForm() {
           return;
         }
         if (hasVariantWisePricing) {
-          if (!variants[i].purchasePrice || !variants[i].regularPrice || !variants[i].sellingPrice) {
-            toast.error(`Pricing fields are required for Variant ${i + 1} when Variant-Wise Pricing is enabled.`);
+          if (!variants[i].purchasePrice || !variants[i].sellingPrice) {
+            toast.error(`Purchase and Selling pricing fields are required for Variant ${i + 1} when Variant-Wise Pricing is enabled.`);
             return;
           }
         }
@@ -724,7 +724,7 @@ export function AddProductForm() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="regular-price" className="text-primary font-medium">
-                    Regular Price (৳)
+                    Regular Price (৳) (Optional)
                   </Label>
                   <Input
                     id="regular-price"

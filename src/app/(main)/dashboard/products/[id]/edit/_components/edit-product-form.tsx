@@ -675,7 +675,7 @@ export function EditProductForm({ productId }: { productId: string }) {
               <CardContent className="flex flex-col gap-5">
 
                 <div className="space-y-2">
-                  <Label>Regular Price (৳)</Label>
+                  <Label>Regular Price (৳) (Optional)</Label>
                   <Input value={regularPrice} onChange={(e) => setRegularPrice(e.target.value)} />
                 </div>
                 <div className="space-y-2">

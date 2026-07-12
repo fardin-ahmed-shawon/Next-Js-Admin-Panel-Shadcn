@@ -465,7 +465,7 @@ export function ProductVariantsSection({
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Regular Price</Label>
+                  <Label className="text-xs text-muted-foreground">Regular Price (Optional)</Label>
                   <div className="flex">
                     <Input 
                       placeholder="0.00" 
@@ -566,7 +566,7 @@ export function ProductVariantsSection({
                   {hasVariantWisePricing && (
                     <>
                       {!hidePurchasePrice && <th className="p-4 text-left font-medium">Purchase Price</th>}
-                      <th className="p-4 text-left font-medium">Regular Price</th>
+                      <th className="p-4 text-left font-medium">Regular Price (Optional)</th>
                       <th className="p-4 text-left font-medium">Selling Price</th>
                     </>
                   )}
