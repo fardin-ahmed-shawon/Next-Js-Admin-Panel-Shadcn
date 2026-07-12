@@ -208,7 +208,7 @@ function CourierPayStatusCell({ invoiceNo }: { invoiceNo: string }) {
       try {
         const res = await redxService.checkStatus(invoiceNo);
         if (!isMounted) return;
-        
+
         const nestedData = res?.data?.parcel || res?.data || res;
         const status = nestedData?.status || null;
         setPayInfo({ status });
@@ -244,13 +244,12 @@ function CourierPayStatusCell({ invoiceNo }: { invoiceNo: string }) {
       {formattedStatus ? (
         <Badge
           variant="outline"
-          className={`text-[9px] font-bold px-1 py-0 rounded border ${
-            formattedStatus.toLowerCase().includes("delivered")
+          className={`text-[9px] font-bold px-1 py-0 rounded border ${formattedStatus.toLowerCase().includes("delivered")
               ? "border-green-500/30 text-green-600 bg-green-500/5 hover:bg-green-500/10"
               : formattedStatus.toLowerCase().includes("cancel") || formattedStatus.toLowerCase().includes("return")
                 ? "border-red-500/30 text-red-600 bg-red-500/5 hover:bg-red-500/10"
                 : "border-blue-500/30 text-blue-600 bg-blue-500/5 hover:bg-blue-500/10"
-          }`}
+            }`}
         >
           {formattedStatus}
         </Badge>
