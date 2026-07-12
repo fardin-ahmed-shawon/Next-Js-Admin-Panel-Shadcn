@@ -973,10 +973,10 @@ const columns: ColumnDef<OrderRow>[] = [
               Print Courier Label
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => toast.warning(`Customer ${row.original.customer} blocked.`)}>
+            {/* <DropdownMenuItem onClick={() => toast.warning(`Customer ${row.original.customer} blocked.`)}>
               <Ban className="mr-2 size-4" />
               Block
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

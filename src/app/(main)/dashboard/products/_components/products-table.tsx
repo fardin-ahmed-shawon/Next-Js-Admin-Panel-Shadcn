@@ -601,12 +601,12 @@ function RowActions({ row, onDelete }: { row: Product; onDelete: () => void }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem asChild>
+          {/* <DropdownMenuItem asChild>
             <Link href={`/dashboard/products/${row.id}`}>
               <Eye className="mr-2 h-4 w-4" />
               View
             </Link>
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/products/${row.id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
