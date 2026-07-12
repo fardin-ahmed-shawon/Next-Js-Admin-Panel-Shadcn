@@ -55,7 +55,7 @@ export default function BlocklistPage() {
 
       // Transform Laravel data to match frontend format
       const formattedData = dataArray.map((item: any) => ({
-        id: item.id,
+        id: item.id.toString(),
         type: item.block_type === "ip" ? "IP" : "Phone",
         value: item.block_value,
         reason: item.reason || "-",
