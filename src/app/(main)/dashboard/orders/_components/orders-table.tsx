@@ -193,13 +193,14 @@ function SendCourierCell({ row }: { row: any }) {
       setCourierLoading(true);
       try {
         const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-        const courier = hasSteadfastParcel ? "steadfast" : "pathao";
+        const courier = hasSteadfastParcel ? "steadfast" : hasRedxParcel ? "redx" : "pathao";
         const res = await fetchClient(`${baseUrl}${courier}-parcels/${row.original.id}/status`);
         if (!isMounted) return;
         if (res.ok) {
           const json = await res.json();
           const nested = json.data?.data || json.data || json;
           const status =
+            nested.parcel?.status ||
             nested.order_status_slug ||
             nested.order_status ||
             nested.delivery_status ||
@@ -396,6 +397,9 @@ function SendCourierCell({ row }: { row: any }) {
               invalidateOrders();
             } catch (err: any) {
               toast.error(err?.message || "Something went wrong.", { id: toastId });
+              if (err?.message?.includes("already sent")) {
+                invalidateOrders();
+              }
             }
           }}
         >
