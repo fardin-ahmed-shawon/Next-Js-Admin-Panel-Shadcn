@@ -68,6 +68,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { usePathaoSetup } from "@/hooks/usePathaoSetup";
+import { useRedxSetup } from "@/hooks/useRedxSetup";
 import { hasModuleAccess } from "@/hooks/useRoles";
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
 import { fetchClient } from "@/lib/fetch-client";
@@ -126,6 +127,7 @@ export interface OrderRow {
   shippingAddress?: string;
   steadfast_parcel?: any;
   pathao_parcel?: any;
+  redx_parcel?: any;
   courier_details?: any;
   source?: string;
 }
@@ -169,19 +171,22 @@ export function invalidateOrders() {
 function SendCourierCell({ row }: { row: any }) {
   const { data: steadfastConfig } = useSteadfastSetup();
   const { data: pathaoConfig } = usePathaoSetup();
+  const { data: redxConfig } = useRedxSetup();
 
-  const isSteadfastActive = steadfastConfig?.status === "active";
+  const isSteadfastActive = steadfastConfig?.is_active === 1;
   const isPathaoActive = pathaoConfig?.status === "active";
+  const isRedxActive = redxConfig?.status === "active";
 
   const hasSteadfastParcel = !!row.original.steadfast_parcel || !!row.original.steadfastParcel;
   const hasPathaoParcel = !!row.original.pathao_parcel || !!row.original.pathaoParcel;
+  const hasRedxParcel = !!row.original.redx_parcel || !!row.original.redxParcel;
 
   const [courierStatus, setCourierStatus] = React.useState<string | null>(null);
   const [courierLoading, setCourierLoading] = React.useState(false);
   const [payInfo, setPayInfo] = React.useState<{ invoiceId: string | null; paymentStatus: string | null } | null>(null);
 
   React.useEffect(() => {
-    if (!hasSteadfastParcel && !hasPathaoParcel) return;
+    if (!hasSteadfastParcel && !hasPathaoParcel && !hasRedxParcel) return;
 
     let isMounted = true;
     const fetchCourierStatus = async () => {
@@ -230,9 +235,9 @@ function SendCourierCell({ row }: { row: any }) {
     return () => {
       isMounted = false;
     };
-  }, [row.original.id, hasSteadfastParcel, hasPathaoParcel, row.original.courier_details?.parcel_status]);
+  }, [row.original.id, hasSteadfastParcel, hasPathaoParcel, hasRedxParcel, row.original.courier_details?.parcel_status]);
 
-  if (hasSteadfastParcel || hasPathaoParcel) {
+  if (hasSteadfastParcel || hasPathaoParcel || hasRedxParcel) {
     if (courierLoading) {
       return (
         <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted border border-muted-foreground/10 px-2.5 py-1 rounded-md justify-center w-[135px] select-none">
@@ -245,7 +250,7 @@ function SendCourierCell({ row }: { row: any }) {
     const statusText = rawStatus.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase());
 
     let statusClass = "border-blue-500 text-blue-600 bg-blue-500/5 hover:bg-blue-500/10";
-    if (hasPathaoParcel) {
+    if (hasPathaoParcel || hasRedxParcel) {
       if (rawStatus === "delivered") {
         statusClass = "border-green-500 text-green-600 bg-green-500/5 hover:bg-green-500/10";
       } else if (rawStatus === "cancelled" || rawStatus === "failed") {
@@ -315,7 +320,7 @@ function SendCourierCell({ row }: { row: any }) {
     );
   }
 
-  if (!isSteadfastActive && !isPathaoActive) {
+  if (!isSteadfastActive && !isPathaoActive && !isRedxActive) {
     return <span className="text-xs text-muted-foreground">—</span>;
   }
 
@@ -370,6 +375,31 @@ function SendCourierCell({ row }: { row: any }) {
           }}
         >
           <Truck className="mr-1.5 size-3.5" /> Pathao
+        </Button>
+      )}
+      {isRedxActive && (
+        <Button
+          size="sm"
+          className="h-7 bg-rose-600 hover:bg-rose-600/90 text-white text-[11px] px-2 justify-start font-medium"
+          onClick={async () => {
+            const toastId = toast.loading(`Sending Order ${row.original.id} to RedX...`);
+            try {
+              const res = await fetchClient(`${getApiBaseUrl()}redx-parcels/${row.original.id}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              });
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err?.error || err?.message || "Failed to send to RedX.");
+              }
+              toast.success(`Order ${row.original.id} sent to RedX`, { id: toastId });
+              invalidateOrders();
+            } catch (err: any) {
+              toast.error(err?.message || "Something went wrong.", { id: toastId });
+            }
+          }}
+        >
+          <Truck className="mr-1.5 size-3.5" /> RedX
         </Button>
       )}
     </div>

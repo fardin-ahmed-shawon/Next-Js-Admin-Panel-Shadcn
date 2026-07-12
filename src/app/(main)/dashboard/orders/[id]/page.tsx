@@ -61,6 +61,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useOrderDetail } from "@/hooks/useOrderDetail";
 import { usePathaoSetup } from "@/hooks/usePathaoSetup";
+import { useRedxSetup } from "@/hooks/useRedxSetup";
 import useProducts, { type Product } from "@/hooks/useProducts";
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
 import { fetchClient } from "@/lib/fetch-client";
@@ -480,9 +481,11 @@ export default function OrderDetailPage() {
   const { data: order, isLoading, mutate } = useOrderDetail(id ?? null);
   const { data: steadfastConfig } = useSteadfastSetup();
   const { data: pathaoConfig } = usePathaoSetup();
+  const { data: redxConfig } = useRedxSetup();
 
-  const isSteadfastActive = steadfastConfig?.status === "active";
+  const isSteadfastActive = steadfastConfig?.is_active === 1;
   const isPathaoActive = pathaoConfig?.status === "active";
+  const isRedxActive = redxConfig?.status === "active";
 
   /* local state for editable dropdowns */
   const [orderStatus, setOrderStatus] = React.useState("");
@@ -604,8 +607,9 @@ export default function OrderDetailPage() {
     if (!order) return;
     const steadfastParcel = order.steadfast_parcel || order.steadfastParcel || null;
     const pathaoParcel = order.pathao_parcel || order.pathaoParcel || null;
+    const redxParcel = order.redx_parcel || order.redxParcel || null;
 
-    if (!steadfastParcel && !pathaoParcel) {
+    if (!steadfastParcel && !pathaoParcel && !redxParcel) {
       if (order.order_status === "Delivered") {
         setCourierStatus("Office Delivered");
       } else {
@@ -619,7 +623,7 @@ export default function OrderDetailPage() {
       setCourierLoading(true);
       try {
         const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-        const courier = steadfastParcel ? "steadfast" : "pathao";
+        const courier = steadfastParcel ? "steadfast" : pathaoParcel ? "pathao" : "redx";
         const res = await fetchClient(`${baseUrl}${courier}-parcels/${order.order_no}/status`);
         if (!isMounted) return;
         if (res.ok) {
@@ -661,6 +665,8 @@ export default function OrderDetailPage() {
     order?.steadfastParcel,
     order?.pathao_parcel,
     order?.pathaoParcel,
+    order?.redx_parcel,
+    order?.redxParcel,
     order?.courier_details?.parcel_status,
   ]);
 
@@ -927,17 +933,21 @@ export default function OrderDetailPage() {
 
   const steadfastParcel = order?.steadfast_parcel || order?.steadfastParcel || null;
   const pathaoParcel = order?.pathao_parcel || order?.pathaoParcel || null;
+  const redxParcel = order?.redx_parcel || order?.redxParcel || null;
   const hasSteadfastParcel = !!steadfastParcel;
   const hasPathaoParcel = !!pathaoParcel;
+  const hasRedxParcel = !!redxParcel;
 
   const determinedCourier = steadfastParcel
     ? "Steadfast"
     : pathaoParcel
       ? "Pathao"
-      : (order?.courier_details?.courier ?? "—");
+      : redxParcel
+        ? "RedX"
+        : (order?.courier_details?.courier ?? "—");
 
   let genuineStatus =
-    order?.order_status === "Delivered" && !hasSteadfastParcel && !hasPathaoParcel
+    order?.order_status === "Delivered" && !hasSteadfastParcel && !hasPathaoParcel && !hasRedxParcel
       ? "Office Delivered"
       : "Not dispatched";
   if (order?.courier_details?.parcel_status) {
@@ -1738,7 +1748,7 @@ export default function OrderDetailPage() {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    {hasSteadfastParcel || hasPathaoParcel ? (
+                    {hasSteadfastParcel || hasPathaoParcel || hasRedxParcel ? (
                       <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-md justify-center w-full select-none">
                         <Check className="size-4 shrink-0" />
                         <span>Already Sent</span>
@@ -1801,7 +1811,34 @@ export default function OrderDetailPage() {
                             <Send className="size-4" /> Send via Pathao
                           </Button>
                         )}
-                        {!isSteadfastActive && !isPathaoActive && (
+                        {isRedxActive && (
+                          <Button
+                            size="sm"
+                            className="w-full bg-rose-600 hover:bg-rose-600/90 text-white font-medium gap-2"
+                            onClick={async () => {
+                              const toastId = toast.loading(`Sending Order ${order.order_no} to RedX...`);
+                              try {
+                                const baseUrl =
+                                  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                                const res = await fetchClient(`${baseUrl}redx-parcels/${order.order_no}`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                });
+                                if (!res.ok) {
+                                  const err = await res.json().catch(() => ({}));
+                                  throw new Error(err?.error || err?.message || "Failed to send to RedX.");
+                                }
+                                toast.success(`Order ${order.order_no} sent to RedX`, { id: toastId });
+                                mutate();
+                              } catch (err: any) {
+                                toast.error(err?.message || "Something went wrong.", { id: toastId });
+                              }
+                            }}
+                          >
+                            <Send className="size-4" /> Send via RedX
+                          </Button>
+                        )}
+                        {!isSteadfastActive && !isPathaoActive && !isRedxActive && (
                           <span className="text-xs text-muted-foreground text-center italic py-2">
                             Courier integrations are not active.
                           </span>
