@@ -77,8 +77,18 @@ export function ProductsTable() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [mainCategoryId, setMainCategoryId] = React.useState("all");
   const [subCategoryId, setSubCategoryId] = React.useState("all");
-  const [pageIndex, setPageIndex] = React.useState(0);
-  const [pageSize, setPageSize] = React.useState(10);
+  const [pageIndex, setPageIndex] = React.useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("products_page_index");
+      if (saved !== null) return parseInt(saved, 10);
+    }
+    return 0;
+  });
+
+  React.useEffect(() => {
+    sessionStorage.setItem("products_page_index", pageIndex.toString());
+  }, [pageIndex]);
+  const [pageSize, setPageSize] = React.useState(50);
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const {
@@ -189,9 +199,9 @@ export function ProductsTable() {
               className="size-full object-cover"
             />
           </div>
-          <div className="flex flex-col gap-0.5">
-            <div className="font-medium leading-none">{row.original.title}</div>
-            {row.original.sku && <div className="text-xs text-muted-foreground">{row.original.sku}</div>}
+          <div className="flex flex-col gap-0.5 min-w-0 max-w-[250px] lg:max-w-[400px]">
+            <div className="font-medium leading-tight line-clamp-2" title={row.original.title}>{row.original.title}</div>
+            {row.original.sku && <div className="text-xs text-muted-foreground truncate">{row.original.sku}</div>}
           </div>
         </div>
       ),
