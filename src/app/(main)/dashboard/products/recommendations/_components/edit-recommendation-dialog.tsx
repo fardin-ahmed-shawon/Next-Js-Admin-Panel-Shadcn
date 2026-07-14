@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   type Recommendation,
@@ -103,7 +102,7 @@ function ProductPicker({ label, id, selected, onSelect, disabledId }: ProductPic
               ) : products.length === 0 ? (
                 <p className="py-3 text-center text-sm text-muted-foreground">No products found.</p>
               ) : (
-                <ScrollArea className="max-h-48">
+                <div className="max-h-48 overflow-y-auto overflow-x-hidden">
                   <div className="p-1">
                     {products.map((p) => (
                       <button
@@ -130,7 +129,7 @@ function ProductPicker({ label, id, selected, onSelect, disabledId }: ProductPic
                       </button>
                     ))}
                   </div>
-                </ScrollArea>
+                </div>
               )}
             </div>
           )}
