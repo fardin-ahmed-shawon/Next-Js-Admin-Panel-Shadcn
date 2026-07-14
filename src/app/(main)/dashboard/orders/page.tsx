@@ -28,7 +28,7 @@ import { OrdersTable } from "./_components/orders-table";
 
 /* ---- Time range helpers ---- */
 
-type TimeRange = "daily" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
+type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
 
 function getDateFrom(range: TimeRange): string {
   const now = new Date();
@@ -59,6 +59,7 @@ function getDateFrom(range: TimeRange): string {
 const rangeLabels: Record<TimeRange, string> = {
   alltime: "All Time",
   daily: "Daily",
+  yesterday: "Yesterday",
   weekly: "Weekly",
   monthly: "Monthly",
   "4months": "Last 4 Months",
@@ -70,7 +71,7 @@ const rangeLabels: Record<TimeRange, string> = {
 export default function OrdersPage() {
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(false);
   const { data: apiData, isLoading } = useOrders({ per_page: 1000, all_orders: allOrdersToggle });
-  const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
+  const [timeRange, setTimeRange] = React.useState<TimeRange>("daily");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
 
@@ -165,6 +166,12 @@ export default function OrdersPage() {
 
   const filteredByTime = React.useMemo(() => {
     if (timeRange === "alltime") return allOrders;
+    if (timeRange === "yesterday") {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yStr = yesterday.toISOString().slice(0, 10);
+      return allOrders.filter((o: any) => o.date === yStr);
+    }
     if (timeRange === "custom") {
       return allOrders.filter((o: any) => {
         if (customFrom && o.date < customFrom) return false;

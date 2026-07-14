@@ -459,6 +459,10 @@ function PaymentStatusCell({ row }: { row: any }) {
   const [status, setStatus] = React.useState(row.original.paymentStatus);
   const [modalOpen, setModalOpen] = React.useState(false);
 
+  if (row.original.orderStatus === "Cancelled" || row.original.orderStatus === "Fake") {
+    return <span className="text-xs text-muted-foreground font-medium pl-1">Not Available</span>;
+  }
+
   return (
     <>
       <Select
@@ -861,9 +865,11 @@ const columns: ColumnDef<OrderRow>[] = [
         <p className="text-[11px] text-emerald-600">
           Paid: <span className="font-semibold tabular-nums">৳{row.original.paid.toLocaleString()}</span>
         </p>
-        <p className="text-[11px] text-destructive">
-          Due: <span className="font-semibold tabular-nums">৳{row.original.due.toLocaleString()}</span>
-        </p>
+        {row.original.orderStatus !== "Cancelled" && row.original.orderStatus !== "Fake" && (
+          <p className="text-[11px] text-destructive">
+            Due: <span className="font-semibold tabular-nums">৳{row.original.due.toLocaleString()}</span>
+          </p>
+        )}
       </div>
     ),
   },
