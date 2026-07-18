@@ -1048,7 +1048,7 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
     { id: "orderStatus", value: "Pending" },
   ]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+  const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
 
   const table = useReactTable({
     data,
@@ -1405,7 +1405,7 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[5, 10, 20, 50].map((s) => (
+                {[50, 100, 150, 200].map((s) => (
                   <SelectItem key={s} value={`${s}`}>
                     {s}
                   </SelectItem>

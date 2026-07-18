@@ -143,7 +143,7 @@ export const sidebarItems: NavGroup[] = [
       { title: "Reviews", url: "/dashboard/reviews", icon: Star, module: "reviews" },
       { title: "Testimonials", url: "/dashboard/testimonials", icon: MessageSquareQuote, module: "testimonials" },
       { title: "Fraud Checker", url: "/dashboard/fraud-checker", icon: ShieldAlert, module: "fraud_checker" },
-      { title: "User Behaviour Logs", url: "/dashboard/user-behaviour-logs", icon: History },
+      { title: "User Behaviour Logs", url: "/dashboard/user-behaviour-logs", icon: History, isNew: true },
       {
         title: "Blogs",
         url: "/dashboard/blogs",
