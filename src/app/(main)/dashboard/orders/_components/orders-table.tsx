@@ -527,7 +527,7 @@ function PaymentStatusCell({ row }: { row: any }) {
 function ProductsCell({ row }: { row: any }) {
   const products = row.original.orderedProducts || [];
   return (
-    <div className="flex flex-col gap-2 min-w-[150px] max-w-[180px]">
+    <div className="flex flex-col gap-2 w-full">
       {products.map((prod: any, idx: number) => (
         <div key={idx} className="flex items-center gap-2">
           <div className="size-8 shrink-0 overflow-hidden rounded border bg-muted border-border/50">
@@ -535,26 +535,20 @@ function ProductsCell({ row }: { row: any }) {
           </div>
           <div className="min-w-0 flex-1">
             <p
-              className="text-[11px] font-semibold leading-snug text-foreground whitespace-normal break-words"
+              className="text-[11px] font-semibold leading-snug text-foreground whitespace-normal break-words max-w-[9ch]"
               title={prod.name}
             >
               {prod.name}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              Qty: <span className="font-semibold text-foreground">{prod.qty}</span>
+            <div className="flex flex-col text-[10px] text-muted-foreground mt-0.5 gap-0.5">
+              <span>Qty: <span className="font-semibold text-foreground">{prod.qty}</span></span>
               {prod.size && prod.size !== "—" && (
-                <>
-                  {" · "}
-                  Size: <span className="font-medium text-foreground">{prod.size}</span>
-                </>
+                <span>Size: <span className="font-medium text-foreground">{prod.size}</span></span>
               )}
               {prod.color && prod.color !== "—" && (
-                <>
-                  {" · "}
-                  Color: <span className="font-medium text-foreground">{prod.color}</span>
-                </>
+                <span>Color: <span className="font-medium text-foreground">{prod.color}</span></span>
               )}
-            </p>
+            </div>
           </div>
         </div>
       ))}
@@ -773,8 +767,8 @@ const columns: ColumnDef<OrderRow>[] = [
       };
 
       return (
-        <div className="min-w-[120px] flex flex-col gap-0.5 text-left">
-          <p className="font-mono text-sm font-semibold">{row.original.id}</p>
+        <div className="flex flex-col gap-0.5 text-left w-full max-w-[14ch]">
+          <p className="font-mono text-sm font-semibold whitespace-normal break-words">{row.original.id}</p>
           <p className="text-[11px] text-muted-foreground">
             {row.original.date} · {row.original.time}
           </p>
@@ -812,7 +806,7 @@ const columns: ColumnDef<OrderRow>[] = [
     header: "Customer",
     cell: ({ row }) => (
       <div className="flex items-center gap-2.5">
-        <div className="min-w-0 max-w-[160px]">
+        <div className="min-w-0 max-w-[11ch]">
           <p className="text-sm font-medium leading-tight whitespace-normal break-words">{row.original.customer}</p>
           <p className="text-[11px] text-muted-foreground whitespace-normal break-words">{row.original.phone}</p>
           {row.original.shippingAddress && (
