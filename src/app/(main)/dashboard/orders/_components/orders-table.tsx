@@ -295,10 +295,10 @@ function SendCourierCell({ row }: { row: any }) {
               <span className="font-semibold text-muted-foreground uppercase">Pay:</span>
               {payInfo.paymentStatus ? (
                 <span className={`font-bold px-1 rounded-[3px] text-[9px] border ${payInfo.paymentStatus.toLowerCase().includes("paid")
-                    ? "border-green-500/30 text-green-600 bg-green-500/5"
-                    : payInfo.paymentStatus.toLowerCase().includes("cancel") || payInfo.paymentStatus.toLowerCase().includes("fail") || payInfo.paymentStatus.toLowerCase().includes("refund")
-                      ? "border-red-500/30 text-red-600 bg-red-500/5"
-                      : "border-amber-500/30 text-amber-600 bg-amber-500/5"
+                  ? "border-green-500/30 text-green-600 bg-green-500/5"
+                  : payInfo.paymentStatus.toLowerCase().includes("cancel") || payInfo.paymentStatus.toLowerCase().includes("fail") || payInfo.paymentStatus.toLowerCase().includes("refund")
+                    ? "border-red-500/30 text-red-600 bg-red-500/5"
+                    : "border-amber-500/30 text-amber-600 bg-amber-500/5"
                   }`}>
                   {payInfo.paymentStatus.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                 </span>
@@ -527,7 +527,7 @@ function PaymentStatusCell({ row }: { row: any }) {
 function ProductsCell({ row }: { row: any }) {
   const products = row.original.orderedProducts || [];
   return (
-    <div className="flex flex-col gap-2 min-w-[220px] max-w-[280px]">
+    <div className="flex flex-col gap-2 min-w-[150px] max-w-[180px]">
       {products.map((prod: any, idx: number) => (
         <div key={idx} className="flex items-center gap-2">
           <div className="size-8 shrink-0 overflow-hidden rounded border bg-muted border-border/50">
@@ -792,8 +792,8 @@ const columns: ColumnDef<OrderRow>[] = [
                 <Badge
                   variant="outline"
                   className={`text-[9px] font-bold px-1.5 py-0 h-4 border leading-none shrink-0 ${row.original.source === "Website"
-                      ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/10"
-                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/10"
+                    ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/10"
+                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/10"
                     }`}
                 >
                   {row.original.source}
@@ -812,11 +812,11 @@ const columns: ColumnDef<OrderRow>[] = [
     header: "Customer",
     cell: ({ row }) => (
       <div className="flex items-center gap-2.5">
-        <div>
-          <p className="text-sm font-medium leading-tight">{row.original.customer}</p>
-          <p className="text-[11px] text-muted-foreground">{row.original.phone}</p>
+        <div className="min-w-0 max-w-[160px]">
+          <p className="text-sm font-medium leading-tight whitespace-normal break-words">{row.original.customer}</p>
+          <p className="text-[11px] text-muted-foreground whitespace-normal break-words">{row.original.phone}</p>
           {row.original.shippingAddress && (
-            <p className="text-[10px] text-muted-foreground/80 mt-1 max-w-[200px] break-words whitespace-normal">
+            <p className="text-[10px] text-muted-foreground/80 mt-1 break-words whitespace-normal">
               {row.original.shippingAddress}
             </p>
           )}
@@ -1353,7 +1353,7 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
           </div>
         )}
         <div className="w-full overflow-x-auto">
-          <Table className="min-w-[1200px]">
+          <Table className="w-full min-w-[1000px]">
             <TableHeader className="bg-muted/50">
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id}>
