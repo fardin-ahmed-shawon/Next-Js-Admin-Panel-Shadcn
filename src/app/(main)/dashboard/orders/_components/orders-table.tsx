@@ -208,7 +208,7 @@ function SendCourierCell({ row }: { row: any }) {
             nested.parcel_status ||
             "Unknown";
           setCourierStatus(status.trim().toLowerCase());
-          
+
           setPayInfo({
             invoiceId: nested.invoice_id || null,
             paymentStatus: nested.payment_status || null,
@@ -294,13 +294,12 @@ function SendCourierCell({ row }: { row: any }) {
             <div className="flex items-center justify-between text-[10px] mt-0.5">
               <span className="font-semibold text-muted-foreground uppercase">Pay:</span>
               {payInfo.paymentStatus ? (
-                <span className={`font-bold px-1 rounded-[3px] text-[9px] border ${
-                  payInfo.paymentStatus.toLowerCase().includes("paid")
+                <span className={`font-bold px-1 rounded-[3px] text-[9px] border ${payInfo.paymentStatus.toLowerCase().includes("paid")
                     ? "border-green-500/30 text-green-600 bg-green-500/5"
                     : payInfo.paymentStatus.toLowerCase().includes("cancel") || payInfo.paymentStatus.toLowerCase().includes("fail") || payInfo.paymentStatus.toLowerCase().includes("refund")
                       ? "border-red-500/30 text-red-600 bg-red-500/5"
                       : "border-amber-500/30 text-amber-600 bg-amber-500/5"
-                }`}>
+                  }`}>
                   {payInfo.paymentStatus.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                 </span>
               ) : (
@@ -606,7 +605,7 @@ function CourierHistoryCell({ row }: { row: any }) {
           setLiveData({ total, delivered, cancelled, successRate });
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (isMounted) setLoading(false);
       });
@@ -686,7 +685,7 @@ function CustomerFraudSuccessRate({ phone }: { phone: string }) {
           setSuccessRate(rate);
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (isMounted) setLoading(false);
       });
@@ -792,11 +791,10 @@ const columns: ColumnDef<OrderRow>[] = [
               {row.original.source && (
                 <Badge
                   variant="outline"
-                  className={`text-[9px] font-bold px-1.5 py-0 h-4 border leading-none shrink-0 ${
-                    row.original.source === "Website"
+                  className={`text-[9px] font-bold px-1.5 py-0 h-4 border leading-none shrink-0 ${row.original.source === "Website"
                       ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/10"
                       : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/10"
-                  }`}
+                    }`}
                 >
                   {row.original.source}
                 </Badge>
