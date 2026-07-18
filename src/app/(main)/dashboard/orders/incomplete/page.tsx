@@ -23,8 +23,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useOrders } from "@/hooks/useOrders";
 
-import { OrderStats } from "./_components/order-stats";
-import { OrdersTable } from "./_components/orders-table";
+import { OrderStats } from "../_components/order-stats";
+import { OrdersTable } from "../_components/orders-table";
 
 /* ---- Time range helpers ---- */
 
@@ -68,8 +68,9 @@ const rangeLabels: Record<TimeRange, string> = {
   custom: "Custom Range",
 };
 
-export default function OrdersPage() {
+export default function IncompleteOrdersPage() {
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(false);
+  // Ideally, if the API supports filtering by status, we could pass it here, e.g., order_status: "Incomplete".
   const { data: apiData, isLoading } = useOrders({ per_page: 1000, all_orders: allOrdersToggle });
   const [timeRange, setTimeRange] = React.useState<TimeRange>("daily");
   const [customFrom, setCustomFrom] = React.useState("");
@@ -89,81 +90,81 @@ export default function OrdersPage() {
   const allOrders = React.useMemo(() => {
     if (!apiData?.data?.data) return [];
     return apiData.data.data
-      .filter((order: any) => order.order_status !== "Incomplete")
+      .filter((order: any) => order.order_status === "Incomplete")
       .map((order: any) => {
-      const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
-      const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
-      const paymentMethod = order.payments?.[0]?.payment_method || "COD";
+        const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
+        const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
+        const paymentMethod = order.payments?.[0]?.payment_method || "COD";
 
-      const mappedProducts =
-        order.ordered_products?.map((p: any) => ({
-          id: p.id || p.product_id,
-          image: getImageUrl(p.product?.product_thumbnail_img),
-          name: p.product?.product_name || p.product?.title || "Unknown Product",
-          size: p.size_label || "—",
-          color: p.color_label || "—",
-          qty: p.qty || 1,
-          price: p.unit_price || 0,
-        })) || [];
-      const productImages = mappedProducts.map((p: any) => p.image);
+        const mappedProducts =
+          order.ordered_products?.map((p: any) => ({
+            id: p.id || p.product_id,
+            image: getImageUrl(p.product?.product_thumbnail_img),
+            name: p.product?.product_name || p.product?.title || "Unknown Product",
+            size: p.size_label || "—",
+            color: p.color_label || "—",
+            qty: p.qty || 1,
+            price: p.unit_price || 0,
+          })) || [];
+        const productImages = mappedProducts.map((p: any) => p.image);
 
-      const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
-      const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
+        const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
+        const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
 
-      const createdDate = new Date(order.created_at);
-      const dateString = createdDate.toISOString().slice(0, 10);
-      const timeString = createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const createdDate = new Date(order.created_at);
+        const dateString = createdDate.toISOString().slice(0, 10);
+        const timeString = createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-      const initials =
-        (order.customer_full_name || "Unknown")
-          .split(" ")
-          .map((n: string) => n[0])
-          .join("")
-          .slice(0, 2)
-          .toUpperCase() || "U";
-      const avatarUrl = `https://placehold.co/40x40/1a1a2e/e0e0e0?text=${initials}`;
+        const initials =
+          (order.customer_full_name || "Unknown")
+            .split(" ")
+            .map((n: string) => n[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase() || "U";
+        const avatarUrl = `https://placehold.co/40x40/1a1a2e/e0e0e0?text=${initials}`;
 
-      const assignedEmployee =
-        order.employee_orders?.[0]?.user?.full_name || order.employeeOrders?.[0]?.user?.full_name || null;
+        const assignedEmployee =
+          order.employee_orders?.[0]?.user?.full_name || order.employeeOrders?.[0]?.user?.full_name || null;
 
-      return {
-        id: order.order_no,
-        customer: order.customer_full_name || "Unknown",
-        phone: order.customer_phone || "",
-        shippingAddress: order.customer_shipping_address || "",
-        items: itemsCount,
-        total: order.grand_total_amount || 0,
-        paid: paidAmount,
-        due: (order.grand_total_amount || 0) - paidAmount,
-        orderStatus: order.order_status || "Pending",
-        paymentStatus: order.payment_status || "Unpaid",
-        paymentMethod: paymentMethod,
-        date: dateString,
-        time: timeString,
-        orderType: "regular",
-        source: order.source || null,
-        avatar: avatarUrl,
-        category: mainCategory,
-        subCategory: subCategory,
-        productImages: productImages,
-        orderedProducts: mappedProducts,
-        parcelStatus: "",
-        courier: "",
-        steadfast_parcel: order.steadfast_parcel || order.steadfastParcel || null,
-        pathao_parcel: order.pathao_parcel || order.pathaoParcel || null,
-        redx_parcel: order.redx_parcel || order.redxParcel || null,
-        courier_details: order.courier_details || null,
-        assignedEmployee: assignedEmployee,
-        parcelHistory: {
-          total: order.customer?.parcel_history?.total || 0,
-          delivered: order.customer?.parcel_history?.delivered || 0,
-          cancelled: order.customer?.parcel_history?.cancelled || 0,
-          successRate: order.customer?.parcel_history?.success_rate || "0",
-        },
-        ipAddress: order.customer_ip_address || "—",
-        createdAt: order.created_at,
-      };
-    });
+        return {
+          id: order.order_no,
+          customer: order.customer_full_name || "Unknown",
+          phone: order.customer_phone || "",
+          shippingAddress: order.customer_shipping_address || "",
+          items: itemsCount,
+          total: order.grand_total_amount || 0,
+          paid: paidAmount,
+          due: (order.grand_total_amount || 0) - paidAmount,
+          orderStatus: order.order_status || "Pending",
+          paymentStatus: order.payment_status || "Unpaid",
+          paymentMethod: paymentMethod,
+          date: dateString,
+          time: timeString,
+          orderType: "regular",
+          source: order.source || null,
+          avatar: avatarUrl,
+          category: mainCategory,
+          subCategory: subCategory,
+          productImages: productImages,
+          orderedProducts: mappedProducts,
+          parcelStatus: "",
+          courier: "",
+          steadfast_parcel: order.steadfast_parcel || order.steadfastParcel || null,
+          pathao_parcel: order.pathao_parcel || order.pathaoParcel || null,
+          redx_parcel: order.redx_parcel || order.redxParcel || null,
+          courier_details: order.courier_details || null,
+          assignedEmployee: assignedEmployee,
+          parcelHistory: {
+            total: order.customer?.parcel_history?.total || 0,
+            delivered: order.customer?.parcel_history?.delivered || 0,
+            cancelled: order.customer?.parcel_history?.cancelled || 0,
+            successRate: order.customer?.parcel_history?.success_rate || "0",
+          },
+          ipAddress: order.customer_ip_address || "—",
+          createdAt: order.created_at,
+        };
+      });
   }, [apiData, getImageUrl]);
 
   const filteredByTime = React.useMemo(() => {
@@ -195,14 +196,14 @@ export default function OrdersPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         {/* Left: Title + description (hidden on mobile, shown on sm+) */}
         <div className="space-y-1 hidden sm:block">
-          <h1 className="text-3xl tracking-tight">Order Management</h1>
-          <p className="text-muted-foreground text-sm">Track, manage, and fulfill all customer orders.</p>
+          <h1 className="text-3xl tracking-tight">Incomplete Orders</h1>
+          <p className="text-muted-foreground text-sm">Track, manage, and fulfill incomplete customer orders.</p>
         </div>
 
         {/* Mobile: Title shown above */}
         <div className="space-y-1 sm:hidden">
-          <h1 className="text-2xl tracking-tight">Order Management</h1>
-          <p className="text-muted-foreground text-sm">Track, manage, and fulfill all customer orders.</p>
+          <h1 className="text-2xl tracking-tight">Incomplete Orders</h1>
+          <p className="text-muted-foreground text-sm">Track, manage, and fulfill incomplete customer orders.</p>
         </div>
 
         {/* Controls: on mobile = full-width row (Create Order left, period+3dot right). On desktop = stacked column on right */}
@@ -330,7 +331,14 @@ export default function OrdersPage() {
 
       {/* Table â€” driven by time-filtered data */}
       <div className="w-full min-w-0">
-        <OrdersTable data={filteredByTime} />
+        <OrdersTable 
+          data={filteredByTime} 
+          hideOrderStatusFilter={true} 
+          hidePaymentStatusFilter={true}
+          hidePaymentStatusColumn={true} 
+          simplifiedPaymentColumn={true} 
+          showIncompleteStatus={true}
+        />
       </div>
     </div>
   );

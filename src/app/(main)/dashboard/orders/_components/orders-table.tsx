@@ -94,6 +94,7 @@ const orderStatuses = [
   "Lost",
   "Fake",
   "Trash",
+  "Incomplete",
 ] as const;
 const paymentStatuses = ["All", "Full Paid", "Unpaid", "Partially Paid", "Refund"] as const;
 
@@ -846,24 +847,36 @@ const columns: ColumnDef<OrderRow>[] = [
   {
     id: "paymentInfo",
     header: "Payment",
-    cell: ({ row }) => (
-      <div className="min-w-[110px] space-y-0.5">
-        <Badge variant="outline" className="text-[10px] h-5 mb-1">
-          {row.original.paymentMethod}
-        </Badge>
-        <p className="text-[11px]">
-          Total: <span className="font-semibold tabular-nums">৳{row.original.total.toLocaleString()}</span>
-        </p>
-        <p className="text-[11px] text-emerald-600">
-          Paid: <span className="font-semibold tabular-nums">৳{row.original.paid.toLocaleString()}</span>
-        </p>
-        {row.original.orderStatus !== "Cancelled" && row.original.orderStatus !== "Fake" && (
-          <p className="text-[11px] text-destructive">
-            Due: <span className="font-semibold tabular-nums">৳{row.original.due.toLocaleString()}</span>
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as any;
+      if (meta?.simplifiedPaymentColumn) {
+        return (
+          <div className="min-w-[110px] space-y-0.5">
+            <p className="text-[11px]">
+              Total: <span className="font-semibold tabular-nums">৳{row.original.total.toLocaleString()}</span>
+            </p>
+          </div>
+        );
+      }
+      return (
+        <div className="min-w-[110px] space-y-0.5">
+          <Badge variant="outline" className="text-[10px] h-5 mb-1">
+            {row.original.paymentMethod}
+          </Badge>
+          <p className="text-[11px]">
+            Total: <span className="font-semibold tabular-nums">৳{row.original.total.toLocaleString()}</span>
           </p>
-        )}
-      </div>
-    ),
+          <p className="text-[11px] text-emerald-600">
+            Paid: <span className="font-semibold tabular-nums">৳{row.original.paid.toLocaleString()}</span>
+          </p>
+          {row.original.orderStatus !== "Cancelled" && row.original.orderStatus !== "Fake" && (
+            <p className="text-[11px] text-destructive">
+              Due: <span className="font-semibold tabular-nums">৳{row.original.due.toLocaleString()}</span>
+            </p>
+          )}
+        </div>
+      );
+    },
   },
 
   // Products column
@@ -880,7 +893,9 @@ const columns: ColumnDef<OrderRow>[] = [
   {
     id: "oStatus",
     header: "Order Status",
-    cell: ({ row }) => (
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as any;
+      return (
       <Select
         defaultValue={row.original.orderStatus}
         onValueChange={async (val) => {
@@ -905,6 +920,7 @@ const columns: ColumnDef<OrderRow>[] = [
         <SelectContent>
           {orderStatuses
             .filter((s) => s !== "All")
+            .filter((s) => meta?.showIncompleteStatus ? true : s !== "Incomplete")
             .map((status) => (
               <SelectItem key={status} value={status} className="text-xs">
                 {status}
@@ -912,7 +928,7 @@ const columns: ColumnDef<OrderRow>[] = [
             ))}
         </SelectContent>
       </Select>
-    ),
+    )},
   },
 
   // Payment Status column
@@ -1029,16 +1045,25 @@ function exportOrders(data: OrderRow[]) {
 
 /* ---- Component ---- */
 
-export function OrdersTable({ data }: { data: OrderRow[] }) {
-  const [activeOrderFilter, setActiveOrderFilter] = React.useState<OrderStatus>("Pending");
+export interface OrdersTableProps {
+  data: OrderRow[];
+  hideOrderStatusFilter?: boolean;
+  hidePaymentStatusFilter?: boolean;
+  hidePaymentStatusColumn?: boolean;
+  simplifiedPaymentColumn?: boolean;
+  showIncompleteStatus?: boolean;
+}
+
+export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus }: OrdersTableProps) {
+  const [activeOrderFilter, setActiveOrderFilter] = React.useState<OrderStatus>(hideOrderStatusFilter ? "All" : "Pending");
   const [activePaymentFilter, setActivePaymentFilter] = React.useState<PaymentStatus>("All");
   const [showFiltersMobile, setShowFiltersMobile] = React.useState(false);
   const [showStatusFilter, setShowStatusFilter] = React.useState(true);
   const [showPaymentFilter, setShowPaymentFilter] = React.useState(true);
   const [rowSelection, setRowSelection] = React.useState({});
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([
-    { id: "orderStatus", value: "Pending" },
-  ]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    hideOrderStatusFilter ? [] : [{ id: "orderStatus", value: "Pending" }]
+  );
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
 
@@ -1057,7 +1082,12 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
         category: false,
         subCategory: false,
         courierHistory: false,
+        pStatus: !hidePaymentStatusColumn,
       },
+    },
+    meta: {
+      simplifiedPaymentColumn,
+      showIncompleteStatus,
     },
     getRowId: (r) => r.id,
     enableRowSelection: true,
@@ -1199,71 +1229,77 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
         {/* Advanced Filters (Hidden on mobile by default) */}
         <div className={`flex-col gap-3 ${showFiltersMobile ? "flex" : "hidden sm:flex"}`}>
           {/* Order Status Filter */}
-          <div className="flex flex-col gap-2 px-4">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground shrink-0">
-                Status:
-              </span>
-              <Button
-                size="icon-sm"
-                variant={showStatusFilter ? "ghost" : "outline"}
-                className="h-6 w-6"
-                onClick={() => setShowStatusFilter(!showStatusFilter)}
-                title={showStatusFilter ? "Hide Status Filters" : "Show Status Filters"}
-              >
-                <ChevronDown className={`size-3.5 transition-transform ${showStatusFilter ? "" : "-rotate-90"}`} />
-              </Button>
-            </div>
-            {showStatusFilter && (
-              <div className="flex flex-wrap gap-2">
-                {orderStatuses.map((s) => (
-                  <Button
-                    key={s}
-                    variant={activeOrderFilter === s ? "default" : "outline"}
-                    size="sm"
-                    className="h-7 text-xs px-2.5"
-                    onClick={() => applyOrderFilter(s)}
-                  >
-                    {s} {s === "All" ? `(${data.length})` : orderStatusCounts[s] ? `(${orderStatusCounts[s]})` : "(0)"}
-                  </Button>
-                ))}
+          {!hideOrderStatusFilter && (
+            <div className="flex flex-col gap-2 px-4">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground shrink-0">
+                  Status:
+                </span>
+                <Button
+                  size="icon-sm"
+                  variant={showStatusFilter ? "ghost" : "outline"}
+                  className="h-6 w-6"
+                  onClick={() => setShowStatusFilter(!showStatusFilter)}
+                  title={showStatusFilter ? "Hide Status Filters" : "Show Status Filters"}
+                >
+                  <ChevronDown className={`size-3.5 transition-transform ${showStatusFilter ? "" : "-rotate-90"}`} />
+                </Button>
               </div>
-            )}
-          </div>
+              {showStatusFilter && (
+                <div className="flex flex-wrap gap-2">
+                  {orderStatuses
+                    .filter((s) => showIncompleteStatus ? true : s !== "Incomplete")
+                    .map((s) => (
+                    <Button
+                      key={s}
+                      variant={activeOrderFilter === s ? "default" : "outline"}
+                      size="sm"
+                      className="h-7 text-xs px-2.5"
+                      onClick={() => applyOrderFilter(s)}
+                    >
+                      {s} {s === "All" ? `(${data.length})` : orderStatusCounts[s] ? `(${orderStatusCounts[s]})` : "(0)"}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Payment Status Filter */}
-          <div className="flex flex-col gap-2 px-4">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground shrink-0">
-                Payment:
-              </span>
-              <Button
-                size="icon-sm"
-                variant={showPaymentFilter ? "ghost" : "outline"}
-                className="h-6 w-6"
-                onClick={() => setShowPaymentFilter(!showPaymentFilter)}
-                title={showPaymentFilter ? "Hide Payment Filters" : "Show Payment Filters"}
-              >
-                <ChevronDown className={`size-3.5 transition-transform ${showPaymentFilter ? "" : "-rotate-90"}`} />
-              </Button>
-            </div>
-            {showPaymentFilter && (
-              <div className="flex flex-wrap gap-2">
-                {paymentStatuses.map((s) => (
-                  <Button
-                    key={s}
-                    variant={activePaymentFilter === s ? "default" : "outline"}
-                    size="sm"
-                    className="h-7 text-xs px-2.5"
-                    onClick={() => applyPaymentFilter(s)}
-                  >
-                    {s}{" "}
-                    {s === "All" ? `(${data.length})` : paymentStatusCounts[s] ? `(${paymentStatusCounts[s]})` : "(0)"}
-                  </Button>
-                ))}
+          {!hidePaymentStatusFilter && (
+            <div className="flex flex-col gap-2 px-4">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground shrink-0">
+                  Payment:
+                </span>
+                <Button
+                  size="icon-sm"
+                  variant={showPaymentFilter ? "ghost" : "outline"}
+                  className="h-6 w-6"
+                  onClick={() => setShowPaymentFilter(!showPaymentFilter)}
+                  title={showPaymentFilter ? "Hide Payment Filters" : "Show Payment Filters"}
+                >
+                  <ChevronDown className={`size-3.5 transition-transform ${showPaymentFilter ? "" : "-rotate-90"}`} />
+                </Button>
               </div>
-            )}
-          </div>
+              {showPaymentFilter && (
+                <div className="flex flex-wrap gap-2">
+                  {paymentStatuses.map((s) => (
+                    <Button
+                      key={s}
+                      variant={activePaymentFilter === s ? "default" : "outline"}
+                      size="sm"
+                      className="h-7 text-xs px-2.5"
+                      onClick={() => applyPaymentFilter(s)}
+                    >
+                      {s}{" "}
+                      {s === "All" ? `(${data.length})` : paymentStatusCounts[s] ? `(${paymentStatusCounts[s]})` : "(0)"}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Bulk action row — appears below pay filter when rows selected */}

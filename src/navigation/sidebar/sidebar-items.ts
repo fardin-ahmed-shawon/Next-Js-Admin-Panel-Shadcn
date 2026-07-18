@@ -82,8 +82,10 @@ export const sidebarItems: NavGroup[] = [
         module: "products",
         subItems: [
           { title: "Add Product", url: "/dashboard/products/add" },
+          { title: "AI Product Generator", url: "/dashboard/products/ai-product-generator", comingSoon: true },
           { title: "All Products", url: "/dashboard/products" },
-          { title: "Recommendations", url: "/dashboard/products/recommendations" },
+          { title: "AI Recommendations", url: "/dashboard/products/recommendations" },
+          { title: "Create Bundle", url: "/dashboard/products/create-bundle", comingSoon: true },
           { title: "Variant Attributes", url: "/dashboard/products/attributes" },
           { title: "Home Page Videos", url: "/dashboard/products/homepage-videos" },
           { title: "Purchase & Procurement", url: "/dashboard/products/procurement" },
@@ -99,7 +101,8 @@ export const sidebarItems: NavGroup[] = [
           { title: "Assign Orders", url: "/dashboard/orders/assign-orders", module: "assign_orders" },
           { title: "Order Management", url: "/dashboard/orders", module: "orders" },
           { title: "Invoice", url: "/dashboard/orders/invoice", module: "orders" },
-          { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", module: "orders", comingSoon: true },
+          { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", module: "orders", isNew: true },
+          { title: "Wholesale Orders", url: "/dashboard/orders/wholesale", module: "orders", comingSoon: true }
         ],
       },
       // {
@@ -193,6 +196,7 @@ export const sidebarItems: NavGroup[] = [
         subItems: [
           { title: "Add Role", url: "/dashboard/roles/add" },
           { title: "View Roles & Users", url: "/dashboard/roles" },
+          { title: "Auto Order", url: "/dashboard/order-auto-distribut", comingSoon: true },
         ],
       },
       { title: "Users", url: "/dashboard/users", icon: Users, module: "users", className: "hidden" },
