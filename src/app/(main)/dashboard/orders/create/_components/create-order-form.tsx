@@ -50,7 +50,7 @@ const getImageUrl = (path: string | null) => {
   return `${baseUrl}${path}`;
 };
 
-function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, updateUnitPrice }: any) {
+function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, updateUnitPrice, setCartItemQuantity, isWholesale }: any) {
   const { data: sizesRes } = useSWR(
     `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SIZES || "sizes"}`,
     fetcher,
@@ -149,18 +149,45 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium leading-snug">{item.product.title}</p>
-          <p className="text-xs text-muted-foreground">
-            {item.product.sku || "N/A"} · ৳{item.unitPrice.toLocaleString()} each
-          </p>
+          {isWholesale ? (
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-xs text-muted-foreground">{item.product.sku || "N/A"}</p>
+              <span className="text-xs text-muted-foreground">· ৳</span>
+              <Input
+                type="number"
+                className="w-20 h-7 text-xs px-2"
+                value={item.unitPrice}
+                onChange={(e) => updateUnitPrice(item.product.id, Number(e.target.value) || 0)}
+                min="0"
+              />
+              <span className="text-xs text-muted-foreground">each</span>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              {item.product.sku || "N/A"} · ৳{item.unitPrice.toLocaleString()} each
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1.5">
-          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, -1)}>
-            <Minus className="size-3" />
-          </Button>
-          <span className="w-8 text-center text-sm font-medium tabular-nums">{item.quantity}</span>
-          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, 1)}>
-            <Plus className="size-3" />
-          </Button>
+          {isWholesale ? (
+            <Input
+              type="number"
+              className="w-20 h-8 text-sm tabular-nums text-center px-2"
+              value={item.quantity === 0 ? "" : item.quantity}
+              onChange={(e) => setCartItemQuantity(item.product.id, Number(e.target.value) || 0)}
+              min="1"
+            />
+          ) : (
+            <>
+              <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, -1)}>
+                <Minus className="size-3" />
+              </Button>
+              <span className="w-8 text-center text-sm font-medium tabular-nums">{item.quantity}</span>
+              <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, 1)}>
+                <Plus className="size-3" />
+              </Button>
+            </>
+          )}
         </div>
         <span className="w-20 text-right text-sm font-semibold tabular-nums">
           ৳{(item.unitPrice * item.quantity).toLocaleString()}
@@ -247,7 +274,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
 
 /* ---- component ---- */
 
-export function CreateOrderForm() {
+export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean }) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = React.useState("");
   const [searchFocused, setSearchFocused] = React.useState(false);
@@ -351,6 +378,12 @@ export function CreateOrderForm() {
     );
   }
 
+  function setCartItemQuantity(productId: number, qty: number) {
+    setCart((prev) =>
+      prev.map((i) => (i.product.id === productId ? { ...i, quantity: Math.max(0, qty) } : i))
+    );
+  }
+
   function removeFromCart(productId: number) {
     setCart((prev) => prev.filter((i) => i.product.id !== productId));
   }
@@ -432,8 +465,9 @@ export function CreateOrderForm() {
   }
 
   async function handleCreateOrder() {
-    if (cart.length === 0) {
-      toast.error("Please add at least one product.");
+    const validCart = cart.filter((i) => i.quantity > 0);
+    if (validCart.length === 0) {
+      toast.error("Please add at least one product with a valid quantity.");
       return;
     }
     if (!customerName.trim()) {
@@ -493,7 +527,8 @@ export function CreateOrderForm() {
                   : "Card Payment",
       paid_amount: Number(paidAmount) || 0,
       payment_status: paymentStatus,
-      products: cart.map((item) => ({
+      source: isWholesale ? "Wholesale" : "Manual",
+      products: validCart.map((item) => ({
         product_id: item.product.id,
         qty: item.quantity,
         unit_price: item.unitPrice,
@@ -661,6 +696,8 @@ export function CreateOrderForm() {
                       removeFromCart={removeFromCart}
                       updateCartItem={updateCartItem}
                       updateUnitPrice={updateUnitPrice}
+                      setCartItemQuantity={setCartItemQuantity}
+                      isWholesale={isWholesale}
                     />
                   ))}
                   <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2">
