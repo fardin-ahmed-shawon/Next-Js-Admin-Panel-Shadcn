@@ -72,7 +72,7 @@ export default function IncompleteOrdersPage() {
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(false);
   // Ideally, if the API supports filtering by status, we could pass it here, e.g., order_status: "Incomplete".
   const { data: apiData, isLoading } = useOrders({ per_page: 1000, all_orders: allOrdersToggle });
-  const [timeRange, setTimeRange] = React.useState<TimeRange>("daily");
+  const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
 
