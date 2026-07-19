@@ -36,6 +36,7 @@ interface MediaItem {
   url: string;
   name: string;
   color?: string;
+  size?: string;
 }
 
 const getImageUrl = (path: string | null) => {
@@ -70,7 +71,7 @@ export function EditProductForm({ productId }: { productId: string }) {
   // Media (Existing + New)
   const [existingMedia, setExistingMedia] = React.useState<MediaItem[]>([]);
   const [deletedGalleryIds, setDeletedGalleryIds] = React.useState<number[]>([]);
-  const [newMediaFiles, setNewMediaFiles] = React.useState<{ id: string; file: File; url: string; color?: string }[]>([]);
+  const [newMediaFiles, setNewMediaFiles] = React.useState<{ id: string; file: File; url: string; color?: string; size?: string }[]>([]);
   const [isDragging, setIsDragging] = React.useState(false);
 
   // Pricing & Stock
@@ -128,6 +129,7 @@ export function EditProductForm({ productId }: { productId: string }) {
             url: getImageUrl(g.product_img || g.image),
             name: `Image ${g.id}`,
             color: colors.find((c: any) => c.id == g.color_id)?.label || g.color?.name || g.color || "",
+            size: sizes.find((s: any) => s.id == g.size_id)?.label || g.size?.name || g.size || "",
           })),
         );
       }
@@ -248,11 +250,13 @@ export function EditProductForm({ productId }: { productId: string }) {
       newMediaFiles.forEach((m) => {
         formData.append(`gallery_images[]`, m.file);
         formData.append(`gallery_colors[]`, m.color || "null");
+        formData.append(`gallery_sizes[]`, m.size || "null");
       });
 
       existingMedia.forEach((m) => {
         formData.append(`existing_gallery_ids[]`, m.id.toString());
         formData.append(`existing_gallery_colors[]`, m.color || "null");
+        formData.append(`existing_gallery_sizes[]`, m.size || "null");
       });
 
       if (hasVariants && variants.length > 0) {
@@ -584,28 +588,53 @@ export function EditProductForm({ productId }: { productId: string }) {
                         <X className="size-3.5" />
                       </button>
                     </div>
-                    <Select
-                      value={item.color || "none"}
-                      onValueChange={(val) => {
-                        setExistingMedia((prev) =>
-                          prev.map((m) =>
-                            m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m
-                          )
-                        );
-                      }}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Color" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No Color</SelectItem>
-                        {availableColors.map((c) => (
-                          <SelectItem key={c.id} value={c.label}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="grid grid-cols-2 gap-1">
+                      <Select
+                        value={item.color || "none"}
+                        onValueChange={(val) => {
+                          setExistingMedia((prev) =>
+                            prev.map((m) =>
+                              m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m
+                            )
+                          );
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-xs px-2">
+                          <SelectValue placeholder="Color" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Color</SelectItem>
+                          {availableColors.map((c) => (
+                            <SelectItem key={c.id} value={c.label}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={item.size || "none"}
+                        onValueChange={(val) => {
+                          setExistingMedia((prev) =>
+                            prev.map((m) =>
+                              m.id === item.id ? { ...m, size: val === "none" ? "" : val } : m
+                            )
+                          );
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-xs px-2">
+                          <SelectValue placeholder="Size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Size</SelectItem>
+                          {sizes.map((s) => (
+                            <SelectItem key={s.id} value={s.label}>
+                              {s.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 ))}
                 {newMediaFiles.map((item) => (
@@ -622,28 +651,53 @@ export function EditProductForm({ productId }: { productId: string }) {
                         <X className="size-3.5" />
                       </button>
                     </div>
-                    <Select
-                      value={item.color || "none"}
-                      onValueChange={(val) => {
-                        setNewMediaFiles((prev) =>
-                          prev.map((m) =>
-                            m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m
-                          )
-                        );
-                      }}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Color" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No Color</SelectItem>
-                        {availableColors.map((c) => (
-                          <SelectItem key={c.id} value={c.label}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="grid grid-cols-2 gap-1">
+                      <Select
+                        value={item.color || "none"}
+                        onValueChange={(val) => {
+                          setNewMediaFiles((prev) =>
+                            prev.map((m) =>
+                              m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m
+                            )
+                          );
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-xs px-2">
+                          <SelectValue placeholder="Color" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Color</SelectItem>
+                          {availableColors.map((c) => (
+                            <SelectItem key={c.id} value={c.label}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={item.size || "none"}
+                        onValueChange={(val) => {
+                          setNewMediaFiles((prev) =>
+                            prev.map((m) =>
+                              m.id === item.id ? { ...m, size: val === "none" ? "" : val } : m
+                            )
+                          );
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-xs px-2">
+                          <SelectValue placeholder="Size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Size</SelectItem>
+                          {sizes.map((s) => (
+                            <SelectItem key={s.id} value={s.label}>
+                              {s.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 ))}
                 <button

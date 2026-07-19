@@ -37,6 +37,7 @@ interface MediaItem {
   name: string;
   file: File;
   color?: string;
+  size?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -265,6 +266,7 @@ export function AddProductForm() {
       media.forEach((item) => {
         formData.append(`gallery_images[]`, item.file);
         formData.append(`gallery_colors[]`, item.color || "null");
+        formData.append(`gallery_sizes[]`, item.size || "null");
       });
 
       if (hasVariants && variants.length > 0) {
@@ -624,28 +626,53 @@ export function AddProductForm() {
                             <X className="size-3.5" />
                           </button>
                         </div>
-                        <Select
-                          value={item.color || "none"}
-                          onValueChange={(val) => {
-                            setMedia((prev) =>
-                              prev.map((m) =>
-                                m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m
-                              )
-                            );
-                          }}
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Color" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">No Color</SelectItem>
-                            {availableColors.map((c) => (
-                              <SelectItem key={c.id} value={c.label}>
-                                {c.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="grid grid-cols-2 gap-1">
+                          <Select
+                            value={item.color || "none"}
+                            onValueChange={(val) => {
+                              setMedia((prev) =>
+                                prev.map((m) =>
+                                  m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m
+                                )
+                              );
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-xs px-2">
+                              <SelectValue placeholder="Color" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Color</SelectItem>
+                              {availableColors.map((c) => (
+                                <SelectItem key={c.id} value={c.label}>
+                                  {c.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          
+                          <Select
+                            value={item.size || "none"}
+                            onValueChange={(val) => {
+                              setMedia((prev) =>
+                                prev.map((m) =>
+                                  m.id === item.id ? { ...m, size: val === "none" ? "" : val } : m
+                                )
+                              );
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-xs px-2">
+                              <SelectValue placeholder="Size" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Size</SelectItem>
+                              {sizes.map((s) => (
+                                <SelectItem key={s.id} value={s.label}>
+                                  {s.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     ))}
                     <button
