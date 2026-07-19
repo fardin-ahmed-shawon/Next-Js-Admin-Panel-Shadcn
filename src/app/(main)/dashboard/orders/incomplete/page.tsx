@@ -111,8 +111,15 @@ export default function IncompleteOrdersPage() {
         const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
         const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
 
-        const createdDate = new Date(order.created_at);
-        const dateString = createdDate.toISOString().slice(0, 10);
+        // Remove 'Z' so JS parses it as local time, avoiding double timezone offset addition
+        const rawDateStr = order.created_at ? order.created_at.replace("Z", "") : "";
+        const createdDate = new Date(rawDateStr);
+
+        const year = createdDate.getFullYear();
+        const month = String(createdDate.getMonth() + 1).padStart(2, "0");
+        const day = String(createdDate.getDate()).padStart(2, "0");
+        const dateString = `${year}-${month}-${day}`;
+
         const timeString = createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
         const initials =

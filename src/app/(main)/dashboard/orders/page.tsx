@@ -33,6 +33,8 @@ type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "4months" | "6mo
 function getDateFrom(range: TimeRange): string {
   const now = new Date();
   const d = new Date(now);
+  console.log("now:", now);
+  console.log("d:", d);
   switch (range) {
     case "daily":
       return now.toISOString().slice(0, 10);
@@ -91,79 +93,86 @@ export default function OrdersPage() {
     return apiData.data.data
       .filter((order: any) => order.order_status !== "Incomplete")
       .map((order: any) => {
-      const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
-      const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
-      const paymentMethod = order.payments?.[0]?.payment_method || "COD";
+        const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
+        const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
+        const paymentMethod = order.payments?.[0]?.payment_method || "COD";
 
-      const mappedProducts =
-        order.ordered_products?.map((p: any) => ({
-          id: p.id || p.product_id,
-          image: getImageUrl(p.product?.product_thumbnail_img),
-          name: p.product?.product_name || p.product?.title || "Unknown Product",
-          size: p.size_label || "—",
-          color: p.color_label || "—",
-          qty: p.qty || 1,
-          price: p.unit_price || 0,
-        })) || [];
-      const productImages = mappedProducts.map((p: any) => p.image);
+        const mappedProducts =
+          order.ordered_products?.map((p: any) => ({
+            id: p.id || p.product_id,
+            image: getImageUrl(p.product?.product_thumbnail_img),
+            name: p.product?.product_name || p.product?.title || "Unknown Product",
+            size: p.size_label || "—",
+            color: p.color_label || "—",
+            qty: p.qty || 1,
+            price: p.unit_price || 0,
+          })) || [];
+        const productImages = mappedProducts.map((p: any) => p.image);
 
-      const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
-      const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
+        const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
+        const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
 
-      const createdDate = new Date(order.created_at);
-      const dateString = createdDate.toISOString().slice(0, 10);
-      const timeString = createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        // Remove 'Z' so JS parses it as local time, avoiding double timezone offset addition
+        const rawDateStr = order.created_at ? order.created_at.replace("Z", "") : "";
+        const createdDate = new Date(rawDateStr);
+        
+        const year = createdDate.getFullYear();
+        const month = String(createdDate.getMonth() + 1).padStart(2, "0");
+        const day = String(createdDate.getDate()).padStart(2, "0");
+        const dateString = `${year}-${month}-${day}`;
+        
+        const timeString = createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-      const initials =
-        (order.customer_full_name || "Unknown")
-          .split(" ")
-          .map((n: string) => n[0])
-          .join("")
-          .slice(0, 2)
-          .toUpperCase() || "U";
-      const avatarUrl = `https://placehold.co/40x40/1a1a2e/e0e0e0?text=${initials}`;
+        const initials =
+          (order.customer_full_name || "Unknown")
+            .split(" ")
+            .map((n: string) => n[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase() || "U";
+        const avatarUrl = `https://placehold.co/40x40/1a1a2e/e0e0e0?text=${initials}`;
 
-      const assignedEmployee =
-        order.employee_orders?.[0]?.user?.full_name || order.employeeOrders?.[0]?.user?.full_name || null;
+        const assignedEmployee =
+          order.employee_orders?.[0]?.user?.full_name || order.employeeOrders?.[0]?.user?.full_name || null;
 
-      return {
-        id: order.order_no,
-        customer: order.customer_full_name || "Unknown",
-        phone: order.customer_phone || "",
-        shippingAddress: order.customer_shipping_address || "",
-        items: itemsCount,
-        total: order.grand_total_amount || 0,
-        paid: paidAmount,
-        due: (order.grand_total_amount || 0) - paidAmount,
-        orderStatus: order.order_status || "Pending",
-        paymentStatus: order.payment_status || "Unpaid",
-        paymentMethod: paymentMethod,
-        date: dateString,
-        time: timeString,
-        orderType: "regular",
-        source: order.source || null,
-        avatar: avatarUrl,
-        category: mainCategory,
-        subCategory: subCategory,
-        productImages: productImages,
-        orderedProducts: mappedProducts,
-        parcelStatus: "",
-        courier: "",
-        steadfast_parcel: order.steadfast_parcel || order.steadfastParcel || null,
-        pathao_parcel: order.pathao_parcel || order.pathaoParcel || null,
-        redx_parcel: order.redx_parcel || order.redxParcel || null,
-        courier_details: order.courier_details || null,
-        assignedEmployee: assignedEmployee,
-        parcelHistory: {
-          total: order.customer?.parcel_history?.total || 0,
-          delivered: order.customer?.parcel_history?.delivered || 0,
-          cancelled: order.customer?.parcel_history?.cancelled || 0,
-          successRate: order.customer?.parcel_history?.success_rate || "0",
-        },
-        ipAddress: order.customer_ip_address || "—",
-        createdAt: order.created_at,
-      };
-    });
+        return {
+          id: order.order_no,
+          customer: order.customer_full_name || "Unknown",
+          phone: order.customer_phone || "",
+          shippingAddress: order.customer_shipping_address || "",
+          items: itemsCount,
+          total: order.grand_total_amount || 0,
+          paid: paidAmount,
+          due: (order.grand_total_amount || 0) - paidAmount,
+          orderStatus: order.order_status || "Pending",
+          paymentStatus: order.payment_status || "Unpaid",
+          paymentMethod: paymentMethod,
+          date: dateString,
+          time: timeString,
+          orderType: "regular",
+          source: order.source || null,
+          avatar: avatarUrl,
+          category: mainCategory,
+          subCategory: subCategory,
+          productImages: productImages,
+          orderedProducts: mappedProducts,
+          parcelStatus: "",
+          courier: "",
+          steadfast_parcel: order.steadfast_parcel || order.steadfastParcel || null,
+          pathao_parcel: order.pathao_parcel || order.pathaoParcel || null,
+          redx_parcel: order.redx_parcel || order.redxParcel || null,
+          courier_details: order.courier_details || null,
+          assignedEmployee: assignedEmployee,
+          parcelHistory: {
+            total: order.customer?.parcel_history?.total || 0,
+            delivered: order.customer?.parcel_history?.delivered || 0,
+            cancelled: order.customer?.parcel_history?.cancelled || 0,
+            successRate: order.customer?.parcel_history?.success_rate || "0",
+          },
+          ipAddress: order.customer_ip_address || "—",
+          createdAt: order.created_at,
+        };
+      });
   }, [apiData, getImageUrl]);
 
   const filteredByTime = React.useMemo(() => {
@@ -273,11 +282,11 @@ export default function OrdersPage() {
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuGroup>
                     <DropdownMenuLabel>Bulk Invoice</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => {}}>
+                    <DropdownMenuItem onClick={() => { }}>
                       <FileText className="mr-2 size-4" />
                       All Invoice A4
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {}}>
+                    <DropdownMenuItem onClick={() => { }}>
                       <Printer className="mr-2 size-4" />
                       All Parcel Invoice
                     </DropdownMenuItem>
@@ -285,15 +294,15 @@ export default function OrdersPage() {
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuLabel>Management</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => {}}>
+                    <DropdownMenuItem onClick={() => { }}>
                       <ShieldOff className="mr-2 size-4" />
                       Block List
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {}}>
+                    <DropdownMenuItem onClick={() => { }}>
                       <RefreshCw className="mr-2 size-4" />
                       Refresh
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {}}>
+                    <DropdownMenuItem onClick={() => { }}>
                       <FileDown className="mr-2 size-4" />
                       Export Report
                     </DropdownMenuItem>
