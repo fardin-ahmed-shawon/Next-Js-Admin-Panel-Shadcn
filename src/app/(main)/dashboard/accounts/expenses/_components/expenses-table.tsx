@@ -113,7 +113,7 @@ const columns: ColumnDef<ExpenseItem>[] = [
       const dateStr = row.original.created_at;
       return (
         <span className="text-muted-foreground tabular-nums">
-          {dateStr ? new Date(dateStr).toLocaleDateString() : "N/A"}
+          {dateStr ? new Date(dateStr.replace("Z", "")).toLocaleDateString() : "N/A"}
         </span>
       );
     },
@@ -265,7 +265,7 @@ export function ExpensesTable() {
         const catName = cat ? cat.title : `ID: ${row.expense_category_id}`;
         return [
           row.id,
-          row.created_at ? new Date(row.created_at).toLocaleDateString() : "",
+          row.created_at ? new Date(row.created_at.replace("Z", "")).toLocaleDateString() : "",
           `"${catName}"`,
           `"${row.title}"`,
           row.amount,

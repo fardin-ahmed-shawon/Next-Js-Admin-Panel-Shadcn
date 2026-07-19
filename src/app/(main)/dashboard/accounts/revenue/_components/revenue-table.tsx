@@ -147,7 +147,7 @@ const columns: ColumnDef<RevenueItem>[] = [
   {
     accessorKey: "date",
     header: "Date",
-    cell: ({ row }) => <span className="text-muted-foreground tabular-nums">{row.original.date}</span>,
+    cell: ({ row }) => <span className="text-muted-foreground tabular-nums">{row.original.date ? new Date(row.original.date.replace("Z", "")).toLocaleDateString() : "N/A"}</span>,
   },
   {
     accessorKey: "paymentStatus",
@@ -223,7 +223,7 @@ function exportToExcel(data: RevenueItem[]) {
         `"${row.customer}"`,
         row.method,
         row.amount,
-        row.date,
+        row.date ? new Date(row.date.replace("Z", "")).toLocaleDateString() : "",
         row.paymentStatus,
       ].join(","),
     ),

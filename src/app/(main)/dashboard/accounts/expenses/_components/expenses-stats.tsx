@@ -15,7 +15,8 @@ export function ExpensesStats() {
   const thisMonthAmount = expenses
     .filter((exp: any) => {
       if (!exp.created_at) return false;
-      const d = new Date(exp.created_at);
+      const rawStr = exp.created_at ? exp.created_at.replace("Z", "") : "";
+      const d = new Date(rawStr);
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     })
     .reduce((sum: number, exp: any) => sum + Number(exp.amount), 0);

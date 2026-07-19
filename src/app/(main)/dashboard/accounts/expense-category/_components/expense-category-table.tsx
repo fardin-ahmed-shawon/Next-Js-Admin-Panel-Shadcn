@@ -112,7 +112,7 @@ const columns: ColumnDef<ExpenseCategoryItem>[] = [
     header: "Created At",
     cell: ({ row }) => {
       const dateStr = row.original.created_at;
-      return <span className="text-muted-foreground">{dateStr ? new Date(dateStr).toLocaleDateString() : "N/A"}</span>;
+      return <span className="text-muted-foreground">{dateStr ? new Date(dateStr.replace("Z", "")).toLocaleDateString() : "N/A"}</span>;
     },
   },
   {
