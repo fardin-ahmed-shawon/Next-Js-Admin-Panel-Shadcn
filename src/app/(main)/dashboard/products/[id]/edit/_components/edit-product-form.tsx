@@ -178,6 +178,12 @@ export function EditProductForm({ productId }: { productId: string }) {
     return colors.filter(c => usedColorLabels.has(c.label));
   }, [hasVariants, variants, colors]);
 
+  const availableSizes = React.useMemo(() => {
+    if (!hasVariants) return [];
+    const usedSizeLabels = new Set(variants.map(v => v.size).filter(Boolean));
+    return sizes.filter(s => usedSizeLabels.has(s.label));
+  }, [hasVariants, variants, sizes]);
+
   function removeExistingMedia(id: number) {
     setExistingMedia((p) => p.filter((m) => m.id !== id));
     setDeletedGalleryIds((p) => [...p, id]);
@@ -627,7 +633,7 @@ export function EditProductForm({ productId }: { productId: string }) {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">No Size</SelectItem>
-                          {sizes.map((s) => (
+                          {availableSizes.map((s) => (
                             <SelectItem key={s.id} value={s.label}>
                               {s.label}
                             </SelectItem>
@@ -690,7 +696,7 @@ export function EditProductForm({ productId }: { productId: string }) {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">No Size</SelectItem>
-                          {sizes.map((s) => (
+                          {availableSizes.map((s) => (
                             <SelectItem key={s.id} value={s.label}>
                               {s.label}
                             </SelectItem>
