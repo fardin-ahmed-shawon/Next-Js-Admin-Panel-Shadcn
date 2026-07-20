@@ -1110,7 +1110,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
     hideOrderStatusFilter ? [] : [{ id: "orderStatus", value: "Pending" }]
   );
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
+  const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 20 });
 
   const table = useReactTable({
     data,
@@ -1254,6 +1254,26 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
               Clear filters
             </Button>
           )}
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground hidden sm:inline">Rows:</span>
+            <Select
+              value={`${pagination.pageSize}`}
+              onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 20, 50, 100, 150, 200].map((s) => (
+                  <SelectItem key={s} value={`${s}`}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="ml-auto flex items-center gap-2">
             <Button
               size="icon-sm"
@@ -1482,7 +1502,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[50, 100, 150, 200].map((s) => (
+                {[10, 20, 30, 50, 100, 150, 200].map((s) => (
                   <SelectItem key={s} value={`${s}`}>
                     {s}
                   </SelectItem>
