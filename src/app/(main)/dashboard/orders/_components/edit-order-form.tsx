@@ -1861,6 +1861,18 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                                     throw new Error(err?.error || err?.message || "Failed to send to RedX.");
                                   }
                                   toast.success(`Order ${order.order_no} sent to RedX`, { id: toastId });
+
+                                  // Automation: Update order status to "In-Courier"
+                                  try {
+                                    await fetchClient(`${baseUrl}orders/bulk-update-status`, {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ order_nos: [order.order_no], order_status: "In-Courier" }),
+                                    });
+                                  } catch (e) {
+                                    console.warn("Failed to automatically update order status", e);
+                                  }
+
                                   mutate();
                                 } catch (err: any) {
                                   toast.error(err?.message || "Something went wrong.", { id: toastId });

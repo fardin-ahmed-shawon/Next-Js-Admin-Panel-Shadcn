@@ -396,6 +396,18 @@ function SendCourierCell({ row }: { row: any }) {
                 throw new Error(err?.error || err?.message || "Failed to send to RedX.");
               }
               toast.success(`Order ${row.original.id} sent to RedX`, { id: toastId });
+
+              // Automation: Update order status to "In-Courier"
+              try {
+                await fetchClient(`${getApiBaseUrl()}orders/bulk-update-status`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ order_nos: [row.original.id], order_status: "In-Courier" }),
+                });
+              } catch (e) {
+                console.warn("Failed to update status to In-Courier", e);
+              }
+
               invalidateOrders();
             } catch (err: any) {
               toast.error(err?.message || "Something went wrong.", { id: toastId });
