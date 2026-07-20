@@ -3,6 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { mutate } from "swr";
 
 import {
   AlertDialog,
@@ -53,6 +54,30 @@ export function PrintInvoiceModal({
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err?.message || "Request failed");
+      }
+
+      // Automation: Update order status to "Ready To Ship"
+      try {
+        const selectedIds = Array.isArray(orderIds) ? orderIds : [orderIds];
+        await fetchClient(`${getApiBaseUrl()}orders/bulk-update-status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_nos: selectedIds, order_status: "Ready To Ship" }),
+        });
+
+        // Auto-refresh the orders table data globally
+        const ordersEndpoint = process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders";
+        mutate(
+          (key: any) => {
+            if (typeof key === "string") return key.includes(ordersEndpoint);
+            if (Array.isArray(key)) return key.some((k) => typeof k === "string" && k.includes(ordersEndpoint));
+            return false;
+          },
+          undefined,
+          { revalidate: true }
+        );
+      } catch (statusErr) {
+        console.warn("Failed to automatically update order status", statusErr);
       }
 
       toast.success("Invoice print status saved successfully");
