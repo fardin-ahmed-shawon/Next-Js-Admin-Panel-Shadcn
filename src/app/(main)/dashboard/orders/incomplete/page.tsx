@@ -90,7 +90,7 @@ export default function IncompleteOrdersPage() {
   const allOrders = React.useMemo(() => {
     if (!apiData?.data?.data) return [];
     return apiData.data.data
-      .filter((order: any) => order.order_status === "Incomplete")
+      .filter((order: any) => order.order_status === "Incomplete" && order.customer_phone && /^01\d{9}$/.test(order.customer_phone.trim()))
       .map((order: any) => {
         const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
         const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
@@ -345,6 +345,7 @@ export default function IncompleteOrdersPage() {
           hidePaymentStatusColumn={true} 
           simplifiedPaymentColumn={true} 
           showIncompleteStatus={true}
+          incompleteOrdersMode={true}
         />
       </div>
     </div>

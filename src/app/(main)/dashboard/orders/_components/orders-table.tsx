@@ -75,6 +75,8 @@ import { fetchClient } from "@/lib/fetch-client";
 import { usePrintModal } from "@/hooks/usePrintModal";
 import { AssignOrderDialog } from "../assign-orders/_components/assign-order-dialog";
 import { UpdatePaymentModal } from "./update-payment-modal";
+import { EditOrderForm } from "./edit-order-form";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 /* ---- Data ---- */
 
@@ -792,7 +794,7 @@ const columns: ColumnDef<OrderRow>[] = [
                     : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/10"
                     }`}
                 >
-                  {row.original.source}
+                  {row.original.source === "Incomplete" ? "From Incomplete" : row.original.source}
                 </Badge>
               )}
             </div>
@@ -953,7 +955,28 @@ const columns: ColumnDef<OrderRow>[] = [
   {
     id: "actions",
     header: () => <div className="text-right">Actions</div>,
-    cell: ({ row }) => (
+    cell: ({ row, table }) => {
+      const incompleteMode = (table.options.meta as any)?.incompleteOrdersMode;
+
+      if (incompleteMode) {
+        return (
+          <div className="flex justify-end">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="default">Complete Order</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+                <EditOrderForm orderId={row.original.id} incompleteMode={true} onCompleted={() => {
+                   // Refresh the table by mutating
+                   mutate((key) => typeof key === "string" && key.includes("orders"));
+                }} />
+              </DialogContent>
+            </Dialog>
+          </div>
+        );
+      }
+
+      return (
       <div className="flex justify-end">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -995,7 +1018,8 @@ const columns: ColumnDef<OrderRow>[] = [
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    ),
+      );
+    },
     enableSorting: false,
     enableHiding: false,
   },
@@ -1053,9 +1077,10 @@ export interface OrdersTableProps {
   hidePaymentStatusColumn?: boolean;
   simplifiedPaymentColumn?: boolean;
   showIncompleteStatus?: boolean;
+  incompleteOrdersMode?: boolean;
 }
 
-export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus }: OrdersTableProps) {
+export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus, incompleteOrdersMode }: OrdersTableProps) {
   const [activeOrderFilter, setActiveOrderFilter] = React.useState<OrderStatus>(hideOrderStatusFilter ? "All" : "Pending");
   const [activePaymentFilter, setActivePaymentFilter] = React.useState<PaymentStatus>("All");
   const [showFiltersMobile, setShowFiltersMobile] = React.useState(false);
@@ -1084,11 +1109,14 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
         subCategory: false,
         courierHistory: false,
         pStatus: !hidePaymentStatusColumn,
+        sendCourier: !incompleteOrdersMode,
+        oStatus: !incompleteOrdersMode,
       },
     },
     meta: {
       simplifiedPaymentColumn,
       showIncompleteStatus,
+      incompleteOrdersMode,
     },
     getRowId: (r) => r.id,
     enableRowSelection: true,
