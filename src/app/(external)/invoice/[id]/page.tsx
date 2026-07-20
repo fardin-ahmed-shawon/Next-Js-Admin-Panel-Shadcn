@@ -90,7 +90,7 @@ export default function InvoicePage() {
 
       {/* A4 Container */}
       <div className="max-w-[210mm] mx-auto bg-white p-[15mm] shadow-sm print:shadow-none print:m-0 print:p-0 print:min-h-0">
-        
+
         {/* Custom Screenshot-styled Box Grid Header */}
         <div className="w-full border-2 border-black grid grid-cols-12 mb-6">
           {/* Logo Box */}
@@ -111,12 +111,12 @@ export default function InvoicePage() {
               <p className="font-bold text-xs uppercase text-neutral-900">{order.customer_full_name}</p>
               <p className="font-semibold text-xs tabular-nums text-neutral-800">{order.customer_phone}</p>
             </div>
-            
+
             {/* Barcode left-aligned */}
             <div className="w-full">
               <Barcode align="left" />
             </div>
-            
+
             <p className="text-[10px] uppercase font-semibold text-neutral-700 leading-tight mt-1 line-clamp-2 text-left w-full">
               {order.customer_shipping_address}
             </p>
@@ -126,15 +126,15 @@ export default function InvoicePage() {
           <div className="col-span-4 p-3.5 flex flex-col justify-between min-h-[100px] text-right items-end">
             <div className="w-full space-y-0.5">
               <p className="font-bold text-xs text-neutral-900">Invoice #{order.order_no}</p>
-              
+
               {/* Barcode right-aligned */}
               <div className="w-full">
                 <Barcode align="right" />
               </div>
-              
+
               <p className="text-[10px] font-bold text-neutral-700">Order Date : {formatDate(order.created_at)}</p>
             </div>
-            
+
             {/* Courier Routing Info */}
             {courierPath && (
               <div className="mt-1 text-[10px] font-bold text-neutral-900 uppercase tracking-tight leading-snug">
@@ -152,33 +152,43 @@ export default function InvoicePage() {
         </div>
 
         {/* Product Items Rows */}
-        {(order.ordered_products ?? []).map((item: any, i: number) => {
-          const prodImg = item.product?.image || item.image || (item.product?.images?.[0]?.url) || "/media/placeholder.png";
+        {(order.ordered_products ?? []).map((item: any, i: number, arr: any[]) => {
+          const rawImg = item.product?.product_thumbnail_img || item.product?.image || item.image || (item.product?.images?.[0]?.url);
+          const prodImg = rawImg 
+            ? (rawImg.startsWith("http") || rawImg.startsWith("data:") ? rawImg : `${hostUrl}/${rawImg.replace(/^\/+/, "")}`) 
+            : "/media/placeholder.png";
           return (
-            <div key={item.id ?? i} className="w-full border-2 border-black border-t-0 border-b-0 grid grid-cols-12 text-xs text-neutral-800 bg-white">
+            <div key={item.id ?? i} className={`w-full border-2 border-black border-t-0 ${i !== arr.length - 1 ? 'border-b-2' : 'border-b-0'} grid grid-cols-12 text-xs text-neutral-800 bg-white`}>
               {/* Product Title */}
-              <div className="col-span-7 border-r-2 border-black p-2.5 flex items-center">
+              <div className="col-span-7 border-r-2 border-black py-1 px-2.5 flex items-center gap-2.5">
+                {prodImg && (
+                  <img
+                    src={prodImg}
+                    alt={item.product?.title || "Product"}
+                    className="w-8 h-8 object-cover border border-neutral-200 rounded-sm shrink-0"
+                  />
+                )}
                 <div className="min-w-0">
                   <p className="font-bold text-neutral-900 truncate" title={item.product?.title}>
                     {item.product?.title || "Unknown Product"}
                   </p>
                   {(item.size_label || item.color_label) && (
-                    <p className="text-[9px] text-neutral-500 mt-0.5 font-medium">
-                      {item.size_label ? `Size: ${item.size_label}` : ""}
+                    <p className="text-[10px] text-neutral-600 mt-0.5 font-semibold">
+                      {item.size_label ? `Size : ${item.size_label}` : ""}
                       {item.size_label && item.color_label ? " | " : ""}
-                      {item.color_label ? `Color: ${item.color_label}` : ""}
+                      {item.color_label ? `Color : ${item.color_label}` : ""}
                     </p>
                   )}
                 </div>
               </div>
-              
+
               {/* Qty x Price Rate */}
-              <div className="col-span-3 border-r-2 border-black p-2.5 flex items-center font-bold tabular-nums">
+              <div className="col-span-3 border-r-2 border-black py-1 px-2.5 flex items-center font-bold tabular-nums">
                 {item.qty} x {Number(item.unit_price ?? 0).toFixed(2)} TK
               </div>
-              
+
               {/* Total Line Amount */}
-              <div className="col-span-2 p-2.5 flex items-center font-bold tabular-nums text-neutral-900">
+              <div className="col-span-2 py-1 px-2.5 flex items-center font-bold tabular-nums text-neutral-900">
                 {(Number(item.unit_price ?? 0) * item.qty)} Tk
               </div>
             </div>
@@ -194,7 +204,7 @@ export default function InvoicePage() {
               {order.customer_note || order.note || ""}
             </p>
           </div>
-          
+
           {/* Totals Breakdown Column */}
           <div className="col-span-5 flex flex-col font-bold">
             {/* Delivery Charge */}
@@ -202,13 +212,13 @@ export default function InvoicePage() {
               <span className="text-neutral-700">Delivery Charge</span>
               <span className="tabular-nums">{Number(order.shipping_charge ?? 0)} Tk</span>
             </div>
-            
+
             {/* Discount */}
             <div className="flex justify-between border-b border-neutral-300 p-2.5">
               <span className="text-neutral-700">Discount</span>
               <span className="tabular-nums">{Number(order.discount_amount ?? 0)} Tk</span>
             </div>
-            
+
             {/* Grand Total payable */}
             <div className="flex justify-between p-2.5 bg-neutral-50/50">
               <span className="text-neutral-950 font-extrabold text-sm">Total</span>

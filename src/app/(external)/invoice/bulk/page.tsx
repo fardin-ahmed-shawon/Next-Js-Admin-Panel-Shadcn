@@ -105,7 +105,7 @@ function BulkInvoiceContent() {
   }, [orders]);
 
   return (
-    <div className="min-h-screen bg-neutral-100 dark:bg-neutral-900 py-8 print:py-0 print:bg-white text-black">
+    <div className="min-h-screen print:min-h-0 bg-neutral-100 dark:bg-neutral-900 py-8 print:py-0 print:bg-white text-black">
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -135,7 +135,10 @@ function BulkInvoiceContent() {
         <div
           key={chunkIdx}
           className="w-[210mm] h-[297mm] mx-auto bg-white p-[8mm] shadow-sm print:shadow-none mb-8 last:mb-0 print:mb-0 relative flex flex-col gap-[2%] justify-start box-border overflow-hidden print:w-[210mm] print:h-[297mm] print:p-[8mm]"
-          style={{ pageBreakAfter: "always", breakAfter: "page" }}
+          style={{ 
+            pageBreakAfter: chunkIdx === chunks.length - 1 ? "auto" : "always", 
+            breakAfter: chunkIdx === chunks.length - 1 ? "auto" : "page" 
+          }}
         >
           {chunk.map((order, orderIdx) => {
             const grandTotal = Number(order?.grand_total_amount ?? 0);
@@ -218,14 +221,26 @@ function BulkInvoiceContent() {
                   </div>
 
                   {/* Product Items Rows */}
-                  {(order.ordered_products ?? []).map((item: any, i: number) => {
+                  {(order.ordered_products ?? []).map((item: any, i: number, arr: any[]) => {
+                    const rawImg = item.product?.product_thumbnail_img || item.product?.image || item.image || (item.product?.images?.[0]?.url);
+                    const prodImg = rawImg 
+                      ? (rawImg.startsWith("http") || rawImg.startsWith("data:") ? rawImg : `${hostUrl}/${rawImg.replace(/^\/+/, "")}`) 
+                      : "/media/placeholder.png";
+
                     return (
                       <div
                         key={item.id ?? i}
-                        className="w-full border-2 border-black border-t-0 border-b-0 grid grid-cols-12 text-xs text-neutral-800 bg-white"
+                        className={`w-full border-2 border-black border-t-0 ${i !== arr.length - 1 ? 'border-b-2' : 'border-b-0'} grid grid-cols-12 text-xs text-neutral-800 bg-white`}
                       >
                         {/* Product Title */}
-                        <div className="col-span-7 border-r-2 border-black p-2 print:p-1.5 flex items-center">
+                        <div className="col-span-7 border-r-2 border-black py-1 px-2 print:py-0.5 print:px-1.5 flex items-center gap-2">
+                          {prodImg && (
+                            <img
+                              src={prodImg}
+                              alt={item.product?.title || "Product"}
+                              className="w-6 h-6 object-cover border border-neutral-200 rounded-sm shrink-0"
+                            />
+                          )}
                           <div className="min-w-0">
                             <p className="font-bold text-neutral-900 truncate" title={item.product?.title}>
                               {item.product?.title || "Unknown Product"}
@@ -241,12 +256,12 @@ function BulkInvoiceContent() {
                         </div>
 
                         {/* Qty x Price Rate */}
-                        <div className="col-span-3 border-r-2 border-black p-2 print:p-1.5 flex items-center font-bold tabular-nums">
+                        <div className="col-span-3 border-r-2 border-black py-1 px-2 print:py-0.5 print:px-1.5 flex items-center font-bold tabular-nums">
                           {item.qty} x {Number(item.unit_price ?? 0).toFixed(2)} TK
                         </div>
 
                         {/* Total Line Amount */}
-                        <div className="col-span-2 p-2 print:p-1.5 flex items-center font-bold tabular-nums text-neutral-900">
+                        <div className="col-span-2 py-1 px-2 print:py-0.5 print:px-1.5 flex items-center font-bold tabular-nums text-neutral-900">
                           {Number(item.unit_price ?? 0) * item.qty} Tk
                         </div>
                       </div>
