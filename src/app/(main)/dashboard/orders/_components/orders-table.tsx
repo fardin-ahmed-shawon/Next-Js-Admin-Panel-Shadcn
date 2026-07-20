@@ -744,27 +744,32 @@ const columns: ColumnDef<OrderRow>[] = [
       const getRelativeTime = (dateStr?: string) => {
         if (!dateStr) return "";
         try {
-          const rawStr = dateStr.replace("Z", "");
+          const rawStr = dateStr.replace("Z", "").split(".")[0].replace(" ", "T");
           const date = new Date(rawStr);
           const now = new Date();
           const diffMs = now.getTime() - date.getTime();
           if (isNaN(diffMs) || diffMs < 0) return "just now";
 
-          const diffMins = Math.floor(diffMs / 60000);
-          if (diffMins < 1) return "just now";
-          if (diffMins < 60) return `${diffMins}m ago`;
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const orderDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+          const calendarDiffDays = Math.floor((today.getTime() - orderDate.getTime()) / 86400000);
 
-          const diffHours = Math.floor(diffMins / 60);
-          if (diffHours < 24) return `${diffHours}h ago`;
-
-          const diffDays = Math.floor(diffHours / 24);
-          if (diffDays === 1) return "yesterday";
-          if (diffDays < 7) return `${diffDays}d ago`;
-
-          return date.toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-          });
+          if (calendarDiffDays === 0) {
+            const diffMins = Math.floor(diffMs / 60000);
+            if (diffMins < 1) return "just now";
+            if (diffMins < 60) return `${diffMins}m ago`;
+            const diffHours = Math.floor(diffMins / 60);
+            return `${diffHours}h ago`;
+          } else if (calendarDiffDays === 1) {
+            return "yesterday";
+          } else if (calendarDiffDays < 7) {
+            return `${calendarDiffDays}d ago`;
+          } else {
+            return date.toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+            });
+          }
         } catch {
           return "";
         }
@@ -899,39 +904,40 @@ const columns: ColumnDef<OrderRow>[] = [
     cell: ({ row, table }) => {
       const meta = table.options.meta as any;
       return (
-      <Select
-        defaultValue={row.original.orderStatus}
-        onValueChange={async (val) => {
-          const toastId = toast.loading("Updating status...");
-          try {
-            const res = await fetchClient(`${getApiBaseUrl()}orders/${row.original.id}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ order_status: val }),
-            });
-            if (!res.ok) throw new Error();
-            toast.success(`Order ${row.original.id} status → ${val}`, { id: toastId });
-            invalidateOrders();
-          } catch (e) {
-            toast.error("Failed to update status", { id: toastId });
-          }
-        }}
-      >
-        <SelectTrigger className="h-7 w-[115px] text-xs border-border/60 rounded-md px-2 gap-1">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {orderStatuses
-            .filter((s) => s !== "All")
-            .filter((s) => meta?.showIncompleteStatus ? true : s !== "Incomplete")
-            .map((status) => (
-              <SelectItem key={status} value={status} className="text-xs">
-                {status}
-              </SelectItem>
-            ))}
-        </SelectContent>
-      </Select>
-    )},
+        <Select
+          defaultValue={row.original.orderStatus}
+          onValueChange={async (val) => {
+            const toastId = toast.loading("Updating status...");
+            try {
+              const res = await fetchClient(`${getApiBaseUrl()}orders/${row.original.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ order_status: val }),
+              });
+              if (!res.ok) throw new Error();
+              toast.success(`Order ${row.original.id} status → ${val}`, { id: toastId });
+              invalidateOrders();
+            } catch (e) {
+              toast.error("Failed to update status", { id: toastId });
+            }
+          }}
+        >
+          <SelectTrigger className="h-7 w-[115px] text-xs border-border/60 rounded-md px-2 gap-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {orderStatuses
+              .filter((s) => s !== "All")
+              .filter((s) => meta?.showIncompleteStatus ? true : s !== "Incomplete")
+              .map((status) => (
+                <SelectItem key={status} value={status} className="text-xs">
+                  {status}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      )
+    },
   },
 
   // Payment Status column
@@ -965,10 +971,10 @@ const columns: ColumnDef<OrderRow>[] = [
               <DialogTrigger asChild>
                 <Button size="sm" variant="default">Complete Order</Button>
               </DialogTrigger>
-              <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[90vh] overflow-y-auto">
                 <EditOrderForm orderId={row.original.id} incompleteMode={true} onCompleted={() => {
-                   // Refresh the table by mutating
-                   mutate((key) => typeof key === "string" && key.includes("orders"));
+                  // Refresh the table by mutating
+                  mutate((key) => typeof key === "string" && key.includes("orders"));
                 }} />
               </DialogContent>
             </Dialog>
@@ -977,47 +983,47 @@ const columns: ColumnDef<OrderRow>[] = [
       }
 
       return (
-      <div className="flex justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm">
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem asChild>
-              <Link href={`/dashboard/orders/${row.original.id}`}>
-                <Edit className="mr-2 size-4" />
-                Edit
-              </Link>
-            </DropdownMenuItem>
-            {/* <DropdownMenuItem asChild>
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-sm">
+                <MoreHorizontal />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem asChild>
+                <Link href={`/dashboard/orders/${row.original.id}`}>
+                  <Edit className="mr-2 size-4" />
+                  Edit
+                </Link>
+              </DropdownMenuItem>
+              {/* <DropdownMenuItem asChild>
               <Link href={`/dashboard/orders/${row.original.id}/edit`}>
                 <Edit className="mr-2 size-4" />
                 Edit
               </Link>
             </DropdownMenuItem> */}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => usePrintModal.getState().openModal(row.original.id, "a4", `/invoice/${row.original.id}`)}>
-              <FileText className="mr-2 size-4 text-muted-foreground" />
-              Print A4 Invoice
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => usePrintModal.getState().openModal(row.original.id, "pos", `/invoice/${row.original.id}/pos`)}>
-              <Printer className="mr-2 size-4 text-muted-foreground" />
-              Print POS Receipt
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => usePrintModal.getState().openModal(row.original.id, "label", `/invoice/${row.original.id}/label`)}>
-              <Truck className="mr-2 size-4 text-muted-foreground" />
-              Print Courier Label
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {/* <DropdownMenuItem onClick={() => toast.warning(`Customer ${row.original.customer} blocked.`)}>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => usePrintModal.getState().openModal(row.original.id, "a4", `/invoice/${row.original.id}`)}>
+                <FileText className="mr-2 size-4 text-muted-foreground" />
+                Print A4 Invoice
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => usePrintModal.getState().openModal(row.original.id, "pos", `/invoice/${row.original.id}/pos`)}>
+                <Printer className="mr-2 size-4 text-muted-foreground" />
+                Print POS Receipt
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => usePrintModal.getState().openModal(row.original.id, "label", `/invoice/${row.original.id}/label`)}>
+                <Truck className="mr-2 size-4 text-muted-foreground" />
+                Print Courier Label
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {/* <DropdownMenuItem onClick={() => toast.warning(`Customer ${row.original.customer} blocked.`)}>
               <Ban className="mr-2 size-4" />
               Block
             </DropdownMenuItem> */}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     },
     enableSorting: false,
@@ -1078,9 +1084,10 @@ export interface OrdersTableProps {
   simplifiedPaymentColumn?: boolean;
   showIncompleteStatus?: boolean;
   incompleteOrdersMode?: boolean;
+  hideActionsColumn?: boolean;
 }
 
-export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus, incompleteOrdersMode }: OrdersTableProps) {
+export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus, incompleteOrdersMode, hideActionsColumn }: OrdersTableProps) {
   const [activeOrderFilter, setActiveOrderFilter] = React.useState<OrderStatus>(hideOrderStatusFilter ? "All" : "Pending");
   const [activePaymentFilter, setActivePaymentFilter] = React.useState<PaymentStatus>("All");
   const [showFiltersMobile, setShowFiltersMobile] = React.useState(false);
@@ -1111,6 +1118,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
         pStatus: !hidePaymentStatusColumn,
         sendCourier: !incompleteOrdersMode,
         oStatus: !incompleteOrdersMode,
+        actions: !hideActionsColumn,
       },
     },
     meta: {
@@ -1279,16 +1287,16 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                   {orderStatuses
                     .filter((s) => showIncompleteStatus ? true : s !== "Incomplete")
                     .map((s) => (
-                    <Button
-                      key={s}
-                      variant={activeOrderFilter === s ? "default" : "outline"}
-                      size="sm"
-                      className="h-7 text-xs px-2.5"
-                      onClick={() => applyOrderFilter(s)}
-                    >
-                      {s} {s === "All" ? `(${data.length})` : orderStatusCounts[s] ? `(${orderStatusCounts[s]})` : "(0)"}
-                    </Button>
-                  ))}
+                      <Button
+                        key={s}
+                        variant={activeOrderFilter === s ? "default" : "outline"}
+                        size="sm"
+                        className="h-7 text-xs px-2.5"
+                        onClick={() => applyOrderFilter(s)}
+                      >
+                        {s} {s === "All" ? `(${data.length})` : orderStatusCounts[s] ? `(${orderStatusCounts[s]})` : "(0)"}
+                      </Button>
+                    ))}
                 </div>
               )}
             </div>

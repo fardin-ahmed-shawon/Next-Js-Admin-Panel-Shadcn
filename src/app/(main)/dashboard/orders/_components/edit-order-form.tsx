@@ -133,27 +133,32 @@ function formatDate(dateStr: string) {
 function getRelativeTime(dateStr?: string) {
   if (!dateStr) return "";
   try {
-    const rawStr = dateStr.replace("Z", "");
+    const rawStr = dateStr.replace("Z", "").split(".")[0].replace(" ", "T");
     const date = new Date(rawStr);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     if (isNaN(diffMs) || diffMs < 0) return "just now";
 
-    const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 1) return "just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const orderDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const calendarDiffDays = Math.floor((today.getTime() - orderDate.getTime()) / 86400000);
 
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays === 1) return "yesterday";
-    if (diffDays < 7) return `${diffDays}d ago`;
-
-    return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-    });
+    if (calendarDiffDays === 0) {
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) return "just now";
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHours = Math.floor(diffMins / 60);
+      return `${diffHours}h ago`;
+    } else if (calendarDiffDays === 1) {
+      return "yesterday";
+    } else if (calendarDiffDays < 7) {
+      return `${calendarDiffDays}d ago`;
+    } else {
+      return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+      });
+    }
   } catch {
     return "";
   }
@@ -205,9 +210,8 @@ function CustomerOrderHistory({ orders, currentOrderNo }: { orders: CustomerOrde
         return (
           <div
             key={o.id}
-            className={`rounded-lg border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors ${
-              isCurrent ? "bg-primary/5 border-primary/30" : "bg-muted/20"
-            }`}
+            className={`rounded-lg border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors ${isCurrent ? "bg-primary/5 border-primary/30" : "bg-muted/20"
+              }`}
           >
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
@@ -305,16 +309,16 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
 
   const availableColors = item.size
     ? colors.filter((c: any) => {
-        const sizeId = sizes.find((s: any) => s.label === item.size)?.id;
-        return variants.some((v: any) => v.size_id === sizeId && v.color_id === c.id);
-      })
+      const sizeId = sizes.find((s: any) => s.label === item.size)?.id;
+      return variants.some((v: any) => v.size_id === sizeId && v.color_id === c.id);
+    })
     : colors;
 
   const availableSizes = item.color
     ? sizes.filter((s: any) => {
-        const colorId = colors.find((c: any) => c.label === item.color)?.id;
-        return variants.some((v: any) => v.color_id === colorId && v.size_id === s.id);
-      })
+      const colorId = colors.find((c: any) => c.label === item.color)?.id;
+      return variants.some((v: any) => v.color_id === colorId && v.size_id === s.id);
+    })
     : sizes;
 
   React.useEffect(() => {
@@ -863,7 +867,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
       if (order.order_status === "Incomplete" && orderStatus !== "Incomplete") {
         payload.source = "Incomplete";
       }
-      
+
       Object.assign(payload, {
         customer_full_name: customerName,
         customer_phone: customerPhone,
@@ -1089,95 +1093,101 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
               {isSavingAll ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               Save Changes
             </Button>
-            <Button variant="outline" size="sm" onClick={() => usePrintModal.getState().openModal(order.order_no, "a4", `/invoice/${order.order_no}`)}>
-              <FileText className="mr-2 size-4" />
-              Invoice
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => usePrintModal.getState().openModal(order.order_no, "pos", `/invoice/${order.order_no}/pos`)}>
-              <Printer className="mr-2 size-4" />
-              POS
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => usePrintModal.getState().openModal(order.order_no, "label", `/invoice/${order.order_no}/label`)}>
-              <Truck className="mr-2 size-4" />
-              Label
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <ChevronDown className="size-4" />
+            {!incompleteMode && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => usePrintModal.getState().openModal(order.order_no, "a4", `/invoice/${order.order_no}`)}>
+                  <FileText className="mr-2 size-4" />
+                  Invoice
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Send to Courier</DropdownMenuLabel>
-                  <DropdownMenuItem
-                    onClick={async () => {
-                      const toastId = toast.loading("Sending order to Steadfast...");
-                      try {
-                        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-                        const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
-                        const res = await fetchClient(`${baseUrl}${endpoint}/${order.order_no}`, {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                        });
+                <Button variant="outline" size="sm" onClick={() => usePrintModal.getState().openModal(order.order_no, "pos", `/invoice/${order.order_no}/pos`)}>
+                  <Printer className="mr-2 size-4" />
+                  POS
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => usePrintModal.getState().openModal(order.order_no, "label", `/invoice/${order.order_no}/label`)}>
+                  <Truck className="mr-2 size-4" />
+                  Label
+                </Button>
+              </>
+            )}
+            {!incompleteMode && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <ChevronDown className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Send to Courier</DropdownMenuLabel>
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        const toastId = toast.loading("Sending order to Steadfast...");
+                        try {
+                          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                          const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+                          const res = await fetchClient(`${baseUrl}${endpoint}/${order.order_no}`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                          });
 
-                        if (!res.ok) {
-                          const err = await res.json().catch(() => ({}));
-                          throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
+                          if (!res.ok) {
+                            const err = await res.json().catch(() => ({}));
+                            throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
+                          }
+
+                          toast.success("Order sent to Steadfast successfully!", { id: toastId });
+                        } catch (e: any) {
+                          toast.error(e?.message || "Something went wrong.", { id: toastId });
                         }
+                      }}
+                    >
+                      <Truck className="mr-2 size-4" />
+                      Steadfast
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        const toastId = toast.loading("Sending order to Pathao...");
+                        try {
+                          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                          const res = await fetchClient(`${baseUrl}pathao-parcels/${order.order_no}`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                          });
 
-                        toast.success("Order sent to Steadfast successfully!", { id: toastId });
-                      } catch (e: any) {
-                        toast.error(e?.message || "Something went wrong.", { id: toastId });
-                      }
-                    }}
-                  >
-                    <Truck className="mr-2 size-4" />
-                    Steadfast
+                          if (!res.ok) {
+                            const err = await res.json().catch(() => ({}));
+                            throw new Error(err?.error || err?.message || "Failed to send to Pathao.");
+                          }
+
+                          toast.success("Order sent to Pathao successfully!", { id: toastId });
+                          mutate();
+                        } catch (e: any) {
+                          toast.error(e?.message || "Something went wrong.", { id: toastId });
+                        }
+                      }}
+                    >
+                      <Truck className="mr-2 size-4" />
+                      Pathao
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive" onClick={() => toast.success("Customer blocked.")}>
+                    <Ban className="mr-2 size-4" />
+                    Block Customer
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={async () => {
-                      const toastId = toast.loading("Sending order to Pathao...");
-                      try {
-                        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-                        const res = await fetchClient(`${baseUrl}pathao-parcels/${order.order_no}`, {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                        });
-
-                        if (!res.ok) {
-                          const err = await res.json().catch(() => ({}));
-                          throw new Error(err?.error || err?.message || "Failed to send to Pathao.");
-                        }
-
-                        toast.success("Order sent to Pathao successfully!", { id: toastId });
-                        mutate();
-                      } catch (e: any) {
-                        toast.error(e?.message || "Something went wrong.", { id: toastId });
-                      }
+                    className="text-destructive"
+                    onClick={() => {
+                      toast.success("Order deleted.");
+                      router.push("/dashboard/orders");
                     }}
                   >
-                    <Truck className="mr-2 size-4" />
-                    Pathao
+                    <X className="mr-2 size-4" />
+                    Delete Order
                   </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive" onClick={() => toast.success("Customer blocked.")}>
-                  <Ban className="mr-2 size-4" />
-                  Block Customer
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => {
-                    toast.success("Order deleted.");
-                    router.push("/dashboard/orders");
-                  }}
-                >
-                  <X className="mr-2 size-4" />
-                  Delete Order
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>
@@ -1344,8 +1354,8 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                         {Math.max(
                           0,
                           cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0) -
-                            discountAmountInput +
-                            shippingChargeInput,
+                          discountAmountInput +
+                          shippingChargeInput,
                         ).toLocaleString()}
                       </span>
                     </div>
@@ -1616,15 +1626,14 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                         <span className="text-muted-foreground">Global Success Rate:</span>
                         <Badge
                           variant="outline"
-                          className={`font-mono font-semibold border-none ${
-                            fraudTotal === 0
+                          className={`font-mono font-semibold border-none ${fraudTotal === 0
                               ? "bg-muted text-muted-foreground"
                               : fraudDelivered / fraudTotal >= 0.8
                                 ? "bg-green-500/10 text-green-600 dark:text-green-400"
                                 : fraudDelivered / fraudTotal >= 0.5
                                   ? "bg-yellow-500/10 text-yellow-600"
                                   : "bg-destructive/10 text-destructive"
-                          }`}
+                            }`}
                         >
                           {fraudSuccessRate}
                         </Badge>
@@ -1746,130 +1755,132 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
               </Card>
 
               {/* Delivery / Courier Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Delivery details</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-5">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <Label className="text-sm text-muted-foreground">Courier</Label>
-                      <span className="text-sm font-medium">{determinedCourier}</span>
+              {!incompleteMode && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Delivery details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-5">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-sm text-muted-foreground">Courier</Label>
+                        <span className="text-sm font-medium">{determinedCourier}</span>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-sm text-muted-foreground">Parcel Status</Label>
+                        {courierLoading ? (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground py-0.5">
+                            <Loader2 className="size-3.5 animate-spin text-primary shrink-0" />
+                            <span>Fetching status...</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm font-medium">{courierStatus || genuineStatus}</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Label className="text-sm text-muted-foreground">Parcel Status</Label>
-                      {courierLoading ? (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground py-0.5">
-                          <Loader2 className="size-3.5 animate-spin text-primary shrink-0" />
-                          <span>Fetching status...</span>
+
+                    <div className="flex flex-col gap-2">
+                      {hasSteadfastParcel || hasPathaoParcel || hasRedxParcel ? (
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-md justify-center w-full select-none">
+                          <Check className="size-4 shrink-0" />
+                          <span>Already Sent</span>
                         </div>
                       ) : (
-                        <span className="text-sm font-medium">{courierStatus || genuineStatus}</span>
+                        <>
+                          {isSteadfastActive && (
+                            <Button
+                              size="sm"
+                              className="w-full bg-[#00b074] hover:bg-[#00b074]/90 text-white font-medium gap-2"
+                              onClick={async () => {
+                                const toastId = toast.loading(`Sending Order ${order.order_no} to Steadfast...`);
+                                try {
+                                  const baseUrl =
+                                    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                                  const endpoint =
+                                    process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
+                                  const res = await fetchClient(`${baseUrl}${endpoint}/${order.order_no}`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                  });
+                                  if (!res.ok) {
+                                    const err = await res.json().catch(() => ({}));
+                                    throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
+                                  }
+                                  toast.success(`Order ${order.order_no} sent to Steadfast`, { id: toastId });
+                                  mutate();
+                                } catch (err: any) {
+                                  toast.error(err?.message || "Something went wrong.", { id: toastId });
+                                }
+                              }}
+                            >
+                              <Truck className="size-4" /> Send via Steadfast
+                            </Button>
+                          )}
+                          {isPathaoActive && (
+                            <Button
+                              size="sm"
+                              className="w-full bg-[#ef4444] hover:bg-[#ef4444]/90 text-white font-medium gap-2"
+                              onClick={async () => {
+                                const toastId = toast.loading(`Sending Order ${order.order_no} to Pathao...`);
+                                try {
+                                  const baseUrl =
+                                    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                                  const res = await fetchClient(`${baseUrl}pathao-parcels/${order.order_no}`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                  });
+                                  if (!res.ok) {
+                                    const err = await res.json().catch(() => ({}));
+                                    throw new Error(err?.error || err?.message || "Failed to send to Pathao.");
+                                  }
+                                  toast.success(`Order ${order.order_no} sent to Pathao`, { id: toastId });
+                                  mutate();
+                                } catch (err: any) {
+                                  toast.error(err?.message || "Something went wrong.", { id: toastId });
+                                }
+                              }}
+                            >
+                              <Send className="size-4" /> Send via Pathao
+                            </Button>
+                          )}
+                          {isRedxActive && (
+                            <Button
+                              size="sm"
+                              className="w-full bg-rose-600 hover:bg-rose-600/90 text-white font-medium gap-2"
+                              onClick={async () => {
+                                const toastId = toast.loading(`Sending Order ${order.order_no} to RedX...`);
+                                try {
+                                  const baseUrl =
+                                    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+                                  const res = await fetchClient(`${baseUrl}redx-parcels/${order.order_no}`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                  });
+                                  if (!res.ok) {
+                                    const err = await res.json().catch(() => ({}));
+                                    throw new Error(err?.error || err?.message || "Failed to send to RedX.");
+                                  }
+                                  toast.success(`Order ${order.order_no} sent to RedX`, { id: toastId });
+                                  mutate();
+                                } catch (err: any) {
+                                  toast.error(err?.message || "Something went wrong.", { id: toastId });
+                                }
+                              }}
+                            >
+                              <Send className="size-4" /> Send via RedX
+                            </Button>
+                          )}
+                          {!isSteadfastActive && !isPathaoActive && !isRedxActive && (
+                            <span className="text-xs text-muted-foreground text-center italic py-2">
+                              Courier integrations are not active.
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    {hasSteadfastParcel || hasPathaoParcel || hasRedxParcel ? (
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-md justify-center w-full select-none">
-                        <Check className="size-4 shrink-0" />
-                        <span>Already Sent</span>
-                      </div>
-                    ) : (
-                      <>
-                        {isSteadfastActive && (
-                          <Button
-                            size="sm"
-                            className="w-full bg-[#00b074] hover:bg-[#00b074]/90 text-white font-medium gap-2"
-                            onClick={async () => {
-                              const toastId = toast.loading(`Sending Order ${order.order_no} to Steadfast...`);
-                              try {
-                                const baseUrl =
-                                  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-                                const endpoint =
-                                  process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
-                                const res = await fetchClient(`${baseUrl}${endpoint}/${order.order_no}`, {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                });
-                                if (!res.ok) {
-                                  const err = await res.json().catch(() => ({}));
-                                  throw new Error(err?.error || err?.message || "Failed to send to Steadfast.");
-                                }
-                                toast.success(`Order ${order.order_no} sent to Steadfast`, { id: toastId });
-                                mutate();
-                              } catch (err: any) {
-                                toast.error(err?.message || "Something went wrong.", { id: toastId });
-                              }
-                            }}
-                          >
-                            <Truck className="size-4" /> Send via Steadfast
-                          </Button>
-                        )}
-                        {isPathaoActive && (
-                          <Button
-                            size="sm"
-                            className="w-full bg-[#ef4444] hover:bg-[#ef4444]/90 text-white font-medium gap-2"
-                            onClick={async () => {
-                              const toastId = toast.loading(`Sending Order ${order.order_no} to Pathao...`);
-                              try {
-                                const baseUrl =
-                                  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-                                const res = await fetchClient(`${baseUrl}pathao-parcels/${order.order_no}`, {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                });
-                                if (!res.ok) {
-                                  const err = await res.json().catch(() => ({}));
-                                  throw new Error(err?.error || err?.message || "Failed to send to Pathao.");
-                                }
-                                toast.success(`Order ${order.order_no} sent to Pathao`, { id: toastId });
-                                mutate();
-                              } catch (err: any) {
-                                toast.error(err?.message || "Something went wrong.", { id: toastId });
-                              }
-                            }}
-                          >
-                            <Send className="size-4" /> Send via Pathao
-                          </Button>
-                        )}
-                        {isRedxActive && (
-                          <Button
-                            size="sm"
-                            className="w-full bg-rose-600 hover:bg-rose-600/90 text-white font-medium gap-2"
-                            onClick={async () => {
-                              const toastId = toast.loading(`Sending Order ${order.order_no} to RedX...`);
-                              try {
-                                const baseUrl =
-                                  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-                                const res = await fetchClient(`${baseUrl}redx-parcels/${order.order_no}`, {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                });
-                                if (!res.ok) {
-                                  const err = await res.json().catch(() => ({}));
-                                  throw new Error(err?.error || err?.message || "Failed to send to RedX.");
-                                }
-                                toast.success(`Order ${order.order_no} sent to RedX`, { id: toastId });
-                                mutate();
-                              } catch (err: any) {
-                                toast.error(err?.message || "Something went wrong.", { id: toastId });
-                              }
-                            }}
-                          >
-                            <Send className="size-4" /> Send via RedX
-                          </Button>
-                        )}
-                        {!isSteadfastActive && !isPathaoActive && !isRedxActive && (
-                          <span className="text-xs text-muted-foreground text-center italic py-2">
-                            Courier integrations are not active.
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Order Activity / Status logs */}
               <Card>

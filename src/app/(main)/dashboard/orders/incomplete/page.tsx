@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOrders } from "@/hooks/useOrders";
 
 import { OrderStats } from "../_components/order-stats";
@@ -69,12 +70,13 @@ const rangeLabels: Record<TimeRange, string> = {
 };
 
 export default function IncompleteOrdersPage() {
-  const [allOrdersToggle, setAllOrdersToggle] = React.useState(false);
+  const [allOrdersToggle, setAllOrdersToggle] = React.useState(true);
   // Ideally, if the API supports filtering by status, we could pass it here, e.g., order_status: "Incomplete".
   const { data: apiData, isLoading } = useOrders({ per_page: 1000, all_orders: allOrdersToggle });
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
-  const [customFrom, setCustomFrom] = React.useState("");
-  const [customTo, setCustomTo] = React.useState("");
+  const [customFrom, setCustomFrom] = React.useState<string>("");
+  const [customTo, setCustomTo] = React.useState<string>("");
+  const [activeTab, setActiveTab] = React.useState<"Incomplete" | "Complete">("Incomplete");
 
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
 
@@ -90,7 +92,13 @@ export default function IncompleteOrdersPage() {
   const allOrders = React.useMemo(() => {
     if (!apiData?.data?.data) return [];
     return apiData.data.data
-      .filter((order: any) => order.order_status === "Incomplete" && order.customer_phone && /^01\d{9}$/.test(order.customer_phone.trim()))
+      .filter((order: any) => {
+        if (activeTab === "Incomplete") {
+          return order.order_status === "Incomplete" && order.customer_phone && /^01\d{9}$/.test(order.customer_phone.trim());
+        } else {
+          return order.source === "Incomplete";
+        }
+      })
       .map((order: any) => {
         const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
         const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
@@ -172,7 +180,7 @@ export default function IncompleteOrdersPage() {
           createdAt: order.created_at,
         };
       });
-  }, [apiData, getImageUrl]);
+  }, [apiData, getImageUrl, activeTab]);
 
   const filteredByTime = React.useMemo(() => {
     if (timeRange === "alltime") return allOrders;
@@ -251,7 +259,7 @@ export default function IncompleteOrdersPage() {
                 </SelectContent>
               </Select>
 
-              {/* Custom date inputs â€” inline on desktop only */}
+              {/* Custom date inputs — inline on desktop only */}
               {timeRange === "custom" && (
                 <div className="hidden sm:flex items-center gap-2">
                   <CalendarIcon className="size-4 text-muted-foreground" />
@@ -281,11 +289,11 @@ export default function IncompleteOrdersPage() {
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuGroup>
                     <DropdownMenuLabel>Bulk Invoice</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => {}}>
+                    <DropdownMenuItem onClick={() => { }}>
                       <FileText className="mr-2 size-4" />
                       All Invoice A4
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {}}>
+                    <DropdownMenuItem onClick={() => { }}>
                       <Printer className="mr-2 size-4" />
                       All Parcel Invoice
                     </DropdownMenuItem>
@@ -293,15 +301,15 @@ export default function IncompleteOrdersPage() {
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuLabel>Management</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => {}}>
+                    <DropdownMenuItem onClick={() => { }}>
                       <ShieldOff className="mr-2 size-4" />
                       Block List
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {}}>
+                    <DropdownMenuItem onClick={() => { }}>
                       <RefreshCw className="mr-2 size-4" />
                       Refresh
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {}}>
+                    <DropdownMenuItem onClick={() => { }}>
                       <FileDown className="mr-2 size-4" />
                       Export Report
                     </DropdownMenuItem>
@@ -311,7 +319,7 @@ export default function IncompleteOrdersPage() {
             </div>
           </div>
 
-          {/* Custom date inputs â€” own row on mobile only */}
+          {/* Custom date inputs — own row on mobile only */}
           {timeRange === "custom" && (
             <div className="flex sm:hidden items-center gap-2 w-full">
               <CalendarIcon className="size-4 text-muted-foreground shrink-0" />
@@ -333,19 +341,29 @@ export default function IncompleteOrdersPage() {
         </div>
       </div>
 
-      {/* Stats â€” driven by time-filtered data */}
+      <div className="flex w-full items-center justify-start border-b border-border/40 pb-4">
+        <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)}>
+          <TabsList>
+            <TabsTrigger value="Incomplete" className="text-xs">Incomplete</TabsTrigger>
+            <TabsTrigger value="Complete" className="text-xs">Complete</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {/* Stats — driven by time-filtered data */}
       <OrderStats data={filteredByTime} />
 
-      {/* Table â€” driven by time-filtered data */}
+      {/* Table — driven by time-filtered data */}
       <div className="w-full min-w-0">
-        <OrdersTable 
-          data={filteredByTime} 
-          hideOrderStatusFilter={true} 
+        <OrdersTable
+          data={filteredByTime}
+          hideOrderStatusFilter={true}
           hidePaymentStatusFilter={true}
-          hidePaymentStatusColumn={true} 
-          simplifiedPaymentColumn={true} 
+          hidePaymentStatusColumn={true}
+          simplifiedPaymentColumn={true}
           showIncompleteStatus={true}
-          incompleteOrdersMode={true}
+          incompleteOrdersMode={activeTab === "Incomplete"}
+          hideActionsColumn={activeTab === "Complete"}
         />
       </div>
     </div>
