@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { fetchClient } from "@/lib/fetch-client";
 
 export default function FraudCheckerPage() {
   const [phone, setPhone] = React.useState("");
@@ -32,7 +33,8 @@ export default function FraudCheckerPage() {
     const toastId = toast.loading("Scanning customer metrics...");
 
     try {
-      const res = await fetch("/api/fraud-check", {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const res = await fetchClient(`${baseUrl}fraud-check`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone }),

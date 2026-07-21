@@ -585,7 +585,8 @@ function CourierHistoryCell({ row }: { row: any }) {
     let isMounted = true;
     setLoading(true);
 
-    fetch("/api/fraud-check", {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+    fetchClient(`${baseUrl}fraud-check`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
@@ -670,7 +671,8 @@ function CustomerFraudSuccessRate({ phone }: { phone: string }) {
     let isMounted = true;
     setLoading(true);
 
-    fetch("/api/fraud-check", {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+    fetchClient(`${baseUrl}fraud-check`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),

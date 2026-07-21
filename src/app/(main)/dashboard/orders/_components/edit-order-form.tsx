@@ -586,7 +586,8 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
         setFraudLoading(true);
         setFraudError(null);
         try {
-          const res = await fetch("/api/fraud-check", {
+          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+          const res = await fetchClient(`${baseUrl}fraud-check`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ phone: order.customer_phone }),
