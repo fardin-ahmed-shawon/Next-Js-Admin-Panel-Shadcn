@@ -94,21 +94,21 @@ export const OrderContext = React.createContext<{
 }>({
   params: {},
   searchQuery: "",
-  setSearchQuery: () => {},
+  setSearchQuery: () => { },
   statusFilter: "All",
-  setStatusFilter: () => {},
+  setStatusFilter: () => { },
   paymentFilter: "All",
-  setPaymentFilter: () => {},
+  setPaymentFilter: () => { },
   page: 1,
-  setPage: () => {},
+  setPage: () => { },
   perPage: 20,
-  setPerPage: () => {},
+  setPerPage: () => { },
   timeRange: "daily",
-  setTimeRange: () => {},
+  setTimeRange: () => { },
   customFrom: "",
-  setCustomFrom: () => {},
+  setCustomFrom: () => { },
   customTo: "",
-  setCustomTo: () => {},
+  setCustomTo: () => { },
   pagination: {},
   summary: {},
 });
@@ -118,7 +118,7 @@ export default function OrdersPage() {
   const [timeRange, setTimeRange] = React.useState<TimeRange>("daily");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
-  
+
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("All");
   const [paymentFilter, setPaymentFilter] = React.useState("All");
@@ -276,148 +276,148 @@ export default function OrdersPage() {
   return (
     <OrderContext.Provider value={{ params, searchQuery, setSearchQuery, statusFilter, setStatusFilter, paymentFilter, setPaymentFilter, page, setPage, perPage, setPerPage, timeRange, setTimeRange, customFrom, setCustomFrom, customTo, setCustomTo, pagination, summary }}>
       <div className="flex flex-col gap-6 w-full">
-      {/* Header + Toolbar combined */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        {/* Left: Title + description (hidden on mobile, shown on sm+) */}
-        <div className="space-y-1 hidden sm:block">
-          <h1 className="text-3xl tracking-tight">Order Management</h1>
-          <p className="text-muted-foreground text-sm">Track, manage, and fulfill all customer orders.</p>
-        </div>
-
-        {/* Mobile: Title shown above */}
-        <div className="space-y-1 sm:hidden">
-          <h1 className="text-2xl tracking-tight">Order Management</h1>
-          <p className="text-muted-foreground text-sm">Track, manage, and fulfill all customer orders.</p>
-        </div>
-
-        {/* Controls: on mobile = full-width row (Create Order left, period+3dot right). On desktop = stacked column on right */}
-        <div className="flex flex-col gap-2 sm:items-end">
-          <div className="flex items-center justify-between gap-2 sm:justify-end">
-            {/* Create Order button */}
-            <Button size="sm" asChild>
-              <Link href="/dashboard/orders/create">
-                <Plus className="mr-2 size-4" />
-                Create Order
-              </Link>
-            </Button>
-
-            {/* Period select + 3-dot */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 border rounded-[min(var(--radius-md),12px)] px-3 h-9 bg-background select-none">
-                <Switch id="all-orders-toggle" checked={allOrdersToggle} onCheckedChange={setAllOrdersToggle} />
-                <Label htmlFor="all-orders-toggle" className="text-xs font-semibold cursor-pointer whitespace-nowrap">
-                  All Orders
-                </Label>
-              </div>
-
-              <Select value={timeRange} onValueChange={(v) => { setTimeRange(v as TimeRange); setPage(1); }}>
-                <SelectTrigger className="w-32 sm:w-36">
-                  <SelectValue placeholder="Select period" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {(Object.keys(rangeLabels) as TimeRange[])
-                      .filter((r) => r !== "custom")
-                      .map((r) => (
-                        <SelectItem key={r} value={r}>
-                          {rangeLabels[r]}
-                        </SelectItem>
-                      ))}
-                    <SelectItem value="custom">Custom Range</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-
-              {/* Custom date inputs â€” inline on desktop only */}
-              {timeRange === "custom" && (
-                <div className="hidden sm:flex items-center gap-2">
-                  <CalendarIcon className="size-4 text-muted-foreground" />
-                  <Input
-                    type="date"
-                    className="h-8 w-36 text-xs"
-                    value={customFrom}
-                    onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
-                  />
-                  <span className="text-xs text-muted-foreground">to</span>
-                  <Input
-                    type="date"
-                    className="h-8 w-36 text-xs"
-                    value={customTo}
-                    onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
-                  />
-                </div>
-              )}
-
-              {/* 3-dot actions menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="icon" variant="outline" aria-label="More order actions">
-                    <Ellipsis />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Bulk Invoice</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => { }}>
-                      <FileText className="mr-2 size-4" />
-                      All Invoice A4
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => { }}>
-                      <Printer className="mr-2 size-4" />
-                      All Parcel Invoice
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Management</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => { }}>
-                      <ShieldOff className="mr-2 size-4" />
-                      Block List
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => { }}>
-                      <RefreshCw className="mr-2 size-4" />
-                      Refresh
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => { }}>
-                      <FileDown className="mr-2 size-4" />
-                      Export Report
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+        {/* Header + Toolbar combined */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          {/* Left: Title + description (hidden on mobile, shown on sm+) */}
+          <div className="space-y-1 hidden sm:block">
+            <h1 className="text-3xl tracking-tight">Order Management</h1>
+            <p className="text-muted-foreground text-sm">Track, manage, and fulfill all customer orders.</p>
           </div>
 
-          {/* Custom date inputs â€” own row on mobile only */}
-          {timeRange === "custom" && (
-            <div className="flex sm:hidden items-center gap-2 w-full">
-              <CalendarIcon className="size-4 text-muted-foreground shrink-0" />
-              <Input
-                type="date"
-                className="h-8 flex-1 text-xs"
-                value={customFrom}
-                onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
-              />
-              <span className="text-xs text-muted-foreground shrink-0">to</span>
-              <Input
-                type="date"
-                className="h-8 flex-1 text-xs"
-                value={customTo}
-                onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
-              />
+          {/* Mobile: Title shown above */}
+          <div className="space-y-1 sm:hidden">
+            <h1 className="text-2xl tracking-tight">Order Management</h1>
+            <p className="text-muted-foreground text-sm">Track, manage, and fulfill all customer orders.</p>
+          </div>
+
+          {/* Controls: on mobile = full-width row (Create Order left, period+3dot right). On desktop = stacked column on right */}
+          <div className="flex flex-col gap-2 sm:items-end">
+            <div className="flex items-center justify-between gap-2 sm:justify-end">
+              {/* Create Order button */}
+              <Button size="sm" asChild>
+                <Link href="/dashboard/orders/create">
+                  <Plus className="mr-2 size-4" />
+                  Create Order
+                </Link>
+              </Button>
+
+              {/* Period select + 3-dot */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 border rounded-[min(var(--radius-md),12px)] px-3 h-9 bg-background select-none">
+                  <Switch id="all-orders-toggle" checked={allOrdersToggle} onCheckedChange={setAllOrdersToggle} />
+                  <Label htmlFor="all-orders-toggle" className="text-xs font-semibold cursor-pointer whitespace-nowrap">
+                    All Orders
+                  </Label>
+                </div>
+
+                <Select value={timeRange} onValueChange={(v) => { setTimeRange(v as TimeRange); setPage(1); }}>
+                  <SelectTrigger className="w-32 sm:w-36">
+                    <SelectValue placeholder="Select period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {(Object.keys(rangeLabels) as TimeRange[])
+                        .filter((r) => r !== "custom")
+                        .map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {rangeLabels[r]}
+                          </SelectItem>
+                        ))}
+                      <SelectItem value="custom">Custom Range</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+
+                {/* Custom date inputs â€” inline on desktop only */}
+                {timeRange === "custom" && (
+                  <div className="hidden sm:flex items-center gap-2">
+                    <CalendarIcon className="size-4 text-muted-foreground" />
+                    <Input
+                      type="date"
+                      className="h-8 w-36 text-xs"
+                      value={customFrom}
+                      onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
+                    />
+                    <span className="text-xs text-muted-foreground">to</span>
+                    <Input
+                      type="date"
+                      className="h-8 w-36 text-xs"
+                      value={customTo}
+                      onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
+                    />
+                  </div>
+                )}
+
+                {/* 3-dot actions menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="outline" aria-label="More order actions">
+                      <Ellipsis />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>Bulk Invoice</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => { }}>
+                        <FileText className="mr-2 size-4" />
+                        All Invoice A4
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { }}>
+                        <Printer className="mr-2 size-4" />
+                        All Parcel Invoice
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>Management</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => { }}>
+                        <ShieldOff className="mr-2 size-4" />
+                        Block List
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { }}>
+                        <RefreshCw className="mr-2 size-4" />
+                        Refresh
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { }}>
+                        <FileDown className="mr-2 size-4" />
+                        Export Report
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
-          )}
+
+            {/* Custom date inputs â€” own row on mobile only */}
+            {timeRange === "custom" && (
+              <div className="flex sm:hidden items-center gap-2 w-full">
+                <CalendarIcon className="size-4 text-muted-foreground shrink-0" />
+                <Input
+                  type="date"
+                  className="h-8 flex-1 text-xs"
+                  value={customFrom}
+                  onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
+                />
+                <span className="text-xs text-muted-foreground shrink-0">to</span>
+                <Input
+                  type="date"
+                  className="h-8 flex-1 text-xs"
+                  value={customTo}
+                  onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Stats driven by server summary */}
+        <OrderStats />
+
+        {/* Table driven by mappedOrders */}
+        <div className="w-full min-w-0">
+          <OrdersTable data={mappedOrders} useServerPagination={true} />
         </div>
       </div>
-
-      {/* Stats driven by server summary */}
-      <OrderStats />
-
-      {/* Table driven by mappedOrders */}
-      <div className="w-full min-w-0">
-        <OrdersTable data={mappedOrders} useServerPagination={true} />
-      </div>
-    </div>
     </OrderContext.Provider>
   );
 }

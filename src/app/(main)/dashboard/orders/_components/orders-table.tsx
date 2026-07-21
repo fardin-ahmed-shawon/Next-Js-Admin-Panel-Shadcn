@@ -1152,7 +1152,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
   const [showStatusFilter, setShowStatusFilter] = React.useState(true);
   const [showPaymentFilter, setShowPaymentFilter] = React.useState(true);
   const [rowSelection, setRowSelection] = React.useState({});
-  
+
   // Default sorting
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
