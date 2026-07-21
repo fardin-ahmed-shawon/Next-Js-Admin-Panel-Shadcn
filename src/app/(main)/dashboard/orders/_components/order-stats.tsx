@@ -1,31 +1,17 @@
+import * as React from "react";
 import { DollarSign, Package, Package2, Repeat2, ShoppingCart, UserPlus, Users } from "lucide-react";
-
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { OrderContext } from "../page";
 
-interface OrderRow {
-  id: string;
-  customer: string;
-  phone: string;
-  items: number;
-  total: number;
-  orderStatus: string;
-  paymentStatus: string;
-  date: string;
-  avatar: string;
-  category: string;
-  subCategory: string;
-}
+export function OrderStats() {
+  const { summary } = React.useContext(OrderContext);
 
-export function OrderStats({ data }: { data: OrderRow[] }) {
-  const totalOrders = data.length;
-  const totalValue = data.reduce((s, o) => s + o.total, 0);
-  const totalProducts = new Set(data.map((o) => o.category + o.subCategory)).size;
-  const totalUnits = data.reduce((s, o) => s + o.items, 0);
-
-  const customerCounts = new Map<string, number>();
-  data.forEach((o) => customerCounts.set(o.phone, (customerCounts.get(o.phone) || 0) + 1));
-  const newCustomers = [...customerCounts.values()].filter((c) => c === 1).length;
-  const repeatedCustomers = [...customerCounts.values()].filter((c) => c > 1).length;
+  const totalOrders = summary?.total_orders || 0;
+  const totalValue = summary?.total_value || 0;
+  const totalProducts = summary?.total_products || 0;
+  const totalUnits = summary?.total_units || 0;
+  const newCustomers = summary?.new_customers || 0;
+  const repeatedCustomers = summary?.repeat_customers || 0;
 
   const stats = [
     { title: "Total Orders", value: totalOrders.toLocaleString(), icon: ShoppingCart },

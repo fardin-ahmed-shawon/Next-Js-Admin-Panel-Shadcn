@@ -21,7 +21,18 @@ const fetcher = async (key: string | [string, number | undefined]) => {
     throw error;
   }
 
-  return res.json();
+  const json = await res.json();
+  
+  return {
+    summary: json.summary || {},
+    data: json.data?.data || [],
+    pagination: {
+      current_page: json.data?.current_page,
+      last_page: json.data?.last_page,
+      per_page: json.data?.per_page,
+      total: json.data?.total,
+    },
+  };
 };
 
 interface UseOrdersParams {
@@ -31,6 +42,8 @@ interface UseOrdersParams {
   status?: string;
   payment_status?: string;
   all_orders?: boolean;
+  start_date?: string;
+  end_date?: string;
 }
 
 export function useOrders(params?: UseOrdersParams) {
@@ -46,6 +59,8 @@ export function useOrders(params?: UseOrdersParams) {
   if (params?.payment_status && params.payment_status !== "All")
     searchParams.append("payment_status", params.payment_status);
   if (params?.all_orders) searchParams.append("all_orders", "1");
+  if (params?.start_date) searchParams.append("start_date", params.start_date);
+  if (params?.end_date) searchParams.append("end_date", params.end_date);
 
   const queryString = searchParams.toString() ? `?${searchParams.toString()}` : "";
   const url = `${baseUrl}${ordersEndpoint}${queryString}`;
@@ -55,7 +70,9 @@ export function useOrders(params?: UseOrdersParams) {
   });
 
   return {
-    data,
+    summary: data?.summary || {},
+    orders: data?.data || [],
+    pagination: data?.pagination || {},
     isLoading,
     isError: error,
     mutate,

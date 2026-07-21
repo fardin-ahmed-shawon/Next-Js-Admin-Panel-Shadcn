@@ -71,6 +71,7 @@ import { usePathaoSetup } from "@/hooks/usePathaoSetup";
 import { useRedxSetup } from "@/hooks/useRedxSetup";
 import { hasModuleAccess } from "@/hooks/useRoles";
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
+import { OrderContext } from "../page";
 import { fetchClient } from "@/lib/fetch-client";
 import { usePrintModal } from "@/hooks/usePrintModal";
 import { AssignOrderDialog } from "../assign-orders/_components/assign-order-dialog";
@@ -1102,26 +1103,26 @@ export interface OrdersTableProps {
 }
 
 export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus, incompleteOrdersMode, hideActionsColumn }: OrdersTableProps) {
-  const [activeOrderFilter, setActiveOrderFilter] = React.useState<OrderStatus>(hideOrderStatusFilter ? "All" : "Pending");
-  const [activePaymentFilter, setActivePaymentFilter] = React.useState<PaymentStatus>("All");
+  const { searchQuery, setSearchQuery, statusFilter, setStatusFilter, paymentFilter, setPaymentFilter, page, setPage, perPage, setPerPage, pagination: serverPagination, summary } = React.useContext(OrderContext);
+
   const [showFiltersMobile, setShowFiltersMobile] = React.useState(false);
   const [showStatusFilter, setShowStatusFilter] = React.useState(true);
   const [showPaymentFilter, setShowPaymentFilter] = React.useState(true);
   const [rowSelection, setRowSelection] = React.useState({});
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    hideOrderStatusFilter ? [] : [{ id: "orderStatus", value: "Pending" }]
-  );
+  
+  // Default sorting
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 20 });
 
   const table = useReactTable({
     data,
     columns,
     state: {
       rowSelection,
-      columnFilters,
       sorting,
-      pagination,
+      pagination: {
+        pageIndex: page - 1,
+        pageSize: perPage,
+      },
       columnVisibility: {
         search: false,
         orderStatus: false,
@@ -1141,58 +1142,48 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
       incompleteOrdersMode,
     },
     getRowId: (r) => r.id,
+    pageCount: serverPagination?.last_page || -1,
+    manualPagination: true,
+    manualFiltering: true,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
-    onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
-    onPaginationChange: setPagination,
+    onPaginationChange: (updater) => {
+      if (typeof updater === 'function') {
+        const newState = updater({ pageIndex: page - 1, pageSize: perPage });
+        setPage(newState.pageIndex + 1);
+        setPerPage(newState.pageSize);
+      } else {
+        setPage(updater.pageIndex + 1);
+        setPerPage(updater.pageSize);
+      }
+    },
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
   const selectedCount = table.getSelectedRowModel().rows.length;
-  const totalCount = table.getFilteredRowModel().rows.length;
-
-  const orderStatusCounts = React.useMemo(() => {
-    const c: Record<string, number> = {};
-    data.forEach((o) => {
-      c[o.orderStatus] = (c[o.orderStatus] || 0) + 1;
-    });
-    return c;
-  }, [data]);
-  const paymentStatusCounts = React.useMemo(() => {
-    const c: Record<string, number> = {};
-    data.forEach((o) => {
-      c[o.paymentStatus] = (c[o.paymentStatus] || 0) + 1;
-    });
-    return c;
-  }, [data]);
+  const totalCount = serverPagination?.total || 0;
 
   function applyOrderFilter(v: string) {
-    setActiveOrderFilter(v as OrderStatus);
-    table.getColumn("orderStatus")?.setFilterValue(v === "All" ? undefined : v);
-    table.setPageIndex(0);
+    setStatusFilter(v);
+    setPage(1);
     setRowSelection({});
   }
   function applyPaymentFilter(v: string) {
-    setActivePaymentFilter(v as PaymentStatus);
-    table.getColumn("paymentStatus")?.setFilterValue(v === "All" ? undefined : v);
-    table.setPageIndex(0);
+    setPaymentFilter(v);
+    setPage(1);
     setRowSelection({});
   }
   function clearAllFilters() {
-    setActiveOrderFilter("All");
-    setActivePaymentFilter("All");
-    table.resetColumnFilters();
-    table.setPageIndex(0);
+    setStatusFilter("All");
+    setPaymentFilter("All");
+    setSearchQuery("");
+    setPage(1);
     setRowSelection({});
-    table.getColumn("search")?.setFilterValue(undefined);
   }
 
-  const hasFilters = activeOrderFilter !== "All" || activePaymentFilter !== "All" || searchQuery;
+  const hasFilters = statusFilter !== "All" || paymentFilter !== "All" || searchQuery;
 
   const handleBulkUpdate = async (type: "status" | "payment", val: string) => {
     const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
@@ -1245,8 +1236,8 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
               placeholder="Search orders..."
               value={searchQuery}
               onChange={(e) => {
-                table.getColumn("search")?.setFilterValue(e.target.value || undefined);
-                table.setPageIndex(0);
+                setSearchQuery(e.target.value);
+                setPage(1);
               }}
             />
           </div>
@@ -1260,8 +1251,8 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground hidden sm:inline">Rows:</span>
             <Select
-              value={`${pagination.pageSize}`}
-              onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}
+              value={`${perPage}`}
+              onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}
             >
               <SelectTrigger className="h-8 w-[70px]">
                 <SelectValue />
@@ -1323,12 +1314,12 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                     .map((s) => (
                       <Button
                         key={s}
-                        variant={activeOrderFilter === s ? "default" : "outline"}
+                        variant={statusFilter === s ? "default" : "outline"}
                         size="sm"
                         className="h-7 text-xs px-2.5"
                         onClick={() => applyOrderFilter(s)}
                       >
-                        {s} {s === "All" ? `(${data.length})` : orderStatusCounts[s] ? `(${orderStatusCounts[s]})` : "(0)"}
+                        {s}
                       </Button>
                     ))}
                 </div>
@@ -1358,13 +1349,12 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                   {paymentStatuses.map((s) => (
                     <Button
                       key={s}
-                      variant={activePaymentFilter === s ? "default" : "outline"}
+                      variant={paymentFilter === s ? "default" : "outline"}
                       size="sm"
                       className="h-7 text-xs px-2.5"
                       onClick={() => applyPaymentFilter(s)}
                     >
-                      {s}{" "}
-                      {s === "All" ? `(${data.length})` : paymentStatusCounts[s] ? `(${paymentStatusCounts[s]})` : "(0)"}
+                      {s}
                     </Button>
                   ))}
                 </div>
@@ -1497,8 +1487,8 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows per page</span>
             <Select
-              value={`${pagination.pageSize}`}
-              onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}
+              value={`${perPage}`}
+              onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}
             >
               <SelectTrigger className="h-8 w-16">
                 <SelectValue />

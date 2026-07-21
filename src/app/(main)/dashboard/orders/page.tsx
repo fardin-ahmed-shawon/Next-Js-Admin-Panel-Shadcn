@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useOrders } from "@/hooks/useOrders";
+import { format, subDays, subMonths, startOfYear } from "date-fns";
 
 import { OrderStats } from "./_components/order-stats";
 import { OrdersTable } from "./_components/orders-table";
@@ -70,12 +71,105 @@ const rangeLabels: Record<TimeRange, string> = {
   custom: "Custom Range",
 };
 
+export const OrderContext = React.createContext<{
+  params: any;
+  searchQuery: string;
+  setSearchQuery: (s: string) => void;
+  statusFilter: string;
+  setStatusFilter: (s: string) => void;
+  paymentFilter: string;
+  setPaymentFilter: (s: string) => void;
+  page: number;
+  setPage: (p: number) => void;
+  perPage: number;
+  setPerPage: (p: number) => void;
+  timeRange: TimeRange;
+  setTimeRange: (t: TimeRange) => void;
+  customFrom: string;
+  setCustomFrom: (s: string) => void;
+  customTo: string;
+  setCustomTo: (s: string) => void;
+  pagination: any;
+  summary: any;
+}>({
+  params: {},
+  searchQuery: "",
+  setSearchQuery: () => {},
+  statusFilter: "All",
+  setStatusFilter: () => {},
+  paymentFilter: "All",
+  setPaymentFilter: () => {},
+  page: 1,
+  setPage: () => {},
+  perPage: 20,
+  setPerPage: () => {},
+  timeRange: "daily",
+  setTimeRange: () => {},
+  customFrom: "",
+  setCustomFrom: () => {},
+  customTo: "",
+  setCustomTo: () => {},
+  pagination: {},
+  summary: {},
+});
+
 export default function OrdersPage() {
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(false);
-  const { data: apiData, isLoading } = useOrders({ per_page: 1000, all_orders: allOrdersToggle });
   const [timeRange, setTimeRange] = React.useState<TimeRange>("daily");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
+  
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [statusFilter, setStatusFilter] = React.useState("All");
+  const [paymentFilter, setPaymentFilter] = React.useState("All");
+  const [page, setPage] = React.useState(1);
+  const [perPage, setPerPage] = React.useState(20);
+
+  const [debouncedSearch, setDebouncedSearch] = React.useState("");
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const params = React.useMemo(() => {
+    const p: any = {
+      page,
+      per_page: perPage,
+      search: debouncedSearch,
+      status: statusFilter,
+      payment_status: paymentFilter,
+      all_orders: allOrdersToggle,
+    };
+
+    const now = new Date();
+    if (timeRange !== "alltime" && timeRange !== "custom") {
+      let fromDate = null;
+      if (timeRange === "daily") fromDate = now;
+      else if (timeRange === "yesterday") fromDate = subDays(now, 1);
+      else if (timeRange === "weekly") fromDate = subDays(now, 7);
+      else if (timeRange === "monthly") fromDate = subMonths(now, 1);
+      else if (timeRange === "4months") fromDate = subMonths(now, 4);
+      else if (timeRange === "6months") fromDate = subMonths(now, 6);
+      else if (timeRange === "yearly") fromDate = startOfYear(now);
+
+      if (fromDate) {
+        if (timeRange === "yesterday") {
+          p.start_date = format(fromDate, "yyyy-MM-dd");
+          p.end_date = format(fromDate, "yyyy-MM-dd");
+        } else {
+          p.start_date = format(fromDate, "yyyy-MM-dd");
+          p.end_date = format(now, "yyyy-MM-dd");
+        }
+      }
+    } else if (timeRange === "custom") {
+      if (customFrom) p.start_date = customFrom;
+      if (customTo) p.end_date = customTo;
+    }
+
+    return p;
+  }, [page, perPage, debouncedSearch, statusFilter, paymentFilter, allOrdersToggle, timeRange, customFrom, customTo]);
+
+  const { orders, summary, pagination, isLoading } = useOrders(params);
 
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
 
@@ -88,9 +182,9 @@ export default function OrdersPage() {
     [baseUrl],
   );
 
-  const allOrders = React.useMemo(() => {
-    if (!apiData?.data?.data) return [];
-    return apiData.data.data
+  const mappedOrders = React.useMemo(() => {
+    if (!orders) return [];
+    return orders
       .filter((order: any) => order.order_status !== "Incomplete")
       .map((order: any) => {
         const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
@@ -173,33 +267,15 @@ export default function OrdersPage() {
           createdAt: order.created_at,
         };
       });
-  }, [apiData, getImageUrl]);
+  }, [orders, getImageUrl]);
 
-  const filteredByTime = React.useMemo(() => {
-    if (timeRange === "alltime") return allOrders;
-    if (timeRange === "yesterday") {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yStr = yesterday.toISOString().slice(0, 10);
-      return allOrders.filter((o: any) => o.date === yStr);
-    }
-    if (timeRange === "custom") {
-      return allOrders.filter((o: any) => {
-        if (customFrom && o.date < customFrom) return false;
-        if (customTo && o.date > customTo) return false;
-        return true;
-      });
-    }
-    const from = getDateFrom(timeRange);
-    return allOrders.filter((o: any) => o.date >= from);
-  }, [allOrders, timeRange, customFrom, customTo]);
-
-  if (isLoading && !apiData) {
+  if (isLoading && !orders?.length) {
     return <OrdersSkeleton />;
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full">
+    <OrderContext.Provider value={{ params, searchQuery, setSearchQuery, statusFilter, setStatusFilter, paymentFilter, setPaymentFilter, page, setPage, perPage, setPerPage, timeRange, setTimeRange, customFrom, setCustomFrom, customTo, setCustomTo, pagination, summary }}>
+      <div className="flex flex-col gap-6 w-full">
       {/* Header + Toolbar combined */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         {/* Left: Title + description (hidden on mobile, shown on sm+) */}
@@ -234,7 +310,7 @@ export default function OrdersPage() {
                 </Label>
               </div>
 
-              <Select value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
+              <Select value={timeRange} onValueChange={(v) => { setTimeRange(v as TimeRange); setPage(1); }}>
                 <SelectTrigger className="w-32 sm:w-36">
                   <SelectValue placeholder="Select period" />
                 </SelectTrigger>
@@ -260,14 +336,14 @@ export default function OrdersPage() {
                     type="date"
                     className="h-8 w-36 text-xs"
                     value={customFrom}
-                    onChange={(e) => setCustomFrom(e.target.value)}
+                    onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
                   />
                   <span className="text-xs text-muted-foreground">to</span>
                   <Input
                     type="date"
                     className="h-8 w-36 text-xs"
                     value={customTo}
-                    onChange={(e) => setCustomTo(e.target.value)}
+                    onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
                   />
                 </div>
               )}
@@ -320,28 +396,29 @@ export default function OrdersPage() {
                 type="date"
                 className="h-8 flex-1 text-xs"
                 value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
+                onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
               />
               <span className="text-xs text-muted-foreground shrink-0">to</span>
               <Input
                 type="date"
                 className="h-8 flex-1 text-xs"
                 value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
+                onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
               />
             </div>
           )}
         </div>
       </div>
 
-      {/* Stats â€” driven by time-filtered data */}
-      <OrderStats data={filteredByTime} />
+      {/* Stats driven by server summary */}
+      <OrderStats />
 
-      {/* Table â€” driven by time-filtered data */}
+      {/* Table driven by mappedOrders */}
       <div className="w-full min-w-0">
-        <OrdersTable data={filteredByTime} />
+        <OrdersTable data={mappedOrders} />
       </div>
     </div>
+    </OrderContext.Provider>
   );
 }
 
