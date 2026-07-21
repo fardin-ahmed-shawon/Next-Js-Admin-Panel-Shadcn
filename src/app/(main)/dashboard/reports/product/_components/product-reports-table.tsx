@@ -72,20 +72,19 @@ export function ProductReportsTable({
                 <TableHead>SKU</TableHead>
                 <TableHead>Size</TableHead>
                 <TableHead>Color</TableHead>
-                <TableHead className="text-right">Purchase Price</TableHead>
-                <TableHead className="text-right">Selling Price</TableHead>
+                <TableHead className="text-right">Average Purchase Price</TableHead>
+                <TableHead className="text-right">Average Selling Price</TableHead>
                 <TableHead className="text-right">Sold Units</TableHead>
                 <TableHead className="text-right">Order Value</TableHead>
                 <TableHead className="text-right">Purchase Value</TableHead>
                 <TableHead className="text-right">Profit</TableHead>
-                <TableHead>Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 11 }).map((_, j) => (
+                    {Array.from({ length: 10 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -94,7 +93,7 @@ export function ProductReportsTable({
                 ))
               ) : data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
                     No product report data found.
                   </TableCell>
                 </TableRow>
@@ -152,7 +151,6 @@ export function ProductReportsTable({
                           {formatCurrency(row.total_profit)}
                         </span>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-muted-foreground text-sm">{row.date}</TableCell>
                     </TableRow>
                   </React.Fragment>
                 ))
