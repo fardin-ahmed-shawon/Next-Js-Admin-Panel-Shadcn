@@ -27,8 +27,28 @@ const fetcher = async (url: string) => {
   };
 };
 
-export default function useAccountStatements() {
-  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ACCOUNTS_STATEMENT_URL || "account-statements"}`;
+export interface AccountStatementParams {
+  start_date?: string;
+  end_date?: string;
+  type?: string;
+  search?: string;
+  page?: number;
+  per_page?: number;
+}
+
+export default function useAccountStatements(params?: AccountStatementParams) {
+  const baseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ACCOUNTS_STATEMENT_URL || "account-statements"}`;
+  
+  const query = new URLSearchParams();
+  if (params?.start_date) query.append("start_date", params.start_date);
+  if (params?.end_date) query.append("end_date", params.end_date);
+  if (params?.type && params.type !== "All") query.append("type", params.type);
+  if (params?.search) query.append("search", params.search);
+  if (params?.page) query.append("page", params.page.toString());
+  if (params?.per_page) query.append("per_page", params.per_page.toString());
+
+  const urlString = query.toString();
+  const url = urlString ? `${baseUrl}?${urlString}` : baseUrl;
 
   const { data, error, isLoading, mutate } = useSWR(url, fetcher);
 

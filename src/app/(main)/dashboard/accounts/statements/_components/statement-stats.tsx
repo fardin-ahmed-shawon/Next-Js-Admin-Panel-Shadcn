@@ -1,12 +1,16 @@
 "use client";
 
+import * as React from "react";
+
 import { ArrowDownRight, ArrowUpRight, HandCoins, Landmark } from "lucide-react";
 
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatementContext } from "../page";
 import useAccountStatements from "@/hooks/useAccountStatements";
 
 export function StatementStats() {
-  const { summary, isLoading } = useAccountStatements();
+  const { params } = React.useContext(StatementContext);
+  const { summary, isLoading } = useAccountStatements(params);
 
   const stats = [
     {

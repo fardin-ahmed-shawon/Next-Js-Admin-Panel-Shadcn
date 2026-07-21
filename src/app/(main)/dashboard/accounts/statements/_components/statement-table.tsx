@@ -41,6 +41,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import useAccountStatements from "@/hooks/useAccountStatements";
+import { StatementContext } from "../page";
 
 /* ---- Types ---- */
 
@@ -188,12 +189,11 @@ function exportToExcel(data: StatementItem[]) {
 /* ---- Main Table Component ---- */
 
 export function StatementTable() {
-  const { statements, isLoading } = useAccountStatements();
+  const { params, searchQuery, setSearchQuery, activeFilter, setActiveFilter, page, setPage, perPage, setPerPage } = React.useContext(StatementContext);
+  const { statements, pagination, isLoading } = useAccountStatements(params);
 
-  const [activeFilter, setActiveFilter] = React.useState<StatementFilter>("All");
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   const table = useReactTable({
     data: statements || [],
@@ -202,24 +202,36 @@ export function StatementTable() {
       columnFilters,
       sorting,
       columnVisibility: { search: false, type: false },
-      pagination,
+      pagination: {
+        pageIndex: page - 1,
+        pageSize: perPage,
+      },
     },
+    pageCount: (pagination as any)?.last_page || -1,
+    manualPagination: true,
     getRowId: (row, i) => `${row.trx_id}-${i}`,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
-    onPaginationChange: setPagination,
+    onPaginationChange: (updater) => {
+      if (typeof updater === "function") {
+        const next = updater({ pageIndex: page - 1, pageSize: perPage });
+        setPage(next.pageIndex + 1);
+        setPerPage(next.pageSize);
+      } else {
+        setPage(updater.pageIndex + 1);
+        setPerPage(updater.pageSize);
+      }
+    },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     meta: {
-      pageIndex: pagination.pageIndex,
-      pageSize: pagination.pageSize,
+      pageIndex: page - 1,
+      pageSize: perPage,
     },
   });
 
-  const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
-  const totalCount = table.getFilteredRowModel().rows.length;
+  const totalCount = (pagination as any)?.total || 0;
 
   const filterLabel = activeFilter === "All" ? "All Transactions" : `${activeFilter} Transactions`;
   const countDescription = `${totalCount} records`;
@@ -253,8 +265,8 @@ export function StatementTable() {
                 placeholder="Search description or TRX ID..."
                 value={searchQuery}
                 onChange={(event) => {
-                  table.getColumn("search")?.setFilterValue(event.target.value || undefined);
-                  table.setPageIndex(0);
+                  setSearchQuery(event.target.value);
+                  setPage(1);
                 }}
               />
             </div>
@@ -263,10 +275,8 @@ export function StatementTable() {
               className="bg-muted p-0.75 text-muted-foreground **:data-[slot=toggle-group-item]:rounded-md **:data-[slot=toggle-group-item]:border **:data-[slot=toggle-group-item]:border-transparent **:data-[slot=toggle-group-item]:text-foreground/60 **:data-[slot=toggle-group-item]:hover:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:bg-background [&_[data-slot=toggle-group-item][data-state=on]]:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:shadow-sm dark:[&_[data-slot=toggle-group-item][data-state=on]]:border-input dark:[&_[data-slot=toggle-group-item][data-state=on]]:bg-input/30"
               onValueChange={(value) => {
                 if (!value) return;
-                const filter = value as StatementFilter;
-                setActiveFilter(filter);
-                table.getColumn("type")?.setFilterValue(filter === "All" ? undefined : filter);
-                table.setPageIndex(0);
+                setActiveFilter(value);
+                setPage(1);
               }}
               size="sm"
               spacing={1}
@@ -355,8 +365,8 @@ export function StatementTable() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows per page</span>
             <Select
-              value={`${pagination.pageSize}`}
-              onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}
+              value={`${perPage}`}
+              onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}
             >
               <SelectTrigger className="h-8 w-[70px]">
                 <SelectValue />
