@@ -22,6 +22,7 @@ export interface ProductReportItem {
   color_label: string | null;
   purchase_price: number;
   selling_price: number;
+  total_discount_amount: number;
   qty: number;
   total_sold_unit: number;
   total_order_value: number;

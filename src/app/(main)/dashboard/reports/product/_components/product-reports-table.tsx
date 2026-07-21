@@ -74,6 +74,7 @@ export function ProductReportsTable({
                 <TableHead>Color</TableHead>
                 <TableHead className="text-right">Average Purchase Price</TableHead>
                 <TableHead className="text-right">Average Selling Price</TableHead>
+                <TableHead className="text-right">Total Discount</TableHead>
                 <TableHead className="text-right">Sold Units</TableHead>
                 <TableHead className="text-right">Order Value</TableHead>
                 <TableHead className="text-right">Purchase Value</TableHead>
@@ -84,7 +85,7 @@ export function ProductReportsTable({
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 10 }).map((_, j) => (
+                    {Array.from({ length: 11 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -93,7 +94,7 @@ export function ProductReportsTable({
                 ))
               ) : data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
                     No product report data found.
                   </TableCell>
                 </TableRow>
@@ -130,6 +131,9 @@ export function ProductReportsTable({
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">
                         {formatCurrency(row.selling_price)}
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        {formatCurrency(row.total_discount_amount || 0)}
                       </TableCell>
                       <TableCell className="text-right font-medium">{row.total_sold_unit}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">
