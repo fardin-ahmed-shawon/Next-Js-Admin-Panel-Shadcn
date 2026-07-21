@@ -196,7 +196,7 @@ export const sidebarItems: NavGroup[] = [
         subItems: [
           { title: "Add Role", url: "/dashboard/roles/add" },
           { title: "View Roles & Users", url: "/dashboard/roles" },
-          { title: "Auto Order", url: "/dashboard/auto-order", comingSoon: true },
+          { title: "Auto Order", url: "/dashboard/auto-order" },
         ],
       },
       { title: "Users", url: "/dashboard/users", icon: Users, module: "users", className: "hidden" },
