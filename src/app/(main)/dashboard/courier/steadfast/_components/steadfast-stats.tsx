@@ -13,7 +13,7 @@ export function SteadfastStats() {
   const { data: balanceData } = useSteadfastBalance();
   const { data: returnsData } = useSteadfastReturns();
   const { data: parcelsData } = useSteadfastParcels();
-  const { data: ordersData } = useOrders({ page: 1, per_page: 1 });
+  const { pagination: ordersPagination } = useOrders({ page: 1, per_page: 1 });
   const { data: returnedParcelsData } = useSteadfastReturnedParcels({ page: 1, per_page: 1 });
 
   const stats = [
@@ -26,7 +26,7 @@ export function SteadfastStats() {
     },
     {
       title: "Total Orders",
-      value: ordersData?.meta?.total ?? "—",
+      value: ordersPagination?.total ?? "—",
       icon: Package,
       subtitle: "All system orders",
     },

@@ -1100,10 +1100,53 @@ export interface OrdersTableProps {
   showIncompleteStatus?: boolean;
   incompleteOrdersMode?: boolean;
   hideActionsColumn?: boolean;
+  useServerPagination?: boolean;
 }
 
-export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus, incompleteOrdersMode, hideActionsColumn }: OrdersTableProps) {
-  const { searchQuery, setSearchQuery, statusFilter, setStatusFilter, paymentFilter, setPaymentFilter, page, setPage, perPage, setPerPage, pagination: serverPagination, summary } = React.useContext(OrderContext);
+export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus, incompleteOrdersMode, hideActionsColumn, useServerPagination }: OrdersTableProps) {
+  const context = React.useContext(OrderContext);
+
+  const [localPage, setLocalPage] = React.useState(1);
+  const [localPerPage, setLocalPerPage] = React.useState(20);
+  const [localSearchQuery, setLocalSearchQuery] = React.useState("");
+  const [localStatusFilter, setLocalStatusFilter] = React.useState("All");
+  const [localPaymentFilter, setLocalPaymentFilter] = React.useState("All");
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+
+  const page = useServerPagination ? context.page : localPage;
+  const setPage = useServerPagination ? context.setPage : setLocalPage;
+  const perPage = useServerPagination ? context.perPage : localPerPage;
+  const setPerPage = useServerPagination ? context.setPerPage : setLocalPerPage;
+  const searchQuery = useServerPagination ? context.searchQuery : localSearchQuery;
+  const statusFilter = useServerPagination ? context.statusFilter : localStatusFilter;
+  const paymentFilter = useServerPagination ? context.paymentFilter : localPaymentFilter;
+
+  const setSearchQuery = useServerPagination ? context.setSearchQuery : (v: string) => {
+    setLocalSearchQuery(v);
+    setColumnFilters(prev => {
+      const p = prev.filter(f => f.id !== "search");
+      if (v) p.push({ id: "search", value: v });
+      return p;
+    });
+  };
+
+  const setStatusFilter = useServerPagination ? context.setStatusFilter : (v: string) => {
+    setLocalStatusFilter(v);
+    setColumnFilters(prev => {
+      const p = prev.filter(f => f.id !== "orderStatus");
+      if (v !== "All") p.push({ id: "orderStatus", value: v });
+      return p;
+    });
+  };
+
+  const setPaymentFilter = useServerPagination ? context.setPaymentFilter : (v: string) => {
+    setLocalPaymentFilter(v);
+    setColumnFilters(prev => {
+      const p = prev.filter(f => f.id !== "paymentStatus");
+      if (v !== "All") p.push({ id: "paymentStatus", value: v });
+      return p;
+    });
+  };
 
   const [showFiltersMobile, setShowFiltersMobile] = React.useState(false);
   const [showStatusFilter, setShowStatusFilter] = React.useState(true);
@@ -1119,6 +1162,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
     state: {
       rowSelection,
       sorting,
+      columnFilters: useServerPagination ? undefined : columnFilters,
       pagination: {
         pageIndex: page - 1,
         pageSize: perPage,
@@ -1142,12 +1186,13 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
       incompleteOrdersMode,
     },
     getRowId: (r) => r.id,
-    pageCount: serverPagination?.last_page || -1,
-    manualPagination: true,
-    manualFiltering: true,
+    pageCount: useServerPagination ? (context.pagination?.last_page || -1) : Math.ceil(data.length / perPage),
+    manualPagination: !!useServerPagination,
+    manualFiltering: !!useServerPagination,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
+    onColumnFiltersChange: useServerPagination ? undefined : setColumnFilters,
     onPaginationChange: (updater) => {
       if (typeof updater === 'function') {
         const newState = updater({ pageIndex: page - 1, pageSize: perPage });
@@ -1159,11 +1204,13 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
       }
     },
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: useServerPagination ? undefined : getFilteredRowModel(),
+    getPaginationRowModel: useServerPagination ? undefined : getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
   const selectedCount = table.getSelectedRowModel().rows.length;
-  const totalCount = serverPagination?.total || 0;
+  const totalCount = useServerPagination ? (context.pagination?.total || 0) : table.getFilteredRowModel().rows.length;
 
   function applyOrderFilter(v: string) {
     setStatusFilter(v);

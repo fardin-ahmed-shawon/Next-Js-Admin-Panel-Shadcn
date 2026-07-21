@@ -3,15 +3,21 @@ import { DollarSign, Package, Package2, Repeat2, ShoppingCart, UserPlus, Users }
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OrderContext } from "../page";
 
-export function OrderStats() {
-  const { summary } = React.useContext(OrderContext);
+export function OrderStats({ data }: { data?: any[] }) {
+  const context = React.useContext(OrderContext);
+  const summary = context?.summary;
 
-  const totalOrders = summary?.total_orders || 0;
-  const totalValue = summary?.total_value || 0;
-  const totalProducts = summary?.total_products || 0;
-  const totalUnits = summary?.total_units || 0;
-  const newCustomers = summary?.new_customers || 0;
-  const repeatedCustomers = summary?.repeat_customers || 0;
+  const totalOrders = data ? data.length : (summary?.total_orders || 0);
+  const totalValue = data ? data.reduce((s, o) => s + o.total, 0) : (summary?.total_value || 0);
+  const totalProducts = data ? new Set(data.map((o) => o.category + o.subCategory)).size : (summary?.total_products || 0);
+  const totalUnits = data ? data.reduce((s, o) => s + o.items, 0) : (summary?.total_units || 0);
+
+  const customerCounts = new Map<string, number>();
+  if (data) {
+    data.forEach((o) => customerCounts.set(o.phone, (customerCounts.get(o.phone) || 0) + 1));
+  }
+  const newCustomers = data ? [...customerCounts.values()].filter((c) => c === 1).length : (summary?.new_customers || 0);
+  const repeatedCustomers = data ? [...customerCounts.values()].filter((c) => c > 1).length : (summary?.repeat_customers || 0);
 
   const stats = [
     { title: "Total Orders", value: totalOrders.toLocaleString(), icon: ShoppingCart },

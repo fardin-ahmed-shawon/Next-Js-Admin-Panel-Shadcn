@@ -72,7 +72,7 @@ export function useOrders(params?: UseOrdersParams) {
   return {
     summary: data?.summary || {},
     orders: data?.data || [],
-    pagination: data?.pagination || {},
+    pagination: data?.pagination || ({} as any),
     isLoading,
     isError: error,
     mutate,

@@ -56,7 +56,7 @@ const rangeLabels: Record<TimeRange, string> = {
 };
 
 export default function ReportsDashboardPage() {
-  const { data: apiData, isLoading } = useOrders({ per_page: 1000 });
+  const { orders, isLoading } = useOrders({ per_page: 1000 });
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
@@ -73,8 +73,8 @@ export default function ReportsDashboardPage() {
   );
 
   const allOrders = React.useMemo(() => {
-    if (!apiData?.data?.data) return [];
-    return apiData.data.data.map((order: any) => {
+    if (!orders) return [];
+    return orders.map((order: any) => {
       const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
       const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
       const paymentMethod = order.payments?.[0]?.payment_method || "COD";
@@ -137,7 +137,7 @@ export default function ReportsDashboardPage() {
         },
       };
     });
-  }, [apiData, getImageUrl]);
+  }, [orders, getImageUrl]);
 
   const filteredByTime = React.useMemo(() => {
     if (timeRange === "alltime") return allOrders;

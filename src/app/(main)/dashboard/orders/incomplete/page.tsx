@@ -72,7 +72,7 @@ const rangeLabels: Record<TimeRange, string> = {
 export default function IncompleteOrdersPage() {
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(true);
   // Ideally, if the API supports filtering by status, we could pass it here, e.g., order_status: "Incomplete".
-  const { data: apiData, isLoading } = useOrders({ per_page: 1000, all_orders: allOrdersToggle });
+  const { orders, isLoading } = useOrders({ per_page: 1000, all_orders: allOrdersToggle });
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState<string>("");
   const [customTo, setCustomTo] = React.useState<string>("");
@@ -90,8 +90,8 @@ export default function IncompleteOrdersPage() {
   );
 
   const allOrders = React.useMemo(() => {
-    if (!apiData?.data?.data) return [];
-    return apiData.data.data
+    if (!orders) return [];
+    return orders
       .filter((order: any) => {
         if (activeTab === "Incomplete") {
           return order.order_status === "Incomplete" && order.customer_phone && /^01\d{9}$/.test(order.customer_phone.trim());
@@ -180,7 +180,7 @@ export default function IncompleteOrdersPage() {
           createdAt: order.created_at,
         };
       });
-  }, [apiData, getImageUrl, activeTab]);
+  }, [orders, activeTab, getImageUrl]);
 
   const filteredByTime = React.useMemo(() => {
     if (timeRange === "alltime") return allOrders;
@@ -201,7 +201,7 @@ export default function IncompleteOrdersPage() {
     return allOrders.filter((o: any) => o.date >= from);
   }, [allOrders, timeRange, customFrom, customTo]);
 
-  if (isLoading && !apiData) {
+  if (isLoading && !orders) {
     return <OrdersSkeleton />;
   }
 

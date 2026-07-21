@@ -415,7 +415,7 @@ export default function OrdersPage() {
 
       {/* Table driven by mappedOrders */}
       <div className="w-full min-w-0">
-        <OrdersTable data={mappedOrders} />
+        <OrdersTable data={mappedOrders} useServerPagination={true} />
       </div>
     </div>
     </OrderContext.Provider>

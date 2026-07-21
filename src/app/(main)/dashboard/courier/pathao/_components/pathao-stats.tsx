@@ -8,9 +8,9 @@ import { useOrders } from "@/hooks/useOrders";
 
 export function PathaoStats() {
   const { data: parcelsData, isLoading: loadingParcels } = usePathaoParcels();
-  const { data: ordersData, isLoading: loadingOrders } = useOrders({ page: 1, per_page: 1 });
+  const { pagination: ordersPagination, isLoading: loadingOrders } = useOrders({ page: 1, per_page: 1 });
 
-  const totalSystemOrders = ordersData?.meta?.total ?? 0;
+  const totalSystemOrders = ordersPagination?.total ?? 0;
   const totalParcels = parcelsData?.data?.total ?? (Array.isArray(parcelsData?.data) ? parcelsData.data.length : 0);
 
   // Filter dynamic counts if we have the items list array
