@@ -18,8 +18,8 @@ export interface ProductReportItem {
   product_name: string;
   sku: string;
   img: string;
-  has_variants?: boolean;
-  has_variant_wise_pricing?: boolean;
+  size_label: string | null;
+  color_label: string | null;
   purchase_price: number;
   selling_price: number;
   qty: number;
@@ -28,7 +28,6 @@ export interface ProductReportItem {
   total_purchase_value: number;
   total_profit: number;
   date: string;
-  variants?: ProductReportVariant[];
 }
 
 export interface ProductReportSummary {

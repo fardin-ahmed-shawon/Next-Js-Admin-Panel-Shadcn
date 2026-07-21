@@ -50,11 +50,7 @@ export function ProductReportsTable({
   onPageChange,
   isLoading,
 }: ProductReportsTableProps) {
-  const [expandedRows, setExpandedRows] = React.useState<Record<string, boolean>>({});
-
-  const toggleRow = (id: string) => {
-    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  // Removed expanded rows state since each variant is now flat
 
   return (
     <Card>
@@ -74,9 +70,10 @@ export function ProductReportsTable({
                 <TableHead className="w-10">#</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>SKU</TableHead>
+                <TableHead>Size</TableHead>
+                <TableHead>Color</TableHead>
                 <TableHead className="text-right">Purchase Price</TableHead>
                 <TableHead className="text-right">Selling Price</TableHead>
-                <TableHead className="text-right">Stock Qty</TableHead>
                 <TableHead className="text-right">Sold Units</TableHead>
                 <TableHead className="text-right">Order Value</TableHead>
                 <TableHead className="text-right">Purchase Value</TableHead>
@@ -104,25 +101,10 @@ export function ProductReportsTable({
               ) : (
                 data.map((row) => (
                   <React.Fragment key={row.sl_no}>
-                    <TableRow className={row.has_variants && expandedRows[row.sl_no] ? "border-b-0 bg-muted/10" : ""}>
+                    <TableRow>
                       <TableCell className="text-muted-foreground">{row.sl_no}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          {row.has_variants && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 p-0 shrink-0"
-                              onClick={() => toggleRow(String(row.sl_no))}
-                            >
-                              {expandedRows[row.sl_no] ? (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </Button>
-                          )}
-                          {!row.has_variants && <div className="w-6 shrink-0" />}
                           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border bg-muted">
                             <Image
                               src={getImageUrl(row.img)}
@@ -134,30 +116,22 @@ export function ProductReportsTable({
                           </div>
                           <div className="flex flex-col gap-0.5">
                             <span className="font-medium whitespace-nowrap">{row.product_name}</span>
-                            {row.has_variants && (
-                              <Badge variant="outline" className="w-fit text-muted-foreground text-[10px] h-4 px-1.5">
-                                <Layers className="size-3 mr-1" /> Variants
-                              </Badge>
-                            )}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">{row.sku}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap">
-                        {row.has_variant_wise_pricing ? (
-                          <span className="text-muted-foreground text-xs">Variant Pricing</span>
-                        ) : (
-                          formatCurrency(row.purchase_price)
-                        )}
+                      <TableCell className="text-muted-foreground whitespace-nowrap text-sm">
+                        {row.size_label || "-"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap text-sm">
+                        {row.color_label || "-"}
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">
-                        {row.has_variant_wise_pricing ? (
-                          <span className="text-muted-foreground text-xs">Variant Pricing</span>
-                        ) : (
-                          formatCurrency(row.selling_price)
-                        )}
+                        {formatCurrency(row.purchase_price)}
                       </TableCell>
-                      <TableCell className="text-right">{row.qty}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        {formatCurrency(row.selling_price)}
+                      </TableCell>
                       <TableCell className="text-right font-medium">{row.total_sold_unit}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">
                         {formatCurrency(row.total_order_value)}
@@ -180,32 +154,6 @@ export function ProductReportsTable({
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground text-sm">{row.date}</TableCell>
                     </TableRow>
-
-                    {row.has_variants && expandedRows[row.sl_no] && row.variants && (
-                      <>
-                        {row.variants.map((v) => (
-                          <TableRow key={`var-${v.id}`} className="bg-muted/30 hover:bg-muted/30">
-                            <TableCell></TableCell>
-                            <TableCell>
-                              <div className="flex items-center pl-10 text-sm text-muted-foreground">
-                                <Pen className="size-3 mr-1.5 shrink-0" />
-                                {v.name}
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-mono text-xs text-muted-foreground">{v.sku}</TableCell>
-                            <TableCell className="text-right whitespace-nowrap text-muted-foreground text-sm">
-                              {v.purchase_price > 0 ? formatCurrency(v.purchase_price) : "-"}
-                            </TableCell>
-                            <TableCell className="text-right whitespace-nowrap text-muted-foreground text-sm">
-                              {v.selling_price > 0 ? formatCurrency(v.selling_price) : "-"}
-                            </TableCell>
-                            <TableCell className="text-right text-muted-foreground text-sm">{v.stock}</TableCell>
-                            {/* Variants don't have individual report stats in this payload */}
-                            <TableCell colSpan={5}></TableCell>
-                          </TableRow>
-                        ))}
-                      </>
-                    )}
                   </React.Fragment>
                 ))
               )}

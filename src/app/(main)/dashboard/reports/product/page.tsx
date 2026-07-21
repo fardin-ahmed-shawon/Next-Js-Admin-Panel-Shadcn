@@ -24,10 +24,25 @@ const rangeLabels: Record<TimeRange, string> = {
   custom: "Custom Range",
 };
 
+const orderStatuses = [
+  "All",
+  "Pending",
+  "Confirmed",
+  "Ready to Ship",
+  "In-Courier",
+  "Completed",
+  "Delivered",
+  "Cancelled",
+  "Hold",
+  "Returned",
+  "Exchange",
+];
+
 export default function ProductReportPage() {
   const [timeRange, setTimeRange] = React.useState<TimeRange>("all_time");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
+  const [orderStatus, setOrderStatus] = React.useState("Delivered");
   const [page, setPage] = React.useState(1);
 
   const [searchInput, setSearchInput] = React.useState("");
@@ -41,7 +56,7 @@ export default function ProductReportPage() {
   // Reset page when filters change
   React.useEffect(() => {
     setPage(1);
-  }, [timeRange, customFrom, customTo, sortBy, sortDir, searchQuery]);
+  }, [timeRange, customFrom, customTo, orderStatus, sortBy, sortDir, searchQuery]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +68,7 @@ export default function ProductReportPage() {
     period: timeRange,
     page,
     limit: 15,
+    order_status: orderStatus,
     sort_by: sortBy,
     sort_dir: sortDir,
   };
@@ -72,6 +88,7 @@ export default function ProductReportPage() {
       const exportParams = new URLSearchParams();
       exportParams.append("period", timeRange);
       exportParams.append("limit", "10000");
+      exportParams.append("order_status", orderStatus);
       exportParams.append("sort_by", sortBy);
       exportParams.append("sort_dir", sortDir);
       if (searchQuery) exportParams.append("search", searchQuery);
@@ -111,6 +128,22 @@ export default function ProductReportPage() {
 
         <div className="flex flex-col gap-2 sm:items-end">
           <div className="flex items-center justify-between gap-2 sm:justify-end">
+            {/* Status Select */}
+            <Select value={orderStatus} onValueChange={(v) => setOrderStatus(v)}>
+              <SelectTrigger className="w-32 sm:w-40 bg-background">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {orderStatuses.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+
             {/* Period Select */}
             <Select value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
               <SelectTrigger className="w-32 sm:w-40 bg-background">
