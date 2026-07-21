@@ -1109,7 +1109,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
   const [localPage, setLocalPage] = React.useState(1);
   const [localPerPage, setLocalPerPage] = React.useState(20);
   const [localSearchQuery, setLocalSearchQuery] = React.useState("");
-  const [localStatusFilter, setLocalStatusFilter] = React.useState("All");
+  const [localStatusFilter, setLocalStatusFilter] = React.useState(hideOrderStatusFilter ? "All" : "Pending");
   const [localPaymentFilter, setLocalPaymentFilter] = React.useState("All");
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
@@ -1223,14 +1223,14 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
     setRowSelection({});
   }
   function clearAllFilters() {
-    setStatusFilter("All");
+    setStatusFilter(hideOrderStatusFilter ? "All" : "Pending");
     setPaymentFilter("All");
     setSearchQuery("");
     setPage(1);
     setRowSelection({});
   }
 
-  const hasFilters = statusFilter !== "All" || paymentFilter !== "All" || searchQuery;
+  const hasFilters = statusFilter !== (hideOrderStatusFilter ? "All" : "Pending") || paymentFilter !== "All" || searchQuery;
 
   const handleBulkUpdate = async (type: "status" | "payment", val: string) => {
     const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);

@@ -120,7 +120,7 @@ export default function OrdersPage() {
   const [customTo, setCustomTo] = React.useState("");
 
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState("All");
+  const [statusFilter, setStatusFilter] = React.useState("Pending");
   const [paymentFilter, setPaymentFilter] = React.useState("All");
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(20);
