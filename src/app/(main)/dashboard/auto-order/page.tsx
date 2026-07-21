@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { fetchWrapper } from "@/utils/fetch-wrapper";
+import { fetchClient } from "@/lib/fetch-client";
 import { Trash2 } from "lucide-react";
 
 export default function AutoOrderPage() {
@@ -34,9 +34,15 @@ export default function AutoOrderPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetchWrapper("/users");
-      if (res.success && res.data) {
-        setUsers(res.data);
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+      const usersEndpoint = process.env.NEXT_PUBLIC_API_USERS || "users";
+      const api_url = baseUrl.endsWith("/") ? `${baseUrl}${usersEndpoint}` : `${baseUrl}/${usersEndpoint}`;
+      const res = await fetchClient(api_url);
+      if (res.ok) {
+        const response = await res.json();
+        if (response.success && response.data) {
+          setUsers(response.data);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -90,7 +96,7 @@ export default function AutoOrderPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {users.map(u => (
-                        <SelectItem key={u.id} value={u.id.toString()}>{u.name}</SelectItem>
+                        <SelectItem key={u.id} value={u.id.toString()}>{u.full_name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -126,7 +132,7 @@ export default function AutoOrderPage() {
             {priorities.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="font-medium">#{p.id}</TableCell>
-                <TableCell>{p.user?.name}</TableCell>
+                <TableCell>{p.user?.full_name}</TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
                     <Switch 

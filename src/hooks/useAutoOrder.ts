@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { fetchWrapper } from "@/utils/fetch-wrapper";
+import { fetchClient } from "@/lib/fetch-client";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 export interface AutoOrderPriority {
   id: number;
@@ -8,7 +10,7 @@ export interface AutoOrderPriority {
   status: "active" | "inactive";
   user: {
     id: number;
-    name: string;
+    full_name: string;
     role_id: number;
   };
 }
@@ -21,10 +23,14 @@ export function useAutoOrder() {
   const fetchPriorities = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetchWrapper("/auto-order-priorities");
-      if (response.success) {
-        setPriorities(response.data);
-        setIsAutoOrderEnabled(response.auto_order === "1");
+      const endpoint = API_BASE_URL.endsWith("/") ? `${API_BASE_URL}auto-order-priorities` : `${API_BASE_URL}/auto-order-priorities`;
+      const res = await fetchClient(endpoint);
+      if (res.ok) {
+        const response = await res.json();
+        if (response.success) {
+          setPriorities(response.data);
+          setIsAutoOrderEnabled(response.auto_order === "1");
+        }
       }
     } catch (error) {
       console.error(error);
@@ -36,13 +42,18 @@ export function useAutoOrder() {
 
   const toggleAutoOrder = async (enabled: boolean) => {
     try {
-      const response = await fetchWrapper("/auto-order/toggle", {
+      const endpoint = API_BASE_URL.endsWith("/") ? `${API_BASE_URL}auto-order/toggle` : `${API_BASE_URL}/auto-order/toggle`;
+      const res = await fetchClient(endpoint, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ auto_order: enabled ? "1" : "0" }),
       });
-      if (response.success) {
-        setIsAutoOrderEnabled(enabled);
-        toast.success(response.message);
+      if (res.ok) {
+        const response = await res.json();
+        if (response.success) {
+          setIsAutoOrderEnabled(enabled);
+          toast.success(response.message);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -52,14 +63,19 @@ export function useAutoOrder() {
 
   const addPriority = async (userId: number, status: "active" | "inactive") => {
     try {
-      const response = await fetchWrapper("/auto-order-priorities", {
+      const endpoint = API_BASE_URL.endsWith("/") ? `${API_BASE_URL}auto-order-priorities` : `${API_BASE_URL}/auto-order-priorities`;
+      const res = await fetchClient(endpoint, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, status }),
       });
-      if (response.success) {
-        toast.success(response.message);
-        fetchPriorities();
-        return true;
+      if (res.ok) {
+        const response = await res.json();
+        if (response.success) {
+          toast.success(response.message);
+          fetchPriorities();
+          return true;
+        }
       }
       return false;
     } catch (error) {
@@ -71,15 +87,20 @@ export function useAutoOrder() {
 
   const updatePriorityStatus = async (id: number, status: "active" | "inactive") => {
     try {
-      const response = await fetchWrapper(`/auto-order-priorities/${id}`, {
+      const endpoint = API_BASE_URL.endsWith("/") ? `${API_BASE_URL}auto-order-priorities/${id}` : `${API_BASE_URL}/auto-order-priorities/${id}`;
+      const res = await fetchClient(endpoint, {
         method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (response.success) {
-        setPriorities(prev =>
-          prev.map(p => (p.id === id ? { ...p, status } : p))
-        );
-        toast.success(response.message);
+      if (res.ok) {
+        const response = await res.json();
+        if (response.success) {
+          setPriorities(prev =>
+            prev.map(p => (p.id === id ? { ...p, status } : p))
+          );
+          toast.success(response.message);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -89,12 +110,16 @@ export function useAutoOrder() {
 
   const deletePriority = async (id: number) => {
     try {
-      const response = await fetchWrapper(`/auto-order-priorities/${id}`, {
+      const endpoint = API_BASE_URL.endsWith("/") ? `${API_BASE_URL}auto-order-priorities/${id}` : `${API_BASE_URL}/auto-order-priorities/${id}`;
+      const res = await fetchClient(endpoint, {
         method: "DELETE",
       });
-      if (response.success) {
-        setPriorities(prev => prev.filter(p => p.id !== id));
-        toast.success(response.message);
+      if (res.ok) {
+        const response = await res.json();
+        if (response.success) {
+          setPriorities(prev => prev.filter(p => p.id !== id));
+          toast.success(response.message);
+        }
       }
     } catch (error) {
       console.error(error);
