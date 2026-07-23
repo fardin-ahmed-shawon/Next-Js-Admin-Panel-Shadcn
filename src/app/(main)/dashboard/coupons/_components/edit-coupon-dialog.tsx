@@ -194,7 +194,6 @@ export function EditCouponDialog({ coupon, open, onOpenChange, onCouponUpdated }
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="percentage">Percentage (%)</SelectItem>
-                    <SelectItem value="fixed">Fixed Amount (৳)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

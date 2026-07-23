@@ -218,7 +218,6 @@ export function AddCouponDialog({ onCouponAdded }: AddCouponDialogProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="percentage">Percentage (%)</SelectItem>
-                    <SelectItem value="fixed">Fixed Amount (৳)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
