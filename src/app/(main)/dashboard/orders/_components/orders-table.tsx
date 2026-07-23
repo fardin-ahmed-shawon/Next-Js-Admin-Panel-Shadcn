@@ -138,14 +138,14 @@ export interface OrderRow {
 
 /* ---- Status badge colors ---- */
 
-function orderStatusVariant(s: string): "default" | "secondary" | "outline" | "destructive" {
+export function orderStatusVariant(s: string): "default" | "secondary" | "outline" | "destructive" {
   if (["Delivered", "Ready To Ship", "In-Courier"].includes(s)) return "default";
   if (["Cancelled", "Fake", "Trash", "Lost", "Returned"].includes(s)) return "destructive";
   if (["Pending", "Hold", "Ship Later", "Missing"].includes(s)) return "outline";
   return "secondary";
 }
 
-function paymentBadge(s: string): "default" | "secondary" | "outline" | "destructive" {
+export function paymentBadge(s: string): "default" | "secondary" | "outline" | "destructive" {
   if (s === "Full Paid") return "default";
   if (s === "Refund") return "destructive";
   if (s === "Partially Paid") return "secondary";
@@ -172,7 +172,7 @@ export function invalidateOrders() {
   );
 }
 
-function SendCourierCell({ row }: { row: any }) {
+export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolean }) {
   const { data: steadfastConfig } = useSteadfastSetup();
   const { data: pathaoConfig } = usePathaoSetup();
   const { data: redxConfig } = useRedxSetup();
@@ -326,6 +326,14 @@ function SendCourierCell({ row }: { row: any }) {
 
   if (!isSteadfastActive && !isPathaoActive && !isRedxActive) {
     return <span className="text-xs text-muted-foreground">—</span>;
+  }
+
+  if (readOnly) {
+    return (
+      <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted border border-muted-foreground/10 px-2.5 py-1 rounded-md justify-center w-[135px] select-none">
+        <span className="truncate">Not Available</span>
+      </div>
+    );
   }
 
   return (

@@ -2,16 +2,16 @@
 
 import * as React from "react";
 import { format } from "date-fns";
-import { CalendarIcon, FileText, Printer, Truck, FileClock, Search, ChevronDown } from "lucide-react";
+import { CalendarIcon, FileText, Printer, Truck, FileClock, Search, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { useInvoices } from "@/hooks/useInvoices";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { orderStatusVariant, paymentBadge, SendCourierCell } from "../_components/orders-table";
 
 const invoiceTypes = ["All", "a4", "pos", "label"];
-const invoiceStatuses = ["All", "Pending", "Checked", "Invoiced"];
 
 type TimeRange = "daily" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
 
@@ -39,7 +39,7 @@ const rangeLabels: Record<TimeRange, string> = {
   yearly: "Yearly",
   custom: "Custom Range",
 };
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -52,94 +52,57 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
 export default function InvoiceDashboardPage() {
-  const { data: response, isLoading } = useInvoices(1, 1000); // Fetching a larger set for now, pagination can be added later
-
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
   const [searchQuery, setSearchQuery] = React.useState("");
-
   const [activeTypeFilter, setActiveTypeFilter] = React.useState("All");
-  const [activeStatusFilter, setActiveStatusFilter] = React.useState("All");
 
-  const [showTypeFilter, setShowTypeFilter] = React.useState(true);
-  const [showStatusFilter, setShowStatusFilter] = React.useState(true);
+  const [page, setPage] = React.useState(1);
+  const [perPage, setPerPage] = React.useState(10);
+
+  const filters = React.useMemo(() => {
+    let from_date = "";
+    let to_date = "";
+
+    if (timeRange === "custom") {
+      from_date = customFrom;
+      to_date = customTo;
+    } else if (timeRange !== "alltime") {
+      from_date = getDateFrom(timeRange);
+    }
+
+    return {
+      search: searchQuery,
+      type: activeTypeFilter,
+      from_date,
+      to_date,
+    };
+  }, [timeRange, customFrom, customTo, searchQuery, activeTypeFilter]);
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+  const { data: response, isLoading } = useInvoices(page, perPage, filters);
 
   if (isLoading && !response) {
     return <InvoiceSkeleton />;
   }
 
-  const allInvoices = response?.data?.data || [];
-
-  const filteredInvoices = React.useMemo(() => {
-    if (timeRange === "alltime") return allInvoices;
-    
-    let fromDate = "";
-    let toDate = "";
-    
-    if (timeRange === "custom") {
-      fromDate = customFrom;
-      toDate = customTo;
-    } else {
-      fromDate = getDateFrom(timeRange);
-    }
-    
-    return allInvoices.filter((inv: any) => {
-      const invDate = new Date(inv.created_at).toISOString().slice(0, 10);
-      if (fromDate && invDate < fromDate) return false;
-      if (toDate && invDate > toDate) return false;
-      return true;
-    });
-  }, [allInvoices, timeRange, customFrom, customTo]);
+  const finalInvoices = response?.data?.data || [];
+  const totalPages = response?.data?.last_page || 1;
+  const totalCount = response?.data?.total || 0;
 
   const stats = React.useMemo(() => {
-    const todayStr = new Date().toISOString().slice(0, 10);
     return {
-      total: filteredInvoices.length,
-      a4: filteredInvoices.filter((i: any) => i.type === "a4").length,
-      pos: filteredInvoices.filter((i: any) => i.type === "pos").length,
-      label: filteredInvoices.filter((i: any) => i.type === "label").length,
-      today: filteredInvoices.filter((i: any) => new Date(i.created_at).toISOString().slice(0, 10) === todayStr).length,
+      total: response?.stats?.total || 0,
+      a4: response?.stats?.a4 || 0,
+      pos: response?.stats?.pos || 0,
+      label: response?.stats?.label || 0,
+      today: response?.stats?.today || 0,
     };
-  }, [filteredInvoices]);
-
-  const typeCounts = React.useMemo(() => {
-    const c: Record<string, number> = {};
-    filteredInvoices.forEach((o: any) => {
-      c[o.type] = (c[o.type] || 0) + 1;
-    });
-    return c;
-  }, [filteredInvoices]);
-
-  const statusCounts = React.useMemo(() => {
-    const c: Record<string, number> = {};
-    filteredInvoices.forEach((o: any) => {
-      c[o.status] = (c[o.status] || 0) + 1;
-    });
-    return c;
-  }, [filteredInvoices]);
-
-  const finalInvoices = React.useMemo(() => {
-    let result = filteredInvoices;
-    
-    if (activeTypeFilter !== "All") {
-      result = result.filter((inv: any) => inv.type === activeTypeFilter);
-    }
-    
-    if (activeStatusFilter !== "All") {
-      result = result.filter((inv: any) => inv.status === activeStatusFilter);
-    }
-
-    if (searchQuery) {
-      const lowerQuery = searchQuery.toLowerCase();
-      result = result.filter((inv: any) =>
-        inv.order_no.toLowerCase().includes(lowerQuery) ||
-        String(inv.id).includes(lowerQuery)
-      );
-    }
-    
-    return result;
-  }, [filteredInvoices, searchQuery, activeTypeFilter, activeStatusFilter]);
+  }, [response?.stats]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -158,6 +121,9 @@ export default function InvoiceDashboardPage() {
       default: return "bg-gray-100 text-gray-800";
     }
   };
+
+  const filterLabel = activeTypeFilter === "All" ? "All Invoices" : `${activeTypeFilter} Invoices`;
+  const countDescription = `${totalCount} invoices`;
 
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -233,7 +199,7 @@ export default function InvoiceDashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Printed</CardTitle>
@@ -241,17 +207,7 @@ export default function InvoiceDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground mt-1">All time invoices</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Printed Today</CardTitle>
-            <FileClock className="size-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.today}</div>
-            <p className="text-xs text-muted-foreground mt-1">Invoices generated today</p>
+            <p className="text-xs text-muted-foreground mt-1">In selected period</p>
           </CardContent>
         </Card>
         <Card>
@@ -287,117 +243,212 @@ export default function InvoiceDashboardPage() {
       </div>
 
       {/* Data Table */}
-      <div className="rounded-xl border bg-card">
-        <div className="p-4 border-b flex flex-col gap-5">
-          {/* Filters Row */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search..."
-                className="w-full bg-background pl-8 h-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-normal text-muted-foreground text-sm">{filterLabel}</CardTitle>
+          <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
+            {countDescription}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="flex flex-col gap-4 px-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative">
+                <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search..."
+                  className="h-8 w-48 rounded-[min(var(--radius-md),12px)] pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <ToggleGroup
+                className="bg-muted p-0.75 text-muted-foreground **:data-[slot=toggle-group-item]:rounded-md **:data-[slot=toggle-group-item]:border **:data-[slot=toggle-group-item]:border-transparent **:data-[slot=toggle-group-item]:text-foreground/60 **:data-[slot=toggle-group-item]:hover:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:bg-background [&_[data-slot=toggle-group-item][data-state=on]]:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:shadow-sm dark:[&_[data-slot=toggle-group-item][data-state=on]]:border-input dark:[&_[data-slot=toggle-group-item][data-state=on]]:bg-input/30 shrink-0 h-9"
+                onValueChange={(value) => {
+                  if (value) setActiveTypeFilter(value);
+                }}
+                size="sm"
+                spacing={1}
+                type="single"
+                value={activeTypeFilter}
+              >
+                {invoiceTypes.map((t) => (
+                  <ToggleGroupItem key={t} value={t} className="capitalize px-3 text-xs">
+                    {t}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+              
+              {(activeTypeFilter !== "All" || searchQuery || (timeRange !== "alltime")) && (
+                <Button variant="secondary" size="sm" className="h-8 shrink-0" onClick={() => {
+                  setActiveTypeFilter("All");
+                  setSearchQuery("");
+                  setTimeRange("alltime");
+                  setCustomFrom("");
+                  setCustomTo("");
+                }}>
+                  Clear filters
+                </Button>
+              )}
             </div>
-            
-            {(activeTypeFilter !== "All" || activeStatusFilter !== "All" || searchQuery) && (
-              <Button variant="secondary" size="sm" className="h-9 shrink-0" onClick={() => {
-                setActiveTypeFilter("All");
-                setActiveStatusFilter("All");
-                setSearchQuery("");
-              }}>
-                Clear filters
-              </Button>
-            )}
+          </div>
+          
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="w-[100px]">SL No</TableHead>
+                  <TableHead>Order No</TableHead>
+                  <TableHead>Invoice Status</TableHead>
+                  <TableHead>Order Status</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead>Courier</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="text-right">Printed At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {finalInvoices.length > 0 ? (
+                  finalInvoices.map((invoice: any, index: number) => {
+                    const order = invoice.order || {};
+                    return (
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-medium text-xs">{(page - 1) * perPage + index + 1}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-mono text-sm">{invoice.order_no}</span>
+                            {order.created_at ? (
+                              <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                                {format(new Date(order.created_at), "yyyy-MM-dd · hh:mm a")}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                                {format(new Date(invoice.created_at), "yyyy-MM-dd · hh:mm a")}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            {invoice.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {order.order_status ? (
+                            <Badge variant={orderStatusVariant(order.order_status)}>
+                              {order.order_status}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">N/A</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {order.payment_status ? (
+                            <Badge variant={paymentBadge(order.payment_status)}>
+                              {order.payment_status}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">N/A</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {order.id ? (
+                            <SendCourierCell row={{ original: order }} readOnly />
+                          ) : (
+                            <span className="text-muted-foreground text-xs">N/A</span>
+                          )}
+                        </TableCell>
+                      <TableCell>
+                        <Badge className={getBadgeColor(invoice.type)} variant="secondary">
+                          <div className="flex items-center gap-1.5 capitalize">
+                            {getTypeIcon(invoice.type)}
+                            {invoice.type}
+                          </div>
+                        </Badge>
+                      </TableCell>
+                        <TableCell className="text-right text-muted-foreground text-sm">
+                          {format(new Date(invoice.created_at), "MMM dd, yyyy - hh:mm a")}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">
+                      No invoices printed yet.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
-            {/* Type Tabs */}
-            <ToggleGroup
-              className="bg-muted p-0.75 text-muted-foreground **:data-[slot=toggle-group-item]:rounded-md **:data-[slot=toggle-group-item]:border **:data-[slot=toggle-group-item]:border-transparent **:data-[slot=toggle-group-item]:text-foreground/60 **:data-[slot=toggle-group-item]:hover:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:bg-background [&_[data-slot=toggle-group-item][data-state=on]]:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:shadow-sm dark:[&_[data-slot=toggle-group-item][data-state=on]]:border-input dark:[&_[data-slot=toggle-group-item][data-state=on]]:bg-input/30 shrink-0 h-9"
-              onValueChange={(value) => {
-                if (value) setActiveTypeFilter(value);
-              }}
-              size="sm"
-              spacing={1}
-              type="single"
-              value={activeTypeFilter}
-            >
-              {invoiceTypes.map((t) => (
-                <ToggleGroupItem key={t} value={t} className="capitalize px-3 text-xs">
-                  {t}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-
-            {/* Status Dropdown */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground shrink-0">
-                Status:
-              </span>
-              <Select value={activeStatusFilter} onValueChange={setActiveStatusFilter}>
-                <SelectTrigger className="w-[120px] h-9 text-xs bg-background">
-                  <SelectValue placeholder="Select Status" />
+          {/* Pagination */}
+          <div className="flex items-center justify-between gap-4 px-4 py-2 border-t">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Rows per page</span>
+              <Select
+                value={`${perPage}`}
+                onValueChange={(v) => {
+                  setPerPage(Number(v));
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-8 w-16">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectGroup>
-                    {invoiceStatuses.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+                  {[5, 10, 20, 50].map((size) => (
+                    <SelectItem key={size} value={`${size}`}>
+                      {size}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center gap-1">
+              <span className="text-sm text-muted-foreground">
+                Page {page} of {totalPages}
+              </span>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+              >
+                <ChevronsLeft />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                <ChevronLeft />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+              >
+                <ChevronRight />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => setPage(totalPages)}
+                disabled={page >= totalPages}
+              >
+                <ChevronsRight />
+              </Button>
+            </div>
           </div>
-        </div>
-        <div className="w-full overflow-auto">
-          <Table>
-            <TableHeader className="bg-muted/50">
-              <TableRow>
-                <TableHead className="w-[100px]">ID</TableHead>
-                <TableHead>Order No</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Printed At</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {finalInvoices.length > 0 ? (
-                finalInvoices.map((invoice: any) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium text-xs">#{invoice.id}</TableCell>
-                    <TableCell className="font-mono text-sm">{invoice.order_no}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        {invoice.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getBadgeColor(invoice.type)} variant="secondary">
-                        <div className="flex items-center gap-1.5 capitalize">
-                          {getTypeIcon(invoice.type)}
-                          {invoice.type}
-                        </div>
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground text-sm">
-                      {format(new Date(invoice.created_at), "MMM dd, yyyy - hh:mm a")}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    No invoices printed yet.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -409,8 +460,8 @@ function InvoiceSkeleton() {
         <Skeleton className="h-8 w-64 rounded-md" />
         <Skeleton className="h-4 w-48 rounded-md" />
       </div>
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="rounded-xl border bg-card p-4 space-y-3">
             <div className="flex justify-between items-center">
               <Skeleton className="h-4 w-20 rounded" />
