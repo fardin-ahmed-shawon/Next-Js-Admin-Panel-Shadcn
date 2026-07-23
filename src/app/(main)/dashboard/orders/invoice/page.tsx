@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { orderStatusVariant, paymentBadge, SendCourierCell } from "../_components/orders-table";
+import { ArrowUpDown } from "lucide-react";
 
 const invoiceTypes = ["All", "a4", "pos", "label"];
 
@@ -60,6 +61,8 @@ export default function InvoiceDashboardPage() {
 
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(10);
+  const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("desc");
+  const [orderDateFilter, setOrderDateFilter] = React.useState("");
 
   const filters = React.useMemo(() => {
     let from_date = "";
@@ -75,16 +78,18 @@ export default function InvoiceDashboardPage() {
     return {
       search: searchQuery,
       type: activeTypeFilter,
-      from_date,
-      to_date,
+      fromDate: from_date,
+      toDate: to_date,
+      sort: sortOrder,
+      orderDate: orderDateFilter,
     };
-  }, [timeRange, customFrom, customTo, searchQuery, activeTypeFilter]);
+  }, [timeRange, customFrom, customTo, searchQuery, activeTypeFilter, sortOrder, orderDateFilter]);
 
   React.useEffect(() => {
     setPage(1);
   }, [filters]);
 
-  const { data: response, isLoading } = useInvoices(page, perPage, filters);
+  const { data: response, isLoading } = useInvoices({ page, perPage, ...filters });
 
   if (isLoading && !response) {
     return <InvoiceSkeleton />;
@@ -301,7 +306,17 @@ export default function InvoiceDashboardPage() {
               <TableHeader className="bg-muted/50">
                 <TableRow>
                   <TableHead className="w-[100px]">SL No</TableHead>
-                  <TableHead>Order No</TableHead>
+                  <TableHead>
+                    <div className="flex flex-col gap-1.5 py-1">
+                      <span>Order No</span>
+                      <Input
+                        type="date"
+                        className="h-7 text-xs w-[125px] px-2 py-1"
+                        value={orderDateFilter}
+                        onChange={(e) => setOrderDateFilter(e.target.value)}
+                      />
+                    </div>
+                  </TableHead>
                   <TableHead>Invoice Status</TableHead>
                   <TableHead>Order Status</TableHead>
                   <TableHead>Payment</TableHead>
