@@ -31,9 +31,10 @@ interface UseInvoicesOptions {
   toDate?: string | null;
   sort?: string;
   orderDate?: string;
+  courier?: string;
 }
 
-export function useInvoices({ page = 1, perPage = 20, type = "All", search = "", fromDate, toDate, sort = "desc", orderDate = "" }: UseInvoicesOptions = {}) {
+export function useInvoices({ page = 1, perPage = 20, type = "All", search = "", fromDate, toDate, sort = "desc", orderDate = "", courier = "All" }: UseInvoicesOptions = {}) {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const invoicesEndpoint = process.env.NEXT_PUBLIC_API_WEB_INVOICES || "invoices";
 
@@ -46,6 +47,7 @@ export function useInvoices({ page = 1, perPage = 20, type = "All", search = "",
     ...(toDate && { to_date: toDate }),
     ...(orderDate && { order_date: orderDate }),
     sort,
+    ...(courier !== "All" && { courier }),
   });
 
   const url = `${baseUrl}${invoicesEndpoint}?${queryParams.toString()}`;

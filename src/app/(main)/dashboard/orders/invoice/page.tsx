@@ -83,8 +83,9 @@ export default function InvoiceDashboardPage() {
       toDate: to_date,
       sort: sortOrder,
       orderDate: orderDateFilter,
+      courier: courierFilter,
     };
-  }, [timeRange, customFrom, customTo, searchQuery, activeTypeFilter, sortOrder, orderDateFilter]);
+  }, [timeRange, customFrom, customTo, searchQuery, activeTypeFilter, sortOrder, orderDateFilter, courierFilter]);
 
   React.useEffect(() => {
     setPage(1);
@@ -97,24 +98,6 @@ export default function InvoiceDashboardPage() {
   }
 
   const finalInvoices = response?.data?.data || [];
-
-  const filteredInvoices = React.useMemo(() => {
-    if (!finalInvoices || finalInvoices.length === 0) return [];
-    if (courierFilter === "All") return finalInvoices;
-    return finalInvoices.filter((inv: any) => {
-      const order = inv.order || {};
-      const hasSteadfast = !!order.steadfast_parcel || !!order.steadfastParcel;
-      const hasPathao = !!order.pathao_parcel || !!order.pathaoParcel;
-      const hasRedx = !!order.redx_parcel || !!order.redxParcel;
-
-      if (courierFilter === "Steadfast") return hasSteadfast;
-      if (courierFilter === "Pathao") return hasPathao;
-      if (courierFilter === "RedX") return hasRedx;
-      if (courierFilter === "Pending") return !hasSteadfast && !hasPathao && !hasRedx;
-      return true;
-    });
-  }, [finalInvoices, courierFilter]);
-
   const totalPages = response?.data?.last_page || 1;
   const totalCount = response?.data?.total || 0;
 
@@ -147,7 +130,7 @@ export default function InvoiceDashboardPage() {
   };
 
   const filterLabel = activeTypeFilter === "All" ? "All Invoices" : `${activeTypeFilter} Invoices`;
-  const countDescription = `${filteredInvoices.length} invoices`;
+  const countDescription = `${totalCount} invoices`;
 
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -361,8 +344,8 @@ export default function InvoiceDashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInvoices.length > 0 ? (
-                  filteredInvoices.map((invoice: any, index: number) => {
+                {finalInvoices.length > 0 ? (
+                  finalInvoices.map((invoice: any, index: number) => {
                     const order = invoice.order || {};
                     return (
                       <TableRow key={invoice.id}>
