@@ -79,6 +79,8 @@ export const OrderContext = React.createContext<{
   setStatusFilter: (s: string) => void;
   paymentFilter: string;
   setPaymentFilter: (s: string) => void;
+  courierFilter: string;
+  setCourierFilter: (s: string) => void;
   page: number;
   setPage: (p: number) => void;
   perPage: number;
@@ -99,6 +101,8 @@ export const OrderContext = React.createContext<{
   setStatusFilter: () => { },
   paymentFilter: "All",
   setPaymentFilter: () => { },
+  courierFilter: "All",
+  setCourierFilter: () => { },
   page: 1,
   setPage: () => { },
   perPage: 20,
@@ -122,6 +126,7 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("Pending");
   const [paymentFilter, setPaymentFilter] = React.useState("All");
+  const [courierFilter, setCourierFilter] = React.useState("All");
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(20);
 
@@ -138,6 +143,7 @@ export default function OrdersPage() {
       search: debouncedSearch,
       status: statusFilter,
       payment_status: paymentFilter,
+      courier: courierFilter,
       all_orders: allOrdersToggle,
     };
 
@@ -167,7 +173,7 @@ export default function OrdersPage() {
     }
 
     return p;
-  }, [page, perPage, debouncedSearch, statusFilter, paymentFilter, allOrdersToggle, timeRange, customFrom, customTo]);
+  }, [page, perPage, debouncedSearch, statusFilter, paymentFilter, courierFilter, allOrdersToggle, timeRange, customFrom, customTo]);
 
   const { orders, summary, pagination, isLoading } = useOrders(params);
 
@@ -274,7 +280,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <OrderContext.Provider value={{ params, searchQuery, setSearchQuery, statusFilter, setStatusFilter, paymentFilter, setPaymentFilter, page, setPage, perPage, setPerPage, timeRange, setTimeRange, customFrom, setCustomFrom, customTo, setCustomTo, pagination, summary }}>
+    <OrderContext.Provider value={{ params, searchQuery, setSearchQuery, statusFilter, setStatusFilter, paymentFilter, setPaymentFilter, courierFilter, setCourierFilter, page, setPage, perPage, setPerPage, timeRange, setTimeRange, customFrom, setCustomFrom, customTo, setCustomTo, pagination, summary }}>
       <div className="flex flex-col gap-6 w-full">
         {/* Header + Toolbar combined */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

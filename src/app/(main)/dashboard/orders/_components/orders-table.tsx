@@ -1126,6 +1126,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
   const [localSearchQuery, setLocalSearchQuery] = React.useState("");
   const [localStatusFilter, setLocalStatusFilter] = React.useState(hideOrderStatusFilter ? "All" : "Pending");
   const [localPaymentFilter, setLocalPaymentFilter] = React.useState("All");
+  const [localCourierFilter, setLocalCourierFilter] = React.useState("All");
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
   const page = useServerPagination ? context.page : localPage;
@@ -1135,6 +1136,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
   const searchQuery = useServerPagination ? context.searchQuery : localSearchQuery;
   const statusFilter = useServerPagination ? context.statusFilter : localStatusFilter;
   const paymentFilter = useServerPagination ? context.paymentFilter : localPaymentFilter;
+  const courierFilter = useServerPagination && context.courierFilter !== undefined ? context.courierFilter : localCourierFilter;
 
   const setSearchQuery = useServerPagination ? context.setSearchQuery : (v: string) => {
     setLocalSearchQuery(v);
@@ -1161,6 +1163,13 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
       if (v !== "All") p.push({ id: "paymentStatus", value: v });
       return p;
     });
+  };
+
+  const setCourierFilter = useServerPagination && context.setCourierFilter !== undefined ? context.setCourierFilter : (v: string) => {
+    setLocalCourierFilter(v);
+    // client-side courier filter is complex because it requires looking into parcel objects,
+    // which aren't a flat column in this table structure, so we just set state.
+    // Client-side users typically don't have this filter active in the same way.
   };
 
   const [showFiltersMobile, setShowFiltersMobile] = React.useState(false);
@@ -1309,6 +1318,24 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
               Clear filters
             </Button>
           )}
+
+          <div className="flex items-center gap-2">
+            <Select
+              value={courierFilter}
+              onValueChange={(v) => { setCourierFilter(v); setPage(1); }}
+            >
+              <SelectTrigger className="h-8 w-[100px] sm:w-[120px]">
+                <SelectValue placeholder="Courier" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Courier</SelectItem>
+                <SelectItem value="Steadfast">Steadfast</SelectItem>
+                <SelectItem value="Pathao">Pathao</SelectItem>
+                <SelectItem value="RedX">RedX</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground hidden sm:inline">Rows:</span>

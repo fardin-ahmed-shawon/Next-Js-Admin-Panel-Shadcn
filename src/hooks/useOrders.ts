@@ -44,6 +44,7 @@ interface UseOrdersParams {
   all_orders?: boolean;
   start_date?: string;
   end_date?: string;
+  courier?: string;
 }
 
 export function useOrders(params?: UseOrdersParams) {
@@ -61,6 +62,7 @@ export function useOrders(params?: UseOrdersParams) {
   if (params?.all_orders) searchParams.append("all_orders", "1");
   if (params?.start_date) searchParams.append("start_date", params.start_date);
   if (params?.end_date) searchParams.append("end_date", params.end_date);
+  if (params?.courier && params.courier !== "All") searchParams.append("courier", params.courier);
 
   const queryString = searchParams.toString() ? `?${searchParams.toString()}` : "";
   const url = `${baseUrl}${ordersEndpoint}${queryString}`;
