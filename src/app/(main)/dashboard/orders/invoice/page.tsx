@@ -370,8 +370,21 @@ export default function InvoiceDashboardPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {order.id ? (
-                            <SendCourierCell row={{ original: order }} readOnly />
+                          {order.order_no || order.id ? (
+                            <SendCourierCell
+                              row={{
+                                original: {
+                                  ...order,
+                                  id: order.order_no || order.id,
+                                  orderStatus: order.order_status,
+                                  steadfast_parcel: order.steadfast_parcel || order.steadfastParcel || null,
+                                  pathao_parcel: order.pathao_parcel || order.pathaoParcel || null,
+                                  redx_parcel: order.redx_parcel || order.redxParcel || null,
+                                  courier_details: order.courier_details || null,
+                                },
+                              }}
+                              readOnly
+                            />
                           ) : (
                             <span className="text-muted-foreground text-xs">N/A</span>
                           )}
