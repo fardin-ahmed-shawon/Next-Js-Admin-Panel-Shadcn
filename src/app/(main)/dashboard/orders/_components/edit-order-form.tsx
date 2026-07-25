@@ -1863,12 +1863,12 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                                   }
                                   toast.success(`Order ${order.order_no} sent to RedX`, { id: toastId });
 
-                                  // Automation: Update order status to "In-Courier"
+                                  // Automation: Update order status to "Ready To Ship"
                                   try {
                                     await fetchClient(`${baseUrl}orders/bulk-update-status`, {
                                       method: "POST",
                                       headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ order_nos: [order.order_no], order_status: "In-Courier" }),
+                                      body: JSON.stringify({ order_nos: [order.order_no], order_status: "Ready To Ship" }),
                                     });
                                   } catch (e) {
                                     console.warn("Failed to automatically update order status", e);

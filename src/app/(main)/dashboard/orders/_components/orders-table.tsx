@@ -413,15 +413,15 @@ export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolea
               }
               toast.success(`Order ${row.original.id} sent to RedX`, { id: toastId });
 
-              // Automation: Update order status to "In-Courier"
+              // Automation: Update order status to "Ready To Ship"
               try {
                 await fetchClient(`${getApiBaseUrl()}orders/bulk-update-status`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ order_nos: [row.original.id], order_status: "In-Courier" }),
+                  body: JSON.stringify({ order_nos: [row.original.id], order_status: "Ready To Ship" }),
                 });
               } catch (e) {
-                console.warn("Failed to update status to In-Courier", e);
+                console.warn("Failed to update status to Ready To Ship", e);
               }
 
               invalidateOrders();
