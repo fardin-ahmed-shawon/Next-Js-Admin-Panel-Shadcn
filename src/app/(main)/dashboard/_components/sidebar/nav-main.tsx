@@ -195,7 +195,7 @@ export function NavMain({ items }: NavMainProps) {
 
   return (
     <>
-      <SidebarGroup>
+      {/* <SidebarGroup>
         <SidebarGroupLabel className="text-xs font-semibold text-primary/80">Coming Soon</SidebarGroupLabel>
         <SidebarGroupContent className="flex flex-col gap-2">
           <SidebarMenu>
@@ -211,7 +211,7 @@ export function NavMain({ items }: NavMainProps) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
-      </SidebarGroup>
+      </SidebarGroup> */}
       {items.map((group) => (
         <SidebarGroup key={group.id}>
           {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
