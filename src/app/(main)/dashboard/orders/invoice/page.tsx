@@ -58,6 +58,7 @@ export default function InvoiceDashboardPage() {
   const [customTo, setCustomTo] = React.useState("");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [activeTypeFilter, setActiveTypeFilter] = React.useState("All");
+  const [courierFilter, setCourierFilter] = React.useState("All");
 
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(10);
@@ -96,6 +97,24 @@ export default function InvoiceDashboardPage() {
   }
 
   const finalInvoices = response?.data?.data || [];
+
+  const filteredInvoices = React.useMemo(() => {
+    if (!finalInvoices || finalInvoices.length === 0) return [];
+    if (courierFilter === "All") return finalInvoices;
+    return finalInvoices.filter((inv: any) => {
+      const order = inv.order || {};
+      const hasSteadfast = !!order.steadfast_parcel || !!order.steadfastParcel;
+      const hasPathao = !!order.pathao_parcel || !!order.pathaoParcel;
+      const hasRedx = !!order.redx_parcel || !!order.redxParcel;
+
+      if (courierFilter === "Steadfast") return hasSteadfast;
+      if (courierFilter === "Pathao") return hasPathao;
+      if (courierFilter === "RedX") return hasRedx;
+      if (courierFilter === "Pending") return !hasSteadfast && !hasPathao && !hasRedx;
+      return true;
+    });
+  }, [finalInvoices, courierFilter]);
+
   const totalPages = response?.data?.last_page || 1;
   const totalCount = response?.data?.total || 0;
 
@@ -128,7 +147,7 @@ export default function InvoiceDashboardPage() {
   };
 
   const filterLabel = activeTypeFilter === "All" ? "All Invoices" : `${activeTypeFilter} Invoices`;
-  const countDescription = `${totalCount} invoices`;
+  const countDescription = `${filteredInvoices.length} invoices`;
 
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -180,7 +199,7 @@ export default function InvoiceDashboardPage() {
               </div>
             )}
           </div>
-          
+
           {/* Custom date inputs - mobile */}
           {timeRange === "custom" && (
             <div className="flex sm:hidden items-center gap-2 w-full">
@@ -286,10 +305,26 @@ export default function InvoiceDashboardPage() {
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>
-              
-              {(activeTypeFilter !== "All" || searchQuery || (timeRange !== "alltime")) && (
+
+              <Select value={courierFilter} onValueChange={setCourierFilter}>
+                <SelectTrigger className="w-32 h-9 text-xs shrink-0">
+                  <SelectValue placeholder="Courier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="All">All Couriers</SelectItem>
+                    <SelectItem value="Steadfast">Steadfast</SelectItem>
+                    <SelectItem value="Pathao">Pathao</SelectItem>
+                    <SelectItem value="RedX">RedX</SelectItem>
+                    <SelectItem value="Pending">Not Sent</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
+              {(activeTypeFilter !== "All" || courierFilter !== "All" || searchQuery || (timeRange !== "alltime")) && (
                 <Button variant="secondary" size="sm" className="h-8 shrink-0" onClick={() => {
                   setActiveTypeFilter("All");
+                  setCourierFilter("All");
                   setSearchQuery("");
                   setTimeRange("alltime");
                   setCustomFrom("");
@@ -300,7 +335,7 @@ export default function InvoiceDashboardPage() {
               )}
             </div>
           </div>
-          
+
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-muted/50">
@@ -326,8 +361,8 @@ export default function InvoiceDashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {finalInvoices.length > 0 ? (
-                  finalInvoices.map((invoice: any, index: number) => {
+                {filteredInvoices.length > 0 ? (
+                  filteredInvoices.map((invoice: any, index: number) => {
                     const order = invoice.order || {};
                     return (
                       <TableRow key={invoice.id}>
@@ -389,14 +424,14 @@ export default function InvoiceDashboardPage() {
                             <span className="text-muted-foreground text-xs">N/A</span>
                           )}
                         </TableCell>
-                      <TableCell>
-                        <Badge className={getBadgeColor(invoice.type)} variant="secondary">
-                          <div className="flex items-center gap-1.5 capitalize">
-                            {getTypeIcon(invoice.type)}
-                            {invoice.type}
-                          </div>
-                        </Badge>
-                      </TableCell>
+                        <TableCell>
+                          <Badge className={getBadgeColor(invoice.type)} variant="secondary">
+                            <div className="flex items-center gap-1.5 capitalize">
+                              {getTypeIcon(invoice.type)}
+                              {invoice.type}
+                            </div>
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-right text-muted-foreground text-sm">
                           {format(new Date(invoice.created_at.replace("Z", "")), "MMM dd, yyyy - hh:mm a")}
                         </TableCell>

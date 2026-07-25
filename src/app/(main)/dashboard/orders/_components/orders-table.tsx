@@ -279,8 +279,15 @@ export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolea
       }
     }
 
+    const courierName = hasSteadfastParcel ? "Steadfast" : hasPathaoParcel ? "Pathao" : hasRedxParcel ? "RedX" : "";
+
     return (
       <div className="flex flex-col gap-1.5 w-[135px] items-center select-none">
+        {courierName && (
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            {courierName}
+          </span>
+        )}
         <Badge
           variant="outline"
           className={`text-[11px] font-bold px-2 py-0.5 rounded border justify-center w-full text-center ${statusClass}`}
