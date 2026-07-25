@@ -337,11 +337,11 @@ export default function InvoiceDashboardPage() {
                             <span className="font-mono text-sm">{invoice.order_no}</span>
                             {order.created_at ? (
                               <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                                {format(new Date(order.created_at), "yyyy-MM-dd · hh:mm a")}
+                                {format(new Date(order.created_at.replace("Z", "")), "yyyy-MM-dd · hh:mm a")}
                               </span>
                             ) : (
                               <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                                {format(new Date(invoice.created_at), "yyyy-MM-dd · hh:mm a")}
+                                {format(new Date(invoice.created_at.replace("Z", "")), "yyyy-MM-dd · hh:mm a")}
                               </span>
                             )}
                           </div>
@@ -398,7 +398,7 @@ export default function InvoiceDashboardPage() {
                         </Badge>
                       </TableCell>
                         <TableCell className="text-right text-muted-foreground text-sm">
-                          {format(new Date(invoice.created_at), "MMM dd, yyyy - hh:mm a")}
+                          {format(new Date(invoice.created_at.replace("Z", "")), "MMM dd, yyyy - hh:mm a")}
                         </TableCell>
                       </TableRow>
                     );
