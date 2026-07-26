@@ -64,6 +64,7 @@ import { usePathaoSetup } from "@/hooks/usePathaoSetup";
 import { useRedxSetup } from "@/hooks/useRedxSetup";
 import useProducts, { type Product } from "@/hooks/useProducts";
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
+import { useOrders } from "@/hooks/useOrders";
 import { fetchClient } from "@/lib/fetch-client";
 import { usePrintModal } from "@/hooks/usePrintModal";
 
@@ -487,6 +488,8 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
   const { data: steadfastConfig } = useSteadfastSetup();
   const { data: pathaoConfig } = usePathaoSetup();
   const { data: redxConfig } = useRedxSetup();
+
+  const { orders: phoneMatchedOrders } = useOrders({ search: order?.customer_phone, all_orders: true });
 
   const isSteadfastActive = steadfastConfig?.is_active === 1;
   const isPathaoActive = pathaoConfig?.status === "active";
@@ -955,7 +958,8 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
   }
 
   /* ---- render ---- */
-  const customerOrders: CustomerOrder[] = order.customer?.orders ?? [];
+  // Filter out the current order from the matching list
+  const customerOrders: CustomerOrder[] = (phoneMatchedOrders as any[]).filter(o => o.order_no !== order?.order_no) ?? [];
   const parcelHistory = order.customer?.parcel_history;
 
   const steadfastParcel = order?.steadfast_parcel || order?.steadfastParcel || null;
@@ -1658,7 +1662,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {parcelHistory ? (
+                  {order.customer_id !== 0 && parcelHistory ? (
                     <div className="space-y-3">
                       <div className="grid grid-cols-3 gap-2 text-center text-sm">
                         <div className="flex flex-col rounded-lg bg-muted/40 p-2">
@@ -1694,11 +1698,55 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                     </div>
                   ) : (
                     <p className="text-xs text-muted-foreground italic text-center py-2">
-                      No system order metrics available.
+                      {order.customer_id === 0 ? "Guest order - no system history." : "No system order metrics available."}
                     </p>
                   )}
                 </CardContent>
               </Card>
+
+              {/* Customer Summary */}
+              {order.customer_id !== 0 ? (
+                  <Card className="shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Customer Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-6">
+                      <div className="flex items-center gap-4">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted font-semibold text-muted-foreground">
+                          {order.customer?.name ? initials : <User className="size-5" />}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{order.customer?.name || "Unknown"}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {order.customer?.phone || order.customer_phone}
+                          </span>
+                        </div>
+                      </div>
+                      <Separator />
+                      <div className="grid gap-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Total orders</span>
+                          <span className="font-semibold text-base">{parcelHistory?.total ?? 0}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Total delivered</span>
+                          <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                            {parcelHistory?.delivered ?? 0}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Customer Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">This is a guest order. No registered customer data available.</p>
+                    </CardContent>
+                  </Card>
+                )}
 
               {/* Shipping Address Card */}
               <Card>
@@ -1979,7 +2027,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
           </div>
         </TabsContent>
 
-        {/* â”€â”€â”€ CUSTOMER HISTORY TAB â”€â”€â”€ */}
+        {/* ——— CUSTOMER HISTORY TAB ——— */}
         <TabsContent value="history">
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 flex flex-col gap-4">
@@ -1987,7 +2035,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <History className="size-5" />
-                    All Orders by {order.customer_full_name}
+                    All Orders by {order.customer_phone}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1998,55 +2046,66 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
 
             <div className="flex flex-col gap-6">
               {/* Customer Summary Card inside history tab */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Customer Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="size-12 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center">
-                      <span className="text-base font-bold text-muted-foreground">{initials}</span>
+              {order.customer_id !== 0 ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Customer Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="size-12 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center">
+                        <span className="text-base font-bold text-muted-foreground">{initials}</span>
+                      </div>
+                      <div>
+                        <p className="font-semibold">{order.customer_full_name}</p>
+                        <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold">{order.customer_full_name}</p>
-                      <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
-                    </div>
-                  </div>
 
-                  <Separator />
+                    <Separator />
 
-                  <div className="flex flex-col gap-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total orders</span>
-                      <span className="font-semibold">{customerOrders.length}</span>
+                    <div className="flex flex-col gap-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Total orders</span>
+                        <span className="font-semibold">{customerOrders.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Total spent</span>
+                        <span className="font-semibold tabular-nums">
+                          ৳{customerOrders.reduce((sum, o) => sum + Number(o.grand_total_amount), 0).toLocaleString()}
+                        </span>
+                      </div>
+                      {parcelHistory && (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Delivered</span>
+                            <span className="font-semibold text-green-600 dark:text-green-400">
+                              {parcelHistory.delivered ?? 0}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Cancelled</span>
+                            <span className="font-semibold text-destructive">{parcelHistory.cancelled ?? 0}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Success rate</span>
+                            <span className="font-semibold">{parcelHistory.success_rate ?? 0}%</span>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total spent</span>
-                      <span className="font-semibold tabular-nums">
-                        ৳{customerOrders.reduce((sum, o) => sum + Number(o.grand_total_amount), 0).toLocaleString()}
-                      </span>
-                    </div>
-                    {parcelHistory && (
-                      <>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Delivered</span>
-                          <span className="font-semibold text-green-600 dark:text-green-400">
-                            {parcelHistory.delivered ?? 0}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Cancelled</span>
-                          <span className="font-semibold text-destructive">{parcelHistory.cancelled ?? 0}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Success rate</span>
-                          <span className="font-semibold">{parcelHistory.success_rate ?? 0}%</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Customer Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">This is a guest order. No registered customer data available.</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </TabsContent>

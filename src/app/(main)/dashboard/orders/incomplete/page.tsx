@@ -176,6 +176,7 @@ export default function IncompleteOrdersPage() {
             cancelled: order.customer?.parcel_history?.cancelled || 0,
             successRate: order.customer?.parcel_history?.success_rate || "0",
           },
+          previousOrdersCountByPhone: order.previous_orders_count_by_phone || 0,
           ipAddress: order.customer_ip_address || "—",
           createdAt: order.created_at,
         };
