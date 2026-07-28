@@ -1,4 +1,5 @@
 "use client";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 import * as React from "react";
 import { CalendarIcon, Download, Search, Package, ArrowUpDown, ChevronDown } from "lucide-react";
@@ -45,6 +46,15 @@ const rangeLabels: Record<TimeRange, string> = {
 };
 
 export default function ParcelReportPage() {
+  const { features } = useModularFeatures();
+  if (features?.reports_parcel === false || String(features?.reports_parcel) === "0") {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
+        <h2 className="text-2xl font-bold">Feature Disabled</h2>
+        <p className="text-muted-foreground mt-2">This report feature is currently disabled.</p>
+      </div>
+    );
+  }
   const [timeRange, setTimeRange] = React.useState<TimeRange>("all_time");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");

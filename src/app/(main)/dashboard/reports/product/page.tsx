@@ -1,4 +1,5 @@
 "use client";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 import * as React from "react";
 import { CalendarIcon, Download, Search } from "lucide-react";
@@ -39,6 +40,15 @@ const orderStatuses = [
 ];
 
 export default function ProductReportPage() {
+  const { features } = useModularFeatures();
+  if (features?.reports_product === false || String(features?.reports_product) === "0") {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
+        <h2 className="text-2xl font-bold">Feature Disabled</h2>
+        <p className="text-muted-foreground mt-2">This report feature is currently disabled.</p>
+      </div>
+    );
+  }
   const [timeRange, setTimeRange] = React.useState<TimeRange>("all_time");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");

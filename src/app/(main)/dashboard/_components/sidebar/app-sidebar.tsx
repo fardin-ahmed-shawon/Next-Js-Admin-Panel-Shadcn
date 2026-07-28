@@ -105,6 +105,15 @@ export function AppSidebar({
             if (subItem.url === "/dashboard/orders/assign-orders" && features && (features.employee_management === false || String(features.employee_management) === "0")) {
               return false;
             }
+            if (subItem.url === "/dashboard/reports/product" && features && (features.reports_product === false || String(features.reports_product) === "0")) return false;
+            if (subItem.url === "/dashboard/reports/product-percent" && features && (features.reports_product_percent === false || String(features.reports_product_percent) === "0")) return false;
+            if (subItem.url === "/dashboard/reports/customer" && features && (features.reports_customer === false || String(features.reports_customer) === "0")) return false;
+            if (subItem.url === "/dashboard/reports/employee" && features && (features.reports_employee === false || String(features.reports_employee) === "0")) return false;
+            if (subItem.url === "/dashboard/reports/payment" && features && (features.reports_payment === false || String(features.reports_payment) === "0")) return false;
+            if (subItem.url === "/dashboard/reports/parcel" && features && (features.reports_parcel === false || String(features.reports_parcel) === "0")) return false;
+            if (subItem.url === "/dashboard/reports/courier" && features && (features.reports_courier === false || String(features.reports_courier) === "0")) return false;
+            if (subItem.url === "/dashboard/reports/inventory" && features && (features.reports_inventor === false || String(features.reports_inventor) === "0" || features.reports_inventory === false || String(features.reports_inventory) === "0")) return false;
+
             const requiredModule = subItem.module || item.module;
             if (!requiredModule) return true;
             return hasModuleAccess(user, requiredModule);
