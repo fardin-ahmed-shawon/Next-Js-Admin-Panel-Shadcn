@@ -26,6 +26,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchClient } from "@/lib/fetch-client";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 interface ProductStockAdjustmentModalProps {
   open: boolean;
@@ -53,7 +54,10 @@ export function ProductStockAdjustmentModal({
   item,
   mutate,
 }: ProductStockAdjustmentModalProps) {
-  const [activeTab, setActiveTab] = React.useState("new-lot");
+  const { features } = useModularFeatures();
+  const allowMultipleLot = features?.inventory_multiple_lot !== false && String(features?.inventory_multiple_lot) !== "0";
+
+  const [activeTab, setActiveTab] = React.useState(allowMultipleLot ? "new-lot" : "adjust-lots");
 
   // New Lot State
   const [newPurchasePrice, setNewPurchasePrice] = React.useState("");
@@ -71,7 +75,7 @@ export function ProductStockAdjustmentModal({
 
   React.useEffect(() => {
     if (open) {
-      setActiveTab("new-lot");
+      setActiveTab(allowMultipleLot ? "new-lot" : "adjust-lots");
       resetNewLotForm();
       const fetchLots = async () => {
         setLoadingLots(true);
@@ -249,12 +253,13 @@ export function ProductStockAdjustmentModal({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="new-lot">Procure New Stock</TabsTrigger>
+          <TabsList className={allowMultipleLot ? "grid w-full grid-cols-2" : "grid w-full grid-cols-1"}>
+            {allowMultipleLot && <TabsTrigger value="new-lot">Procure New Stock</TabsTrigger>}
             <TabsTrigger value="adjust-lots">Adjust Existing Lots</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="new-lot" className="mt-4 flex-1 overflow-y-auto pr-2">
+          {allowMultipleLot && (
+            <TabsContent value="new-lot" className="mt-4 flex-1 overflow-y-auto pr-2">
             <form onSubmit={handleAddNewLot} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -295,6 +300,7 @@ export function ProductStockAdjustmentModal({
               </div>
             </form>
           </TabsContent>
+          )}
 
           <TabsContent value="adjust-lots" className="mt-4 flex-1 flex flex-col min-h-0">
             <div className="flex-1 overflow-y-auto pr-2 space-y-4 pb-4">

@@ -36,6 +36,7 @@ import {
 import { fetchClient } from "@/lib/fetch-client";
 import { ProcurementModal } from "./_components/procurement-modal";
 import { ProcurementEditModal } from "./_components/procurement-edit-modal";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 interface Lot {
   id: number;
@@ -73,6 +74,7 @@ const getImageUrl = (path: string | null | undefined) => {
 };
 
 export default function ProcurementPage() {
+  const { features } = useModularFeatures();
   const [lots, setLots] = React.useState<Lot[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [page, setPage] = React.useState(1);
@@ -253,7 +255,9 @@ export default function ProcurementPage() {
               <SelectItem value="yearly">Yearly</SelectItem>
             </SelectContent>
           </Select>
-          <ProcurementModal onSuccess={fetchLots} />
+          {features?.inventory_multiple_lot !== false && String(features?.inventory_multiple_lot) !== "0" && (
+            <ProcurementModal onSuccess={fetchLots} />
+          )}
         </div>
       </div>
 
