@@ -1,9 +1,11 @@
+"use client";
+
 import { useModularFeatures } from "@/hooks/useModularFeatures";
 import { Hourglass } from "lucide-react";
 
 export default function InventoryReportComingSoonPage() {
   const { features } = useModularFeatures();
-  if (reports_inventor === false || String(features?.reports_inventor) === "0" || features?.reports_inventory === false || String(features?.reports_inventory) === "0") {
+  if (features?.reports_inventory === false || String(features?.reports_inventory) === "0") {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
         <h2 className="text-2xl font-bold">Feature Disabled</h2>
