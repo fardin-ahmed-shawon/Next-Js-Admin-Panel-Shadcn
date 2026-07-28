@@ -96,6 +96,15 @@ export function AppSidebar({
             if (subItem.url === "/dashboard/orders/create" && features && (features.orders_manual_create === false || String(features.orders_manual_create) === "0")) {
               return false;
             }
+            if (subItem.url === "/dashboard/orders/incomplete" && features && (features.orders_incomplete === false || String(features.orders_incomplete) === "0")) {
+              return false;
+            }
+            if (subItem.url === "/dashboard/auto-order" && features && (features.employee_management === false || String(features.employee_management) === "0" || features.employee_auto_order_distribution === false || String(features.employee_auto_order_distribution) === "0")) {
+              return false;
+            }
+            if (subItem.url === "/dashboard/orders/assign-orders" && features && (features.employee_management === false || String(features.employee_management) === "0")) {
+              return false;
+            }
             const requiredModule = subItem.module || item.module;
             if (!requiredModule) return true;
             return hasModuleAccess(user, requiredModule);

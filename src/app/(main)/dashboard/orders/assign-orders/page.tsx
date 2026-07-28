@@ -7,7 +7,19 @@ import { useEmployeeOrders, EmployeeOrder } from "@/hooks/useEmployeeOrders";
 import { AssignOrdersTable } from "./_components/assign-orders-table";
 import { AssignOrderDialog } from "./_components/assign-order-dialog";
 
+import { useModularFeatures } from "@/hooks/useModularFeatures";
+
 export default function AssignOrdersPage() {
+  const { features } = useModularFeatures();
+  if (features?.employee_management === false || String(features?.employee_management) === "0") {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
+        <h2 className="text-2xl font-bold">Feature Disabled</h2>
+        <p className="text-muted-foreground mt-2">The Employee Management feature is currently disabled.</p>
+      </div>
+    );
+  }
+
   const { data: assignments, isLoading, deleteAssignment } = useEmployeeOrders();
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);

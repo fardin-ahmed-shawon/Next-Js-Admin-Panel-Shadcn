@@ -1256,6 +1256,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
         sendCourier: !incompleteOrdersMode,
         oStatus: !incompleteOrdersMode,
         actions: !hideActionsColumn,
+        assignedEmployee: features?.employee_management !== false && String(features?.employee_management) !== "0",
       },
     },
     meta: {
