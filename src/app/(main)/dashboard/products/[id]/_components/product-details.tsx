@@ -307,55 +307,57 @@ export function ProductDetails({ productId }: { productId: string }) {
               )}
 
               {/* SEO Settings Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base text-primary">SEO Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4 text-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
-                      <Search className="size-3" />
-                      Meta Title
-                    </p>
-                    <p className="font-medium">
-                      {product.metaTitle || <span className="text-muted-foreground italic">Not set</span>}
-                    </p>
-                  </div>
-                  <Separator />
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Meta Description</p>
-                    <p className="text-muted-foreground">
-                      {product.metaDescription || <span className="italic">Not set</span>}
-                    </p>
-                  </div>
-                  <Separator />
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
-                      <Tag className="size-3" />
-                      Keywords
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {product.metaKeywords.split(",").map((kw, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">
-                          {kw.trim()}
-                        </Badge>
-                      ))}
+              {features?.product_seo_settings !== false && String(features?.product_seo_settings) !== "0" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base text-primary">SEO Settings</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <Search className="size-3" />
+                        Meta Title
+                      </p>
+                      <p className="font-medium">
+                        {product.metaTitle || <span className="text-muted-foreground italic">Not set</span>}
+                      </p>
                     </div>
-                  </div>
-                  {product.canonicalUrl && (
-                    <>
-                      <Separator />
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
-                          <Globe className="size-3" />
-                          Youtube URL
-                        </p>
-                        <p className="text-xs text-primary break-all">{product.canonicalUrl}</p>
+                    <Separator />
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Meta Description</p>
+                      <p className="text-muted-foreground">
+                        {product.metaDescription || <span className="italic">Not set</span>}
+                      </p>
+                    </div>
+                    <Separator />
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <Tag className="size-3" />
+                        Keywords
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.metaKeywords.split(",").map((kw: string, i: number) => (
+                          <Badge key={i} variant="secondary" className="text-xs">
+                            {kw.trim()}
+                          </Badge>
+                        ))}
                       </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+                    </div>
+                    {product.canonicalUrl && (
+                      <>
+                        <Separator />
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
+                            <Globe className="size-3" />
+                            Youtube URL
+                          </p>
+                          <p className="text-xs text-primary break-all">{product.canonicalUrl}</p>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Right — Stats & Variants */}

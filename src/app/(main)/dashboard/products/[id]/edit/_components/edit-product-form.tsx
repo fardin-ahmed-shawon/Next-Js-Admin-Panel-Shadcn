@@ -778,29 +778,31 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
             </Card>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base text-primary">SEO Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <div className="space-y-2">
-                <Label>Meta Title</Label>
-                <Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Meta Description</Label>
-                <Textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Meta Keywords</Label>
-                <Input value={metaKeywords} onChange={(e) => setMetaKeywords(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Youtube URL</Label>
-                <Input value={canonicalUrl} onChange={(e) => setCanonicalUrl(e.target.value)} />
-              </div>
-            </CardContent>
-          </Card>
+          {features?.product_seo_settings !== false && String(features?.product_seo_settings) !== "0" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base text-primary">SEO Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-5">
+                <div className="space-y-2">
+                  <Label>Meta Title</Label>
+                  <Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Meta Description</Label>
+                  <Textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Meta Keywords</Label>
+                  <Input value={metaKeywords} onChange={(e) => setMetaKeywords(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Youtube URL</Label>
+                  <Input value={canonicalUrl} onChange={(e) => setCanonicalUrl(e.target.value)} />
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </>

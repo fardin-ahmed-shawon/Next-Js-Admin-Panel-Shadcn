@@ -933,62 +933,64 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
           )}
 
           {/* ---- SEO Settings ---- */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base text-primary">SEO Settings</CardTitle>
-              <CardDescription>Optimize how this product appears in search results.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <div className="space-y-2">
-                <Label htmlFor="meta-title" className="text-primary font-medium">
-                  Meta Title
-                </Label>
-                <Input
-                  id="meta-title"
-                  placeholder="Product Name | Your Store"
-                  value={metaTitle}
-                  onChange={(e) => setMetaTitle(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">{metaTitle.length}/60 characters recommended.</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="meta-desc" className="text-primary font-medium">
-                  Meta Description
-                </Label>
-                <Textarea
-                  id="meta-desc"
-                  placeholder="A compelling summary for search engines..."
-                  className="min-h-[80px] resize-y"
-                  value={metaDescription}
-                  onChange={(e) => setMetaDescription(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">{metaDescription.length}/160 characters recommended.</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="meta-keywords" className="text-primary font-medium">
-                  Meta Keywords
-                </Label>
-                <Input
-                  id="meta-keywords"
-                  placeholder="keyword1, keyword2, keyword3"
-                  value={metaKeywords}
-                  onChange={(e) => setMetaKeywords(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="canonical-url" className="text-primary font-medium">
-                  Youtube URL
-                </Label>
-                <Input
-                  id="canonical-url"
-                  placeholder="https://www.youtube.com/watch?v=xxxxxxxx"
-                  value={canonicalUrl}
-                  onChange={(e) => setCanonicalUrl(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">Set a Youtube URL.</p>
-              </div>
-            </CardContent>
-          </Card>
+          {features?.product_seo_settings !== false && String(features?.product_seo_settings) !== "0" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base text-primary">SEO Settings</CardTitle>
+                <CardDescription>Optimize how this product appears in search results.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-5">
+                <div className="space-y-2">
+                  <Label htmlFor="meta-title" className="text-primary font-medium">
+                    Meta Title
+                  </Label>
+                  <Input
+                    id="meta-title"
+                    placeholder="Product Name | Your Store"
+                    value={metaTitle}
+                    onChange={(e) => setMetaTitle(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">{metaTitle.length}/60 characters recommended.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="meta-desc" className="text-primary font-medium">
+                    Meta Description
+                  </Label>
+                  <Textarea
+                    id="meta-desc"
+                    placeholder="A compelling summary for search engines..."
+                    className="min-h-[80px] resize-y"
+                    value={metaDescription}
+                    onChange={(e) => setMetaDescription(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">{metaDescription.length}/160 characters recommended.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="meta-keywords" className="text-primary font-medium">
+                    Meta Keywords
+                  </Label>
+                  <Input
+                    id="meta-keywords"
+                    placeholder="keyword1, keyword2, keyword3"
+                    value={metaKeywords}
+                    onChange={(e) => setMetaKeywords(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="canonical-url" className="text-primary font-medium">
+                    Youtube URL
+                  </Label>
+                  <Input
+                    id="canonical-url"
+                    placeholder="https://www.youtube.com/watch?v=xxxxxxxx"
+                    value={canonicalUrl}
+                    onChange={(e) => setCanonicalUrl(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Set a Youtube URL.</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </>
