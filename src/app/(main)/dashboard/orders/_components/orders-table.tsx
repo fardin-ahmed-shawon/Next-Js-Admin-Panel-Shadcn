@@ -43,6 +43,7 @@ import {
   Truck,
   UserPlus,
   UserX,
+  Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 import { mutate } from "swr";
@@ -876,6 +877,9 @@ const columns: ColumnDef<OrderRow>[] = [
               </Badge>
             )}
           </div>
+          <div className="mt-1.5 w-full">
+            <AiAutoCallButton orderId={row.original.id} />
+          </div>
           <CustomerFraudSuccessRate phone={row.original.phone} />
         </div>
       </div>
@@ -1118,6 +1122,47 @@ export interface OrdersTableProps {
   hideActionsColumn?: boolean;
   useServerPagination?: boolean;
 }
+
+const AiAutoCallButton = ({ orderId }: { orderId: string }) => {
+  const [isCalling, setIsCalling] = React.useState(false);
+
+  const handleAiCall = async () => {
+    setIsCalling(true);
+    try {
+      const response = await fetchClient(`${getApiBaseUrl()}orders/${orderId}/ai-call`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        let errMsg = "Failed to trigger AI call";
+        try {
+          const errData = await response.json();
+          errMsg = errData.message || errMsg;
+        } catch(e) {}
+        throw new Error(errMsg);
+      }
+
+      toast.success("AI Auto Call triggered successfully!");
+    } catch (error: any) {
+      toast.error(error.message || "Something went wrong while triggering AI call.");
+    } finally {
+      setIsCalling(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-6 w-full gap-1 text-[10px] px-2 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 transition-colors"
+      onClick={handleAiCall}
+      disabled={isCalling}
+    >
+      {isCalling ? <Loader2 className="size-3 animate-spin" /> : <Bot className="size-3" />}
+      AI Auto Call
+    </Button>
+  );
+};
 
 export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus, incompleteOrdersMode, hideActionsColumn, useServerPagination }: OrdersTableProps) {
   const context = React.useContext(OrderContext);
