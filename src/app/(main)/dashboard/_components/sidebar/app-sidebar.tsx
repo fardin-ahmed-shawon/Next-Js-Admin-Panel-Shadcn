@@ -85,8 +85,11 @@ export function AppSidebar({
       .map((item) => {
         // Filter subItems first if they exist
         let filteredSubItems = item.subItems;
-        if (item.subItems) {
-          filteredSubItems = item.subItems.filter((subItem) => {
+        if (filteredSubItems) {
+          filteredSubItems = filteredSubItems.filter((subItem) => {
+            if (subItem.url === "/dashboard/products/attributes" && features && (features.variant_management === false || String(features.variant_management) === "0")) {
+              return false;
+            }
             const requiredModule = subItem.module || item.module;
             if (!requiredModule) return true;
             return hasModuleAccess(user, requiredModule);

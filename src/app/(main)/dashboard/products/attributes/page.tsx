@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 
@@ -14,8 +14,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import useAttributes, { type ColorAttribute, type SizeAttribute } from "@/hooks/useAttributes";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 export default function VariantAttributesPage() {
+  const { features } = useModularFeatures();
   const { colors, sizes, loading, error, createColor, createSize, updateColor, deleteColor, updateSize, deleteSize } = useAttributes();
 
   // Color inputs state
@@ -189,6 +191,16 @@ export default function VariantAttributesPage() {
     if (!sizes) return [];
     return sizes.filter((s: SizeAttribute) => s.label?.toLowerCase().includes(sizeSearch.toLowerCase()));
   }, [sizes, sizeSearch]);
+
+  if (features && (features.variant_management === false || String(features.variant_management) === "0")) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4">
+        <Palette className="size-16 text-muted-foreground" />
+        <h1 className="text-2xl font-bold">Feature Disabled</h1>
+        <p className="text-muted-foreground">The Variant Management module is currently disabled.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

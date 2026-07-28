@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import useAttributes from "@/hooks/useAttributes";
 import useCategories from "@/hooks/useCategories";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 import { ProductVariantsSection, Variant } from "./product-variants-section";
 
 const isDescriptionEmpty = (html: string) => {
@@ -51,6 +52,7 @@ const generateSKU = () => "SKU-" + Math.random().toString(36).substring(2, 8).to
 
 export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
   const router = useRouter();
+  const { features } = useModularFeatures();
   const { categories, loading: categoriesLoading } = useCategories();
   const { colors, sizes } = useAttributes();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -565,47 +567,51 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
               <CardDescription>Configure alternate sizes or colors with their own inventory.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
-              <div className="flex flex-col gap-4 mb-4">
-                <div className="flex items-start gap-3">
-                  <Switch
-                    id="has-variants"
-                    checked={hasVariants}
-                    onCheckedChange={(val) => {
-                      setHasVariants(val);
-                      if (!val) {
-                        setHasVariantWisePricing(false);
-                      }
-                    }}
-                    className="mt-0.5"
-                  />
-                  <div className="space-y-0.5">
-                    <Label htmlFor="has-variants" className="text-sm font-medium cursor-pointer">
-                      Has Variants
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Enable this if your product comes in multiple sizes or colors.
-                    </p>
+              {features?.variant_management !== false && String(features?.variant_management) !== "0" && (
+                <div className="flex flex-col gap-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <Switch
+                      id="has-variants"
+                      checked={hasVariants}
+                      onCheckedChange={(val) => {
+                        setHasVariants(val);
+                        if (!val) {
+                          setHasVariantWisePricing(false);
+                        }
+                      }}
+                      className="mt-0.5"
+                    />
+                    <div className="space-y-0.5">
+                      <Label htmlFor="has-variants" className="text-sm font-medium cursor-pointer">
+                        Has Variants
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Enable this if your product comes in multiple sizes or colors.
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-start gap-3">
-                  <Switch
-                    id="has-variant-pricing"
-                    checked={hasVariantWisePricing}
-                    onCheckedChange={setHasVariantWisePricing}
-                    disabled={!hasVariants}
-                    className="mt-0.5"
-                  />
-                  <div className="space-y-0.5">
-                    <Label htmlFor="has-variant-pricing" className="text-sm font-medium cursor-pointer">
-                      Variant-Wise Pricing
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Enable this to set distinct purchase, regular, and selling prices per variant.
-                    </p>
-                  </div>
+                  {features?.variant_wise_pricing !== false && String(features?.variant_wise_pricing) !== "0" && (
+                    <div className="flex items-start gap-3">
+                      <Switch
+                        id="has-variant-pricing"
+                        checked={hasVariantWisePricing}
+                        onCheckedChange={setHasVariantWisePricing}
+                        disabled={!hasVariants}
+                        className="mt-0.5"
+                      />
+                      <div className="space-y-0.5">
+                        <Label htmlFor="has-variant-pricing" className="text-sm font-medium cursor-pointer">
+                          Variant-Wise Pricing
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Enable this to set distinct purchase, regular, and selling prices per variant.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
               {!hasVariants && (
                 <>
@@ -673,53 +679,55 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                             <X className="size-3.5" />
                           </button>
                         </div>
-                        <div className="grid grid-cols-2 gap-1">
-                          <Select
-                            value={item.color || "none"}
-                            onValueChange={(val) => {
-                              setMedia((prev) =>
-                                prev.map((m) =>
-                                  m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m
-                                )
-                              );
-                            }}
-                          >
-                            <SelectTrigger className="h-8 text-xs px-2">
-                              <SelectValue placeholder="Color" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No Color</SelectItem>
-                              {availableColors.map((c) => (
-                                <SelectItem key={c.id} value={c.label}>
-                                  {c.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          
-                          <Select
-                            value={item.size || "none"}
-                            onValueChange={(val) => {
-                              setMedia((prev) =>
-                                prev.map((m) =>
-                                  m.id === item.id ? { ...m, size: val === "none" ? "" : val } : m
-                                )
-                              );
-                            }}
-                          >
-                            <SelectTrigger className="h-8 text-xs px-2">
-                              <SelectValue placeholder="Size" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No Size</SelectItem>
-                              {availableSizes.map((s) => (
-                                <SelectItem key={s.id} value={s.label}>
-                                  {s.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        {features?.variant_management !== false && String(features?.variant_management) !== "0" && features?.variant_wise_image !== false && String(features?.variant_wise_image) !== "0" && (
+                          <div className="grid grid-cols-2 gap-1">
+                            <Select
+                              value={item.color || "none"}
+                              onValueChange={(val) => {
+                                setMedia((prev) =>
+                                  prev.map((m) =>
+                                    m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m
+                                  )
+                                );
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs px-2">
+                                <SelectValue placeholder="Color" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">No Color</SelectItem>
+                                {availableColors.map((c) => (
+                                  <SelectItem key={c.id} value={c.label}>
+                                    {c.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            
+                            <Select
+                              value={item.size || "none"}
+                              onValueChange={(val) => {
+                                setMedia((prev) =>
+                                  prev.map((m) =>
+                                    m.id === item.id ? { ...m, size: val === "none" ? "" : val } : m
+                                  )
+                                );
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs px-2">
+                                <SelectValue placeholder="Size" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">No Size</SelectItem>
+                                {availableSizes.map((s) => (
+                                  <SelectItem key={s.id} value={s.label}>
+                                    {s.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
                     ))}
                     <button
