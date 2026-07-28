@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 /* ---- Demo product data (mirrors Add Product form fields) ---- */
 
@@ -155,6 +156,7 @@ const product = {
 };
 
 export function ProductDetails({ productId }: { productId: string }) {
+  const { features } = useModularFeatures();
   const [isActive, setIsActive] = React.useState(product.isActive);
   const [selectedImage, setSelectedImage] = React.useState(product.images[0]);
 
@@ -278,29 +280,31 @@ export function ProductDetails({ productId }: { productId: string }) {
               </Card>
 
               {/* Pre-Order Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base text-primary">Pre-Order</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm">
-                  {product.isPreOrder ? (
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="default">Pre-Order Enabled</Badge>
-                      </div>
-                      {product.availableDate && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Calendar className="size-4" />
-                          <span>Available: {product.availableDate}</span>
+              {features?.product_pre_order !== false && String(features?.product_pre_order) !== "0" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base text-primary">Pre-Order</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm">
+                    {product.isPreOrder ? (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="default">Pre-Order Enabled</Badge>
                         </div>
-                      )}
-                      {product.preOrderNote && <p className="text-muted-foreground">{product.preOrderNote}</p>}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">Pre-order is not enabled for this product.</p>
-                  )}
-                </CardContent>
-              </Card>
+                        {product.availableDate && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Calendar className="size-4" />
+                            <span>Available: {product.availableDate}</span>
+                          </div>
+                        )}
+                        {product.preOrderNote && <p className="text-muted-foreground">{product.preOrderNote}</p>}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">Pre-order is not enabled for this product.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* SEO Settings Card */}
               <Card>

@@ -879,56 +879,58 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
           </Card>
 
           {/* ---- Pre-Order ---- */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base text-primary">Pre-Order</CardTitle>
-              <CardDescription>Enable pre-order if the product is not yet available.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  id="is-preorder"
-                  checked={isPreOrder}
-                  onCheckedChange={(v) => setIsPreOrder(v === true)}
-                  className="mt-0.5"
-                />
-                <div className="space-y-0.5">
-                  <Label htmlFor="is-preorder" className="text-sm font-medium cursor-pointer">
-                    Is Pre-Order
-                  </Label>
-                  <p className="text-xs text-muted-foreground">Mark this product as available for pre-order.</p>
+          {features?.product_pre_order !== false && String(features?.product_pre_order) !== "0" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base text-primary">Pre-Order</CardTitle>
+                <CardDescription>Enable pre-order if the product is not yet available.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-5">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="is-preorder"
+                    checked={isPreOrder}
+                    onCheckedChange={(v) => setIsPreOrder(v === true)}
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-0.5">
+                    <Label htmlFor="is-preorder" className="text-sm font-medium cursor-pointer">
+                      Is Pre-Order
+                    </Label>
+                    <p className="text-xs text-muted-foreground">Mark this product as available for pre-order.</p>
+                  </div>
                 </div>
-              </div>
-              {isPreOrder && (
-                <>
-                  <Separator />
-                  <div className="space-y-2">
-                    <Label htmlFor="available-date" className="text-primary font-medium">
-                      Available Date
-                    </Label>
-                    <Input
-                      id="available-date"
-                      type="date"
-                      value={availableDate}
-                      onChange={(e) => setAvailableDate(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="preorder-note" className="text-primary font-medium">
-                      Pre-Order Note
-                    </Label>
-                    <Textarea
-                      id="preorder-note"
-                      placeholder="Expected delivery by July 2026..."
-                      className="min-h-[80px] resize-y"
-                      value={preOrderNote}
-                      onChange={(e) => setPreOrderNote(e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                {isPreOrder && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label htmlFor="available-date" className="text-primary font-medium">
+                        Available Date
+                      </Label>
+                      <Input
+                        id="available-date"
+                        type="date"
+                        value={availableDate}
+                        onChange={(e) => setAvailableDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="preorder-note" className="text-primary font-medium">
+                        Pre-Order Note
+                      </Label>
+                      <Textarea
+                        id="preorder-note"
+                        placeholder="Expected delivery by July 2026..."
+                        className="min-h-[80px] resize-y"
+                        value={preOrderNote}
+                        onChange={(e) => setPreOrderNote(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* ---- SEO Settings ---- */}
           <Card>

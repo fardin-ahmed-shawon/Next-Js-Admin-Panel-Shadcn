@@ -757,24 +757,26 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
             </Card>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base text-primary">Pre-Order</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  id="is-preorder"
-                  checked={isPreOrder}
-                  onCheckedChange={(v) => setIsPreOrder(v === true)}
-                  className="mt-0.5"
-                />
-                <div className="space-y-0.5">
-                  <Label htmlFor="is-preorder">Is Pre-Order</Label>
+          {features?.product_pre_order !== false && String(features?.product_pre_order) !== "0" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base text-primary">Pre-Order</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-5">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="is-preorder"
+                    checked={isPreOrder}
+                    onCheckedChange={(v) => setIsPreOrder(v === true)}
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-0.5">
+                    <Label htmlFor="is-preorder">Is Pre-Order</Label>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
