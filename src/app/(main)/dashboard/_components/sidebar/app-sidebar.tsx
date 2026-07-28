@@ -20,6 +20,7 @@ import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 import { useAuth } from "@/hooks/useAuth";
 import { hasModuleAccess } from "@/hooks/useRoles";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -67,6 +68,7 @@ export function AppSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar> & { brandName?: string }) {
   const { user } = useAuth();
+  const { features } = useModularFeatures();
   const { sidebarVariant, sidebarCollapsible, isSynced } = usePreferencesStore(
     useShallow((s) => ({
       sidebarVariant: s.sidebarVariant,
@@ -102,6 +104,9 @@ export function AppSidebar({
         }
 
         if (isParentAllowed) {
+          if (item.module === "fraud_checker" && features && (features.fraud_checker === false || String(features.fraud_checker) === "0")) {
+            return null;
+          }
           return { ...item, subItems: filteredSubItems };
         }
         return null;

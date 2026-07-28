@@ -59,6 +59,7 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 import { useOrderDetail } from "@/hooks/useOrderDetail";
 import { usePathaoSetup } from "@/hooks/usePathaoSetup";
 import { useRedxSetup } from "@/hooks/useRedxSetup";
@@ -483,6 +484,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
 
 export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: { orderId: string; incompleteMode?: boolean; onCompleted?: () => void }) {
   const router = useRouter();
+  const { features } = useModularFeatures();
 
   const { data: order, isLoading, mutate } = useOrderDetail(orderId ?? null);
   const { data: steadfastConfig } = useSteadfastSetup();
@@ -584,6 +586,9 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
   const [fraudError, setFraudError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    if (features && (features.fraud_checker === false || String(features.fraud_checker) === "0")) {
+      return;
+    }
     if (order?.customer_phone) {
       const fetchFraudData = async () => {
         setFraudLoading(true);
@@ -1213,10 +1218,12 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="parcel-history">
-            <ShieldAlert className="mr-1.5 size-4 text-primary" />
-            Parcel History
-          </TabsTrigger>
+          {features?.fraud_checker !== false && String(features?.fraud_checker) !== "0" && (
+            <TabsTrigger value="parcel-history">
+              <ShieldAlert className="mr-1.5 size-4 text-primary" />
+              Parcel History
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* â”€â”€â”€ OVERVIEW TAB â”€â”€â”€ */}
@@ -1591,7 +1598,8 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
               </Card>
 
               {/* Parcel History (Courier) */}
-              <Card>
+              {features?.fraud_checker !== false && String(features?.fraud_checker) !== "0" && (
+                <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2">
                     <ShieldAlert className="size-4 text-primary" />
@@ -1652,7 +1660,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                   )}
                 </CardContent>
               </Card>
-
+              )}
               {/* Customer History (System Summary) */}
               <Card>
                 <CardHeader className="pb-3">
@@ -2109,21 +2117,21 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
             </div>
           </div>
         </TabsContent>
-
-        {/* â”€â”€â”€ PARCEL HISTORY TAB â”€â”€â”€ */}
-        <TabsContent value="parcel-history">
-          <Card className="shadow-md">
-            <CardHeader className="pb-4 border-b bg-muted/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Truck className="size-5 text-muted-foreground" />
-                    Courier-wise Breakdown
-                  </CardTitle>
-                  <CardDescription className="mt-1">
-                    Aggregated delivery metrics for the provided phone number
-                  </CardDescription>
-                </div>
+        {/* ——— PARCEL HISTORY TAB ——— */}
+        {features?.fraud_checker !== false && String(features?.fraud_checker) !== "0" && (
+          <TabsContent value="parcel-history">
+            <Card className="shadow-md">
+              <CardHeader className="pb-4 border-b bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Truck className="size-5 text-muted-foreground" />
+                      Courier-wise Breakdown
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      Aggregated delivery metrics for the provided phone number
+                    </CardDescription>
+                  </div>
                 <Badge variant={fraudStatusVariant} className="bg-background">
                   Status: {fraudStatusText}
                 </Badge>
@@ -2201,6 +2209,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
             </CardContent>
           </Card>
         </TabsContent>
+        )}
       </Tabs>
     </div>
   );

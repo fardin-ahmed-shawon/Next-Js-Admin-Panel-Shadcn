@@ -10,12 +10,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fetchClient } from "@/lib/fetch-client";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 export default function FraudCheckerPage() {
   const [phone, setPhone] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [result, setResult] = React.useState<any | null>(null);
+
+  const { features, isLoading: featuresLoading } = useModularFeatures();
 
   const handleScan = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,6 +114,24 @@ export default function FraudCheckerPage() {
   } else if (result) {
     statusText = "Success";
     statusVariant = "default";
+  }
+
+  if (featuresLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (features && (features.fraud_checker === false || String(features.fraud_checker) === "0")) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4">
+        <ShieldAlert className="size-16 text-muted-foreground" />
+        <h1 className="text-2xl font-bold">Feature Disabled</h1>
+        <p className="text-muted-foreground">The fraud checker module is currently disabled.</p>
+      </div>
+    );
   }
 
   return (

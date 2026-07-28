@@ -75,6 +75,7 @@ import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
 import { OrderContext } from "../page";
 import { fetchClient } from "@/lib/fetch-client";
 import { usePrintModal } from "@/hooks/usePrintModal";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 import { AssignOrderDialog } from "../assign-orders/_components/assign-order-dialog";
 import { UpdatePaymentModal } from "./update-payment-modal";
 import { EditOrderForm } from "./edit-order-form";
@@ -590,6 +591,7 @@ function ProductsCell({ row }: { row: any }) {
 }
 
 function CourierHistoryCell({ row }: { row: any }) {
+  const { features } = useModularFeatures();
   const phone = row.original.phone;
 
   const [loading, setLoading] = React.useState(false);
@@ -643,6 +645,8 @@ function CourierHistoryCell({ row }: { row: any }) {
     };
   }, [phone]);
 
+  if (features && (features.fraud_checker === false || String(features.fraud_checker) === "0")) return null;
+
   if (loading) {
     return (
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-[120px]">
@@ -678,6 +682,7 @@ function CourierHistoryCell({ row }: { row: any }) {
 }
 
 function CustomerFraudSuccessRate({ phone }: { phone: string }) {
+  const { features } = useModularFeatures();
   const [loading, setLoading] = React.useState(false);
   const [successRate, setSuccessRate] = React.useState<number | null>(null);
 
@@ -723,6 +728,8 @@ function CustomerFraudSuccessRate({ phone }: { phone: string }) {
       isMounted = false;
     };
   }, [phone]);
+
+  if (features && (features.fraud_checker === false || String(features.fraud_checker) === "0")) return null;
 
   if (loading) {
     return (
@@ -1165,6 +1172,7 @@ const AiAutoCallButton = ({ orderId }: { orderId: string }) => {
 };
 
 export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus, incompleteOrdersMode, hideActionsColumn, useServerPagination }: OrdersTableProps) {
+  const { features } = useModularFeatures();
   const context = React.useContext(OrderContext);
 
   const [localPage, setLocalPage] = React.useState(1);
@@ -1243,7 +1251,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
         paymentStatus: false,
         category: false,
         subCategory: false,
-        courierHistory: false,
+        courierHistory: features?.fraud_checker === false || String(features?.fraud_checker) === "0" ? false : false,
         pStatus: !hidePaymentStatusColumn,
         sendCourier: !incompleteOrdersMode,
         oStatus: !incompleteOrdersMode,
