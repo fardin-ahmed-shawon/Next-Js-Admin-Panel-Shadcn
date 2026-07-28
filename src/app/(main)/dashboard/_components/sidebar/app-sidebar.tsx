@@ -90,6 +90,12 @@ export function AppSidebar({
             if (subItem.url === "/dashboard/products/attributes" && features && (features.variant_management === false || String(features.variant_management) === "0")) {
               return false;
             }
+            if (subItem.url === "/dashboard/orders/wholesale-create" && features && (features.orders_wholesale_create === false || String(features.orders_wholesale_create) === "0")) {
+              return false;
+            }
+            if (subItem.url === "/dashboard/orders/create" && features && (features.orders_manual_create === false || String(features.orders_manual_create) === "0")) {
+              return false;
+            }
             const requiredModule = subItem.module || item.module;
             if (!requiredModule) return true;
             return hasModuleAccess(user, requiredModule);

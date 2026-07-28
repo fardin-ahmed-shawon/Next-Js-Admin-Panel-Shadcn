@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOrders } from "@/hooks/useOrders";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 import { OrderStats } from "../_components/order-stats";
 import { OrdersTable } from "../_components/orders-table";
@@ -70,6 +71,7 @@ const rangeLabels: Record<TimeRange, string> = {
 };
 
 export default function IncompleteOrdersPage() {
+  const { features } = useModularFeatures();
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(true);
   // Ideally, if the API supports filtering by status, we could pass it here, e.g., order_status: "Incomplete".
   const { orders, isLoading } = useOrders({ per_page: 1000, all_orders: allOrdersToggle, include_incomplete: true });
@@ -77,6 +79,15 @@ export default function IncompleteOrdersPage() {
   const [customFrom, setCustomFrom] = React.useState<string>("");
   const [customTo, setCustomTo] = React.useState<string>("");
   const [activeTab, setActiveTab] = React.useState<"Incomplete" | "Complete">("Incomplete");
+
+  if (features?.orders_incomplete === false || String(features?.orders_incomplete) === "0") {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
+        <h2 className="text-2xl font-bold">Feature Disabled</h2>
+        <p className="text-muted-foreground mt-2">The Incomplete Orders feature is currently disabled.</p>
+      </div>
+    );
+  }
 
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
 
