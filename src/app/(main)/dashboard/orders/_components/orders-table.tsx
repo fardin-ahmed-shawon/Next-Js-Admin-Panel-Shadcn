@@ -126,6 +126,7 @@ export interface OrderRow {
   parcelStatus: string;
   courier: string;
   parcelHistory: { total: number; delivered: number; cancelled: number; successRate: string };
+  previousOrdersCountByPhone?: number;
   ipAddress?: string;
   createdAt?: string;
   shippingAddress?: string;
@@ -859,7 +860,7 @@ const columns: ColumnDef<OrderRow>[] = [
                 <Phone className="size-3" /> Call
               </a>
             </Button>
-            {row.original.parcelHistory.total > 1 ? (
+            {row.original.previousOrdersCountByPhone && row.original.previousOrdersCountByPhone > 1 ? (
               <Badge
                 variant="secondary"
                 className="text-[9px] h-5 px-1.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 border-none font-semibold uppercase tracking-wider"

@@ -72,7 +72,7 @@ const rangeLabels: Record<TimeRange, string> = {
 export default function IncompleteOrdersPage() {
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(true);
   // Ideally, if the API supports filtering by status, we could pass it here, e.g., order_status: "Incomplete".
-  const { orders, isLoading } = useOrders({ per_page: 1000, all_orders: allOrdersToggle });
+  const { orders, isLoading } = useOrders({ per_page: 1000, all_orders: allOrdersToggle, include_incomplete: true });
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState<string>("");
   const [customTo, setCustomTo] = React.useState<string>("");
@@ -176,6 +176,7 @@ export default function IncompleteOrdersPage() {
             cancelled: order.customer?.parcel_history?.cancelled || 0,
             successRate: order.customer?.parcel_history?.success_rate || "0",
           },
+          previousOrdersCountByPhone: order.previous_orders_count_by_phone || 0,
           ipAddress: order.customer_ip_address || "—",
           createdAt: order.created_at,
         };

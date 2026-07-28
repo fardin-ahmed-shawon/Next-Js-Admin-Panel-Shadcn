@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { useRouter } from "next/navigation";
 
-import { CirclePlus, ImagePlus, Loader2, Package, RefreshCw, Save, Upload, X } from "lucide-react";
+import { CirclePlus, ImagePlus, Loader2, Package, RefreshCw, Save, Upload, X, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -49,11 +49,12 @@ const generateSKU = () => "SKU-" + Math.random().toString(36).substring(2, 8).to
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function AddProductForm() {
+export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
   const router = useRouter();
   const { categories, loading: categoriesLoading } = useCategories();
   const { colors, sizes } = useAttributes();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isGeneratingText, setIsGeneratingText] = React.useState(false);
 
   // Product info
   const [thumbnailUrl, setThumbnailUrl] = React.useState<string | null>(null);
@@ -135,6 +136,36 @@ export function AddProductForm() {
     e.preventDefault();
     setIsDragging(false);
     handleMediaFiles(e.dataTransfer.files);
+  }
+
+  /* ---- AI actions ---- */
+  async function handleGenerateDescriptions() {
+    if (!productName || !category) {
+      toast.error("Please enter a product name and select a main category first.");
+      return;
+    }
+    setIsGeneratingText(true);
+    try {
+      const catName = categories.find((c) => String(c.id) === category)?.main_category_name || "";
+      const subCatName = filteredSubCategories.find((c) => String(c.id) === subCategory)?.name || "";
+      
+      const res = await fetch("/api/ai/generate-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productName, categoryName: catName, subCategoryName: subCatName })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to generate description");
+      }
+      setShortDescription(data.data.shortDescription);
+      setLongDescription(data.data.longDescription);
+      toast.success("Descriptions generated successfully!");
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsGeneratingText(false);
+    }
   }
 
   /* ---- actions ---- */
@@ -322,9 +353,11 @@ export function AddProductForm() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl tracking-tight">Add Product</h1>
+          <h1 className="text-3xl tracking-tight">{isAiMode ? "AI Product Generator" : "Add Product"}</h1>
           <p className="text-sm text-muted-foreground">
-            Build a polished product record with pricing, media, availability, and variant data.
+            {isAiMode 
+              ? "Use AI to magically generate descriptions for your product."
+              : "Build a polished product record with pricing, media, availability, and variant data."}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -356,7 +389,9 @@ export function AddProductForm() {
             <CardContent className="flex flex-col gap-6">
               {/* Thumbnail */}
               <div className="space-y-2">
-                <Label className="text-primary font-medium">Thumbnail</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-primary font-medium">Thumbnail</Label>
+                </div>
                 <div className="flex items-center gap-4">
                   {thumbnailUrl ? (
                     <div className="relative size-16 overflow-hidden rounded-lg border">
@@ -482,7 +517,13 @@ export function AddProductForm() {
 
               {/* Short Description */}
               <div className="space-y-2">
-                <Label htmlFor="short-desc">Short Description</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="short-desc">Short Description</Label>
+                  <Button variant="outline" size="sm" onClick={handleGenerateDescriptions} disabled={isGeneratingText}>
+                    {isGeneratingText ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Wand2 className="mr-2 size-4" />}
+                    Generate Descriptions
+                  </Button>
+                </div>
                 <RichTextEditor
                   value={shortDescription}
                   onChange={setShortDescription}

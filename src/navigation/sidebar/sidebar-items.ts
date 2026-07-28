@@ -82,7 +82,7 @@ export const sidebarItems: NavGroup[] = [
         module: "products",
         subItems: [
           { title: "Add Product", url: "/dashboard/products/add" },
-          { title: "AI Product Generator", url: "/dashboard/products/ai-product-generator", comingSoon: true },
+
           { title: "All Products", url: "/dashboard/products" },
           { title: "AI Recommendations", url: "/dashboard/products/recommendations" },
           { title: "Create Bundle", url: "/dashboard/products/create-bundle", comingSoon: true },
