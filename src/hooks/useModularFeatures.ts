@@ -1,3 +1,5 @@
+"use client";
+
 import { fetchClient } from "@/lib/fetch-client";
 import useSWR from "swr";
 

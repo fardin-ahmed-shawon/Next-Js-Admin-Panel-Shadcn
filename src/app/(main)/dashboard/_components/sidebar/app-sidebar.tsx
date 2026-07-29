@@ -112,7 +112,7 @@ export function AppSidebar({
             if (subItem.url === "/dashboard/reports/payment" && features && (features.reports_payment === false || String(features.reports_payment) === "0")) return false;
             if (subItem.url === "/dashboard/reports/parcel" && features && (features.reports_parcel === false || String(features.reports_parcel) === "0")) return false;
             if (subItem.url === "/dashboard/reports/courier" && features && (features.reports_courier === false || String(features.reports_courier) === "0")) return false;
-            if (subItem.url === "/dashboard/reports/inventory" && features && (features.reports_inventor === false || String(features.reports_inventor) === "0" || features.reports_inventory === false || String(features.reports_inventory) === "0")) return false;
+            if (subItem.url === "/dashboard/reports/inventory" && features && (features.reports_inventory === false || String(features.reports_inventory) === "0")) return false;
 
             const requiredModule = subItem.module || item.module;
             if (!requiredModule) return true;

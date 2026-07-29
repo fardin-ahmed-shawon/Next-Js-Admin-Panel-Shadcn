@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 import { useAutoOrder } from "@/hooks/useAutoOrder";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
