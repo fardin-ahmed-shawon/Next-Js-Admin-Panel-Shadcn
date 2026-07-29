@@ -89,13 +89,14 @@ export default function AiCallingLogsPage() {
                   <TableHead>Result / Reason</TableHead>
                   <TableHead>Disposition</TableHead>
                   <TableHead>Duration</TableHead>
+                  <TableHead>Webhook Triggers</TableHead>
                   <TableHead>Recording</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-48 text-center">
+                    <TableCell colSpan={8} className="h-48 text-center">
                       <div className="flex items-center justify-center">
                         <Loader2 className="size-6 animate-spin text-muted-foreground" />
                       </div>
@@ -103,7 +104,7 @@ export default function AiCallingLogsPage() {
                   </TableRow>
                 ) : logs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-48 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="h-48 text-center text-muted-foreground">
                       No call logs found.
                     </TableCell>
                   </TableRow>
@@ -141,6 +142,11 @@ export default function AiCallingLogsPage() {
                           {log.duration_seconds ? (
                             <span className="text-sm">{log.duration_seconds} sec</span>
                           ) : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-indigo-50/50 text-indigo-700">
+                            {log.webhook_triggered_count || 0}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           {log.recording_url ? (
