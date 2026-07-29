@@ -137,6 +137,7 @@ export interface OrderRow {
   redx_parcel?: any;
   courier_details?: any;
   source?: string;
+  is_ai_called?: boolean;
 }
 
 /* ---- Status badge colors ---- */
@@ -885,7 +886,7 @@ const columns: ColumnDef<OrderRow>[] = [
             )}
           </div>
           <div className="mt-1.5 w-full">
-            <AiAutoCallButton orderId={row.original.id} />
+            <AiAutoCallButton orderId={row.original.id} isAiCalled={row.original.is_ai_called} />
           </div>
           <CustomerFraudSuccessRate phone={row.original.phone} />
         </div>
@@ -1130,8 +1131,17 @@ export interface OrdersTableProps {
   useServerPagination?: boolean;
 }
 
-const AiAutoCallButton = ({ orderId }: { orderId: string }) => {
+const AiAutoCallButton = ({ orderId, isAiCalled }: { orderId: string; isAiCalled?: boolean }) => {
   const [isCalling, setIsCalling] = React.useState(false);
+
+  if (isAiCalled) {
+    return (
+      <Badge variant="outline" className="h-6 w-full gap-1 text-[10px] px-2 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 transition-colors flex justify-center items-center font-normal">
+        <Bot className="size-3" />
+        Already AI Called!
+      </Badge>
+    );
+  }
 
   const handleAiCall = async () => {
     setIsCalling(true);

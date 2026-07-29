@@ -102,7 +102,8 @@ export const sidebarItems: NavGroup[] = [
           { title: "Order Management", url: "/dashboard/orders", module: "orders" },
           { title: "Invoice", url: "/dashboard/orders/invoice", module: "orders" },
           { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", module: "orders", isNew: true },
-          { title: "Wholesale Orders", url: "/dashboard/orders/wholesale-create", module: "orders", isNew: true }
+          { title: "Wholesale Orders", url: "/dashboard/orders/wholesale-create", module: "orders", isNew: true },
+          { title: "AI Calling Logs", url: "/dashboard/ai-calling-logs", module: "orders", isNew: true }
         ],
       },
       // {

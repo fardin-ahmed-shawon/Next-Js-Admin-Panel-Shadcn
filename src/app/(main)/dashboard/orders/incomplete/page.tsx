@@ -185,6 +185,7 @@ export default function IncompleteOrdersPage() {
         previousOrdersCountByPhone: order.previous_orders_count_by_phone || 0,
         ipAddress: order.customer_ip_address || "—",
         createdAt: order.created_at,
+        is_ai_called: order.is_ai_called || false,
         _rawIsIncomplete: !!isIncomplete,
         _rawIsComplete: !!isComplete,
       };

@@ -272,6 +272,7 @@ export default function OrdersPage() {
           previousOrdersCountByPhone: order.previous_orders_count_by_phone || 0,
           ipAddress: order.customer_ip_address || "—",
           createdAt: order.created_at,
+          is_ai_called: order.is_ai_called || false,
         };
       });
   }, [orders, getImageUrl]);
