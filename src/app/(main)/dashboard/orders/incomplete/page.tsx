@@ -100,118 +100,126 @@ export default function IncompleteOrdersPage() {
     [baseUrl],
   );
 
-  const allOrders = React.useMemo(() => {
+  const mappedAllOrders = React.useMemo(() => {
     if (!orders) return [];
-    return orders
-      .filter((order: any) => {
-        if (activeTab === "Incomplete") {
-          return order.order_status === "Incomplete" && order.customer_phone && /^01\d{9}$/.test(order.customer_phone.trim());
-        } else {
-          return order.source === "Incomplete";
-        }
-      })
-      .map((order: any) => {
-        const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
-        const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
-        const paymentMethod = order.payments?.[0]?.payment_method || "COD";
+    return orders.map((order: any) => {
+      const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
+      const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
+      const paymentMethod = order.payments?.[0]?.payment_method || "COD";
 
-        const mappedProducts =
-          order.ordered_products?.map((p: any) => ({
-            id: p.id || p.product_id,
-            image: getImageUrl(p.product?.product_thumbnail_img),
-            name: p.product?.product_name || p.product?.title || "Unknown Product",
-            size: p.size_label || "—",
-            color: p.color_label || "—",
-            qty: p.qty || 1,
-            price: p.unit_price || 0,
-          })) || [];
-        const productImages = mappedProducts.map((p: any) => p.image);
+      const mappedProducts =
+        order.ordered_products?.map((p: any) => ({
+          id: p.id || p.product_id,
+          image: getImageUrl(p.product?.product_thumbnail_img),
+          name: p.product?.product_name || p.product?.title || "Unknown Product",
+          size: p.size_label || "—",
+          color: p.color_label || "—",
+          qty: p.qty || 1,
+          price: p.unit_price || 0,
+        })) || [];
+      const productImages = mappedProducts.map((p: any) => p.image);
 
-        const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
-        const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
+      const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
+      const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
 
-        // Remove 'Z' so JS parses it as local time, avoiding double timezone offset addition
-        const rawDateStr = order.created_at ? order.created_at.replace("Z", "") : "";
-        const createdDate = new Date(rawDateStr);
+      // Remove 'Z' so JS parses it as local time, avoiding double timezone offset addition
+      const rawDateStr = order.created_at ? order.created_at.replace("Z", "") : "";
+      const createdDate = new Date(rawDateStr);
 
-        const year = createdDate.getFullYear();
-        const month = String(createdDate.getMonth() + 1).padStart(2, "0");
-        const day = String(createdDate.getDate()).padStart(2, "0");
-        const dateString = `${year}-${month}-${day}`;
+      const year = createdDate.getFullYear();
+      const month = String(createdDate.getMonth() + 1).padStart(2, "0");
+      const day = String(createdDate.getDate()).padStart(2, "0");
+      const dateString = `${year}-${month}-${day}`;
 
-        const timeString = createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const timeString = createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-        const initials =
-          (order.customer_full_name || "Unknown")
-            .split(" ")
-            .map((n: string) => n[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase() || "U";
-        const avatarUrl = `https://placehold.co/40x40/1a1a2e/e0e0e0?text=${initials}`;
+      const initials =
+        (order.customer_full_name || "Unknown")
+          .split(" ")
+          .map((n: string) => n[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase() || "U";
+      const avatarUrl = `https://placehold.co/40x40/1a1a2e/e0e0e0?text=${initials}`;
 
-        const assignedEmployee =
-          order.employee_orders?.[0]?.user?.full_name || order.employeeOrders?.[0]?.user?.full_name || null;
+      const assignedEmployee =
+        order.employee_orders?.[0]?.user?.full_name || order.employeeOrders?.[0]?.user?.full_name || null;
 
-        return {
-          id: order.order_no,
-          customer: order.customer_full_name || "Unknown",
-          phone: order.customer_phone || "",
-          shippingAddress: order.customer_shipping_address || "",
-          items: itemsCount,
-          total: order.grand_total_amount || 0,
-          paid: paidAmount,
-          due: (order.grand_total_amount || 0) - paidAmount,
-          orderStatus: order.order_status || "Pending",
-          paymentStatus: order.payment_status || "Unpaid",
-          paymentMethod: paymentMethod,
-          date: dateString,
-          time: timeString,
-          orderType: "regular",
-          source: order.source || null,
-          avatar: avatarUrl,
-          category: mainCategory,
-          subCategory: subCategory,
-          productImages: productImages,
-          orderedProducts: mappedProducts,
-          parcelStatus: "",
-          courier: "",
-          steadfast_parcel: order.steadfast_parcel || order.steadfastParcel || null,
-          pathao_parcel: order.pathao_parcel || order.pathaoParcel || null,
-          redx_parcel: order.redx_parcel || order.redxParcel || null,
-          courier_details: order.courier_details || null,
-          assignedEmployee: assignedEmployee,
-          parcelHistory: {
-            total: order.customer?.parcel_history?.total || 0,
-            delivered: order.customer?.parcel_history?.delivered || 0,
-            cancelled: order.customer?.parcel_history?.cancelled || 0,
-            successRate: order.customer?.parcel_history?.success_rate || "0",
-          },
-          previousOrdersCountByPhone: order.previous_orders_count_by_phone || 0,
-          ipAddress: order.customer_ip_address || "—",
-          createdAt: order.created_at,
-        };
-      });
-  }, [orders, activeTab, getImageUrl]);
+      const isIncomplete = order.order_status === "Incomplete" && order.customer_phone && /^01\d{9}$/.test(order.customer_phone.trim());
+      const isComplete = order.source === "Incomplete";
 
-  const filteredByTime = React.useMemo(() => {
-    if (timeRange === "alltime") return allOrders;
+      return {
+        id: order.order_no,
+        customer: order.customer_full_name || "Unknown",
+        phone: order.customer_phone || "",
+        shippingAddress: order.customer_shipping_address || "",
+        items: itemsCount,
+        total: order.grand_total_amount || 0,
+        paid: paidAmount,
+        due: (order.grand_total_amount || 0) - paidAmount,
+        orderStatus: order.order_status || "Pending",
+        paymentStatus: order.payment_status || "Unpaid",
+        paymentMethod: paymentMethod,
+        date: dateString,
+        time: timeString,
+        orderType: "regular",
+        source: order.source || null,
+        avatar: avatarUrl,
+        category: mainCategory,
+        subCategory: subCategory,
+        productImages: productImages,
+        orderedProducts: mappedProducts,
+        parcelStatus: "",
+        courier: "",
+        steadfast_parcel: order.steadfast_parcel || order.steadfastParcel || null,
+        pathao_parcel: order.pathao_parcel || order.pathaoParcel || null,
+        redx_parcel: order.redx_parcel || order.redxParcel || null,
+        courier_details: order.courier_details || null,
+        assignedEmployee: assignedEmployee,
+        parcelHistory: {
+          total: order.customer?.parcel_history?.total || 0,
+          delivered: order.customer?.parcel_history?.delivered || 0,
+          cancelled: order.customer?.parcel_history?.cancelled || 0,
+          successRate: order.customer?.parcel_history?.success_rate || "0",
+        },
+        previousOrdersCountByPhone: order.previous_orders_count_by_phone || 0,
+        ipAddress: order.customer_ip_address || "—",
+        createdAt: order.created_at,
+        _rawIsIncomplete: !!isIncomplete,
+        _rawIsComplete: !!isComplete,
+      };
+    });
+  }, [orders, getImageUrl]);
+
+  const filteredByTimeBase = React.useMemo(() => {
+    if (timeRange === "alltime") return mappedAllOrders;
     if (timeRange === "yesterday") {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const yStr = yesterday.toISOString().slice(0, 10);
-      return allOrders.filter((o: any) => o.date === yStr);
+      return mappedAllOrders.filter((o: any) => o.date === yStr);
     }
     if (timeRange === "custom") {
-      return allOrders.filter((o: any) => {
+      return mappedAllOrders.filter((o: any) => {
         if (customFrom && o.date < customFrom) return false;
         if (customTo && o.date > customTo) return false;
         return true;
       });
     }
     const from = getDateFrom(timeRange);
-    return allOrders.filter((o: any) => o.date >= from);
-  }, [allOrders, timeRange, customFrom, customTo]);
+    return mappedAllOrders.filter((o: any) => o.date >= from);
+  }, [mappedAllOrders, timeRange, customFrom, customTo]);
+
+  const { incompleteTabOrders, completeTabOrders } = React.useMemo(() => {
+    const inc = filteredByTimeBase.filter((o: any) => o._rawIsIncomplete);
+    const comp = filteredByTimeBase.filter((o: any) => o._rawIsComplete);
+    return { incompleteTabOrders: inc, completeTabOrders: comp };
+  }, [filteredByTimeBase]);
+
+  const filteredByTime = activeTab === "Incomplete" ? incompleteTabOrders : completeTabOrders;
+
+  const totalIncompleteOrdersCount = incompleteTabOrders.length + completeTabOrders.length;
+  const extraEarnedValue = completeTabOrders.reduce((sum: number, o: any) => sum + o.total, 0);
 
   if (isLoading && !orders) {
     return <OrdersSkeleton />;
@@ -225,12 +233,18 @@ export default function IncompleteOrdersPage() {
         <div className="space-y-1 hidden sm:block">
           <h1 className="text-3xl tracking-tight">Incomplete Orders</h1>
           <p className="text-muted-foreground text-sm">Track, manage, and fulfill incomplete customer orders.</p>
+          <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 rounded-md border border-emerald-100 dark:border-emerald-900/50 w-fit">
+            Total Incomplete Orders <span className="font-bold">{totalIncompleteOrdersCount}</span>, You have earned extra <span className="font-bold">{extraEarnedValue.toLocaleString()} Tk</span> from incomplete orders
+          </div>
         </div>
 
         {/* Mobile: Title shown above */}
         <div className="space-y-1 sm:hidden">
           <h1 className="text-2xl tracking-tight">Incomplete Orders</h1>
           <p className="text-muted-foreground text-sm">Track, manage, and fulfill incomplete customer orders.</p>
+          <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 rounded-md border border-emerald-100 dark:border-emerald-900/50">
+            Total Incomplete Orders <span className="font-bold">{totalIncompleteOrdersCount}</span>, You have earned extra <span className="font-bold">{extraEarnedValue.toLocaleString()} Tk</span> from incomplete orders
+          </div>
         </div>
 
         {/* Controls: on mobile = full-width row (Create Order left, period+3dot right). On desktop = stacked column on right */}
