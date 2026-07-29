@@ -192,7 +192,7 @@ export function NavMain({ items }: NavMainProps) {
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
               {group.items.filter(item => {
-                if (item.title === "Blogs" && (features?.blogs === false || features?.blogs === 0)) {
+                if (item.title === "Blogs" && (features?.blogs === false || String(features?.blogs) === "0")) {
                   return false;
                 }
                 return true;

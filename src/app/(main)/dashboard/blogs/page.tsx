@@ -18,7 +18,7 @@ export default function BlogsPage() {
     return <div>Loading...</div>;
   }
 
-  if (features?.blogs === false || features?.blogs === 0) {
+  if (features?.blogs === false || String(features?.blogs) === "0") {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[60vh] gap-4">
         <h2 className="text-2xl font-semibold tracking-tight text-red-500">Feature Locked</h2>
