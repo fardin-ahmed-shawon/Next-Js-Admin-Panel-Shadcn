@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 import { ChevronRight, MailIcon, Sparkles, PlusCircleIcon, Hourglass } from "lucide-react";
 
@@ -138,30 +139,19 @@ const NavItemCollapsed = ({
         <DropdownMenuContent className="w-50 space-y-1" side="right" align="start">
           {item.subItems?.map((subItem) => (
             <DropdownMenuItem key={subItem.title} asChild={!subItem.comingSoon}>
-              {subItem.comingSoon ? (
-                <SidebarMenuSubButton
-                  className="focus-visible:ring-0 cursor-not-allowed opacity-60 hover:bg-transparent select-none"
-                  isActive={false}
-                >
-                  {subItem.icon && <subItem.icon className="[&>svg]:text-sidebar-foreground" />}
+              <Link
+                prefetch={false}
+                href={subItem.comingSoon ? "#" : subItem.url}
+                target={subItem.newTab && !subItem.comingSoon ? "_blank" : undefined}
+                className={subItem.comingSoon ? "cursor-not-allowed opacity-60 flex items-center justify-between" : "flex items-center justify-between"}
+              >
+                <div className="flex items-center gap-2">
+                  {subItem.icon && <subItem.icon className="h-4 w-4" />}
                   <span>{subItem.title}</span>
-                  <IsComingSoon />
-                </SidebarMenuSubButton>
-              ) : (
-                <SidebarMenuSubButton
-                  key={subItem.title}
-                  asChild
-                  className="focus-visible:ring-0"
-                  aria-disabled={subItem.comingSoon}
-                  isActive={isActive(subItem.url)}
-                >
-                  <Link prefetch={false} href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
-                    {subItem.icon && <subItem.icon className="[&>svg]:text-sidebar-foreground" />}
-                    <span>{subItem.title}</span>
-                    {subItem.isNew && <IsNewBadge />}
-                  </Link>
-                </SidebarMenuSubButton>
-              )}
+                </div>
+                {subItem.comingSoon && <IsComingSoon />}
+                {subItem.isNew && <IsNewBadge />}
+              </Link>
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -171,10 +161,11 @@ const NavItemCollapsed = ({
 };
 
 export function NavMain({ items }: NavMainProps) {
+  const { state, isMobile } = useSidebar();
   const path = usePathname();
   const router = useRouter();
-  const { state, isMobile } = useSidebar();
   const { logout } = useAuth();
+  const { features } = useModularFeatures();
 
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -183,10 +174,10 @@ export function NavMain({ items }: NavMainProps) {
   };
 
   const isItemActive = (url: string, subItems?: NavMainItem["subItems"]) => {
-    if (subItems?.length) {
+    if (subItems) {
       return subItems.some((sub) => path.startsWith(sub.url));
     }
-    return path === url;
+    return path.startsWith(url);
   };
 
   const isSubmenuOpen = (subItems?: NavMainItem["subItems"]) => {
@@ -195,29 +186,17 @@ export function NavMain({ items }: NavMainProps) {
 
   return (
     <>
-      {/* <SidebarGroup>
-        <SidebarGroupLabel className="text-xs font-semibold text-primary/80">Coming Soon</SidebarGroupLabel>
-        <SidebarGroupContent className="flex flex-col gap-2">
-          <SidebarMenu>
-            <SidebarMenuItem className="flex items-center gap-2">
-              <SidebarMenuButton
-                tooltip="AI Intelligence Dashboard"
-                className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground cursor-not-allowed opacity-80"
-              >
-                <Sparkles />
-                <span>AI Intelligence Dashboard</span>
-                <Hourglass className="ml-auto size-4" />
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup> */}
       {items.map((group) => (
         <SidebarGroup key={group.id}>
           {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
-              {group.items.map((item) => {
+              {group.items.filter(item => {
+                if (item.title === "Blogs" && (features?.blogs === false || features?.blogs === 0)) {
+                  return false;
+                }
+                return true;
+              }).map((item) => {
                 if (state === "collapsed" && !isMobile) {
                   // If no subItems, just render the button as a link
                   if (!item.subItems) {
