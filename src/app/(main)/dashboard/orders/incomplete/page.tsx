@@ -1,9 +1,7 @@
 "use client";
 
 import * as React from "react";
-
 import Link from "next/link";
-
 import { CalendarIcon, Ellipsis, FileDown, FileText, Plus, Printer, RefreshCw, ShieldOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,63 +20,80 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useOrders } from "@/hooks/useOrders";
 import { useModularFeatures } from "@/hooks/useModularFeatures";
+import { useIncompleteOrders } from "@/hooks/useIncompleteOrders";
 
 import { OrderStats } from "../_components/order-stats";
 import { OrdersTable } from "../_components/orders-table";
+import { OrderContext } from "../page";
 
 /* ---- Time range helpers ---- */
-
 type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
 
 function getDateFrom(range: TimeRange): string {
   const now = new Date();
   const d = new Date(now);
   switch (range) {
-    case "daily":
-      return now.toISOString().slice(0, 10);
-    case "weekly":
-      d.setDate(d.getDate() - 7);
-      return d.toISOString().slice(0, 10);
-    case "monthly":
-      d.setMonth(d.getMonth() - 1);
-      return d.toISOString().slice(0, 10);
-    case "4months":
-      d.setMonth(d.getMonth() - 4);
-      return d.toISOString().slice(0, 10);
-    case "6months":
-      d.setMonth(d.getMonth() - 6);
-      return d.toISOString().slice(0, 10);
-    case "yearly":
-      d.setFullYear(d.getFullYear() - 1);
-      return d.toISOString().slice(0, 10);
-    default:
-      return "";
+    case "daily": return now.toISOString().slice(0, 10);
+    case "weekly": d.setDate(d.getDate() - 7); return d.toISOString().slice(0, 10);
+    case "monthly": d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 10);
+    case "4months": d.setMonth(d.getMonth() - 4); return d.toISOString().slice(0, 10);
+    case "6months": d.setMonth(d.getMonth() - 6); return d.toISOString().slice(0, 10);
+    case "yearly": d.setFullYear(d.getFullYear() - 1); return d.toISOString().slice(0, 10);
+    default: return "";
   }
 }
 
 const rangeLabels: Record<TimeRange, string> = {
-  alltime: "All Time",
-  daily: "Daily",
-  yesterday: "Yesterday",
-  weekly: "Weekly",
-  monthly: "Monthly",
-  "4months": "Last 4 Months",
-  "6months": "Last 6 Months",
-  yearly: "Yearly",
-  custom: "Custom Range",
+  alltime: "All Time", daily: "Daily", yesterday: "Yesterday", weekly: "Weekly",
+  monthly: "Monthly", "4months": "Last 4 Months", "6months": "Last 6 Months",
+  yearly: "Yearly", custom: "Custom Range",
 };
 
 export default function IncompleteOrdersPage() {
   const { features } = useModularFeatures();
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(true);
-  // Ideally, if the API supports filtering by status, we could pass it here, e.g., order_status: "Incomplete".
-  const { orders, isLoading } = useOrders({ per_page: 1000, all_orders: allOrdersToggle, include_incomplete: true });
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState<string>("");
   const [customTo, setCustomTo] = React.useState<string>("");
   const [activeTab, setActiveTab] = React.useState<"Incomplete" | "Complete">("Incomplete");
+
+  const [page, setPage] = React.useState(1);
+  const [perPage, setPerPage] = React.useState(20);
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  // Convert timeRange to actual dates for the API if needed, 
+  // though for now we pass it as start_date / end_date
+  const startDate = React.useMemo(() => {
+    if (timeRange === "alltime") return undefined;
+    if (timeRange === "custom") return customFrom || undefined;
+    if (timeRange === "yesterday") {
+      const d = new Date(); d.setDate(d.getDate() - 1);
+      return d.toISOString().slice(0, 10);
+    }
+    return getDateFrom(timeRange);
+  }, [timeRange, customFrom]);
+
+  const endDate = React.useMemo(() => {
+    if (timeRange === "alltime") return undefined;
+    if (timeRange === "custom") return customTo || undefined;
+    if (timeRange === "yesterday") {
+      const d = new Date(); d.setDate(d.getDate() - 1);
+      return d.toISOString().slice(0, 10);
+    }
+    return new Date().toISOString().slice(0, 10); // today
+  }, [timeRange, customTo]);
+
+  // Fetch paginated data from the new endpoint
+  const { orders, pagination, summary, isLoading } = useIncompleteOrders({
+    tab: activeTab === "Incomplete" ? "incomplete" : "complete",
+    page,
+    per_page: perPage,
+    search: searchQuery,
+    all_orders: allOrdersToggle,
+    start_date: startDate,
+    end_date: endDate,
+  });
 
   if (features?.orders_incomplete === false || String(features?.orders_incomplete) === "0") {
     return (
@@ -97,56 +112,43 @@ export default function IncompleteOrdersPage() {
       if (path.startsWith("http")) return path;
       return `${baseUrl}${path.startsWith("/") ? path.slice(1) : path}`;
     },
-    [baseUrl],
+    [baseUrl]
   );
 
-  const mappedAllOrders = React.useMemo(() => {
+  const mappedOrders = React.useMemo(() => {
     if (!orders) return [];
     return orders.map((order: any) => {
       const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
       const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
       const paymentMethod = order.payments?.[0]?.payment_method || "COD";
 
-      const mappedProducts =
-        order.ordered_products?.map((p: any) => ({
-          id: p.id || p.product_id,
-          image: getImageUrl(p.product?.product_thumbnail_img),
-          name: p.product?.product_name || p.product?.title || "Unknown Product",
-          size: p.size_label || "—",
-          color: p.color_label || "—",
-          qty: p.qty || 1,
-          price: p.unit_price || 0,
-        })) || [];
-      const productImages = mappedProducts.map((p: any) => p.image);
+      const mappedProducts = order.ordered_products?.map((p: any) => ({
+        id: p.id || p.product_id,
+        image: getImageUrl(p.product?.product_thumbnail_img),
+        name: p.product?.product_name || p.product?.title || "Unknown Product",
+        size: p.size_label || "—",
+        color: p.color_label || "—",
+        qty: p.qty || 1,
+        price: p.unit_price || 0,
+      })) || [];
 
+      const productImages = mappedProducts.map((p: any) => p.image);
       const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
       const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
 
-      // Remove 'Z' so JS parses it as local time, avoiding double timezone offset addition
       const rawDateStr = order.created_at ? order.created_at.replace("Z", "") : "";
       const createdDate = new Date(rawDateStr);
-
       const year = createdDate.getFullYear();
       const month = String(createdDate.getMonth() + 1).padStart(2, "0");
       const day = String(createdDate.getDate()).padStart(2, "0");
       const dateString = `${year}-${month}-${day}`;
-
       const timeString = createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-      const initials =
-        (order.customer_full_name || "Unknown")
-          .split(" ")
-          .map((n: string) => n[0])
-          .join("")
-          .slice(0, 2)
-          .toUpperCase() || "U";
+      const initials = (order.customer_full_name || "Unknown")
+        .split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "U";
       const avatarUrl = `https://placehold.co/40x40/1a1a2e/e0e0e0?text=${initials}`;
 
-      const assignedEmployee =
-        order.employee_orders?.[0]?.user?.full_name || order.employeeOrders?.[0]?.user?.full_name || null;
-
-      const isIncomplete = order.order_status === "Incomplete" && order.customer_phone && /^01\d{9}$/.test(order.customer_phone.trim());
-      const isComplete = order.source === "Incomplete";
+      const assignedEmployee = order.employee_orders?.[0]?.user?.full_name || order.employeeOrders?.[0]?.user?.full_name || null;
 
       return {
         id: order.order_no,
@@ -186,221 +188,162 @@ export default function IncompleteOrdersPage() {
         ipAddress: order.customer_ip_address || "—",
         createdAt: order.created_at,
         is_ai_called: order.is_ai_called || false,
-        _rawIsIncomplete: !!isIncomplete,
-        _rawIsComplete: !!isComplete,
       };
     });
   }, [orders, getImageUrl]);
 
-  const filteredByTimeBase = React.useMemo(() => {
-    if (timeRange === "alltime") return mappedAllOrders;
-    if (timeRange === "yesterday") {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yStr = yesterday.toISOString().slice(0, 10);
-      return mappedAllOrders.filter((o: any) => o.date === yStr);
-    }
-    if (timeRange === "custom") {
-      return mappedAllOrders.filter((o: any) => {
-        if (customFrom && o.date < customFrom) return false;
-        if (customTo && o.date > customTo) return false;
-        return true;
-      });
-    }
-    const from = getDateFrom(timeRange);
-    return mappedAllOrders.filter((o: any) => o.date >= from);
-  }, [mappedAllOrders, timeRange, customFrom, customTo]);
+  const totalIncompleteOrdersCount = summary?.total_incomplete_orders_count || 0;
+  const totalCompletedOrdersCount = summary?.total_completed_orders_count || 0;
+  const extraEarnedValue = summary?.extra_earned_value || 0;
 
-  const { incompleteTabOrders, completeTabOrders } = React.useMemo(() => {
-    const inc = filteredByTimeBase.filter((o: any) => o._rawIsIncomplete);
-    const comp = filteredByTimeBase.filter((o: any) => o._rawIsComplete);
-    return { incompleteTabOrders: inc, completeTabOrders: comp };
-  }, [filteredByTimeBase]);
-
-  const filteredByTime = activeTab === "Incomplete" ? incompleteTabOrders : completeTabOrders;
-
-  const totalIncompleteOrdersCount = incompleteTabOrders.length + completeTabOrders.length;
-  const extraEarnedValue = completeTabOrders.reduce((sum: number, o: any) => sum + o.total, 0);
-
-  if (isLoading && !orders) {
+  if (isLoading && !orders.length) {
     return <OrdersSkeleton />;
   }
 
+  // Create mock context to satisfy OrdersTable server pagination
+  const contextValue = {
+    params: {},
+    searchQuery, setSearchQuery,
+    statusFilter: "All", setStatusFilter: () => {},
+    paymentFilter: "All", setPaymentFilter: () => {},
+    courierFilter: "All", setCourierFilter: () => {},
+    page, setPage,
+    perPage, setPerPage,
+    timeRange, setTimeRange,
+    customFrom, setCustomFrom,
+    customTo, setCustomTo,
+    pagination,
+    summary,
+  };
+
   return (
-    <div className="flex flex-col gap-6 w-full">
-      {/* Header + Toolbar combined */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        {/* Left: Title + description (hidden on mobile, shown on sm+) */}
-        <div className="space-y-1 hidden sm:block">
-          <h1 className="text-3xl tracking-tight">Incomplete Orders</h1>
-          <p className="text-muted-foreground text-sm">Track, manage, and fulfill incomplete customer orders.</p>
-          <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 rounded-md border border-emerald-100 dark:border-emerald-900/50 w-fit">
-            Total Incomplete Orders <span className="font-bold">{totalIncompleteOrdersCount}</span>, You have earned extra <span className="font-bold">{extraEarnedValue.toLocaleString()} Tk</span> from incomplete orders
+    <OrderContext.Provider value={contextValue}>
+      <div className="flex flex-col gap-6 w-full">
+        {/* Header + Toolbar */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1 hidden sm:block">
+            <h1 className="text-3xl tracking-tight">Incomplete Orders</h1>
+            <p className="text-muted-foreground text-sm">Track, manage, and fulfill incomplete customer orders.</p>
+            <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 rounded-md border border-emerald-100 dark:border-emerald-900/50 w-fit">
+              Total Incomplete Orders <span className="font-bold">{totalIncompleteOrdersCount}</span>, You have Completed <span className="font-bold">{totalCompletedOrdersCount}</span> Orders & earned extra <span className="font-bold">{extraEarnedValue.toLocaleString()} Tk</span> order value from incomplete orders.
+            </div>
           </div>
-        </div>
 
-        {/* Mobile: Title shown above */}
-        <div className="space-y-1 sm:hidden">
-          <h1 className="text-2xl tracking-tight">Incomplete Orders</h1>
-          <p className="text-muted-foreground text-sm">Track, manage, and fulfill incomplete customer orders.</p>
-          <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 rounded-md border border-emerald-100 dark:border-emerald-900/50">
-            Total Incomplete Orders <span className="font-bold">{totalIncompleteOrdersCount}</span>, You have earned extra <span className="font-bold">{extraEarnedValue.toLocaleString()} Tk</span> from incomplete orders
+          <div className="space-y-1 sm:hidden">
+            <h1 className="text-2xl tracking-tight">Incomplete Orders</h1>
+            <p className="text-muted-foreground text-sm">Track, manage, and fulfill incomplete customer orders.</p>
+            <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 rounded-md border border-emerald-100 dark:border-emerald-900/50">
+              Total Incomplete Orders <span className="font-bold">{totalIncompleteOrdersCount}</span>, You have Completed <span className="font-bold">{totalCompletedOrdersCount}</span> Orders & earned extra <span className="font-bold">{extraEarnedValue.toLocaleString()} Tk</span> order value from incomplete orders.
+            </div>
           </div>
-        </div>
 
-        {/* Controls: on mobile = full-width row (Create Order left, period+3dot right). On desktop = stacked column on right */}
-        <div className="flex flex-col gap-2 sm:items-end">
-          <div className="flex items-center justify-between gap-2 sm:justify-end">
-            {/* Create Order button */}
-            <Button size="sm" asChild>
-              <Link href="/dashboard/orders/create">
-                <Plus className="mr-2 size-4" />
-                Create Order
-              </Link>
-            </Button>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <div className="flex items-center justify-between gap-2 sm:justify-end">
+              <Button size="sm" asChild>
+                <Link href="/dashboard/orders/create">
+                  <Plus className="mr-2 size-4" />
+                  Create Order
+                </Link>
+              </Button>
 
-            {/* Period select + 3-dot */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 border rounded-[min(var(--radius-md),12px)] px-3 h-9 bg-background select-none">
-                <Switch id="all-orders-toggle" checked={allOrdersToggle} onCheckedChange={setAllOrdersToggle} />
-                <Label htmlFor="all-orders-toggle" className="text-xs font-semibold cursor-pointer whitespace-nowrap">
-                  All Orders
-                </Label>
-              </div>
-
-              <Select value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
-                <SelectTrigger className="w-32 sm:w-36">
-                  <SelectValue placeholder="Select period" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {(Object.keys(rangeLabels) as TimeRange[])
-                      .filter((r) => r !== "custom")
-                      .map((r) => (
-                        <SelectItem key={r} value={r}>
-                          {rangeLabels[r]}
-                        </SelectItem>
-                      ))}
-                    <SelectItem value="custom">Custom Range</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-
-              {/* Custom date inputs — inline on desktop only */}
-              {timeRange === "custom" && (
-                <div className="hidden sm:flex items-center gap-2">
-                  <CalendarIcon className="size-4 text-muted-foreground" />
-                  <Input
-                    type="date"
-                    className="h-8 w-36 text-xs"
-                    value={customFrom}
-                    onChange={(e) => setCustomFrom(e.target.value)}
-                  />
-                  <span className="text-xs text-muted-foreground">to</span>
-                  <Input
-                    type="date"
-                    className="h-8 w-36 text-xs"
-                    value={customTo}
-                    onChange={(e) => setCustomTo(e.target.value)}
-                  />
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 border rounded-[min(var(--radius-md),12px)] px-3 h-9 bg-background select-none">
+                  <Switch id="all-orders-toggle" checked={allOrdersToggle} onCheckedChange={setAllOrdersToggle} />
+                  <Label htmlFor="all-orders-toggle" className="text-xs font-semibold cursor-pointer whitespace-nowrap">
+                    All Orders
+                  </Label>
                 </div>
-              )}
 
-              {/* 3-dot actions menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="icon" variant="outline" aria-label="More order actions">
-                    <Ellipsis />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Bulk Invoice</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => { }}>
-                      <FileText className="mr-2 size-4" />
-                      All Invoice A4
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => { }}>
-                      <Printer className="mr-2 size-4" />
-                      All Parcel Invoice
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Management</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => { }}>
-                      <ShieldOff className="mr-2 size-4" />
-                      Block List
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => { }}>
-                      <RefreshCw className="mr-2 size-4" />
-                      Refresh
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => { }}>
-                      <FileDown className="mr-2 size-4" />
-                      Export Report
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                <Select value={timeRange} onValueChange={(v) => { setTimeRange(v as TimeRange); setPage(1); }}>
+                  <SelectTrigger className="w-32 sm:w-36">
+                    <SelectValue placeholder="Select period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {(Object.keys(rangeLabels) as TimeRange[]).filter(r => r !== "custom").map(r => (
+                        <SelectItem key={r} value={r}>{rangeLabels[r]}</SelectItem>
+                      ))}
+                      <SelectItem value="custom">Custom Range</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+
+                {timeRange === "custom" && (
+                  <div className="hidden sm:flex items-center gap-2">
+                    <CalendarIcon className="size-4 text-muted-foreground" />
+                    <Input type="date" className="h-8 w-36 text-xs" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+                    <span className="text-xs text-muted-foreground">to</span>
+                    <Input type="date" className="h-8 w-36 text-xs" value={customTo} onChange={e => setCustomTo(e.target.value)} />
+                  </div>
+                )}
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="outline" aria-label="More order actions">
+                      <Ellipsis />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>Bulk Invoice</DropdownMenuLabel>
+                      <DropdownMenuItem><FileText className="mr-2 size-4" /> All Invoice A4</DropdownMenuItem>
+                      <DropdownMenuItem><Printer className="mr-2 size-4" /> All Parcel Invoice</DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>Management</DropdownMenuLabel>
+                      <DropdownMenuItem><ShieldOff className="mr-2 size-4" /> Block List</DropdownMenuItem>
+                      <DropdownMenuItem><RefreshCw className="mr-2 size-4" /> Refresh</DropdownMenuItem>
+                      <DropdownMenuItem><FileDown className="mr-2 size-4" /> Export Report</DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
+
+            {timeRange === "custom" && (
+              <div className="flex sm:hidden items-center gap-2 w-full">
+                <CalendarIcon className="size-4 text-muted-foreground shrink-0" />
+                <Input type="date" className="h-8 flex-1 text-xs" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+                <span className="text-xs text-muted-foreground shrink-0">to</span>
+                <Input type="date" className="h-8 flex-1 text-xs" value={customTo} onChange={e => setCustomTo(e.target.value)} />
+              </div>
+            )}
           </div>
+        </div>
 
-          {/* Custom date inputs — own row on mobile only */}
-          {timeRange === "custom" && (
-            <div className="flex sm:hidden items-center gap-2 w-full">
-              <CalendarIcon className="size-4 text-muted-foreground shrink-0" />
-              <Input
-                type="date"
-                className="h-8 flex-1 text-xs"
-                value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
-              />
-              <span className="text-xs text-muted-foreground shrink-0">to</span>
-              <Input
-                type="date"
-                className="h-8 flex-1 text-xs"
-                value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
-              />
-            </div>
-          )}
+        <div className="flex w-full items-center justify-start border-b border-border/40 pb-4">
+          <Tabs value={activeTab} onValueChange={(v: any) => { setActiveTab(v); setPage(1); }}>
+            <TabsList>
+              <TabsTrigger value="Incomplete" className="text-xs">Incomplete</TabsTrigger>
+              <TabsTrigger value="Complete" className="text-xs">Complete</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        <OrderStats data={mappedOrders} />
+
+        <div className="w-full min-w-0">
+          <OrdersTable
+            data={mappedOrders}
+            hideOrderStatusFilter={true}
+            hidePaymentStatusFilter={true}
+            hidePaymentStatusColumn={true}
+            simplifiedPaymentColumn={true}
+            showIncompleteStatus={true}
+            incompleteOrdersMode={activeTab === "Incomplete"}
+            hideActionsColumn={activeTab === "Complete"}
+            useServerPagination={true}
+          />
         </div>
       </div>
-
-      <div className="flex w-full items-center justify-start border-b border-border/40 pb-4">
-        <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)}>
-          <TabsList>
-            <TabsTrigger value="Incomplete" className="text-xs">Incomplete</TabsTrigger>
-            <TabsTrigger value="Complete" className="text-xs">Complete</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      {/* Stats — driven by time-filtered data */}
-      <OrderStats data={filteredByTime} />
-
-      {/* Table — driven by time-filtered data */}
-      <div className="w-full min-w-0">
-        <OrdersTable
-          data={filteredByTime}
-          hideOrderStatusFilter={true}
-          hidePaymentStatusFilter={true}
-          hidePaymentStatusColumn={true}
-          simplifiedPaymentColumn={true}
-          showIncompleteStatus={true}
-          incompleteOrdersMode={activeTab === "Incomplete"}
-          hideActionsColumn={activeTab === "Complete"}
-        />
-      </div>
-    </div>
+    </OrderContext.Provider>
   );
 }
 
 function OrdersSkeleton() {
   return (
     <div className="flex flex-col gap-6 w-full animate-pulse">
-      {/* Header Skeleton */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <Skeleton className="h-8 w-48 rounded-md" />
@@ -412,8 +355,6 @@ function OrdersSkeleton() {
           <Skeleton className="h-9 w-9 rounded-md" />
         </div>
       </div>
-
-      {/* Stats Skeleton */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="rounded-xl border bg-card p-4 space-y-3">
@@ -426,10 +367,7 @@ function OrdersSkeleton() {
           </div>
         ))}
       </div>
-
-      {/* Table Skeleton */}
       <div className="rounded-xl border bg-card">
-        {/* Table Toolbar */}
         <div className="flex items-center justify-between p-4 border-b">
           <Skeleton className="h-8 w-52 rounded-md" />
           <div className="flex items-center gap-2">
@@ -437,7 +375,6 @@ function OrdersSkeleton() {
             <Skeleton className="h-8 w-16 rounded-md" />
           </div>
         </div>
-        {/* Table Content */}
         <div className="p-4 space-y-4">
           <div className="flex justify-between border-b pb-2">
             {Array.from({ length: 6 }).map((_, i) => (

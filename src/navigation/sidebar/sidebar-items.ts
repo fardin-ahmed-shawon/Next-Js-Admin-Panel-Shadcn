@@ -203,7 +203,7 @@ export const sidebarItems: NavGroup[] = [
       { title: "Users", url: "/dashboard/users", icon: Users, module: "users", className: "hidden" },
       { title: "Blocklist", url: "/dashboard/blocklist", icon: Ban, module: "blocklist" },
       { title: "Messages", url: "/dashboard/messages", icon: MessageCircle, module: "messages" },
-      { title: "Feature Control", url: "/dashboard/feature-control", icon: SlidersHorizontal, module: "settings" },
+      // { title: "Feature Control", url: "/dashboard/feature-control", icon: SlidersHorizontal, module: "settings" },
       { title: "Settings", url: "/dashboard/settings", icon: Settings, module: "settings" },
       { title: "Logout", url: "#", icon: LogOut },
     ],
