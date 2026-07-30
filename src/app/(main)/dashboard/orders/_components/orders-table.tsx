@@ -138,6 +138,7 @@ export interface OrderRow {
   courier_details?: any;
   source?: string;
   is_ai_called?: boolean;
+  invoice_status?: string;
 }
 
 /* ---- Status badge colors ---- */
@@ -842,6 +843,20 @@ const columns: ColumnDef<OrderRow>[] = [
                   {row.original.source === "Incomplete" ? "From Incomplete" : row.original.source}
                 </Badge>
               )}
+            </div>
+          )}
+          {row.original.invoice_status && (
+            <div className="mt-1">
+              <Badge
+                variant="outline"
+                className={`text-[9px] font-bold px-1.5 py-0 h-4 border leading-none w-fit ${
+                  row.original.invoice_status === "Invoiced"
+                    ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20"
+                    : "bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border-neutral-500/20"
+                }`}
+              >
+                {row.original.invoice_status}
+              </Badge>
             </div>
           )}
         </div>

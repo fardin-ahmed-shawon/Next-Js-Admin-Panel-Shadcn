@@ -188,6 +188,7 @@ export default function IncompleteOrdersPage() {
         ipAddress: order.customer_ip_address || "—",
         createdAt: order.created_at,
         is_ai_called: order.is_ai_called || false,
+        invoice_status: order.invoice_status || "Not Invoiced",
       };
     });
   }, [orders, getImageUrl]);
