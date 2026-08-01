@@ -206,8 +206,8 @@ function exportToExcel(data: DueItem[]) {
 
 /* ---- Main Table Component ---- */
 
-export function DueTable() {
-  const { dues, isLoading } = useDueCollection();
+export function DueTable({ source }: { source?: string }) {
+  const { dues, isLoading } = useDueCollection({ source });
 
   const formattedData = React.useMemo(() => {
     return dues.map((item: any) => ({

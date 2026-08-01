@@ -5,8 +5,8 @@ import { AlertCircle, FileText, Receipt, Users } from "lucide-react";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import useDueCollection from "@/hooks/useDueCollection";
 
-export function DueStats() {
-  const { summary, isLoading } = useDueCollection();
+export function DueStats({ source }: { source?: string }) {
+  const { summary, isLoading } = useDueCollection({ source });
 
   const stats = [
     {

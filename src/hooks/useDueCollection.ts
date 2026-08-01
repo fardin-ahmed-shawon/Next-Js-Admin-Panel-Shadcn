@@ -29,9 +29,18 @@ const fetcher = async (key: string | [string, number | undefined]) => {
   };
 };
 
-export default function useDueCollection() {
+export default function useDueCollection(params?: { source?: string; page?: number; per_page?: number; search?: string; status?: string }) {
   const { user } = useAuth();
-  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ACCOUNTS_DUE_URL || "due-collection"}`;
+  
+  const searchParams = new URLSearchParams();
+  if (params?.source) searchParams.append("source", params.source);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.per_page) searchParams.append("per_page", params.per_page.toString());
+  if (params?.search) searchParams.append("search", params.search);
+  if (params?.status && params.status !== "All") searchParams.append("status", params.status);
+
+  const queryString = searchParams.toString() ? `?${searchParams.toString()}` : "";
+  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ACCOUNTS_DUE_URL || "due-collection"}${queryString}`;
 
   const { data, error, isLoading, mutate } = useSWR(user?.id ? [url, user.id] : url, fetcher);
 

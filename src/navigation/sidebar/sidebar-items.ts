@@ -101,11 +101,24 @@ export const sidebarItems: NavGroup[] = [
           { title: "Assign Orders", url: "/dashboard/orders/assign-orders", module: "assign_orders" },
           { title: "Order Management", url: "/dashboard/orders", module: "orders" },
           { title: "Invoice", url: "/dashboard/orders/invoice", module: "orders" },
-          { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", module: "orders", isNew: true },
-          { title: "Wholesale Orders", url: "/dashboard/orders/wholesale-create", module: "orders", isNew: true },
+          { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", module: "orders" },
           { title: "AI Calling Logs", url: "/dashboard/ai-calling-logs", module: "orders", isNew: true }
         ],
       },
+
+
+      {
+        title: "Wholesale Orders",
+        url: "/dashboard/orders/wholesale",
+        icon: ShoppingCart,
+        module: "orders",
+        subItems: [
+          { title: "Order Create", url: "/dashboard/orders/wholesale-create", module: "orders" , isNew: true  },
+          { title: "Order History", url: "/dashboard/orders/wholesale", module: "orders" , isNew: true  },
+          { title: "Order Due", url: "/dashboard/orders/wholesale/due", module: "orders" , isNew: true  }
+        ],
+      },
+
       // {
       //   title: "Landing Page",
       //   url: "/dashboard/landing-pages",

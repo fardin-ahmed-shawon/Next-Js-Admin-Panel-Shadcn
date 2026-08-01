@@ -46,12 +46,15 @@ interface UseOrdersParams {
   end_date?: string;
   courier?: string;
   include_incomplete?: boolean;
+  isWholesale?: boolean;
 }
 
 export function useOrders(params?: UseOrdersParams) {
   const { user } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-  const ordersEndpoint = process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders";
+  const ordersEndpoint = params?.isWholesale 
+    ? "wholesale-orders" 
+    : (process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders");
 
   const searchParams = new URLSearchParams();
   if (params?.page) searchParams.append("page", params.page.toString());
