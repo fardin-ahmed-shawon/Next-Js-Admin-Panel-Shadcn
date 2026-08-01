@@ -61,7 +61,7 @@ function getDateFrom(range: TimeRange): string {
 
 const rangeLabels: Record<TimeRange, string> = {
   alltime: "All Time",
-  daily: "Daily",
+  daily: "Today",
   yesterday: "Yesterday",
   weekly: "Weekly",
   monthly: "Monthly",
@@ -119,7 +119,7 @@ export const OrderContext = React.createContext<{
 
 export default function OrdersPage() {
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(false);
-  const [timeRange, setTimeRange] = React.useState<TimeRange>("daily");
+  const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
 
@@ -129,6 +129,15 @@ export default function OrdersPage() {
   const [courierFilter, setCourierFilter] = React.useState("All");
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(20);
+
+  const handleSetStatusFilter = React.useCallback((status: string) => {
+    setStatusFilter(status);
+    if (status === "Pending" || status === "Ready To Ship" || status === "Hold" || status === "Ship Later" || status === "Pre-Order") {
+      setTimeRange("alltime");
+    } else {
+      setTimeRange("daily");
+    }
+  }, []);
 
   const [debouncedSearch, setDebouncedSearch] = React.useState("");
   React.useEffect(() => {
@@ -283,7 +292,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <OrderContext.Provider value={{ params, searchQuery, setSearchQuery, statusFilter, setStatusFilter, paymentFilter, setPaymentFilter, courierFilter, setCourierFilter, page, setPage, perPage, setPerPage, timeRange, setTimeRange, customFrom, setCustomFrom, customTo, setCustomTo, pagination, summary }}>
+    <OrderContext.Provider value={{ params, searchQuery, setSearchQuery, statusFilter, setStatusFilter: handleSetStatusFilter, paymentFilter, setPaymentFilter, courierFilter, setCourierFilter, page, setPage, perPage, setPerPage, timeRange, setTimeRange, customFrom, setCustomFrom, customTo, setCustomTo, pagination, summary }}>
       <div className="flex flex-col gap-6 w-full">
         {/* Header + Toolbar combined */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
