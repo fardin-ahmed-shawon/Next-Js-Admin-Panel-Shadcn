@@ -45,7 +45,7 @@ function getDateFrom(range: TimeRange): string {
 }
 
 const rangeLabels: Record<TimeRange, string> = {
-  alltime: "All Time", daily: "Daily", yesterday: "Yesterday", weekly: "Weekly",
+  alltime: "All Time", daily: "Today", yesterday: "Yesterday", weekly: "Weekly",
   monthly: "Monthly", "4months": "Last 4 Months", "6months": "Last 6 Months",
   yearly: "Yearly", custom: "Custom Range",
 };
@@ -59,7 +59,7 @@ export default function IncompleteOrdersPage() {
   const [activeTab, setActiveTab] = React.useState<"Incomplete" | "Complete">("Incomplete");
 
   const [page, setPage] = React.useState(1);
-  const [perPage, setPerPage] = React.useState(20);
+  const [perPage, setPerPage] = React.useState(100);
   const [searchQuery, setSearchQuery] = React.useState("");
 
   // Convert timeRange to actual dates for the API if needed, 

@@ -14,7 +14,7 @@ import { ArrowUpDown } from "lucide-react";
 
 const invoiceTypes = ["All", "a4", "pos", "label"];
 
-type TimeRange = "daily" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
+type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
 
 function getDateFrom(range: TimeRange): string {
   const now = new Date();
@@ -32,7 +32,8 @@ function getDateFrom(range: TimeRange): string {
 
 const rangeLabels: Record<TimeRange, string> = {
   alltime: "All Time",
-  daily: "Daily",
+  daily: "Today",
+  yesterday: "Yesterday",
   weekly: "Weekly",
   monthly: "Monthly",
   "4months": "Last 4 Months",
@@ -53,7 +54,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
 export default function InvoiceDashboardPage() {
-  const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
+  const [timeRange, setTimeRange] = React.useState<TimeRange>("daily");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -61,7 +62,7 @@ export default function InvoiceDashboardPage() {
   const [courierFilter, setCourierFilter] = React.useState("All");
 
   const [page, setPage] = React.useState(1);
-  const [perPage, setPerPage] = React.useState(10);
+  const [perPage, setPerPage] = React.useState(100);
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("desc");
   const [orderDateFilter, setOrderDateFilter] = React.useState("");
 
@@ -72,6 +73,11 @@ export default function InvoiceDashboardPage() {
     if (timeRange === "custom") {
       from_date = customFrom;
       to_date = customTo;
+    } else if (timeRange === "yesterday") {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      from_date = d.toISOString().slice(0, 10);
+      to_date = d.toISOString().slice(0, 10);
     } else if (timeRange !== "alltime") {
       from_date = getDateFrom(timeRange);
     }
@@ -447,7 +453,7 @@ export default function InvoiceDashboardPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[5, 10, 20, 50].map((size) => (
+                  {[10, 20, 30, 50, 100, 150, 200].map((size) => (
                     <SelectItem key={size} value={`${size}`}>
                       {size}
                     </SelectItem>

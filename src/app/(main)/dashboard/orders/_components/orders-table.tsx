@@ -1201,7 +1201,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
   const context = React.useContext(OrderContext);
 
   const [localPage, setLocalPage] = React.useState(1);
-  const [localPerPage, setLocalPerPage] = React.useState(20);
+  const [localPerPage, setLocalPerPage] = React.useState(100);
   const [localSearchQuery, setLocalSearchQuery] = React.useState("");
   const [localStatusFilter, setLocalStatusFilter] = React.useState(hideOrderStatusFilter ? "All" : "Pending");
   const [localPaymentFilter, setLocalPaymentFilter] = React.useState("All");
@@ -1427,7 +1427,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[10, 20, 50, 100, 150, 200].map((s) => (
+                {[10, 20, 30, 50, 100, 150, 200].map((s) => (
                   <SelectItem key={s} value={`${s}`}>
                     {s}
                   </SelectItem>

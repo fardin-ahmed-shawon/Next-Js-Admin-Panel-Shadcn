@@ -105,7 +105,7 @@ export const OrderContext = React.createContext<{
   setCourierFilter: () => { },
   page: 1,
   setPage: () => { },
-  perPage: 20,
+  perPage: 100,
   setPerPage: () => { },
   timeRange: "daily",
   setTimeRange: () => { },
@@ -128,7 +128,7 @@ export default function OrdersPage() {
   const [paymentFilter, setPaymentFilter] = React.useState("All");
   const [courierFilter, setCourierFilter] = React.useState("All");
   const [page, setPage] = React.useState(1);
-  const [perPage, setPerPage] = React.useState(20);
+  const [perPage, setPerPage] = React.useState(100);
 
   const handleSetStatusFilter = React.useCallback((status: string) => {
     setStatusFilter(status);
