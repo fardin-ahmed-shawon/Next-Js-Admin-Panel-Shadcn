@@ -551,7 +551,11 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
       const json = await res.json();
       if (res.ok && json.status) {
         toast.success(json.message || `Order created successfully! Total: ৳${total.toLocaleString()}`);
-        router.push("/dashboard/orders");
+        if (isWholesale) {
+          router.push("/dashboard/orders/wholesale");
+        } else {
+          router.push("/dashboard/orders");
+        }
       } else {
         toast.error(json.error || json.message || "Failed to create order.");
       }
