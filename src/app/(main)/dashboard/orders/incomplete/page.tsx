@@ -61,6 +61,19 @@ export default function IncompleteOrdersPage() {
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(100);
   const [searchQuery, setSearchQuery] = React.useState("");
+  
+  const [statusFilter, setStatusFilter] = React.useState("All");
+  const [paymentFilter, setPaymentFilter] = React.useState("All");
+
+  const handleSetStatusFilter = React.useCallback((status: string) => {
+    setStatusFilter(status);
+    setPage(1);
+  }, []);
+
+  const handleSetPaymentFilter = React.useCallback((status: string) => {
+    setPaymentFilter(status);
+    setPage(1);
+  }, []);
 
   // Convert timeRange to actual dates for the API if needed, 
   // though for now we pass it as start_date / end_date
@@ -93,6 +106,8 @@ export default function IncompleteOrdersPage() {
     all_orders: allOrdersToggle,
     start_date: startDate,
     end_date: endDate,
+    status: statusFilter,
+    payment_status: paymentFilter,
   });
 
   if (features?.orders_incomplete === false || String(features?.orders_incomplete) === "0") {
@@ -205,8 +220,8 @@ export default function IncompleteOrdersPage() {
   const contextValue = {
     params: {},
     searchQuery, setSearchQuery,
-    statusFilter: "All", setStatusFilter: () => {},
-    paymentFilter: "All", setPaymentFilter: () => {},
+    statusFilter, setStatusFilter: handleSetStatusFilter,
+    paymentFilter, setPaymentFilter: handleSetPaymentFilter,
     courierFilter: "All", setCourierFilter: () => {},
     page, setPage,
     perPage, setPerPage,
@@ -327,8 +342,8 @@ export default function IncompleteOrdersPage() {
         <div className="w-full min-w-0">
           <OrdersTable
             data={mappedOrders}
-            hideOrderStatusFilter={true}
-            hidePaymentStatusFilter={true}
+            hideOrderStatusFilter={activeTab === "Incomplete"}
+            hidePaymentStatusFilter={activeTab === "Incomplete"}
             hidePaymentStatusColumn={true}
             simplifiedPaymentColumn={true}
             showIncompleteStatus={true}

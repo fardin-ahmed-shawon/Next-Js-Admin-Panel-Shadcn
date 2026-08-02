@@ -23,6 +23,8 @@ interface UseIncompleteOrdersOptions {
   start_date?: string;
   end_date?: string;
   all_orders?: boolean;
+  status?: string;
+  payment_status?: string;
 }
 
 export function useIncompleteOrders(options?: UseIncompleteOrdersOptions) {
@@ -35,6 +37,8 @@ export function useIncompleteOrders(options?: UseIncompleteOrdersOptions) {
   if (options?.start_date) queryParams.append('start_date', options.start_date);
   if (options?.end_date) queryParams.append('end_date', options.end_date);
   if (options?.all_orders) queryParams.append('all_orders', '1');
+  if (options?.status && options.status !== 'All') queryParams.append('status', options.status);
+  if (options?.payment_status && options.payment_status !== 'All') queryParams.append('payment_status', options.payment_status);
 
   const queryString = queryParams.toString();
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
