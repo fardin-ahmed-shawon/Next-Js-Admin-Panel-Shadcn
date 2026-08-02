@@ -44,6 +44,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import useDueCollection from "@/hooks/useDueCollection";
+import { UpdatePaymentModal } from "../../../orders/_components/update-payment-modal";
 
 /* ---- Types ---- */
 
@@ -142,6 +143,14 @@ const columns: ColumnDef<DueItem>[] = [
     id: "actions",
     header: () => <div className="text-right">Actions</div>,
     cell: ({ row }) => {
+      const orderData = {
+        id: row.original.order_id,
+        total: Number(row.original.total_amount) || 0,
+        paid: Number(row.original.paid_amount) || 0,
+        due: Number(row.original.due_amount) || 0,
+        paymentStatus: row.original.status || "Unpaid",
+      };
+
       return (
         <div className="flex justify-end">
           <DropdownMenu>
@@ -151,14 +160,12 @@ const columns: ColumnDef<DueItem>[] = [
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => toast.success(`Payment prompt sent to ${row.original.customer_phone}`)}>
-                Send Reminder
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => toast.success(`Payment received for ${row.original.order_id}`)}>
-                <HandCoins className="mr-2 size-4" />
-                Add Payment
-              </DropdownMenuItem>
+              <UpdatePaymentModal order={orderData}>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <HandCoins className="mr-2 size-4" />
+                  Add Payment
+                </DropdownMenuItem>
+              </UpdatePaymentModal>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
