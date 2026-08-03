@@ -83,6 +83,8 @@ type DiscountRow = {
   type: "Fixed" | "Percentage";
   freeShipping: boolean;
   status: "Active" | "Inactive";
+  giftProductId: number | null;
+  giftProduct: any | null;
 };
 
 interface DiscountsTableProps {
@@ -253,6 +255,17 @@ const getColumns = (onDiscountDeleted: () => void): ColumnDef<DiscountRow>[] => 
       ),
   },
   {
+    accessorKey: "giftProduct",
+    header: "Gift Product",
+    cell: ({ row }) => (
+      row.original.giftProduct ? (
+        <span className="text-sm font-medium">{row.original.giftProduct.title}</span>
+      ) : (
+        <span className="text-muted-foreground text-sm">-</span>
+      )
+    ),
+  },
+  {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
@@ -304,6 +317,8 @@ export function DiscountsTable({ refreshTrigger, onDiscountDeleted }: DiscountsT
         type: item.type === "percentage" ? "Percentage" : "Fixed",
         freeShipping: item.has_free_shipping === 1 || item.has_free_shipping === true,
         status: item.status === "active" ? "Active" : "Inactive",
+        giftProductId: item.gift_product_id || null,
+        giftProduct: item.gift_product || null,
       }));
 
       setDiscounts(transformedData);

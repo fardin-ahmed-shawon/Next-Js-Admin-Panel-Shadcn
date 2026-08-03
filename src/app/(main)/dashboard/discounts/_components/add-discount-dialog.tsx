@@ -2,9 +2,10 @@
 
 import * as React from "react";
 
-import { Plus } from "lucide-react";
+import { Plus, Search, Package, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,6 +53,62 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
   const [discountAmount, setDiscountAmount] = React.useState("");
   const [freeShipping, setFreeShipping] = React.useState(false);
   const [status, setStatus] = React.useState<"active" | "inactive">("active");
+  const [giftProductId, setGiftProductId] = React.useState<string>("none");
+  const [giftProductObj, setGiftProductObj] = React.useState<any>(null);
+  const [products, setProducts] = React.useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [searchFocused, setSearchFocused] = React.useState(false);
+  const searchRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredProducts = React.useMemo(() => {
+    return products.filter(
+      (p) =>
+        p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.id?.toString().includes(searchQuery.toLowerCase())
+    );
+  }, [products, searchQuery]);
+
+  const getImageUrl = (path: string | null) => {
+    if (!path) return "https://placehold.co/80x80/1a1a2e/e0e0e0?text=No+Image";
+    if (path.startsWith("http")) return path;
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+    return `${base}${path.startsWith("/") ? path.slice(1) : path}`;
+  };
+
+  React.useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}products`);
+        const data = await res.json();
+        let productsData = [];
+        if (data?.data?.data) {
+          productsData = data.data.data;
+        } else if (data?.data && Array.isArray(data.data)) {
+          productsData = data.data;
+        } else if (Array.isArray(data)) {
+          productsData = data;
+        }
+        setProducts(productsData);
+      } catch (error) {
+        console.error("Failed to fetch products", error);
+      }
+    };
+    
+    if (open) {
+      fetchProducts();
+    }
+  }, [open]);
 
   // Form validation
   const [errors, setErrors] = React.useState<Record<string, string>>({});
@@ -81,6 +138,9 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
     setDiscountAmount("");
     setFreeShipping(false);
     setStatus("active");
+    setGiftProductId("none");
+    setGiftProductObj(null);
+    setSearchQuery("");
     setErrors({});
   };
 
@@ -101,6 +161,7 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
         discount_amount: parseFloat(discountAmount),
         has_free_shipping: freeShipping ? 1 : 0,
         status: status,
+        ...(giftProductId !== "none" && { gift_product_id: parseInt(giftProductId) }),
       };
 
       console.log("Submitting discount data:", discountData);
@@ -166,89 +227,186 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
           Add New Discount
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] max-w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Add New Discount</DialogTitle>
           <DialogDescription>Create an automated discount rule based on purchase totals.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            {/* Minimum Purchase Amount */}
-            <div className="grid gap-2">
-              <Label htmlFor="purchaseAmount">
-                Minimum Purchase Amount (৳) <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="purchaseAmount"
-                type="number"
-                step="0.01"
-                placeholder="Enter minimum purchase amount"
-                value={minimumSubtotalAmount}
-                onChange={(e) => setMinimumSubtotalAmount(e.target.value)}
-                required
-                className={errors.minimumSubtotalAmount ? "border-destructive" : ""}
-              />
-              {errors.minimumSubtotalAmount && (
-                <p className="text-sm text-destructive">{errors.minimumSubtotalAmount}</p>
-              )}
-            </div>
-
-            {/* Discount Type and Amount */}
-            <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
+            {/* Left Column: Other Fields */}
+            <div className="flex flex-col gap-4">
+              {/* Minimum Purchase Amount */}
               <div className="grid gap-2">
-                <Label htmlFor="discountType">Discount Type</Label>
-                <Select value={discountType} onValueChange={(value: "fixed" | "percentage") => setDiscountType(value)}>
-                  <SelectTrigger id="discountType">
-                    <SelectValue placeholder="Select type" />
+                <Label htmlFor="purchaseAmount">
+                  Minimum Purchase Amount (৳) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="purchaseAmount"
+                  type="number"
+                  step="0.01"
+                  placeholder="Enter minimum purchase amount"
+                  value={minimumSubtotalAmount}
+                  onChange={(e) => setMinimumSubtotalAmount(e.target.value)}
+                  required
+                  className={errors.minimumSubtotalAmount ? "border-destructive" : ""}
+                />
+                {errors.minimumSubtotalAmount && (
+                  <p className="text-sm text-destructive">{errors.minimumSubtotalAmount}</p>
+                )}
+              </div>
+
+              {/* Discount Type and Amount */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="discountType">Discount Type</Label>
+                  <Select value={discountType} onValueChange={(value: "fixed" | "percentage") => setDiscountType(value)}>
+                    <SelectTrigger id="discountType">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed">Fixed Amount (৳)</SelectItem>
+                      <SelectItem value="percentage">Percentage (%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="discountAmount">
+                    Discount Value <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="discountAmount"
+                    type="number"
+                    step={discountType === "percentage" ? "1" : "0.01"}
+                    placeholder={discountType === "percentage" ? "Enter percentage" : "Enter amount"}
+                    value={discountAmount}
+                    onChange={(e) => setDiscountAmount(e.target.value)}
+                    required
+                    className={errors.discountAmount ? "border-destructive" : ""}
+                  />
+                  {errors.discountAmount && <p className="text-sm text-destructive">{errors.discountAmount}</p>}
+                </div>
+              </div>
+
+              {/* Free Shipping Switch */}
+              <div className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-xs mt-2">
+                <div className="space-y-0.5">
+                  <Label htmlFor="freeShipping" className="text-base">
+                    Free Shipping
+                  </Label>
+                  <p className="text-sm text-muted-foreground">Include free shipping with this discount</p>
+                </div>
+                <Switch id="freeShipping" checked={freeShipping} onCheckedChange={setFreeShipping} />
+              </div>
+
+              {/* Status Selection */}
+              <div className="grid gap-2 mt-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={status} onValueChange={(value: "active" | "inactive") => setStatus(value)}>
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="fixed">Fixed Amount (৳)</SelectItem>
-                    <SelectItem value="percentage">Percentage (%)</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="discountAmount">
-                  Discount Value <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="discountAmount"
-                  type="number"
-                  step={discountType === "percentage" ? "1" : "0.01"}
-                  placeholder={discountType === "percentage" ? "Enter percentage" : "Enter amount"}
-                  value={discountAmount}
-                  onChange={(e) => setDiscountAmount(e.target.value)}
-                  required
-                  className={errors.discountAmount ? "border-destructive" : ""}
-                />
-                {errors.discountAmount && <p className="text-sm text-destructive">{errors.discountAmount}</p>}
-              </div>
             </div>
 
-            {/* Free Shipping Switch */}
-            <div className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-xs mt-2">
-              <div className="space-y-0.5">
-                <Label htmlFor="freeShipping" className="text-base">
-                  Free Shipping
-                </Label>
-                <p className="text-sm text-muted-foreground">Include free shipping with this discount</p>
-              </div>
-              <Switch id="freeShipping" checked={freeShipping} onCheckedChange={setFreeShipping} />
-            </div>
-
-            {/* Status Selection */}
-            <div className="grid gap-2 mt-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={status} onValueChange={(value: "active" | "inactive") => setStatus(value)}>
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Right Column: Gift Product Selection */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="giftProduct">Gift Product (Optional)</Label>
+              {giftProductObj ? (
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
+                      <img
+                        src={getImageUrl(giftProductObj.product_thumbnail_img)}
+                        alt={giftProductObj.title}
+                        className="size-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium leading-snug">{giftProductObj.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {giftProductObj.sku || "N/A"} · ৳{(giftProductObj.selling_price || 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => {
+                      setGiftProductObj(null);
+                      setGiftProductId("none");
+                      setSearchQuery("");
+                    }}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div ref={searchRef} className="relative">
+                  <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    placeholder="Search by product name, SKU, or ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
+                  />
+                  {searchFocused && filteredProducts.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-lg">
+                      {filteredProducts.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
+                          onClick={() => {
+                            setGiftProductObj(p);
+                            setGiftProductId(p.id.toString());
+                            setSearchFocused(false);
+                            setSearchQuery("");
+                          }}
+                        >
+                          <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
+                            <img
+                              src={getImageUrl(p.product_thumbnail_img)}
+                              alt={p.title}
+                              className="size-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium leading-snug">{p.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {p.sku || "N/A"} · Stock: {p.available_stock}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-sm font-semibold tabular-nums">
+                              {p.has_variant_wise_pricing
+                                ? "Variant Pricing"
+                                : `৳${(p.selling_price || 0).toLocaleString()}`}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {searchFocused && searchQuery.trim() && filteredProducts.length === 0 && (
+                    <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-popover p-6 shadow-lg">
+                      <div className="flex flex-col items-center gap-2 text-center">
+                        <Package className="size-8 text-muted-foreground" />
+                        <p className="text-sm font-medium">No products found</p>
+                        <p className="text-xs text-muted-foreground">Try a different search term.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
