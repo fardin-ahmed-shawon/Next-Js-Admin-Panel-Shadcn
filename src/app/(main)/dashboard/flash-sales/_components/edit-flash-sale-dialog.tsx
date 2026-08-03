@@ -44,6 +44,7 @@ export function EditFlashSaleDialog({ flashSale, open, onOpenChange, onFlashSale
   const [startDate, setStartDate] = React.useState("");
   const [endDate, setEndDate] = React.useState("");
   const [status, setStatus] = React.useState<"1" | "0">("1");
+  const [bannerFile, setBannerFile] = React.useState<File | null>(null);
 
   // Initialize form when dialog opens or flashSale changes
   React.useEffect(() => {
@@ -76,21 +77,23 @@ export function EditFlashSaleDialog({ flashSale, open, onOpenChange, onFlashSale
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       
-      const payload = {
-        title,
-        start_date: startDate,
-        end_date: endDate,
-        status: status === "1",
-      };
+      const formData = new FormData();
+      formData.append("_method", "PUT");
+      formData.append("title", title);
+      formData.append("start_date", startDate);
+      formData.append("end_date", endDate);
+      formData.append("status", status === "1" ? "1" : "0");
+      if (bannerFile) {
+        formData.append("banner", bannerFile);
+      }
 
       const response = await fetch(getFlashSaleUrl(flashSale.id.toString()), {
-        method: "PUT",
+        method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Accept: "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(payload),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -100,6 +103,7 @@ export function EditFlashSaleDialog({ flashSale, open, onOpenChange, onFlashSale
 
       toast.success("Flash sale updated successfully");
       
+      setBannerFile(null);
       onOpenChange(false);
       onFlashSaleUpdated?.();
     } catch (error) {
@@ -150,6 +154,20 @@ export function EditFlashSaleDialog({ flashSale, open, onOpenChange, onFlashSale
                 onChange={(e) => setEndDate(e.target.value)}
                 disabled={isSubmitting}
               />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="edit-banner">Banner Image <span className="text-muted-foreground text-xs">(1200x400)</span></Label>
+              <Input
+                id="edit-banner"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setBannerFile(e.target.files?.[0] || null)}
+                disabled={isSubmitting}
+              />
+              {flashSale?.banner && !bannerFile && (
+                <p className="text-xs text-muted-foreground mt-1">Current banner is set. Uploading a new one will replace it.</p>
+              )}
             </div>
 
             <div className="grid gap-2">

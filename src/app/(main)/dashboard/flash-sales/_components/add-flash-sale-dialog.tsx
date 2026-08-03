@@ -43,6 +43,7 @@ export function AddFlashSaleDialog({ onFlashSaleAdded }: AddFlashSaleDialogProps
   const [startDate, setStartDate] = React.useState("");
   const [endDate, setEndDate] = React.useState("");
   const [status, setStatus] = React.useState<"1" | "0">("1");
+  const [bannerFile, setBannerFile] = React.useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,21 +58,22 @@ export function AddFlashSaleDialog({ onFlashSaleAdded }: AddFlashSaleDialogProps
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       
-      const payload = {
-        title,
-        start_date: startDate,
-        end_date: endDate,
-        status: status === "1",
-      };
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("start_date", startDate);
+      formData.append("end_date", endDate);
+      formData.append("status", status === "1" ? "1" : "0");
+      if (bannerFile) {
+        formData.append("banner", bannerFile);
+      }
 
       const response = await fetch(getFlashSaleUrl(), {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Accept: "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(payload),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -86,6 +88,7 @@ export function AddFlashSaleDialog({ onFlashSaleAdded }: AddFlashSaleDialogProps
       setStartDate("");
       setEndDate("");
       setStatus("1");
+      setBannerFile(null);
       
       setOpen(false);
       onFlashSaleAdded?.();
@@ -140,6 +143,17 @@ export function AddFlashSaleDialog({ onFlashSaleAdded }: AddFlashSaleDialogProps
                 type="datetime-local"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="banner">Banner Image <span className="text-muted-foreground text-xs">(1200x400)</span></Label>
+              <Input
+                id="banner"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setBannerFile(e.target.files?.[0] || null)}
                 disabled={isSubmitting}
               />
             </div>
