@@ -367,6 +367,12 @@ export default function VariantAttributesPage() {
             </Badge>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col justify-between space-y-6">
+            <div className="rounded-md bg-blue-50 dark:bg-blue-950/40 p-3.5 border border-blue-100 dark:border-blue-900/50">
+              <p className="text-sm text-blue-800 dark:text-blue-300">
+                <strong className="font-semibold mr-1">Pro Tip:</strong> 
+                If you create a size label in the format like <span className="font-mono bg-blue-100 dark:bg-blue-900/60 px-1 py-0.5 rounded text-xs">'1 Piece'</span>, <span className="font-mono bg-blue-100 dark:bg-blue-900/60 px-1 py-0.5 rounded text-xs">'2 Piece'</span>, etc., the inventory will automatically detect the number and reduce stock by exactly 1 Unit, 2 Units, etc.
+              </p>
+            </div>
             <form onSubmit={handleAddSize} className="space-y-4">
               <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-12">
                 <div className="space-y-1.5 sm:col-span-10">
