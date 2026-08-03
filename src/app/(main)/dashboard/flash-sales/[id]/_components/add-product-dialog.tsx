@@ -32,7 +32,7 @@ export function AddProductDialog({ flashSaleId, onProductAdded }: AddProductDial
 
   // Form state
   const [productId, setProductId] = React.useState<string>("");
-  const [discountType, setDiscountType] = React.useState<"percent" | "fixed" | "fixed_price">("percent");
+  const [discountType, setDiscountType] = React.useState<"fixed">("fixed");
   const [discountAmount, setDiscountAmount] = React.useState("");
   const [quantity, setQuantity] = React.useState("");
 
@@ -142,7 +142,7 @@ export function AddProductDialog({ flashSaleId, onProductAdded }: AddProductDial
       
       // Reset form
       setProductId("");
-      setDiscountType("percent");
+      setDiscountType("fixed");
       setDiscountAmount("");
       setQuantity("");
       
@@ -243,7 +243,7 @@ export function AddProductDialog({ flashSaleId, onProductAdded }: AddProductDial
                             ID: {productObj.id}
                           </Badge>
                           <span className="text-xs text-muted-foreground font-medium">
-                            ${productObj.selling_price || productObj.regular_price || 0}
+                            Tk {productObj.selling_price || productObj.regular_price || 0}
                           </span>
                         </div>
                       </div>
@@ -273,9 +273,7 @@ export function AddProductDialog({ flashSaleId, onProductAdded }: AddProductDial
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percent">Percent (%)</SelectItem>
                     <SelectItem value="fixed">Fixed Amount (-)</SelectItem>
-                    <SelectItem value="fixed_price">Fixed Price ($)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

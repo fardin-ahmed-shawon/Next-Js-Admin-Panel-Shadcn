@@ -143,7 +143,7 @@ export function FlashSaleProductsTable({ flashSaleId, refreshTrigger, onProductD
       header: "Discount Type",
       cell: ({ row }) => {
         const type = row.getValue("discount_type") as string;
-        return <div className="capitalize">{type.replace("_", " ")}</div>;
+        return <div className="capitalize">{type ? type.replace("_", " ") : ""}</div>;
       },
     },
     {
@@ -153,20 +153,22 @@ export function FlashSaleProductsTable({ flashSaleId, refreshTrigger, onProductD
         const type = row.getValue("discount_type") as string;
         const amount = row.getValue("discount_amount") as string;
         
+        if (!type || !amount) return null;
+        
         if (type === "percent") {
           return <div>{amount}%</div>;
         } else if (type === "fixed_price") {
-          return <div>${amount}</div>; // Format based on your currency
+          return <div>Tk {amount}</div>; 
         }
-        return <div>-${amount}</div>;
+        return <div>-Tk {amount}</div>;
       },
     },
     {
       accessorKey: "quantity",
       header: "Quantity Limit",
       cell: ({ row }) => {
-        const qty = row.getValue("quantity");
-        return <div>{qty !== null ? qty : "Unlimited"}</div>;
+        const qty = row.getValue("quantity") as number | null;
+        return <div>{qty !== null && qty !== undefined ? String(qty) : "Unlimited"}</div>;
       },
     },
     {

@@ -47,13 +47,13 @@ export function EditProductDialog({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Form state
-  const [discountType, setDiscountType] = React.useState<"percent" | "fixed" | "fixed_price">("percent");
+  const [discountType, setDiscountType] = React.useState<"fixed">("fixed");
   const [discountAmount, setDiscountAmount] = React.useState("");
   const [quantity, setQuantity] = React.useState("");
 
   React.useEffect(() => {
     if (flashSaleProduct && open) {
-      setDiscountType(flashSaleProduct.discount_type || "percent");
+      setDiscountType("fixed");
       setDiscountAmount(flashSaleProduct.discount_amount?.toString() || "");
       setQuantity(flashSaleProduct.quantity?.toString() || "");
     }
@@ -125,9 +125,7 @@ export function EditProductDialog({
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percent">Percent (%)</SelectItem>
                     <SelectItem value="fixed">Fixed Amount (-)</SelectItem>
-                    <SelectItem value="fixed_price">Fixed Price ($)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
