@@ -77,6 +77,8 @@ type CouponRow = {
   usageCount: number;
   usageLimit: number | string;
   status: string;
+  product_id?: string | number | null;
+  product?: any;
 };
 
 interface CouponsTableProps {
@@ -220,6 +222,8 @@ export function CouponsTable({ refreshTrigger, onCouponDeleted }: CouponsTablePr
         usageCount: item.usage_count || 0,
         usageLimit: item.usage_limit || "Unlimited",
         status: item.status === "active" ? "Active" : item.status === "expired" ? "Expired" : "Inactive",
+        product_id: item.product_id,
+        product: item.product,
       }));
 
       setCoupons(transformedData);
@@ -290,6 +294,32 @@ export function CouponsTable({ refreshTrigger, onCouponDeleted }: CouponsTablePr
           <span className="text-xs text-muted-foreground">{row.original.id}</span>
         </div>
       ),
+    },
+    {
+      accessorKey: "product",
+      header: "Product",
+      cell: ({ row }) => {
+        const product = row.original.product;
+        if (!product) return <span className="text-muted-foreground italic text-xs">Any Product</span>;
+        
+        const getImageUrl = (path: string | null) => {
+          if (!path) return "https://placehold.co/40x40/1a1a2e/e0e0e0?text=No+Img";
+          if (path.startsWith("http")) return path;
+          const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+          return `${base}${path.startsWith("/") ? path.slice(1) : path}`;
+        };
+
+        return (
+          <div className="flex items-center gap-2 max-w-[150px]">
+            <div className="h-8 w-8 shrink-0 overflow-hidden rounded border bg-muted">
+              <img src={getImageUrl(product.product_thumbnail_img)} alt={product.title} className="h-full w-full object-cover" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium truncate" title={product.title}>{product.title}</p>
+            </div>
+          </div>
+        );
+      },
     },
     { accessorKey: "type", header: "Type" },
     {
