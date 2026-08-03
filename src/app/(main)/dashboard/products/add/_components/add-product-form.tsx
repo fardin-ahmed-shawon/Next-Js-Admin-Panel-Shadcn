@@ -76,6 +76,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
   // Variants & Stock
   const [hasVariants, setHasVariants] = React.useState(false);
   const [hasVariantWisePricing, setHasVariantWisePricing] = React.useState(false);
+  const [hasFreeShipping, setHasFreeShipping] = React.useState(false);
   const [sku, setSku] = React.useState(generateSKU());
   const [availableStock, setAvailableStock] = React.useState("");
   const [variants, setVariants] = React.useState<Variant[]>([]);
@@ -185,6 +186,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
     setMedia([]);
     setHasVariants(false);
     setHasVariantWisePricing(false);
+    setHasFreeShipping(false);
     setVariants([]);
     setAvailableStock("");
     setSourceType("vendor");
@@ -297,6 +299,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
 
       formData.append("has_variants", hasVariants ? "1" : "0");
       formData.append("has_variant_wise_pricing", hasVariantWisePricing ? "1" : "0");
+      formData.append("has_free_shipping", hasFreeShipping ? "1" : "0");
 
       if (thumbnailFile) {
         formData.append("thumbnail", thumbnailFile);
@@ -554,6 +557,19 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                   </Label>
                   <p className="text-xs text-muted-foreground">
                     Turn this off to keep the product visible but unavailable.
+                  </p>
+                </div>
+              </div>
+
+              {/* Free Shipping */}
+              <div className="flex items-start gap-3 mt-2">
+                <Switch id="has-free-shipping" checked={hasFreeShipping} onCheckedChange={setHasFreeShipping} className="mt-0.5" />
+                <div className="space-y-0.5">
+                  <Label htmlFor="has-free-shipping" className="text-sm font-medium cursor-pointer">
+                    Free Shipping
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Enable this to offer free shipping for this product.
                   </p>
                 </div>
               </div>

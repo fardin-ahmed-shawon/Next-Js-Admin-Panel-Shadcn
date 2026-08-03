@@ -84,9 +84,9 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
   const [regularPrice, setRegularPrice] = React.useState("0");
   const [sellingPrice, setSellingPrice] = React.useState("0");
 
-  // Variants
   const [hasVariants, setHasVariants] = React.useState(false);
   const [hasVariantWisePricing, setHasVariantWisePricing] = React.useState(false);
+  const [hasFreeShipping, setHasFreeShipping] = React.useState(false);
   const [variants, setVariants] = React.useState<Variant[]>([]);
 
   // Pre-Order
@@ -113,7 +113,7 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
       setShortDescription(product.product_short_description || "");
       setLongDescription(product.product_long_description || "");
       setProductType(product.product_type || "none");
-      setIsActive(product.status !== "Inactive");
+      setIsActive(String(product.status).toLowerCase() !== "inactive");
 
       setSku(product.sku || "");
       setAvailableStock(product.available_stock?.toString() || "0");
@@ -139,6 +139,7 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
 
       setHasVariants(!!product.has_variants);
       setHasVariantWisePricing(!!product.has_variant_wise_pricing);
+      setHasFreeShipping(!!product.has_free_shipping);
 
       if (product.variants && Array.isArray(product.variants)) {
         setVariants(
@@ -294,6 +295,8 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
         });
         formData.append("variants", JSON.stringify(mappedVariants));
       }
+
+      formData.append("has_free_shipping", hasFreeShipping ? "1" : "0");
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}product/${productId}`, {
         method: "POST", // POST with _method=PUT
@@ -493,6 +496,18 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
                   </Label>
                   <p className="text-xs text-muted-foreground">
                     Turn this off to keep the product visible but unavailable.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 mt-2">
+                <Switch id="has-free-shipping" checked={hasFreeShipping} onCheckedChange={setHasFreeShipping} className="mt-0.5" />
+                <div className="space-y-0.5">
+                  <Label htmlFor="has-free-shipping" className="text-sm font-medium">
+                    Free Shipping
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Enable this to offer free shipping for this product.
                   </p>
                 </div>
               </div>
