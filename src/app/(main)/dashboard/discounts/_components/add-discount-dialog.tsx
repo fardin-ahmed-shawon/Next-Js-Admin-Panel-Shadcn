@@ -55,6 +55,7 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
   const [status, setStatus] = React.useState<"active" | "inactive">("active");
   const [giftProductId, setGiftProductId] = React.useState<string>("none");
   const [giftProductObj, setGiftProductObj] = React.useState<any>(null);
+  const [variantId, setVariantId] = React.useState<string>("none");
   const [products, setProducts] = React.useState<any[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchFocused, setSearchFocused] = React.useState(false);
@@ -128,6 +129,10 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
       newErrors.discountAmount = "Percentage discount cannot exceed 100%";
     }
 
+    if (giftProductObj && giftProductObj.has_variants && variantId === "none") {
+      newErrors.variantId = "Please select a variant for the gift product";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -140,6 +145,7 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
     setStatus("active");
     setGiftProductId("none");
     setGiftProductObj(null);
+    setVariantId("none");
     setSearchQuery("");
     setErrors({});
   };
@@ -162,6 +168,9 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
         has_free_shipping: freeShipping ? 1 : 0,
         status: status,
         ...(giftProductId !== "none" && { gift_product_id: parseInt(giftProductId) }),
+        ...(giftProductId === "none" && { gift_product_id: null }),
+        ...(variantId !== "none" && { variant_id: parseInt(variantId) }),
+        ...(variantId === "none" && { variant_id: null }),
       };
 
       console.log("Submitting discount data:", discountData);
@@ -342,6 +351,7 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
                     onClick={() => {
                       setGiftProductObj(null);
                       setGiftProductId("none");
+                      setVariantId("none");
                       setSearchQuery("");
                     }}
                   >
@@ -368,6 +378,7 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
                           onClick={() => {
                             setGiftProductObj(p);
                             setGiftProductId(p.id.toString());
+                            setVariantId("none");
                             setSearchFocused(false);
                             setSearchQuery("");
                           }}
@@ -407,6 +418,34 @@ export function AddDiscountDialog({ onDiscountAdded }: AddDiscountDialogProps) {
                   )}
                 </div>
               )}
+
+              {/* Variant Selection if applicable */}
+              {giftProductObj && giftProductObj.has_variants ? (
+                <div className="grid gap-2 mt-2">
+                  <Label htmlFor="variantId">
+                    Select Variant <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={variantId} onValueChange={setVariantId}>
+                    <SelectTrigger id="variantId" className={errors.variantId ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select a variant" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Choose a variant</SelectItem>
+                      {giftProductObj.variants?.map((v: any) => {
+                        const sizeLabel = v.size?.label || "";
+                        const colorLabel = v.color?.label || "";
+                        const variantLabel = [sizeLabel, colorLabel].filter(Boolean).join(" - ") || v.sku;
+                        return (
+                          <SelectItem key={v.id} value={v.id.toString()}>
+                            {variantLabel} {v.available_stock !== undefined ? `(Stock: ${v.available_stock})` : ""}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  {errors.variantId && <p className="text-sm text-destructive">{errors.variantId}</p>}
+                </div>
+              ) : null}
             </div>
           </div>
 

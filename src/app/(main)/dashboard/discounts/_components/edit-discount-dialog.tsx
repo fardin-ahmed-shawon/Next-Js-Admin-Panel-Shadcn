@@ -47,6 +47,8 @@ interface EditDiscountDialogProps {
     status: string;
     giftProductId: number | null;
     giftProduct: any | null;
+    variantId: number | null;
+    giftProductVariant: any | null;
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -70,6 +72,9 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
     discount.giftProductId ? discount.giftProductId.toString() : "none"
   );
   const [giftProductObj, setGiftProductObj] = React.useState<any>(discount.giftProduct || null);
+  const [variantId, setVariantId] = React.useState<string>(
+    discount.variantId ? discount.variantId.toString() : "none"
+  );
   const [products, setProducts] = React.useState<any[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchFocused, setSearchFocused] = React.useState(false);
@@ -137,6 +142,7 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
     setStatus(discount.status === "Active" ? "active" : "inactive");
     setGiftProductId(discount.giftProductId ? discount.giftProductId.toString() : "none");
     setGiftProductObj(discount.giftProduct || null);
+    setVariantId(discount.variantId ? discount.variantId.toString() : "none");
     setSearchQuery("");
     setErrors({});
   }, [discount]);
@@ -154,6 +160,10 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
 
     if (discountType === "percentage" && parseFloat(discountAmount) > 100) {
       newErrors.discountAmount = "Percentage discount cannot exceed 100%";
+    }
+
+    if (giftProductObj && giftProductObj.has_variants && variantId === "none") {
+      newErrors.variantId = "Please select a variant for the gift product";
     }
 
     setErrors(newErrors);
@@ -179,6 +189,8 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
         status: status,
         ...(giftProductId !== "none" && { gift_product_id: parseInt(giftProductId) }),
         ...(giftProductId === "none" && { gift_product_id: null }),
+        ...(variantId !== "none" && { variant_id: parseInt(variantId) }),
+        ...(variantId === "none" && { variant_id: null }),
       };
 
       console.log("Updating discount data:", discountData);
@@ -345,6 +357,7 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
                     onClick={() => {
                       setGiftProductObj(null);
                       setGiftProductId("none");
+                      setVariantId("none");
                       setSearchQuery("");
                     }}
                   >
@@ -371,6 +384,7 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
                           onClick={() => {
                             setGiftProductObj(p);
                             setGiftProductId(p.id.toString());
+                            setVariantId("none");
                             setSearchFocused(false);
                             setSearchQuery("");
                           }}
@@ -410,6 +424,34 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
                   )}
                 </div>
               )}
+
+              {/* Variant Selection if applicable */}
+              {giftProductObj && giftProductObj.has_variants ? (
+                <div className="grid gap-2 mt-2">
+                  <Label htmlFor="edit-variantId">
+                    Select Variant <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={variantId} onValueChange={setVariantId}>
+                    <SelectTrigger id="edit-variantId" className={errors.variantId ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select a variant" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Choose a variant</SelectItem>
+                      {giftProductObj.variants?.map((v: any) => {
+                        const sizeLabel = v.size?.label || "";
+                        const colorLabel = v.color?.label || "";
+                        const variantLabel = [sizeLabel, colorLabel].filter(Boolean).join(" - ") || v.sku;
+                        return (
+                          <SelectItem key={v.id} value={v.id.toString()}>
+                            {variantLabel} {v.available_stock !== undefined ? `(Stock: ${v.available_stock})` : ""}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  {errors.variantId && <p className="text-sm text-destructive">{errors.variantId}</p>}
+                </div>
+              ) : null}
             </div>
           </div>
 

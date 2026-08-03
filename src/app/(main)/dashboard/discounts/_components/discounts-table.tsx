@@ -85,6 +85,8 @@ type DiscountRow = {
   status: "Active" | "Inactive";
   giftProductId: number | null;
   giftProduct: any | null;
+  variantId: number | null;
+  giftProductVariant: any | null;
 };
 
 interface DiscountsTableProps {
@@ -259,7 +261,16 @@ const getColumns = (onDiscountDeleted: () => void): ColumnDef<DiscountRow>[] => 
     header: "Gift Product",
     cell: ({ row }) => (
       row.original.giftProduct ? (
-        <span className="text-sm font-medium">{row.original.giftProduct.title}</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium">{row.original.giftProduct.title}</span>
+          {row.original.giftProductVariant && (
+            <span className="text-xs text-muted-foreground">
+              {[row.original.giftProductVariant.size?.label, row.original.giftProductVariant.color?.label]
+                .filter(Boolean)
+                .join(" - ") || row.original.giftProductVariant.sku}
+            </span>
+          )}
+        </div>
       ) : (
         <span className="text-muted-foreground text-sm">-</span>
       )
@@ -319,6 +330,8 @@ export function DiscountsTable({ refreshTrigger, onDiscountDeleted }: DiscountsT
         status: item.status === "active" ? "Active" : "Inactive",
         giftProductId: item.gift_product_id || null,
         giftProduct: item.gift_product || null,
+        variantId: item.variant_id || null,
+        giftProductVariant: item.gift_product_variant || null,
       }));
 
       setDiscounts(transformedData);
