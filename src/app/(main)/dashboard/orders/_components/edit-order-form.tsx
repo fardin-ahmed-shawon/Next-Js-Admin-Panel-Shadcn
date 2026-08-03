@@ -258,6 +258,9 @@ interface CartItem {
   color: string;
   size: string;
   unitPrice: number;
+  isExisting?: boolean;
+  isGift?: boolean;
+  manualVariantChange?: boolean;
 }
 
 const fetcher = async (url: string) => {
@@ -330,10 +333,12 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
       const variant = variants.find((v: any) => v.size_id === selectedSizeId && v.color_id === selectedColorId);
 
       if (variant && variant.variant_pricing) {
-        updateUnitPrice(item.product.id, variant.variant_pricing.selling_price);
+        if ((!item.isExisting || item.manualVariantChange) && !item.isGift) {
+          updateUnitPrice(item.product.id, variant.variant_pricing.selling_price);
+        }
       }
     }
-  }, [item.size, item.color, sizes, colors, variants]);
+  }, [item.size, item.color, sizes, colors, variants, item.isExisting, item.manualVariantChange, item.isGift]);
 
   React.useEffect(() => {
     if (requiresVariant) {
@@ -385,6 +390,11 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 className="w-16 h-6 text-xs text-right pr-1 rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-mono"
               />
               <span className="text-xs text-muted-foreground">each</span>
+              {item.isGift && (
+                <Badge variant="outline" className="ml-1 px-1.5 py-0 text-[10px] bg-green-50 text-green-600 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900/50">
+                  Free Gift
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -409,7 +419,13 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
         <div className="mt-2 flex flex-col gap-2 pl-15">
           <div className="flex items-center gap-3">
             {availableColors.length > 1 ? (
-              <Select value={item.color} onValueChange={(v) => updateCartItem(item.product.id, "color", v)}>
+              <Select 
+                value={item.color} 
+                onValueChange={(v) => {
+                  updateCartItem(item.product.id, "color", v);
+                  updateCartItem(item.product.id, "manualVariantChange", true);
+                }}
+              >
                 <SelectTrigger
                   className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}
                 >
@@ -430,7 +446,13 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
             ) : null}
 
             {availableSizes.length > 1 ? (
-              <Select value={item.size} onValueChange={(v) => updateCartItem(item.product.id, "size", v)}>
+              <Select 
+                value={item.size} 
+                onValueChange={(v) => {
+                  updateCartItem(item.product.id, "size", v);
+                  updateCartItem(item.product.id, "manualVariantChange", true);
+                }}
+              >
                 <SelectTrigger
                   className={`h-7 w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}
                 >
@@ -458,10 +480,14 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 onClick={() => {
                   updateCartItem(item.product.id, "color", "");
                   updateCartItem(item.product.id, "size", "");
-                  updateUnitPrice(
-                    item.product.id,
-                    item.product.has_variant_wise_pricing ? 0 : item.product.selling_price || 0,
-                  );
+                  updateCartItem(item.product.id, "manualVariantChange", true);
+                  
+                  if (!item.isGift) {
+                    updateUnitPrice(
+                      item.product.id,
+                      item.product.has_variant_wise_pricing ? 0 : item.product.selling_price || 0,
+                    );
+                  }
                 }}
                 title="Clear selections"
               >
@@ -756,6 +782,8 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
           color: op.color_label || "",
           size: op.size_label || "",
           unitPrice: Number(op.unit_price) || 0,
+          isExisting: true,
+          isGift: Number(op.unit_price) === 0,
         }));
         setCart(mappedCart);
       }
