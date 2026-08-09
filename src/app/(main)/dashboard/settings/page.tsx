@@ -4,6 +4,8 @@ import * as React from "react";
 import { useState } from "react";
 
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+import { Copy } from "lucide-react";
 
 import {
   AlertDialog,
@@ -69,6 +71,26 @@ export default function SettingsPage() {
           <h1 className="text-3xl tracking-tight">Settings</h1>
           <p className="text-muted-foreground text-sm">Update account preferences and manage integrations.</p>
         </div>
+        {isAdmin && (
+          <div className="flex items-center gap-2">
+            <Input
+              value="https://main-api.uniquelifebd.com/productfeed.xml"
+              readOnly
+              className="w-64 bg-muted text-muted-foreground h-9"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText("https://main-api.uniquelifebd.com/productfeed.xml");
+                toast.success("Link copied to clipboard!");
+              }}
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Copy Link
+            </Button>
+          </div>
+        )}
       </div>
 
 
