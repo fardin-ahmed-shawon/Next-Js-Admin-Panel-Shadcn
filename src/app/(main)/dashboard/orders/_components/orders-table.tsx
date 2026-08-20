@@ -182,9 +182,21 @@ export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolea
   const { data: pathaoConfig } = usePathaoSetup();
   const { data: redxConfig } = useRedxSetup();
 
-  const isSteadfastActive = steadfastConfig?.is_active === 1;
-  const isPathaoActive = pathaoConfig?.status === "active";
-  const isRedxActive = redxConfig?.status === "active";
+  const isSteadfastActive =
+    steadfastConfig?.status === "active" ||
+    steadfastConfig?.is_active === 1 ||
+    steadfastConfig?.is_active === "1" ||
+    steadfastConfig?.is_active === true;
+  const isPathaoActive =
+    pathaoConfig?.status === "active" ||
+    pathaoConfig?.is_active === 1 ||
+    pathaoConfig?.is_active === "1" ||
+    pathaoConfig?.is_active === true;
+  const isRedxActive =
+    redxConfig?.status === "active" ||
+    redxConfig?.is_active === 1 ||
+    redxConfig?.is_active === "1" ||
+    redxConfig?.is_active === true;
 
   const hasSteadfastParcel = !!row.original.steadfast_parcel || !!row.original.steadfastParcel;
   const hasPathaoParcel = !!row.original.pathao_parcel || !!row.original.pathaoParcel;

@@ -519,9 +519,21 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
 
   const { orders: phoneMatchedOrders } = useOrders({ search: order?.customer_phone, all_orders: true });
 
-  const isSteadfastActive = steadfastConfig?.is_active === 1;
-  const isPathaoActive = pathaoConfig?.status === "active";
-  const isRedxActive = redxConfig?.status === "active";
+  const isSteadfastActive =
+    steadfastConfig?.status === "active" ||
+    steadfastConfig?.is_active === 1 ||
+    steadfastConfig?.is_active === "1" ||
+    steadfastConfig?.is_active === true;
+  const isPathaoActive =
+    pathaoConfig?.status === "active" ||
+    pathaoConfig?.is_active === 1 ||
+    pathaoConfig?.is_active === "1" ||
+    pathaoConfig?.is_active === true;
+  const isRedxActive =
+    redxConfig?.status === "active" ||
+    redxConfig?.is_active === 1 ||
+    redxConfig?.is_active === "1" ||
+    redxConfig?.is_active === true;
 
   /* local state for editable dropdowns */
   const [orderStatus, setOrderStatus] = React.useState("");
