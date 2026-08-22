@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { useRouter } from "next/navigation";
 
-import { CirclePlus, ImagePlus, Loader2, Package, RefreshCw, Save, Upload, X, Wand2 } from "lucide-react";
+import { CirclePlus, ImagePlus, Loader2, Package, RefreshCw, Save, Upload, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -12,15 +12,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import useAttributes from "@/hooks/useAttributes";
 import useCategories from "@/hooks/useCategories";
 import { useModularFeatures } from "@/hooks/useModularFeatures";
-import { ProductVariantsSection, Variant } from "./product-variants-section";
+
+import { ProductVariantsSection, type Variant } from "./product-variants-section";
 
 const isDescriptionEmpty = (html: string) => {
   if (!html) return true;
@@ -57,6 +58,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
   const { colors, sizes } = useAttributes();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isGeneratingText, setIsGeneratingText] = React.useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = React.useState(false);
 
   // Product info
   const [thumbnailUrl, setThumbnailUrl] = React.useState<string | null>(null);
@@ -110,14 +112,14 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
 
   const availableColors = React.useMemo(() => {
     if (!hasVariants) return [];
-    const usedColorLabels = new Set(variants.map(v => v.color).filter(Boolean));
-    return colors.filter(c => usedColorLabels.has(c.label));
+    const usedColorLabels = new Set(variants.map((v) => v.color).filter(Boolean));
+    return colors.filter((c) => usedColorLabels.has(c.label));
   }, [hasVariants, variants, colors]);
 
   const availableSizes = React.useMemo(() => {
     if (!hasVariants) return [];
-    const usedSizeLabels = new Set(variants.map(v => v.size).filter(Boolean));
-    return sizes.filter(s => usedSizeLabels.has(s.label));
+    const usedSizeLabels = new Set(variants.map((v) => v.size).filter(Boolean));
+    return sizes.filter((s) => usedSizeLabels.has(s.label));
   }, [hasVariants, variants, sizes]);
 
   /* ---- media helpers ---- */
@@ -151,11 +153,11 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
     try {
       const catName = categories.find((c) => String(c.id) === category)?.main_category_name || "";
       const subCatName = filteredSubCategories.find((c) => String(c.id) === subCategory)?.name || "";
-      
+
       const res = await fetch("/api/ai/generate-description", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productName, categoryName: catName, subCategoryName: subCatName })
+        body: JSON.stringify({ productName, categoryName: catName, subCategoryName: subCatName }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -168,6 +170,43 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
       toast.error(error.message);
     } finally {
       setIsGeneratingText(false);
+    }
+  }
+
+  async function handleGenerateImage() {
+    if (!productName.trim()) {
+      toast.error("Please enter a product name first.");
+      return;
+    }
+    setIsGeneratingImage(true);
+    try {
+      const categoryName = categories.find((c) => String(c.id) === category)?.main_category_name || "";
+      const subCategoryName = filteredSubCategories.find((c) => String(c.id) === subCategory)?.name || "";
+      const res = await fetch("/api/ai/generate-product-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productName, categoryName, subCategoryName }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || "Failed to generate product image");
+
+      const imageResponse = await fetch(`data:${data.data.mimeType};base64,${data.data.imageBase64}`);
+      const imageBlob = await imageResponse.blob();
+      const safeName =
+        productName
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "") || "product";
+      const generatedFile = new File([imageBlob], `${safeName}-ai.png`, { type: data.data.mimeType });
+      if (thumbnailUrl?.startsWith("blob:")) URL.revokeObjectURL(thumbnailUrl);
+      setThumbnailFile(generatedFile);
+      setThumbnailUrl(URL.createObjectURL(generatedFile));
+      toast.success("Product image generated successfully!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to generate product image");
+    } finally {
+      setIsGeneratingImage(false);
     }
   }
 
@@ -259,7 +298,9 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
         }
         if (hasVariantWisePricing) {
           if (!variants[i].purchasePrice || !variants[i].sellingPrice) {
-            toast.error(`Purchase and Selling pricing fields are required for Variant ${i + 1} when Variant-Wise Pricing is enabled.`);
+            toast.error(
+              `Purchase and Selling pricing fields are required for Variant ${i + 1} when Variant-Wise Pricing is enabled.`,
+            );
             return;
           }
         }
@@ -360,8 +401,8 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
         <div className="space-y-1">
           <h1 className="text-3xl tracking-tight">{isAiMode ? "AI Product Generator" : "Add Product"}</h1>
           <p className="text-sm text-muted-foreground">
-            {isAiMode 
-              ? "Use AI to magically generate descriptions for your product."
+            {isAiMode
+              ? "Use AI to generate a product image and polished descriptions."
               : "Build a polished product record with pricing, media, availability, and variant data."}
           </p>
         </div>
@@ -396,6 +437,19 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-primary font-medium">Thumbnail</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateImage}
+                    disabled={isGeneratingImage || !productName.trim()}
+                  >
+                    {isGeneratingImage ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="mr-2 size-4" />
+                    )}
+                    {isGeneratingImage ? "Generating..." : "Generate image"}
+                  </Button>
                 </div>
                 <div className="flex items-center gap-4">
                   {thumbnailUrl ? (
@@ -525,7 +579,11 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="short-desc">Short Description</Label>
                   <Button variant="outline" size="sm" onClick={handleGenerateDescriptions} disabled={isGeneratingText}>
-                    {isGeneratingText ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Wand2 className="mr-2 size-4" />}
+                    {isGeneratingText ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="mr-2 size-4" />
+                    )}
                     Generate Descriptions
                   </Button>
                 </div>
@@ -563,14 +621,17 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
 
               {/* Free Shipping */}
               <div className="flex items-start gap-3 mt-2">
-                <Switch id="has-free-shipping" checked={hasFreeShipping} onCheckedChange={setHasFreeShipping} className="mt-0.5" />
+                <Switch
+                  id="has-free-shipping"
+                  checked={hasFreeShipping}
+                  onCheckedChange={setHasFreeShipping}
+                  className="mt-0.5"
+                />
                 <div className="space-y-0.5">
                   <Label htmlFor="has-free-shipping" className="text-sm font-medium cursor-pointer">
                     Free Shipping
                   </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Enable this to offer free shipping for this product.
-                  </p>
+                  <p className="text-xs text-muted-foreground">Enable this to offer free shipping for this product.</p>
                 </div>
               </div>
             </CardContent>
@@ -682,10 +743,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                 <>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                     {media.map((item) => (
-                      <div
-                        key={item.id}
-                        className="group relative flex flex-col gap-2 rounded-lg border bg-muted p-2"
-                      >
+                      <div key={item.id} className="group relative flex flex-col gap-2 rounded-lg border bg-muted p-2">
                         <div className="relative aspect-square overflow-hidden rounded-md">
                           <img src={item.url} alt={item.name} className="size-full object-cover" />
                           <button
@@ -695,55 +753,56 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                             <X className="size-3.5" />
                           </button>
                         </div>
-                        {features?.variant_management !== false && String(features?.variant_management) !== "0" && features?.variant_wise_image !== false && String(features?.variant_wise_image) !== "0" && (
-                          <div className="grid grid-cols-2 gap-1">
-                            <Select
-                              value={item.color || "none"}
-                              onValueChange={(val) => {
-                                setMedia((prev) =>
-                                  prev.map((m) =>
-                                    m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m
-                                  )
-                                );
-                              }}
-                            >
-                              <SelectTrigger className="h-8 text-xs px-2">
-                                <SelectValue placeholder="Color" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">No Color</SelectItem>
-                                {availableColors.map((c) => (
-                                  <SelectItem key={c.id} value={c.label}>
-                                    {c.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            
-                            <Select
-                              value={item.size || "none"}
-                              onValueChange={(val) => {
-                                setMedia((prev) =>
-                                  prev.map((m) =>
-                                    m.id === item.id ? { ...m, size: val === "none" ? "" : val } : m
-                                  )
-                                );
-                              }}
-                            >
-                              <SelectTrigger className="h-8 text-xs px-2">
-                                <SelectValue placeholder="Size" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">No Size</SelectItem>
-                                {availableSizes.map((s) => (
-                                  <SelectItem key={s.id} value={s.label}>
-                                    {s.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
+                        {features?.variant_management !== false &&
+                          String(features?.variant_management) !== "0" &&
+                          features?.variant_wise_image !== false &&
+                          String(features?.variant_wise_image) !== "0" && (
+                            <div className="grid grid-cols-2 gap-1">
+                              <Select
+                                value={item.color || "none"}
+                                onValueChange={(val) => {
+                                  setMedia((prev) =>
+                                    prev.map((m) =>
+                                      m.id === item.id ? { ...m, color: val === "none" ? "" : val } : m,
+                                    ),
+                                  );
+                                }}
+                              >
+                                <SelectTrigger className="h-8 text-xs px-2">
+                                  <SelectValue placeholder="Color" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">No Color</SelectItem>
+                                  {availableColors.map((c) => (
+                                    <SelectItem key={c.id} value={c.label}>
+                                      {c.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+
+                              <Select
+                                value={item.size || "none"}
+                                onValueChange={(val) => {
+                                  setMedia((prev) =>
+                                    prev.map((m) => (m.id === item.id ? { ...m, size: val === "none" ? "" : val } : m)),
+                                  );
+                                }}
+                              >
+                                <SelectTrigger className="h-8 text-xs px-2">
+                                  <SelectValue placeholder="Size" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">No Size</SelectItem>
+                                  {availableSizes.map((s) => (
+                                    <SelectItem key={s.id} value={s.label}>
+                                      {s.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
                       </div>
                     ))}
                     <button

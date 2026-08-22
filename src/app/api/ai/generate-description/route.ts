@@ -1,77 +1,69 @@
-import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
+
+const OPENAI_API_URL = "https://api.openai.com/v1/responses";
+const getApiKey = () => process.env.OPEN_AI_API_KEY || process.env.OPENAI_API_KEY;
 
 export async function POST(req: Request) {
   try {
     const { productName, categoryName, subCategoryName } = await req.json();
-
-    if (!productName || !categoryName) {
+    if (!productName?.trim() || !categoryName?.trim()) {
       return NextResponse.json(
         { success: false, message: "Product name and main category are required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
-
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getApiKey();
     if (!apiKey) {
       return NextResponse.json(
-        { success: false, message: "GEMINI_API_KEY is not set in environment variables." },
-        { status: 500 }
+        { success: false, message: "OPEN_AI_API_KEY is not set in .env.local." },
+        { status: 500 },
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-
-    const prompt = `You are an expert e-commerce copywriter. 
-Write a short description (1-2 sentences) and a long, detailed description (formatted as HTML) for a product.
-
-Product Name: ${productName}
-Main Category: ${categoryName}
-Sub Category: ${subCategoryName || "N/A"}
-
-Requirements for short description: 
-- Very brief, one liner. No HTML.
-
-Requirements for long description: 
-- Provide an engaging overview of the product.
-- Highlight key features and materials if applicable.
-- Format strictly as rich text HTML using <p>, <ul>, <li>, <strong> tags only.
-- Do not wrap the JSON output in markdown blocks like \`\`\`json. Return pure JSON.
-
-Respond exactly with the following JSON structure and nothing else:
-{
-  "shortDescription": "...",
-  "longDescription": "..."
-}`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
+    const openAiResponse = await fetch(OPENAI_API_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gpt-5.4-mini",
+        input: [
+          {
+            role: "system",
+            content:
+              "You are an expert e-commerce copywriter. Write accurate, appealing copy without inventing specifications that were not provided.",
+          },
+          {
+            role: "user",
+            content: `Create product copy for:\nProduct: ${productName.trim()}\nMain category: ${categoryName.trim()}\nSubcategory: ${subCategoryName?.trim() || "Not provided"}\n\nThe short description must be one concise sentence with no HTML. The long description must be useful, engaging HTML using only <p>, <ul>, <li>, and <strong> tags.`,
+          },
+        ],
+        text: {
+          format: {
+            type: "json_schema",
+            name: "product_descriptions",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: { shortDescription: { type: "string" }, longDescription: { type: "string" } },
+              required: ["shortDescription", "longDescription"],
+              additionalProperties: false,
+            },
+          },
+        },
+      }),
     });
-    
-    const text = response.text;
 
-    if (!text) {
-      throw new Error("No text returned from Gemini.");
-    }
-
-    try {
-      // Clean up potential markdown formatting in the response if the model still adds it
-      const jsonText = text.replace(/```json\n?|\n?```/g, "").trim();
-      const data = JSON.parse(jsonText);
-      return NextResponse.json({ success: true, data });
-    } catch (e) {
-      console.error("Failed to parse Gemini response as JSON:", text);
-      return NextResponse.json(
-        { success: false, message: "Failed to parse AI response." },
-        { status: 500 }
-      );
-    }
-  } catch (error: any) {
-    console.error("Error in generate-description:", error);
+    const responseData = await openAiResponse.json();
+    if (!openAiResponse.ok) throw new Error(responseData?.error?.message || "OpenAI could not generate descriptions.");
+    const outputText = responseData.output
+      ?.flatMap((item: { content?: Array<{ type?: string; text?: string }> }) => item.content ?? [])
+      .find((content: { type?: string }) => content.type === "output_text")?.text;
+    if (!outputText) throw new Error("OpenAI returned no description content.");
+    return NextResponse.json({ success: true, data: JSON.parse(outputText) });
+  } catch (error) {
+    console.error("Error generating product descriptions:", error);
     return NextResponse.json(
-      { success: false, message: error.message || "Something went wrong" },
-      { status: 500 }
+      { success: false, message: error instanceof Error ? error.message : "Something went wrong." },
+      { status: 500 },
     );
   }
 }
