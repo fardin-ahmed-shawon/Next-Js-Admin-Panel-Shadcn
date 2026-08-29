@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { format } from "date-fns";
-import { CalendarIcon, FilePenLine, Loader2, PackageOpen } from "lucide-react";
+import { CalendarIcon, FilePenLine, Loader2, PackageOpen, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -31,9 +32,9 @@ import { useModularFeatures } from "@/hooks/useModularFeatures";
 interface ProductStockAdjustmentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  productId: number | string;
+  productId?: number | string;
   variantId?: number | string;
-  item: any;
+  item?: any;
   mutate?: () => void;
 }
 
@@ -42,8 +43,12 @@ interface AdjustmentState {
   reduceQty: string;
   purchasePrice: string;
   sourceType: string;
-  sourceName: string;
   comment: string;
+}
+
+interface SupplierOption {
+  id: number;
+  name: string;
 }
 
 export function ProductStockAdjustmentModal({
@@ -63,10 +68,12 @@ export function ProductStockAdjustmentModal({
   const [newPurchasePrice, setNewPurchasePrice] = React.useState("");
   const [newQuantity, setNewQuantity] = React.useState("");
   const [newSourceType, setNewSourceType] = React.useState("vendor");
-  const [newSourceName, setNewSourceName] = React.useState("");
+  const [newSupplierId, setNewSupplierId] = React.useState("0");
   const [newComment, setNewComment] = React.useState("");
 
-  // Adjust Lots State
+  // Suppliers & Lots State
+  const [suppliers, setSuppliers] = React.useState<SupplierOption[]>([]);
+  const [loadingSuppliers, setLoadingSuppliers] = React.useState(false);
   const [lots, setLots] = React.useState<any[]>([]);
   const [loadingLots, setLoadingLots] = React.useState(false);
   const [adjustments, setAdjustments] = React.useState<Record<string, AdjustmentState>>({});
@@ -74,9 +81,25 @@ export function ProductStockAdjustmentModal({
   const [submitting, setSubmitting] = React.useState(false);
 
   React.useEffect(() => {
-    if (open) {
+    if (open && productId) {
       setActiveTab(allowMultipleLot ? "new-lot" : "adjust-lots");
       resetNewLotForm();
+
+      const fetchSuppliersList = async () => {
+        try {
+          setLoadingSuppliers(true);
+          const res = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}suppliers?all=true`);
+          const data = await res.json();
+          if (res.ok && data.success) {
+            setSuppliers(data.data || []);
+          }
+        } catch (error) {
+          console.error("Failed to load suppliers:", error);
+        } finally {
+          setLoadingSuppliers(false);
+        }
+      };
+
       const fetchLots = async () => {
         setLoadingLots(true);
         try {
@@ -100,7 +123,6 @@ export function ProductStockAdjustmentModal({
                 reduceQty: "",
                 purchasePrice: lot.purchase_price.toString(),
                 sourceType: lot.source_type === "return" || lot.source_type === "adjustment" ? lot.source_type : "adjustment",
-                sourceName: lot.source_name || "",
                 comment: lot.comment || "",
               };
             });
@@ -113,6 +135,8 @@ export function ProductStockAdjustmentModal({
           setLoadingLots(false);
         }
       };
+
+      fetchSuppliersList();
       fetchLots();
     }
   }, [open, productId, variantId]);
@@ -121,7 +145,7 @@ export function ProductStockAdjustmentModal({
     setNewPurchasePrice("");
     setNewQuantity("");
     setNewSourceType("vendor");
-    setNewSourceName("");
+    setNewSupplierId("0");
     setNewComment("");
   };
 
@@ -144,7 +168,7 @@ export function ProductStockAdjustmentModal({
         purchase_price: Number(newPurchasePrice),
         initial_qty: Number(newQuantity),
         source_type: newSourceType,
-        source_name: newSourceName || null,
+        supplier_id: Number(newSupplierId) || 0,
         comment: newComment || null,
       };
 
@@ -248,7 +272,7 @@ export function ProductStockAdjustmentModal({
         <DialogHeader>
           <DialogTitle>Stock Adjustment</DialogTitle>
           <DialogDescription>
-            Manage stock for <span className="font-semibold text-foreground">{item.title || item.name}</span>.
+            Manage stock for <span className="font-semibold text-foreground">{item?.title || item?.name || "Selected Product"}</span>.
           </DialogDescription>
         </DialogHeader>
 
@@ -263,28 +287,55 @@ export function ProductStockAdjustmentModal({
             <form onSubmit={handleAddNewLot} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Quantity</Label>
+                  <Label>Quantity <span className="text-destructive">*</span></Label>
                   <Input type="number" min="1" value={newQuantity} onChange={(e) => setNewQuantity(e.target.value)} disabled={submitting} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Purchase Price (per unit)</Label>
+                  <Label>Purchase Price (per unit) <span className="text-destructive">*</span></Label>
                   <Input type="number" min="0" step="0.01" value={newPurchasePrice} onChange={(e) => setNewPurchasePrice(e.target.value)} disabled={submitting} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Source</Label>
+                  <Label>Source Type</Label>
                   <Select value={newSourceType} onValueChange={setNewSourceType} disabled={submitting}>
                     <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="vendor">Vendor / Purchase</SelectItem>
                       <SelectItem value="production">In-house Production</SelectItem>
+                      <SelectItem value="adjustment">Stock Adjustment</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Source Name / Reference</Label>
-                  <Input value={newSourceName} onChange={(e) => setNewSourceName(e.target.value)} placeholder="e.g. Acme Corp" disabled={submitting} />
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="stock-adj-supplier-select">Supplier</Label>
+                    <Link
+                      href="/dashboard/suppliers"
+                      target="_blank"
+                      className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                    >
+                      <span>Manage</span>
+                      <ExternalLink className="size-3" />
+                    </Link>
+                  </div>
+                  <Select
+                    value={newSupplierId}
+                    onValueChange={setNewSupplierId}
+                    disabled={submitting || loadingSuppliers}
+                  >
+                    <SelectTrigger id="stock-adj-supplier-select">
+                      <SelectValue placeholder="Select supplier..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">No Supplier / General</SelectItem>
+                      {suppliers.map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="space-y-2">
@@ -328,7 +379,14 @@ export function ProductStockAdjustmentModal({
                     <div key={lot.id} className="rounded-lg border bg-card text-card-foreground shadow-sm">
                       <div className="flex flex-col space-y-1.5 p-4 border-b bg-muted/30">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-semibold leading-none tracking-tight">Lot #{lot.id}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold leading-none tracking-tight">Lot #{lot.id}</h3>
+                            {lot.supplier?.name && (
+                              <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                                {lot.supplier.name}
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center text-xs text-muted-foreground">
                             <CalendarIcon className="mr-1 h-3 w-3" />
                             {lot.created_at ? format(new Date(lot.created_at), "PPP") : "Unknown Date"}

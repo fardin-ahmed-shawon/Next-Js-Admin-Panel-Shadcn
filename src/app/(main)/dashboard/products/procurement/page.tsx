@@ -46,7 +46,7 @@ interface Lot {
   initial_qty: number;
   remaining_qty: number;
   source_type: string;
-  source_name: string | null;
+  supplier_id?: number | null;
   comment: string | null;
   created_at: string;
   product?: {
@@ -59,6 +59,10 @@ interface Lot {
     sku: string;
     size?: { id: number; label: string } | null;
     color?: { id: number; label: string } | null;
+  } | null;
+  supplier?: {
+    id: number;
+    name: string;
   } | null;
   user?: {
     id: number;
@@ -515,11 +519,15 @@ export default function ProcurementPage() {
                         <TableCell>
                           <div className="flex flex-col gap-1 items-start">
                             {getSourceBadge(lot.source_type)}
-                            {lot.source_name ? (
-                              <span className="text-xs text-muted-foreground pl-1">
-                                Via: {lot.source_name}
+                            {lot.supplier?.name ? (
+                              <span className="text-xs text-muted-foreground pl-1 flex items-center gap-1">
+                                Supplier: <strong className="text-foreground font-medium">{lot.supplier.name}</strong>
                               </span>
-                            ) : null}
+                            ) : (
+                              <span className="text-xs text-muted-foreground/60 pl-1 italic">
+                                No Supplier
+                              </span>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-semibold text-foreground text-sm">

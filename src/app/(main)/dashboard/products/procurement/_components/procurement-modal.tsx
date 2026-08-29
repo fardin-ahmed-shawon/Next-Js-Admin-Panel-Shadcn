@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, Loader2, Plus, Search } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown, Loader2, Plus, Search, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,11 @@ interface LookupProduct {
   variants?: Variant[];
 }
 
+interface SupplierOption {
+  id: number;
+  name: string;
+}
+
 interface ProcurementModalProps {
   onSuccess: () => void;
 }
@@ -56,7 +62,9 @@ const getImageUrl = (path: string | null | undefined) => {
 export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
   const [open, setOpen] = React.useState(false);
   const [products, setProducts] = React.useState<LookupProduct[]>([]);
+  const [suppliers, setSuppliers] = React.useState<SupplierOption[]>([]);
   const [loadingProducts, setLoadingProducts] = React.useState(false);
+  const [loadingSuppliers, setLoadingSuppliers] = React.useState(false);
 
   // Search and selection popover state
   const [isOpenProductList, setIsOpenProductList] = React.useState(false);
@@ -68,11 +76,11 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
   const [purchasePrice, setPurchasePrice] = React.useState<string>("");
   const [quantity, setQuantity] = React.useState<string>("");
   const [sourceType, setSourceType] = React.useState<string>("vendor");
-  const [sourceName, setSourceName] = React.useState<string>("");
+  const [supplierId, setSupplierId] = React.useState<string>("0");
   const [comment, setComment] = React.useState<string>("");
   const [submitting, setSubmitting] = React.useState(false);
 
-  // Fetch product lookup when dialog opens
+  // Fetch product lookup and suppliers when dialog opens
   React.useEffect(() => {
     if (open) {
       const fetchLookup = async () => {
@@ -94,7 +102,26 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
           setLoadingProducts(false);
         }
       };
+
+      const fetchSuppliersList = async () => {
+        try {
+          setLoadingSuppliers(true);
+          const res = await fetchClient(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}suppliers?all=true`
+          );
+          const data = await res.json();
+          if (res.ok && data.success) {
+            setSuppliers(data.data || []);
+          }
+        } catch (err) {
+          console.error("Failed to load suppliers:", err);
+        } finally {
+          setLoadingSuppliers(false);
+        }
+      };
+
       fetchLookup();
+      fetchSuppliersList();
     }
   }, [open]);
 
@@ -120,7 +147,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
     setPurchasePrice("");
     setQuantity("");
     setSourceType("vendor");
-    setSourceName("");
+    setSupplierId("0");
     setComment("");
     setSearchQuery("");
   };
@@ -156,7 +183,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
         purchase_price: Number(purchasePrice),
         initial_qty: Number(quantity),
         source_type: sourceType,
-        source_name: sourceName || null,
+        supplier_id: Number(supplierId) || 0,
         comment: comment || null,
       };
 
@@ -205,7 +232,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           {/* Product Search & Selection Popover */}
           <div className="space-y-1.5">
-            <Label>Select Product</Label>
+            <Label>Select Product <span className="text-destructive">*</span></Label>
             <Popover open={isOpenProductList} onOpenChange={setIsOpenProductList}>
               <PopoverTrigger asChild>
                 <Button
@@ -288,7 +315,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
           {/* Variant Select (Conditionally shown) */}
           {selectedProduct?.has_variants ? (
             <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
-              <Label>Select Variant</Label>
+              <Label>Select Variant <span className="text-destructive">*</span></Label>
               <Select
                 value={selectedVariantId}
                 onValueChange={setSelectedVariantId}
@@ -323,7 +350,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
           {/* Quantity & Purchase Price */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="qty">Acquisition Quantity</Label>
+              <Label htmlFor="qty">Acquisition Quantity <span className="text-destructive">*</span></Label>
               <Input
                 id="qty"
                 type="number"
@@ -335,7 +362,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="price">Purchase Price (৳)</Label>
+              <Label htmlFor="price">Purchase Price (৳) <span className="text-destructive">*</span></Label>
               <Input
                 id="price"
                 type="number"
@@ -349,7 +376,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
             </div>
           </div>
 
-          {/* Source Type & Source Name */}
+          {/* Source Type & Supplier Selection */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Source Type</Label>
@@ -365,18 +392,39 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
                   <SelectItem value="vendor">Vendor / Purchase</SelectItem>
                   <SelectItem value="return">Customer Return</SelectItem>
                   <SelectItem value="adjustment">Stock Adjustment</SelectItem>
+                  <SelectItem value="production">In-house Production</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="source-name">Vendor / Supplier Name</Label>
-              <Input
-                id="source-name"
-                placeholder="Vendor Inc."
-                value={sourceName}
-                onChange={(e) => setSourceName(e.target.value)}
-                disabled={submitting}
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="supplier-select">Supplier</Label>
+                <Link
+                  href="/dashboard/suppliers"
+                  target="_blank"
+                  className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                >
+                  <span>Manage</span>
+                  <ExternalLink className="size-3" />
+                </Link>
+              </div>
+              <Select
+                value={supplierId}
+                onValueChange={setSupplierId}
+                disabled={submitting || loadingSuppliers}
+              >
+                <SelectTrigger id="supplier-select">
+                  <SelectValue placeholder="Select supplier..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">No Supplier / General</SelectItem>
+                  {suppliers.map((s) => (
+                    <SelectItem key={s.id} value={s.id.toString()}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

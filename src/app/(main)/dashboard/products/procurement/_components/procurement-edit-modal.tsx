@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Edit } from "lucide-react";
+import Link from "next/link";
+import { Loader2, Edit, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ interface Lot {
   initial_qty: number;
   remaining_qty: number;
   source_type: string;
-  source_name: string | null;
+  supplier_id?: number | null;
   comment: string | null;
   product?: {
     id: number;
@@ -45,6 +46,15 @@ interface Lot {
     size?: { id: number; label: string } | null;
     color?: { id: number; label: string } | null;
   } | null;
+  supplier?: {
+    id: number;
+    name: string;
+  } | null;
+}
+
+interface SupplierOption {
+  id: number;
+  name: string;
 }
 
 interface ProcurementEditModalProps {
@@ -65,8 +75,10 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
   const [purchasePrice, setPurchasePrice] = React.useState<string>(lot.purchase_price.toString());
   const [quantity, setQuantity] = React.useState<string>(lot.initial_qty.toString());
   const [sourceType, setSourceType] = React.useState<string>(lot.source_type || "vendor");
-  const [sourceName, setSourceName] = React.useState<string>(lot.source_name || "");
+  const [supplierId, setSupplierId] = React.useState<string>(lot.supplier_id ? lot.supplier_id.toString() : (lot.supplier?.id ? lot.supplier.id.toString() : "0"));
   const [comment, setComment] = React.useState<string>(lot.comment || "");
+  const [suppliers, setSuppliers] = React.useState<SupplierOption[]>([]);
+  const [loadingSuppliers, setLoadingSuppliers] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
 
   React.useEffect(() => {
@@ -74,8 +86,27 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
       setPurchasePrice(lot.purchase_price.toString());
       setQuantity(lot.initial_qty.toString());
       setSourceType(lot.source_type || "vendor");
-      setSourceName(lot.source_name || "");
+      setSupplierId(lot.supplier_id ? lot.supplier_id.toString() : (lot.supplier?.id ? lot.supplier.id.toString() : "0"));
       setComment(lot.comment || "");
+
+      const fetchSuppliersList = async () => {
+        try {
+          setLoadingSuppliers(true);
+          const res = await fetchClient(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}suppliers?all=true`
+          );
+          const data = await res.json();
+          if (res.ok && data.success) {
+            setSuppliers(data.data || []);
+          }
+        } catch (err) {
+          console.error("Failed to load suppliers:", err);
+        } finally {
+          setLoadingSuppliers(false);
+        }
+      };
+
+      fetchSuppliersList();
     }
   }, [open, lot]);
 
@@ -105,7 +136,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
         purchase_price: Number(purchasePrice),
         initial_qty: Number(quantity),
         source_type: sourceType,
-        source_name: sourceName || null,
+        supplier_id: Number(supplierId) || 0,
         comment: comment || null,
       };
 
@@ -152,7 +183,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
         <DialogHeader>
           <DialogTitle>Edit Stock Lot #{lot.id}</DialogTitle>
           <DialogDescription>
-            Modify purchase price, initial quantity, or source details. Remaining quantity will be adjusted automatically.
+            Modify purchase price, initial quantity, or supplier details. Remaining quantity will be adjusted automatically.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
@@ -188,7 +219,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
           {/* Quantity & Purchase Price */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="qty">Acquisition Quantity</Label>
+              <Label htmlFor="qty">Acquisition Quantity <span className="text-destructive">*</span></Label>
               <Input
                 id="qty"
                 type="number"
@@ -200,7 +231,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="price">Purchase Price (৳)</Label>
+              <Label htmlFor="price">Purchase Price (৳) <span className="text-destructive">*</span></Label>
               <Input
                 id="price"
                 type="number"
@@ -214,7 +245,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
             </div>
           </div>
 
-          {/* Source Type & Source Name */}
+          {/* Source Type & Supplier Selection */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Source Type</Label>
@@ -230,18 +261,39 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
                   <SelectItem value="vendor">Vendor / Purchase</SelectItem>
                   <SelectItem value="return">Customer Return</SelectItem>
                   <SelectItem value="adjustment">Stock Adjustment</SelectItem>
+                  <SelectItem value="production">In-house Production</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="source-name">Vendor / Supplier Name</Label>
-              <Input
-                id="source-name"
-                placeholder="Vendor Inc."
-                value={sourceName}
-                onChange={(e) => setSourceName(e.target.value)}
-                disabled={submitting}
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-supplier-select">Supplier</Label>
+                <Link
+                  href="/dashboard/suppliers"
+                  target="_blank"
+                  className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                >
+                  <span>Manage</span>
+                  <ExternalLink className="size-3" />
+                </Link>
+              </div>
+              <Select
+                value={supplierId}
+                onValueChange={setSupplierId}
+                disabled={submitting || loadingSuppliers}
+              >
+                <SelectTrigger id="edit-supplier-select">
+                  <SelectValue placeholder="Select supplier..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">No Supplier / General</SelectItem>
+                  {suppliers.map((s) => (
+                    <SelectItem key={s.id} value={s.id.toString()}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

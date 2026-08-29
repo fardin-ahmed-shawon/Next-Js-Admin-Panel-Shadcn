@@ -4,7 +4,8 @@ import * as React from "react";
 
 import { useRouter } from "next/navigation";
 
-import { CirclePlus, ImagePlus, Loader2, Package, RefreshCw, Save, Upload, Wand2, X } from "lucide-react";
+import Link from "next/link";
+import { CirclePlus, ExternalLink, ImagePlus, Loader2, Package, RefreshCw, Save, Upload, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import useAttributes from "@/hooks/useAttributes";
 import useCategories from "@/hooks/useCategories";
 import { useModularFeatures } from "@/hooks/useModularFeatures";
+import { fetchClient } from "@/lib/fetch-client";
 
 import { ProductVariantsSection, type Variant } from "./product-variants-section";
 
@@ -85,8 +87,24 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
 
   // Lot Details
   const [sourceType, setSourceType] = React.useState("vendor");
-  const [sourceName, setSourceName] = React.useState("");
+  const [suppliers, setSuppliers] = React.useState<{ id: number; name: string }[]>([]);
+  const [supplierId, setSupplierId] = React.useState("0");
   const [lotComment, setLotComment] = React.useState("");
+
+  React.useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const res = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}suppliers?all=true`);
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setSuppliers(data.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to load suppliers in add product form", err);
+      }
+    };
+    fetchSuppliers();
+  }, []);
 
   // Pricing
   const [purchasePrice, setPurchasePrice] = React.useState("");
@@ -229,7 +247,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
     setVariants([]);
     setAvailableStock("");
     setSourceType("vendor");
-    setSourceName("");
+    setSupplierId("0");
     setLotComment("");
     setPurchasePrice("");
     setRegularPrice("");
@@ -325,7 +343,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
       }
       if (availableStock) formData.append("available_stock", availableStock);
       if (sourceType) formData.append("source_type", sourceType);
-      if (sourceName) formData.append("source_name", sourceName);
+      if (supplierId) formData.append("supplier_id", supplierId);
       if (lotComment) formData.append("comment", lotComment);
       formData.append("is_preorder", isPreOrder ? "true" : "false");
 
@@ -928,15 +946,32 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="source-name" className="text-primary font-medium">
-                  Source Name / Vendor Name
-                </Label>
-                <Input
-                  id="source-name"
-                  placeholder="e.g. Vendor A, Invoice #102"
-                  value={sourceName}
-                  onChange={(e) => setSourceName(e.target.value)}
-                />
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="supplier-select" className="text-primary font-medium">
+                    Supplier / Vendor
+                  </Label>
+                  <Link
+                    href="/dashboard/suppliers"
+                    target="_blank"
+                    className="text-xs text-primary hover:underline flex items-center gap-0.5 font-normal"
+                  >
+                    <span>Manage</span>
+                    <ExternalLink className="size-3" />
+                  </Link>
+                </div>
+                <Select value={supplierId} onValueChange={setSupplierId}>
+                  <SelectTrigger id="supplier-select" className="w-full">
+                    <SelectValue placeholder="Select supplier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">No Supplier / General</SelectItem>
+                    {suppliers.map((s) => (
+                      <SelectItem key={s.id} value={s.id.toString()}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lot-comment" className="text-primary font-medium">
