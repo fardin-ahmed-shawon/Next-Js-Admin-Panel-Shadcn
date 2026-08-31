@@ -180,6 +180,7 @@ export const sidebarItems: NavGroup[] = [
           { title: "Product Report", url: "/dashboard/reports/product", module: "product_report" },
           { title: "Product Percent", url: "/dashboard/reports/product-percent", module: "product_percent" },
           { title: "Customer Report", url: "/dashboard/reports/customer", module: "customer_report" },
+          { title: "Supplier Report", url: "/dashboard/reports/supplier", module: "supplier_report" },
           { title: "Employee Report", url: "/dashboard/reports/employee", module: "employee_report" },
           { title: "Payment Report", url: "/dashboard/reports/payment", module: "payment_report" },
           { title: "Parcel Report", url: "/dashboard/reports/parcel", module: "parcel_report" },

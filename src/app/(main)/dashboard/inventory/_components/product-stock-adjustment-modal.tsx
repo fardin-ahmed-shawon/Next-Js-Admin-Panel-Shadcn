@@ -3,9 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { CalendarIcon, FilePenLine, Loader2, PackageOpen, ExternalLink } from "lucide-react";
+import { CalendarIcon, FilePenLine, Loader2, PackageOpen, ExternalLink, Banknote, Upload, X, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -69,7 +70,25 @@ export function ProductStockAdjustmentModal({
   const [newQuantity, setNewQuantity] = React.useState("");
   const [newSourceType, setNewSourceType] = React.useState("vendor");
   const [newSupplierId, setNewSupplierId] = React.useState("0");
+  const [newInvoiceNo, setNewInvoiceNo] = React.useState("");
+  const [newMemoImage, setNewMemoImage] = React.useState<File | null>(null);
+  const [newMemoImagePreview, setNewMemoImagePreview] = React.useState<string | null>(null);
+  const [newPaidAmount, setNewPaidAmount] = React.useState("");
   const [newComment, setNewComment] = React.useState("");
+
+  const memoImageRef = React.useRef<HTMLInputElement>(null);
+
+  // Computed amounts
+  const totalLotAmount = React.useMemo(() => {
+    const qty = Number(newQuantity) || 0;
+    const price = Number(newPurchasePrice) || 0;
+    return qty * price;
+  }, [newQuantity, newPurchasePrice]);
+
+  const dueLotAmount = React.useMemo(() => {
+    const paid = Number(newPaidAmount) || 0;
+    return Math.max(0, totalLotAmount - paid);
+  }, [totalLotAmount, newPaidAmount]);
 
   // Suppliers & Lots State
   const [suppliers, setSuppliers] = React.useState<SupplierOption[]>([]);
@@ -146,6 +165,10 @@ export function ProductStockAdjustmentModal({
     setNewQuantity("");
     setNewSourceType("vendor");
     setNewSupplierId("0");
+    setNewInvoiceNo("");
+    setNewMemoImage(null);
+    setNewMemoImagePreview(null);
+    setNewPaidAmount("");
     setNewComment("");
   };
 
@@ -162,21 +185,55 @@ export function ProductStockAdjustmentModal({
 
     setSubmitting(true);
     try {
-      const payload = {
-        product_id: Number(productId),
-        product_variant_id: variantId ? Number(variantId) : null,
-        purchase_price: Number(newPurchasePrice),
-        initial_qty: Number(newQuantity),
-        source_type: newSourceType,
-        supplier_id: Number(newSupplierId) || 0,
-        comment: newComment || null,
-      };
+      const paidVal = Number(newPaidAmount) || 0;
+      const paymentStatus = dueLotAmount === 0 && totalLotAmount > 0 ? "paid" : paidVal > 0 ? "partial" : "due";
 
-      const res = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/lots`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      let options: RequestInit;
+
+      if (newMemoImage) {
+        const formData = new FormData();
+        formData.append("product_id", String(productId));
+        if (variantId) formData.append("product_variant_id", String(variantId));
+        formData.append("purchase_price", newPurchasePrice);
+        formData.append("initial_qty", newQuantity);
+        formData.append("source_type", newSourceType);
+        formData.append("supplier_id", newSupplierId || "0");
+        if (newComment) formData.append("comment", newComment);
+        if (newInvoiceNo.trim()) formData.append("invoice_no", newInvoiceNo.trim());
+        formData.append("memo_image", newMemoImage);
+        formData.append("total_amount", totalLotAmount.toString());
+        formData.append("paid_amount", paidVal.toString());
+        formData.append("due_amount", dueLotAmount.toString());
+        formData.append("payment_status", paymentStatus);
+
+        options = {
+          method: "POST",
+          body: formData,
+        };
+      } else {
+        const payload = {
+          product_id: Number(productId),
+          product_variant_id: variantId ? Number(variantId) : null,
+          purchase_price: Number(newPurchasePrice),
+          initial_qty: Number(newQuantity),
+          source_type: newSourceType,
+          supplier_id: Number(newSupplierId) || 0,
+          comment: newComment || null,
+          invoice_no: newInvoiceNo.trim() || null,
+          total_amount: totalLotAmount,
+          paid_amount: paidVal,
+          due_amount: dueLotAmount,
+          payment_status: paymentStatus,
+        };
+
+        options = {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        };
+      }
+
+      const res = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/lots`, options);
 
       const data = await res.json();
       if (res.ok && data.success) {
@@ -286,17 +343,84 @@ export function ProductStockAdjustmentModal({
             <TabsContent value="new-lot" className="mt-4 flex-1 overflow-y-auto pr-2">
             <form onSubmit={handleAddNewLot} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label>Quantity <span className="text-destructive">*</span></Label>
                   <Input type="number" min="1" value={newQuantity} onChange={(e) => setNewQuantity(e.target.value)} disabled={submitting} />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label>Purchase Price (per unit) <span className="text-destructive">*</span></Label>
                   <Input type="number" min="0" step="0.01" value={newPurchasePrice} onChange={(e) => setNewPurchasePrice(e.target.value)} disabled={submitting} />
                 </div>
               </div>
+
+              {/* Supplier Payment Summary Box */}
+              <div className="rounded-lg border bg-gradient-to-br from-muted/50 to-muted/20 p-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <Banknote className="size-3.5 text-primary" /> Supplier Payment Summary
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 text-[11px] px-2 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={() => setNewPaidAmount(totalLotAmount > 0 ? totalLotAmount.toFixed(2) : "0")}
+                    >
+                      Full Paid
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 text-[11px] px-2 text-muted-foreground hover:bg-muted"
+                      onClick={() => setNewPaidAmount("0")}
+                    >
+                      Mark as Due
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                  <div className="space-y-1">
+                    <span className="text-muted-foreground block text-xs">Total Amount</span>
+                    <div className="h-8 px-2.5 flex items-center bg-background/90 rounded border font-semibold text-sm tabular-nums text-foreground">
+                      ৳{totalLotAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="stock-adj-paid-amount" className="text-xs font-medium block">
+                      Paid Amount (৳)
+                    </Label>
+                    <Input
+                      id="stock-adj-paid-amount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={newPaidAmount}
+                      onChange={(e) => setNewPaidAmount(e.target.value)}
+                      disabled={submitting}
+                      className="h-8 bg-background text-xs font-medium px-2.5"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-muted-foreground block text-xs">Due Amount</span>
+                    <div className={`h-8 px-2.5 flex items-center justify-between bg-background/90 rounded border font-bold text-sm tabular-nums ${dueLotAmount > 0 ? "text-red-500 border-red-200 dark:border-red-950" : "text-emerald-500 border-emerald-200 dark:border-emerald-950"}`}>
+                      <span>৳{dueLotAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <Badge variant={dueLotAmount === 0 ? "default" : dueLotAmount < totalLotAmount && Number(newPaidAmount) > 0 ? "outline" : "destructive"} className="text-[9px] px-1 py-0 h-3.5 uppercase">
+                        {dueLotAmount === 0 ? "Paid" : dueLotAmount < totalLotAmount && Number(newPaidAmount) > 0 ? "Partial" : "Due"}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Source & Supplier */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label>Source Type</Label>
                   <Select value={newSourceType} onValueChange={setNewSourceType} disabled={submitting}>
                     <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
@@ -307,13 +431,13 @@ export function ProductStockAdjustmentModal({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="stock-adj-supplier-select">Supplier</Label>
                     <Link
                       href="/dashboard/suppliers"
                       target="_blank"
-                      className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                      className="text-xs text-primary hover:underline flex items-center gap-0.5 font-normal"
                     >
                       <span>Manage</span>
                       <ExternalLink className="size-3" />
@@ -338,11 +462,79 @@ export function ProductStockAdjustmentModal({
                   </Select>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Notes</Label>
-                <Textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Optional comments" disabled={submitting} />
+
+              {/* Invoice No & Memo Image */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="adj-invoice-no" className="text-xs font-medium">
+                    Invoice No <span className="text-muted-foreground font-normal">(Optional)</span>
+                  </Label>
+                  <Input
+                    id="adj-invoice-no"
+                    placeholder="e.g. INV-2026-991"
+                    value={newInvoiceNo}
+                    onChange={(e) => setNewInvoiceNo(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">
+                    Memo Image <span className="text-muted-foreground font-normal">(Optional)</span>
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    {newMemoImagePreview ? (
+                      <div className="relative size-9 rounded border overflow-hidden bg-muted shrink-0">
+                        <img src={newMemoImagePreview} alt="Memo preview" className="size-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewMemoImage(null);
+                            setNewMemoImagePreview(null);
+                          }}
+                          className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 hover:bg-black"
+                        >
+                          <X className="size-2.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="size-9 rounded border border-dashed flex items-center justify-center text-muted-foreground bg-muted/30 shrink-0">
+                        <ImageIcon className="size-4" />
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9 flex-1 gap-1.5 text-xs"
+                      onClick={() => memoImageRef.current?.click()}
+                      disabled={submitting}
+                    >
+                      <Upload className="size-3.5" />
+                      {newMemoImage ? "Change Memo" : "Upload Memo"}
+                    </Button>
+                    <input
+                      ref={memoImageRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setNewMemoImage(file);
+                          setNewMemoImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="pt-4 flex justify-end gap-2 border-t mt-4">
+
+              <div className="space-y-1.5">
+                <Label>Procurement Notes</Label>
+                <Textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Optional comments, reference numbers, etc..." rows={2} disabled={submitting} />
+              </div>
+              <div className="pt-3 flex justify-end gap-2 border-t mt-3">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
                 <Button type="submit" disabled={submitting || !newQuantity || !newPurchasePrice}>
                   {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

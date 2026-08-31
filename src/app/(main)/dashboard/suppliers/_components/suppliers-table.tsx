@@ -15,6 +15,9 @@ import {
   Trash,
   Building2,
   Boxes,
+  Phone,
+  Mail,
+  MapPin,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,11 +47,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { EditSupplierDialog } from "./edit-supplier-dialog";
+import { EditSupplierDialog, type EditSupplierData } from "./edit-supplier-dialog";
 
 export interface SupplierItem {
   id: number;
   name: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
   inventory_lots_count?: number;
   total_procured_qty?: number | string | null;
   total_remaining_qty?: number | string | null;
@@ -66,7 +72,7 @@ interface SuppliersTableProps {
   searchTerm: string;
   onSearchChange: (search: string) => void;
   onDeleteSupplier: (id: number) => Promise<void>;
-  onUpdateSupplier: (id: number, data: { name: string }) => Promise<boolean>;
+  onUpdateSupplier: (id: number, data: EditSupplierData) => Promise<boolean>;
 }
 
 export function SuppliersTable({
@@ -139,17 +145,19 @@ export function SuppliersTable({
               <TableHeader className="bg-muted/50">
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-[100px] pl-6">ID</TableHead>
-                  <TableHead className="min-w-[220px]">Supplier Name</TableHead>
-                  <TableHead className="text-center w-[160px]">Procurement Lots</TableHead>
-                  <TableHead className="text-center w-[180px]">Total Units Procured</TableHead>
-                  <TableHead className="w-[160px]">Joined Date</TableHead>
+                  <TableHead className="min-w-[200px]">Supplier Name</TableHead>
+                  <TableHead className="min-w-[180px]">Contact Info</TableHead>
+                  <TableHead className="min-w-[180px]">Address</TableHead>
+                  <TableHead className="text-center w-[140px]">Procurement Lots</TableHead>
+                  <TableHead className="text-center w-[160px]">Total Units</TableHead>
+                  <TableHead className="w-[140px]">Joined Date</TableHead>
                   <TableHead className="pr-6 w-[80px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-64 text-center">
+                    <TableCell colSpan={8} className="h-64 text-center">
                       <div className="flex items-center justify-center gap-2 text-muted-foreground">
                         <Loader2 className="size-5 animate-spin text-primary" />
                         <span>Loading suppliers...</span>
@@ -158,7 +166,7 @@ export function SuppliersTable({
                   </TableRow>
                 ) : data.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-64 text-center">
+                    <TableCell colSpan={8} className="h-64 text-center">
                       <div className="flex flex-col items-center justify-center gap-2 p-8 text-muted-foreground">
                         <Building2 className="size-10 text-muted-foreground/50 stroke-[1.5]" />
                         <span className="font-medium text-base">No suppliers found</span>
@@ -185,6 +193,42 @@ export function SuppliersTable({
                             {supplier.name}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1 text-xs">
+                          {supplier.phone ? (
+                            <a
+                              href={`tel:${supplier.phone}`}
+                              className="flex items-center gap-1.5 text-foreground hover:text-primary transition-colors"
+                            >
+                              <Phone className="size-3 text-muted-foreground shrink-0" />
+                              <span>{supplier.phone}</span>
+                            </a>
+                          ) : null}
+                          {supplier.email ? (
+                            <a
+                              href={`mailto:${supplier.email}`}
+                              className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors truncate max-w-[170px]"
+                              title={supplier.email}
+                            >
+                              <Mail className="size-3 text-muted-foreground shrink-0" />
+                              <span className="truncate">{supplier.email}</span>
+                            </a>
+                          ) : null}
+                          {!supplier.phone && !supplier.email && (
+                            <span className="text-muted-foreground/50 italic text-xs">No contact info</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {supplier.address ? (
+                          <div className="flex items-start gap-1.5 text-xs text-muted-foreground max-w-[200px]" title={supplier.address}>
+                            <MapPin className="size-3 mt-0.5 text-muted-foreground shrink-0" />
+                            <span className="line-clamp-2">{supplier.address}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground/50 italic text-xs">No address</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="secondary" className="font-mono">

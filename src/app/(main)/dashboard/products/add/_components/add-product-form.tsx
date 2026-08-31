@@ -5,9 +5,10 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 
 import Link from "next/link";
-import { CirclePlus, ExternalLink, ImagePlus, Loader2, Package, RefreshCw, Save, Upload, Wand2, X } from "lucide-react";
+import { CirclePlus, ExternalLink, ImagePlus, Loader2, Package, RefreshCw, Save, Upload, Wand2, X, Banknote, FileText, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -89,7 +90,37 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
   const [sourceType, setSourceType] = React.useState("vendor");
   const [suppliers, setSuppliers] = React.useState<{ id: number; name: string }[]>([]);
   const [supplierId, setSupplierId] = React.useState("0");
+  const [invoiceNo, setInvoiceNo] = React.useState("");
+  const [memoImage, setMemoImage] = React.useState<File | null>(null);
+  const [memoImagePreview, setMemoImagePreview] = React.useState<string | null>(null);
+  const [paidAmount, setPaidAmount] = React.useState("");
   const [lotComment, setLotComment] = React.useState("");
+
+  const memoImageRef = React.useRef<HTMLInputElement>(null);
+
+  // Pricing
+  const [purchasePrice, setPurchasePrice] = React.useState("");
+  const [regularPrice, setRegularPrice] = React.useState("");
+  const [sellingPrice, setSellingPrice] = React.useState("");
+
+  // Computed financial amounts
+  const totalLotAmount = React.useMemo(() => {
+    if (hasVariants && variants.length > 0) {
+      return variants.reduce((sum, v) => {
+        const vQty = Number(v.stock) || 0;
+        const vPrice = hasVariantWisePricing && v.purchasePrice ? Number(v.purchasePrice) : Number(purchasePrice) || 0;
+        return sum + vQty * vPrice;
+      }, 0);
+    }
+    const qty = Number(availableStock) || 0;
+    const price = Number(purchasePrice) || 0;
+    return qty * price;
+  }, [hasVariants, variants, hasVariantWisePricing, availableStock, purchasePrice]);
+
+  const dueLotAmount = React.useMemo(() => {
+    const paid = Number(paidAmount) || 0;
+    return Math.max(0, totalLotAmount - paid);
+  }, [totalLotAmount, paidAmount]);
 
   React.useEffect(() => {
     const fetchSuppliers = async () => {
@@ -105,11 +136,6 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
     };
     fetchSuppliers();
   }, []);
-
-  // Pricing
-  const [purchasePrice, setPurchasePrice] = React.useState("");
-  const [regularPrice, setRegularPrice] = React.useState("");
-  const [sellingPrice, setSellingPrice] = React.useState("");
 
   // Pre-Order
   const [isPreOrder, setIsPreOrder] = React.useState(false);
@@ -248,6 +274,10 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
     setAvailableStock("");
     setSourceType("vendor");
     setSupplierId("0");
+    setInvoiceNo("");
+    setMemoImage(null);
+    setMemoImagePreview(null);
+    setPaidAmount("");
     setLotComment("");
     setPurchasePrice("");
     setRegularPrice("");
@@ -345,6 +375,18 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
       if (sourceType) formData.append("source_type", sourceType);
       if (supplierId) formData.append("supplier_id", supplierId);
       if (lotComment) formData.append("comment", lotComment);
+      if (invoiceNo.trim()) formData.append("invoice_no", invoiceNo.trim());
+      if (memoImage) formData.append("memo_image", memoImage);
+
+      const paidVal = Number(paidAmount) || 0;
+      const dueVal = Math.max(0, totalLotAmount - paidVal);
+      const paymentStatus = dueVal === 0 && totalLotAmount > 0 ? "paid" : paidVal > 0 ? "partial" : "due";
+
+      formData.append("total_amount", totalLotAmount.toString());
+      formData.append("paid_amount", paidVal.toString());
+      formData.append("due_amount", dueVal.toString());
+      formData.append("payment_status", paymentStatus);
+
       formData.append("is_preorder", isPreOrder ? "true" : "false");
 
       if (shortDescription) formData.append("short_description", shortDescription);
@@ -926,10 +968,10 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
           {/* ---- Lot Details ---- */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base text-primary">Lot Details</CardTitle>
-              <CardDescription>Specify the initial lot details for the inventory.</CardDescription>
+              <CardTitle className="text-base text-primary">Lot Details & Procurement</CardTitle>
+              <CardDescription>Specify the initial lot details, vendor invoice, and payment for the inventory.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-5">
+            <CardContent className="flex flex-col gap-4">
               <div className="space-y-2">
                 <Label htmlFor="source-type" className="text-primary font-medium">
                   Source Type
@@ -939,9 +981,10 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                     <SelectValue placeholder="Select source type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="vendor">Vendor</SelectItem>
-                    <SelectItem value="return">Return</SelectItem>
-                    <SelectItem value="adjustment">Adjustment</SelectItem>
+                    <SelectItem value="vendor">Vendor / Purchase</SelectItem>
+                    <SelectItem value="return">Customer Return</SelectItem>
+                    <SelectItem value="adjustment">Stock Adjustment</SelectItem>
+                    <SelectItem value="production">In-house Production</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -973,6 +1016,135 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Invoice No & Memo Image */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="lot-invoice-no" className="text-xs font-medium">
+                    Invoice No <span className="text-muted-foreground font-normal">(Optional)</span>
+                  </Label>
+                  <Input
+                    id="lot-invoice-no"
+                    placeholder="e.g. INV-8821"
+                    value={invoiceNo}
+                    onChange={(e) => setInvoiceNo(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">
+                    Memo Image <span className="text-muted-foreground font-normal">(Optional)</span>
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    {memoImagePreview ? (
+                      <div className="relative size-9 rounded border overflow-hidden bg-muted shrink-0">
+                        <img src={memoImagePreview} alt="Memo preview" className="size-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMemoImage(null);
+                            setMemoImagePreview(null);
+                          }}
+                          className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 hover:bg-black"
+                        >
+                          <X className="size-2.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="size-9 rounded border border-dashed flex items-center justify-center text-muted-foreground bg-muted/30 shrink-0">
+                        <ImageIcon className="size-4" />
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9 flex-1 gap-1 text-xs"
+                      onClick={() => memoImageRef.current?.click()}
+                    >
+                      <Upload className="size-3.5" />
+                      {memoImage ? "Change" : "Upload Memo"}
+                    </Button>
+                    <input
+                      ref={memoImageRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setMemoImage(file);
+                          setMemoImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Supplier Payment Summary Box */}
+              <div className="rounded-lg border bg-gradient-to-br from-muted/50 to-muted/20 p-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <Banknote className="size-3.5 text-primary" /> Supplier Payment
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 text-[10px] px-1.5 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={() => setPaidAmount(totalLotAmount > 0 ? totalLotAmount.toFixed(2) : "0")}
+                    >
+                      Full Paid
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 text-[10px] px-1.5 text-muted-foreground hover:bg-muted"
+                      onClick={() => setPaidAmount("0")}
+                    >
+                      Due
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                  <div className="space-y-1">
+                    <span className="text-muted-foreground block">Total Amount</span>
+                    <div className="h-8 px-2 flex items-center bg-background/90 rounded border font-semibold tabular-nums text-foreground">
+                      ৳{totalLotAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="lot-paid-amount" className="text-xs font-medium block">
+                      Paid Amount
+                    </Label>
+                    <Input
+                      id="lot-paid-amount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={paidAmount}
+                      onChange={(e) => setPaidAmount(e.target.value)}
+                      className="h-8 bg-background text-xs font-medium px-2"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-muted-foreground block">Due Amount</span>
+                    <div className={`h-8 px-2 flex items-center justify-between bg-background/90 rounded border font-bold tabular-nums ${dueLotAmount > 0 ? "text-red-500 border-red-200 dark:border-red-950" : "text-emerald-500 border-emerald-200 dark:border-emerald-950"}`}>
+                      <span>৳{dueLotAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <Badge variant={dueLotAmount === 0 ? "default" : dueLotAmount < totalLotAmount && Number(paidAmount) > 0 ? "outline" : "destructive"} className="text-[9px] px-1 py-0 h-3.5 uppercase">
+                        {dueLotAmount === 0 ? "Paid" : dueLotAmount < totalLotAmount && Number(paidAmount) > 0 ? "Partial" : "Due"}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="lot-comment" className="text-primary font-medium">
                   Comment / Notes
@@ -980,7 +1152,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                 <Textarea
                   id="lot-comment"
                   placeholder="Optional notes about this lot entry..."
-                  className="min-h-[80px] resize-y"
+                  className="min-h-[70px] resize-y text-xs"
                   value={lotComment}
                   onChange={(e) => setLotComment(e.target.value)}
                 />

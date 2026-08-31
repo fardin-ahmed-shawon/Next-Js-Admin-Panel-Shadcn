@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Calendar, Layers, Loader2, Package, Tag, User2, MessageSquare, Search, MoreHorizontal, Edit, Trash, ArrowUpDown, Banknote, Boxes, PackageOpen, LayoutList, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Calendar, Layers, Loader2, Package, Tag, User2, MessageSquare, Search, MoreHorizontal, Edit, Trash, ArrowUpDown, Banknote, Boxes, PackageOpen, LayoutList, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileText, Image as ImageIcon, Eye, Phone, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +48,12 @@ interface Lot {
   source_type: string;
   supplier_id?: number | null;
   comment: string | null;
+  invoice_no?: string | null;
+  memo_image?: string | null;
+  total_amount?: number | null;
+  paid_amount?: number | null;
+  due_amount?: number | null;
+  payment_status?: string | null;
   created_at: string;
   product?: {
     id: number;
@@ -63,6 +69,9 @@ interface Lot {
   supplier?: {
     id: number;
     name: string;
+    phone?: string | null;
+    email?: string | null;
+    address?: string | null;
   } | null;
   user?: {
     id: number;
@@ -102,6 +111,7 @@ export default function ProcurementPage() {
   // Modals & Actions State
   const [editingLot, setEditingLot] = React.useState<Lot | null>(null);
   const [viewCommentLot, setViewCommentLot] = React.useState<Lot | null>(null);
+  const [viewMemoLot, setViewMemoLot] = React.useState<Lot | null>(null);
   const [lotToDelete, setLotToDelete] = React.useState<Lot | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
 
@@ -415,21 +425,23 @@ export default function ProcurementPage() {
                     />
                   </TableHead>
                   <TableHead className="w-[100px]">Lot ID</TableHead>
-                  <TableHead className="w-[150px]">Date</TableHead>
+                  <TableHead className="w-[140px]">Date</TableHead>
                   <TableHead className="min-w-[200px]">Product / Variant</TableHead>
-                  <TableHead className="min-w-[150px]">SKU</TableHead>
-                  <TableHead>Source Details</TableHead>
-                  <TableHead className="text-right">Purchase Price</TableHead>
+                  <TableHead className="min-w-[130px]">SKU</TableHead>
+                  <TableHead className="min-w-[160px]">Supplier & Source</TableHead>
+                  <TableHead className="min-w-[140px]">Invoice / Memo</TableHead>
+                  <TableHead className="text-right w-[110px]">Unit Price</TableHead>
+                  <TableHead className="text-right min-w-[160px]">Payment Details</TableHead>
                   <TableHead className="text-center w-[120px]">Stock Status</TableHead>
-                  <TableHead>Added By</TableHead>
-                  <TableHead className="w-[200px]">Notes</TableHead>
+                  <TableHead className="w-[110px]">Added By</TableHead>
+                  <TableHead className="w-[140px]">Notes</TableHead>
                   <TableHead className="pr-6 w-[80px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="h-64 text-center">
+                    <TableCell colSpan={13} className="h-64 text-center">
                       <div className="flex items-center justify-center gap-2 text-muted-foreground">
                         <Loader2 className="size-5 animate-spin text-primary" />
                         <span>Loading lot transaction logs...</span>
@@ -438,7 +450,7 @@ export default function ProcurementPage() {
                   </TableRow>
                 ) : lots.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="h-64 text-center">
+                    <TableCell colSpan={13} className="h-64 text-center">
                       <div className="flex flex-col items-center justify-center gap-2 p-8 text-muted-foreground">
                         <Package className="size-10 text-muted-foreground/50 stroke-[1.5]" />
                         <span className="font-medium text-base">No lots found</span>
@@ -460,6 +472,16 @@ export default function ProcurementPage() {
                           .filter(Boolean)
                           .join(" / ")
                       : "";
+
+                    const totalCost = lot.total_amount !== undefined && lot.total_amount !== null
+                      ? Number(lot.total_amount)
+                      : Number(lot.purchase_price) * lot.initial_qty;
+                    const paidAmount = Number(lot.paid_amount || 0);
+                    const dueAmount = lot.due_amount !== undefined && lot.due_amount !== null
+                      ? Number(lot.due_amount)
+                      : Math.max(0, totalCost - paidAmount);
+                    const isFullyPaid = dueAmount === 0 && totalCost > 0;
+                    const isPartial = paidAmount > 0 && dueAmount > 0;
 
                     return (
                       <TableRow key={lot.id} className="group transition-colors hover:bg-muted/30">
@@ -496,7 +518,7 @@ export default function ProcurementPage() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-[280px]">
+                        <TableCell className="max-w-[260px]">
                           <div className="flex items-center gap-3">
                             <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
                               <img src={getImageUrl(lot.product?.product_thumbnail_img)} alt={lot.product?.title || "Product"} className="size-full object-cover" />
@@ -520,9 +542,14 @@ export default function ProcurementPage() {
                           <div className="flex flex-col gap-1 items-start">
                             {getSourceBadge(lot.source_type)}
                             {lot.supplier?.name ? (
-                              <span className="text-xs text-muted-foreground pl-1 flex items-center gap-1">
-                                Supplier: <strong className="text-foreground font-medium">{lot.supplier.name}</strong>
-                              </span>
+                              <div className="flex flex-col text-xs text-muted-foreground pl-1">
+                                <span className="text-foreground font-medium">{lot.supplier.name}</span>
+                                {lot.supplier.phone && (
+                                  <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                    <Phone className="size-2.5" /> {lot.supplier.phone}
+                                  </span>
+                                )}
+                              </div>
                             ) : (
                               <span className="text-xs text-muted-foreground/60 pl-1 italic">
                                 No Supplier
@@ -530,8 +557,55 @@ export default function ProcurementPage() {
                             )}
                           </div>
                         </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1 items-start text-xs">
+                            {lot.invoice_no ? (
+                              <Badge variant="outline" className="font-mono text-[11px] gap-1 px-1.5 py-0">
+                                <FileText className="size-3 text-muted-foreground" />
+                                {lot.invoice_no}
+                              </Badge>
+                            ) : null}
+                            {lot.memo_image ? (
+                              <button
+                                type="button"
+                                onClick={() => setViewMemoLot(lot)}
+                                className="flex items-center gap-1 text-[11px] text-primary hover:underline group/memo"
+                              >
+                                <div className="size-5 rounded border overflow-hidden shrink-0 bg-muted">
+                                  <img src={getImageUrl(lot.memo_image)} alt="Memo" className="size-full object-cover" />
+                                </div>
+                                <span className="font-medium flex items-center gap-0.5">
+                                  Memo <Eye className="size-2.5" />
+                                </span>
+                              </button>
+                            ) : null}
+                            {!lot.invoice_no && !lot.memo_image && (
+                              <span className="text-muted-foreground/40 italic">-</span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right font-semibold text-foreground text-sm">
                           ৳{Number(lot.purchase_price).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex flex-col items-end gap-0.5 text-xs font-mono">
+                            <div className="flex items-center gap-1 font-semibold text-foreground">
+                              <span className="text-[11px] text-muted-foreground font-normal">Total:</span>
+                              <span>৳{totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px]">
+                              <span className="text-muted-foreground">Paid: ৳{paidAmount.toLocaleString()}</span>
+                              <span className={dueAmount > 0 ? "text-red-500 font-medium" : "text-emerald-500 font-medium"}>
+                                Due: ৳{dueAmount.toLocaleString()}
+                              </span>
+                            </div>
+                            <Badge
+                              variant={isFullyPaid ? "default" : isPartial ? "secondary" : "destructive"}
+                              className={`text-[9px] px-1 py-0 h-3.5 uppercase font-sans mt-0.5 ${isFullyPaid ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 border-none" : isPartial ? "bg-amber-500/15 text-amber-600 hover:bg-amber-500/25 border-none" : ""}`}
+                            >
+                              {isFullyPaid ? "Paid" : isPartial ? "Partial Due" : "Due"}
+                            </Badge>
+                          </div>
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex flex-col gap-0.5 items-center justify-center">
@@ -585,6 +659,12 @@ export default function ProcurementPage() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 <span>Edit Lot</span>
                               </DropdownMenuItem>
+                              {lot.memo_image && (
+                                <DropdownMenuItem onClick={() => setViewMemoLot(lot)} className="cursor-pointer">
+                                  <ImageIcon className="mr-2 h-4 w-4" />
+                                  <span>View Memo</span>
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => setLotToDelete(lot)} className="text-red-600 focus:text-red-600 cursor-pointer focus:bg-red-50 dark:focus:bg-red-950/50">
                                 <Trash className="mr-2 h-4 w-4" />
@@ -670,6 +750,46 @@ export default function ProcurementPage() {
           }}
         />
       )}
+
+      {/* View Memo Image Modal */}
+      <Dialog open={!!viewMemoLot} onOpenChange={(open) => !open && setViewMemoLot(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogTitle className="flex items-center justify-between">
+            <span>Memo / Invoice — Lot #{viewMemoLot?.id}</span>
+            {viewMemoLot?.invoice_no && (
+              <Badge variant="outline" className="font-mono text-xs">
+                #{viewMemoLot.invoice_no}
+              </Badge>
+            )}
+          </DialogTitle>
+          <div className="mt-2 rounded-lg border overflow-hidden bg-muted/30 flex items-center justify-center p-2">
+            {viewMemoLot?.memo_image ? (
+              <img
+                src={getImageUrl(viewMemoLot.memo_image)}
+                alt={`Memo for lot ${viewMemoLot.id}`}
+                className="max-h-[70vh] w-auto object-contain rounded"
+              />
+            ) : (
+              <p className="text-muted-foreground text-sm py-12">No memo image available.</p>
+            )}
+          </div>
+          <DialogFooter className="mt-2">
+            {viewMemoLot?.memo_image && (
+              <a
+                href={getImageUrl(viewMemoLot.memo_image)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+              >
+                Open Full Size
+              </a>
+            )}
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* View Comment Modal */}
       <Dialog open={!!viewCommentLot} onOpenChange={(open) => !open && setViewCommentLot(null)}>

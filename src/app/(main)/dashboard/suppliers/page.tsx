@@ -75,7 +75,12 @@ export default function SuppliersPage() {
   }, [suppliers, totalRecords]);
 
   // Add Supplier
-  const handleAddSupplier = async (formData: { name: string }) => {
+  const handleAddSupplier = async (formData: {
+    name: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+  }) => {
     try {
       const res = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}suppliers`, {
         method: "POST",
@@ -101,7 +106,15 @@ export default function SuppliersPage() {
   };
 
   // Update Supplier
-  const handleUpdateSupplier = async (id: number, formData: { name: string }) => {
+  const handleUpdateSupplier = async (
+    id: number,
+    formData: {
+      name: string;
+      phone?: string;
+      email?: string;
+      address?: string;
+    }
+  ) => {
     try {
       const res = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}suppliers/${id}`, {
         method: "PUT",
