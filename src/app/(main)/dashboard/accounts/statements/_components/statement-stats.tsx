@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { ArrowDownRight, ArrowUpRight, HandCoins, Landmark } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, HandCoins, Wallet } from "lucide-react";
 
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatementContext } from "../page";
@@ -14,30 +14,30 @@ export function StatementStats() {
 
   const stats = [
     {
-      title: "Starting Balance",
-      value: isLoading ? "..." : `৳${Number(summary.starting_balance || 0).toLocaleString()}`,
-      subtitle: "At the start of period",
-      icon: Landmark,
-      valueClass: "text-muted-foreground",
+      title: "Total Capital",
+      value: isLoading ? "..." : `৳${Number(summary.total_capital || 0).toLocaleString()}`,
+      subtitle: "Total Cash In − Cash Out",
+      icon: Wallet,
+      valueClass: "text-emerald-600 dark:text-emerald-400 font-semibold",
     },
     {
-      title: "Total In",
+      title: "Total In (Revenue + Capital)",
       value: isLoading ? "..." : `৳${Number(summary.total_in || 0).toLocaleString()}`,
-      subtitle: "Total received",
+      subtitle: "Revenue + Cash In",
       icon: ArrowDownRight,
-      valueClass: "text-emerald-600 dark:text-emerald-500",
+      valueClass: "text-emerald-600 dark:text-emerald-500 font-semibold",
     },
     {
       title: "Total Out",
       value: isLoading ? "..." : `৳${Number(summary.total_out || 0).toLocaleString()}`,
-      subtitle: "Total spent (Expenses + COGS)",
+      subtitle: "Cash Out + Expenses + Supplier Payments",
       icon: ArrowUpRight,
-      valueClass: "text-destructive",
+      valueClass: "text-destructive font-semibold",
     },
     {
       title: "Ending Balance",
       value: isLoading ? "..." : `৳${Number(summary.ending_balance || 0).toLocaleString()}`,
-      subtitle: "At the end of period",
+      subtitle: "Net period balance (In − Out)",
       icon: HandCoins,
       valueClass: "text-foreground font-bold",
     },

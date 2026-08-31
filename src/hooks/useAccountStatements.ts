@@ -27,6 +27,26 @@ const fetcher = async (url: string) => {
   };
 };
 
+export interface AccountStatementSummary {
+  total_capital?: number;
+  total_cash_in?: number;
+  total_cash_out?: number;
+  total_in?: number;
+  total_out?: number;
+  ending_balance?: number;
+  starting_balance?: number;
+}
+
+export interface AccountStatementItem {
+  date: string;
+  trx_id: string | null;
+  type: "Revenue" | "Expense" | "Supplier Payment" | "Cash In" | "Cash Out" | string;
+  details: string;
+  credit: number;
+  debit: number;
+  balance: number;
+}
+
 export interface AccountStatementParams {
   start_date?: string;
   end_date?: string;
@@ -53,11 +73,12 @@ export default function useAccountStatements(params?: AccountStatementParams) {
   const { data, error, isLoading, mutate } = useSWR(url, fetcher);
 
   return {
-    summary: data?.summary || {},
-    statements: data?.data || [],
+    summary: (data?.summary || {}) as AccountStatementSummary,
+    statements: (data?.data || []) as AccountStatementItem[],
     pagination: data?.pagination || {},
     isLoading,
     isError: error,
     mutate,
   };
 }
+

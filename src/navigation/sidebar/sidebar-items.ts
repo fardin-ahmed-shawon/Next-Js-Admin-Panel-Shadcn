@@ -145,6 +145,7 @@ export const sidebarItems: NavGroup[] = [
         module: "accounts",
         subItems: [
           { title: "Dashboard", url: "/dashboard/accounts", module: "accounts" },
+          { title: "Cash In / Cash Out", url: "/dashboard/accounts/capital", module: "capital" },
           { title: "Revenue", url: "/dashboard/accounts/revenue", module: "revenue" },
           { title: "Expense Categories", url: "/dashboard/accounts/expense-category", module: "expense_category" },
           { title: "Expenses", url: "/dashboard/accounts/expenses", module: "expenses" },

@@ -68,6 +68,7 @@ export interface ModularFeaturesData {
   reports_parcel: boolean;
   reports_courier: boolean;
   reports_inventory: boolean;
+  reports_supplier?: boolean;
   brands: boolean;
   role_based_access_control: boolean;
   role_based_access_max_users: number | null;
@@ -75,6 +76,7 @@ export interface ModularFeaturesData {
   sslcommerze: boolean;
   meta_pixel_n_gtm: boolean;
   other_ai_features: boolean;
+  [key: string]: any;
 }
 
 export interface ModularFeaturesApiResponse {

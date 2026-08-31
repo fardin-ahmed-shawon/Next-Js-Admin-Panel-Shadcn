@@ -79,14 +79,16 @@ const filterLotsByDate = (lots: any[], period?: string, startDate?: string, endD
 
 const fetcher = async (url: string) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   try {
     const res = await fetchClient(url, {
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeader,
-      },
+      headers,
     });
 
     if (res.ok) {
@@ -111,8 +113,8 @@ const fetcher = async (url: string) => {
   const sortDir = urlObj.searchParams.get("sort_dir") || "desc";
 
   const [suppliersRes, lotsRes] = await Promise.all([
-    fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}suppliers?all=true`, { headers: authHeader }),
-    fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/lots?per_page=1000`, { headers: authHeader }),
+    fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}suppliers?all=true`, { headers }),
+    fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/lots?per_page=1000`, { headers }),
   ]);
 
   const suppliersData = await suppliersRes.json();

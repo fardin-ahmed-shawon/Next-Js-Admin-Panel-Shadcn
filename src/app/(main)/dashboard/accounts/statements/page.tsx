@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { StatementStats } from "./_components/statement-stats";
 import { StatementTable } from "./_components/statement-table";
 import { AccountStatementParams } from "@/hooks/useAccountStatements";
+import { AddCapitalButton } from "../capital/_components/add-capital-button";
 
 type TimeRange = "daily" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
 
@@ -106,9 +107,9 @@ export default function StatementsPage() {
           </div>
 
           <div className="flex flex-col gap-2 sm:items-end">
-            <div className="flex items-center justify-between gap-2 sm:justify-end">
+            <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
               <Select value={timeRange} onValueChange={(v) => { setTimeRange(v as TimeRange); setPage(1); }}>
-                <SelectTrigger className="w-32 sm:w-36">
+                <SelectTrigger className="w-32 sm:w-36 h-9 text-xs">
                   <SelectValue placeholder="Select period" />
                 </SelectTrigger>
                 <SelectContent>
@@ -124,6 +125,15 @@ export default function StatementsPage() {
                   </SelectGroup>
                 </SelectContent>
               </Select>
+
+              <AddCapitalButton
+                label="Cash In / Cash Out"
+                className="h-9 gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                onSuccess={() => {
+                  // Trigger page refresh / state reset
+                  setPage(1);
+                }}
+              />
 
               {timeRange === "custom" && (
                 <div className="hidden sm:flex items-center gap-2">

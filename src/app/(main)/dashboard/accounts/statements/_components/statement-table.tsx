@@ -48,15 +48,15 @@ import { StatementContext } from "../page";
 export type StatementItem = {
   date: string;
   trx_id: string | null;
-  type: "Revenue" | "Expense" | "COGS" | string;
+  type: "Revenue" | "Expense" | "Supplier Payment" | "Cash In" | "Cash Out" | string;
   details: string;
   credit: number;
   debit: number;
   balance: number;
 };
 
-type StatementFilter = "All" | "Revenue" | "Expense" | "COGS";
-const filters: StatementFilter[] = ["All", "Revenue", "Expense", "COGS"];
+type StatementFilter = "All" | "Revenue" | "Cash In" | "Cash Out" | "Expense" | "Supplier Payment";
+const filters: StatementFilter[] = ["All", "Revenue", "Cash In", "Cash Out", "Expense", "Supplier Payment"];
 
 /* ---- Columns ---- */
 
@@ -100,13 +100,13 @@ const columns: ColumnDef<StatementItem>[] = [
   {
     accessorKey: "trx_id",
     header: "Transaction ID",
-    cell: ({ row }) => <span className="text-muted-foreground">{row.original.trx_id || "-"}</span>,
+    cell: ({ row }) => <span className="text-muted-foreground font-mono text-xs">{row.original.trx_id || "-"}</span>,
   },
   {
     accessorKey: "details",
     header: "Details",
     cell: ({ row }) => (
-      <span className="font-medium max-w-[200px] truncate block" title={row.original.details}>
+      <span className="font-medium max-w-[220px] truncate block" title={row.original.details}>
         {row.original.details}
       </span>
     ),
@@ -116,11 +116,58 @@ const columns: ColumnDef<StatementItem>[] = [
     header: "Type",
     cell: ({ row }) => {
       const type = row.original.type;
+      if (type === "Revenue") {
+        return (
+          <Badge
+            variant="default"
+            className="bg-emerald-600 hover:bg-emerald-600 text-white font-medium"
+          >
+            Revenue
+          </Badge>
+        );
+      }
+      if (type === "Cash In") {
+        return (
+          <Badge
+            variant="outline"
+            className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 font-semibold"
+          >
+            Cash In
+          </Badge>
+        );
+      }
+      if (type === "Cash Out") {
+        return (
+          <Badge
+            variant="outline"
+            className="border-rose-500/40 bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 font-semibold"
+          >
+            Cash Out
+          </Badge>
+        );
+      }
+      if (type === "Supplier Payment") {
+        return (
+          <Badge
+            variant="outline"
+            className="border-blue-500/40 bg-blue-500/10 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300 font-semibold"
+          >
+            Supplier Payment
+          </Badge>
+        );
+      }
+      if (type === "Expense") {
+        return (
+          <Badge
+            variant="outline"
+            className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 font-semibold"
+          >
+            Expense
+          </Badge>
+        );
+      }
       return (
-        <Badge
-          variant={type === "Revenue" ? "default" : type === "COGS" ? "outline" : "secondary"}
-          className={type === "COGS" ? "border-amber-500/50 text-amber-600 dark:text-amber-500" : ""}
-        >
+        <Badge variant="secondary" className="font-medium">
           {type}
         </Badge>
       );
