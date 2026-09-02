@@ -90,6 +90,13 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
   const [sourceType, setSourceType] = React.useState("vendor");
   const [suppliers, setSuppliers] = React.useState<{ id: number; name: string }[]>([]);
   const [supplierId, setSupplierId] = React.useState("0");
+  const [purchaseDate, setPurchaseDate] = React.useState(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  });
   const [invoiceNo, setInvoiceNo] = React.useState("");
   const [memoImage, setMemoImage] = React.useState<File | null>(null);
   const [memoImagePreview, setMemoImagePreview] = React.useState<string | null>(null);
@@ -374,6 +381,11 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
       if (availableStock) formData.append("available_stock", availableStock);
       if (sourceType) formData.append("source_type", sourceType);
       if (supplierId) formData.append("supplier_id", supplierId);
+      if (purchaseDate) {
+        formData.append("purchase_date", purchaseDate);
+        formData.append("date", purchaseDate);
+        formData.append("created_at", `${purchaseDate} 00:00:00`);
+      }
       if (lotComment) formData.append("comment", lotComment);
       if (invoiceNo.trim()) formData.append("invoice_no", invoiceNo.trim());
       if (memoImage) formData.append("memo_image", memoImage);
@@ -1017,8 +1029,19 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                 </Select>
               </div>
 
-              {/* Invoice No & Memo Image */}
+              {/* Purchase Date & Invoice No */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="lot-purchase-date" className="text-xs font-medium">
+                    Purchase Date <span className="text-muted-foreground font-normal">(Custom Date)</span>
+                  </Label>
+                  <Input
+                    id="lot-purchase-date"
+                    type="date"
+                    value={purchaseDate}
+                    onChange={(e) => setPurchaseDate(e.target.value)}
+                  />
+                </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="lot-invoice-no" className="text-xs font-medium">
                     Invoice No <span className="text-muted-foreground font-normal">(Optional)</span>
@@ -1030,54 +1053,56 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                     onChange={(e) => setInvoiceNo(e.target.value)}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">
-                    Memo Image <span className="text-muted-foreground font-normal">(Optional)</span>
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    {memoImagePreview ? (
-                      <div className="relative size-9 rounded border overflow-hidden bg-muted shrink-0">
-                        <img src={memoImagePreview} alt="Memo preview" className="size-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMemoImage(null);
-                            setMemoImagePreview(null);
-                          }}
-                          className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 hover:bg-black"
-                        >
-                          <X className="size-2.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="size-9 rounded border border-dashed flex items-center justify-center text-muted-foreground bg-muted/30 shrink-0">
-                        <ImageIcon className="size-4" />
-                      </div>
-                    )}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-9 flex-1 gap-1 text-xs"
-                      onClick={() => memoImageRef.current?.click()}
-                    >
-                      <Upload className="size-3.5" />
-                      {memoImage ? "Change" : "Upload Memo"}
-                    </Button>
-                    <input
-                      ref={memoImageRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setMemoImage(file);
-                          setMemoImagePreview(URL.createObjectURL(file));
-                        }
-                      }}
-                    />
-                  </div>
+              </div>
+
+              {/* Memo Image */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">
+                  Memo Image <span className="text-muted-foreground font-normal">(Optional)</span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  {memoImagePreview ? (
+                    <div className="relative size-9 rounded border overflow-hidden bg-muted shrink-0">
+                      <img src={memoImagePreview} alt="Memo preview" className="size-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMemoImage(null);
+                          setMemoImagePreview(null);
+                        }}
+                        className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 hover:bg-black"
+                      >
+                        <X className="size-2.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="size-9 rounded border border-dashed flex items-center justify-center text-muted-foreground bg-muted/30 shrink-0">
+                      <ImageIcon className="size-4" />
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 flex-1 gap-1 text-xs"
+                    onClick={() => memoImageRef.current?.click()}
+                  >
+                    <Upload className="size-3.5" />
+                    {memoImage ? "Change" : "Upload Memo"}
+                  </Button>
+                  <input
+                    ref={memoImageRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setMemoImage(file);
+                        setMemoImagePreview(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
                 </div>
               </div>
 

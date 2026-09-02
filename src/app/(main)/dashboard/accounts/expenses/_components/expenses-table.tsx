@@ -66,6 +66,8 @@ export type ExpenseItem = {
   expense_category_id: number;
   amount: number;
   description: string | null;
+  expense_date?: string;
+  date?: string;
   created_at?: string;
 };
 
@@ -110,7 +112,7 @@ const columns: ColumnDef<ExpenseItem>[] = [
     accessorKey: "created_at",
     header: "Date",
     cell: ({ row }) => {
-      const dateStr = row.original.created_at;
+      const dateStr = row.original.expense_date || row.original.date || row.original.created_at;
       return (
         <span className="text-muted-foreground tabular-nums">
           {dateStr ? new Date(dateStr.replace("Z", "")).toLocaleDateString() : "N/A"}
@@ -204,6 +206,8 @@ export function ExpensesTable() {
       expense_category_id: expense.expense_category_id,
       amount: expense.amount,
       description: expense.description || "",
+      expense_date: expense.expense_date || expense.date || (expense.created_at ? expense.created_at.split("T")[0].split(" ")[0] : ""),
+      created_at: expense.created_at,
     });
     setDialogOpen(true);
   };

@@ -54,6 +54,8 @@ interface Lot {
   paid_amount?: number | null;
   due_amount?: number | null;
   payment_status?: string | null;
+  purchase_date?: string | null;
+  date?: string | null;
   created_at: string;
   product?: {
     id: number;
@@ -211,22 +213,16 @@ export default function ProcurementPage() {
     }
   };
 
-  const formatDateTime = (dateStr: string) => {
+  const formatDate = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
-      return {
-        date: d.toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-        time: d.toLocaleTimeString("en-GB", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
+      return d.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
     } catch {
-      return { date: dateStr, time: "" };
+      return dateStr;
     }
   };
 
@@ -506,17 +502,15 @@ export default function ProcurementPage() {
                           #{lot.id}
                         </TableCell>
                         <TableCell className="text-sm">
-                          <div className="flex flex-col gap-0.5 text-xs">
-                            <div className="flex items-center gap-1.5 text-foreground font-medium">
-                              <Calendar className="size-3.5 text-muted-foreground" />
-                              <span>{formatDateTime(lot.created_at).date}</span>
-                            </div>
-                            {formatDateTime(lot.created_at).time && (
-                              <span className="text-muted-foreground pl-5">
-                                {formatDateTime(lot.created_at).time}
-                              </span>
-                            )}
-                          </div>
+                          {(() => {
+                            const dateValue = lot.purchase_date || lot.date || lot.created_at;
+                            return (
+                              <div className="flex items-center gap-1.5 text-foreground font-medium text-xs">
+                                <Calendar className="size-3.5 text-muted-foreground" />
+                                <span>{formatDate(dateValue)}</span>
+                              </div>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell className="max-w-[260px]">
                           <div className="flex items-center gap-3">

@@ -25,6 +25,8 @@ export type ExpenseData = {
   expense_category_id: number | "";
   amount: number | "";
   description: string;
+  expense_date?: string;
+  created_at?: string;
 };
 
 interface ExpenseDialogProps {
@@ -35,6 +37,14 @@ interface ExpenseDialogProps {
   onSuccess?: () => void;
 }
 
+const getTodayDate = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess }: ExpenseDialogProps) {
   const { expenseCategories } = useExpenseCategories();
 
@@ -43,17 +53,25 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess
     expense_category_id: "",
     amount: "",
     description: "",
+    expense_date: getTodayDate(),
   });
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
       if (mode === "edit" && initialData) {
+        let parsedDate = getTodayDate();
+        if (initialData.expense_date) {
+          parsedDate = initialData.expense_date.split("T")[0].split(" ")[0];
+        } else if (initialData.created_at) {
+          parsedDate = initialData.created_at.split("T")[0].split(" ")[0];
+        }
         setFormData({
           title: initialData.title || "",
           expense_category_id: initialData.expense_category_id || "",
           amount: initialData.amount || "",
           description: initialData.description || "",
+          expense_date: parsedDate,
         });
       } else {
         setFormData({
@@ -61,6 +79,7 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess
           expense_category_id: "",
           amount: "",
           description: "",
+          expense_date: getTodayDate(),
         });
       }
     }
@@ -92,6 +111,8 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess
         expense_category_id: Number(formData.expense_category_id),
         amount: Number(formData.amount),
         description: formData.description || null,
+        expense_date: formData.expense_date || getTodayDate(),
+        date: formData.expense_date || getTodayDate(),
       };
 
       const res = await fetchClient(url, {
@@ -122,7 +143,7 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle>{mode === "add" ? "Add New Expense" : "Edit Expense"}</DialogTitle>
           <DialogDescription>
@@ -181,6 +202,19 @@ export function ExpenseDialog({ open, onOpenChange, initialData, mode, onSuccess
                 disabled={loading}
               />
             </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="expense_date">
+              Expense Date <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="expense_date"
+              type="date"
+              value={formData.expense_date}
+              onChange={(e) => setFormData({ ...formData, expense_date: e.target.value })}
+              disabled={loading}
+            />
           </div>
 
           <div className="grid gap-2">

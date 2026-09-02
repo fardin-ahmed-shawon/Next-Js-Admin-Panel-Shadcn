@@ -42,6 +42,9 @@ interface Lot {
   paid_amount?: number | null;
   due_amount?: number | null;
   payment_status?: string | null;
+  purchase_date?: string | null;
+  created_at?: string | null;
+  date?: string | null;
   product?: {
     id: number;
     title: string;
@@ -78,9 +81,21 @@ const getImageUrl = (path: string | null | undefined) => {
   return `${baseUrl}${path}`;
 };
 
+const getInitialDate = (lot: Lot) => {
+  if (lot.purchase_date) return lot.purchase_date.split("T")[0].split(" ")[0];
+  if (lot.date) return lot.date.split("T")[0].split(" ")[0];
+  if (lot.created_at) return lot.created_at.split("T")[0].split(" ")[0];
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: ProcurementEditModalProps) {
   const [purchasePrice, setPurchasePrice] = React.useState<string>(lot.purchase_price.toString());
   const [quantity, setQuantity] = React.useState<string>(lot.initial_qty.toString());
+  const [purchaseDate, setPurchaseDate] = React.useState<string>(() => getInitialDate(lot));
   const [sourceType, setSourceType] = React.useState<string>(lot.source_type || "vendor");
   const [supplierId, setSupplierId] = React.useState<string>(lot.supplier_id ? lot.supplier_id.toString() : (lot.supplier?.id ? lot.supplier.id.toString() : "0"));
   const [invoiceNo, setInvoiceNo] = React.useState<string>(lot.invoice_no || "");
@@ -110,6 +125,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
     if (open) {
       setPurchasePrice(lot.purchase_price.toString());
       setQuantity(lot.initial_qty.toString());
+      setPurchaseDate(getInitialDate(lot));
       setSourceType(lot.source_type || "vendor");
       setSupplierId(lot.supplier_id ? lot.supplier_id.toString() : (lot.supplier?.id ? lot.supplier.id.toString() : "0"));
       setInvoiceNo(lot.invoice_no || "");
@@ -171,6 +187,11 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
         formData.append("_method", "PUT");
         formData.append("purchase_price", purchasePrice);
         formData.append("initial_qty", quantity);
+        if (purchaseDate) {
+          formData.append("purchase_date", purchaseDate);
+          formData.append("date", purchaseDate);
+          formData.append("created_at", `${purchaseDate} 00:00:00`);
+        }
         formData.append("source_type", sourceType);
         formData.append("supplier_id", supplierId || "0");
         if (comment) formData.append("comment", comment);
@@ -189,6 +210,9 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
         const payload = {
           purchase_price: Number(purchasePrice),
           initial_qty: Number(quantity),
+          purchase_date: purchaseDate || null,
+          date: purchaseDate || null,
+          created_at: purchaseDate ? `${purchaseDate} 00:00:00` : undefined,
           source_type: sourceType,
           supplier_id: Number(supplierId) || 0,
           comment: comment || null,
@@ -424,8 +448,21 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
             </div>
           </div>
 
-          {/* Invoice No & Memo Image Upload */}
+          {/* Purchase Date & Invoice No */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-purchase-date" className="text-xs font-medium">
+                Purchase Date <span className="text-muted-foreground font-normal">(Custom Date)</span>
+              </Label>
+              <Input
+                id="edit-purchase-date"
+                type="date"
+                value={purchaseDate}
+                onChange={(e) => setPurchaseDate(e.target.value)}
+                disabled={submitting}
+              />
+            </div>
+
             <div className="space-y-1.5">
               <Label htmlFor="edit-invoice-no" className="text-xs font-medium">
                 Invoice / Memo No <span className="text-muted-foreground font-normal">(Optional)</span>
@@ -438,56 +475,57 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
                 disabled={submitting}
               />
             </div>
+          </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">
-                Memo Image <span className="text-muted-foreground font-normal">(Optional)</span>
-              </Label>
-              <div className="flex items-center gap-2">
-                {memoImagePreview ? (
-                  <div className="relative size-9 rounded border overflow-hidden bg-muted shrink-0">
-                    <img src={memoImagePreview} alt="Memo preview" className="size-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMemoImage(null);
-                        setMemoImagePreview(null);
-                      }}
-                      className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 hover:bg-black"
-                    >
-                      <X className="size-2.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="size-9 rounded border border-dashed flex items-center justify-center text-muted-foreground bg-muted/30 shrink-0">
-                    <ImageIcon className="size-4" />
-                  </div>
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-9 flex-1 gap-1.5 text-xs"
-                  onClick={() => memoImageRef.current?.click()}
-                  disabled={submitting}
-                >
-                  <Upload className="size-3.5" />
-                  {memoImagePreview ? "Change Memo Image" : "Upload Memo Image"}
-                </Button>
-                <input
-                  ref={memoImageRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setMemoImage(file);
-                      setMemoImagePreview(URL.createObjectURL(file));
-                    }
-                  }}
-                />
-              </div>
+          {/* Memo Image Upload */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">
+              Memo Image <span className="text-muted-foreground font-normal">(Optional)</span>
+            </Label>
+            <div className="flex items-center gap-2">
+              {memoImagePreview ? (
+                <div className="relative size-9 rounded border overflow-hidden bg-muted shrink-0">
+                  <img src={memoImagePreview} alt="Memo preview" className="size-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMemoImage(null);
+                      setMemoImagePreview(null);
+                    }}
+                    className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 hover:bg-black"
+                  >
+                    <X className="size-2.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="size-9 rounded border border-dashed flex items-center justify-center text-muted-foreground bg-muted/30 shrink-0">
+                  <ImageIcon className="size-4" />
+                </div>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 flex-1 gap-1.5 text-xs"
+                onClick={() => memoImageRef.current?.click()}
+                disabled={submitting}
+              >
+                <Upload className="size-3.5" />
+                {memoImagePreview ? "Change Memo Image" : "Upload Memo Image"}
+              </Button>
+              <input
+                ref={memoImageRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setMemoImage(file);
+                    setMemoImagePreview(URL.createObjectURL(file));
+                  }
+                }}
+              />
             </div>
           </div>
 
