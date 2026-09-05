@@ -26,7 +26,7 @@ import { format, subDays, subMonths, startOfYear } from "date-fns";
 
 import { OrderStats } from "../_components/order-stats";
 import { OrdersTable } from "../_components/orders-table";
-import { OrderContext } from "../page";
+import { OrderContext } from "../_components/order-context";
 
 /* ---- Time range helpers ---- */
 

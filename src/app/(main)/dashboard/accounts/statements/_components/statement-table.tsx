@@ -41,7 +41,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import useAccountStatements from "@/hooks/useAccountStatements";
-import { StatementContext } from "../page";
+import { StatementContext } from "./statement-context";
 
 /* ---- Types ---- */
 

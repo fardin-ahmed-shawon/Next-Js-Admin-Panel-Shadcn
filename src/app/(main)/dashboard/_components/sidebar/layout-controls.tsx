@@ -99,7 +99,7 @@ export function LayoutControls() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button size="icon">
+        <Button size="icon" aria-label="Preferences">
           <Settings />
         </Button>
       </PopoverTrigger>
@@ -138,7 +138,7 @@ export function LayoutControls() {
             <div className="space-y-1">
               <Label className="font-medium text-xs">Fonts</Label>
               <Select value={font} onValueChange={onFontChange}>
-                <SelectTrigger size="sm" className="w-full text-xs">
+                <SelectTrigger size="sm" className="w-full text-xs" aria-label="Font">
                   <SelectValue placeholder="Select font" />
                 </SelectTrigger>
                 <SelectContent>

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { DollarSign, Package, Package2, Repeat2, ShoppingCart, UserPlus, Users } from "lucide-react";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { OrderContext } from "../page";
+import { OrderContext } from "./order-context";
 
 export function OrderStats({ data }: { data?: any[] }) {
   const context = React.useContext(OrderContext);

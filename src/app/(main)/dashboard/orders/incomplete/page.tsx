@@ -25,7 +25,7 @@ import { useIncompleteOrders } from "@/hooks/useIncompleteOrders";
 
 import { OrderStats } from "../_components/order-stats";
 import { OrdersTable } from "../_components/orders-table";
-import { OrderContext } from "../page";
+import { OrderContext } from "../_components/order-context";
 
 /* ---- Time range helpers ---- */
 type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";

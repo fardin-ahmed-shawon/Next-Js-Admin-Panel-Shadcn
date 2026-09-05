@@ -72,7 +72,7 @@ import { usePathaoSetup } from "@/hooks/usePathaoSetup";
 import { useRedxSetup } from "@/hooks/useRedxSetup";
 import { hasModuleAccess } from "@/hooks/useRoles";
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
-import { OrderContext } from "../page";
+import { OrderContext } from "./order-context";
 import { fetchClient } from "@/lib/fetch-client";
 import { usePrintModal } from "@/hooks/usePrintModal";
 import { useModularFeatures } from "@/hooks/useModularFeatures";

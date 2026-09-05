@@ -1,880 +1,584 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useId, useState } from "react";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import {
-  Check,
-  ChevronRight,
-  GalleryHorizontal,
-  Image as ImageIcon,
-  Info,
-  Package,
-  Plus,
-  Quote,
-  Search,
-  Send,
-  Sparkles,
-  Trash2,
-  UploadCloud,
-  Video,
-  X,
-  Zap,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, ImagePlus, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { fetchClient } from "@/lib/fetch-client";
+import { type LandingPage, landingImage, landingPublicUrl, landingRequest } from "@/lib/landing-pages";
 
-/* ---- Catalogue ---- */
+type ImageValue = { path: string; file?: File };
+type ImageRow = ImageValue & { key: string };
+type Feature = { key: string; title: string; description: string };
+type Benefit = { key: string; why_choose_text: string };
+const uid = () => crypto.randomUUID();
+const empty = {
+  product_id: 0,
+  slug: "",
+  status: "draft" as "draft" | "published",
+  home_title: "",
+  home_description: "",
+  features_main_title: "",
+  why_choose_main_title: "",
+  why_choose_bottom_title: "",
+  review_main_title: "",
+  checkout_main_title: "",
+  yt_link: "",
+};
 
-const productCatalogue = [
-  {
-    id: "PRD-001",
-    name: "Premium Cotton T-Shirt",
-    sku: "SKU-001",
-    price: 850,
-    stock: 124,
-    image: "https://placehold.co/80x80/6366f1/ffffff?text=TS",
-    category: "Clothing",
-  },
-  {
-    id: "PRD-002",
-    name: "Slim Fit Denim Jeans",
-    sku: "SKU-002",
-    price: 1450,
-    stock: 67,
-    image: "https://placehold.co/80x80/f59e0b/ffffff?text=DJ",
-    category: "Clothing",
-  },
-  {
-    id: "PRD-003",
-    name: "Wireless Bluetooth Earbuds",
-    sku: "SKU-003",
-    price: 2200,
-    stock: 42,
-    image: "https://placehold.co/80x80/06b6d4/ffffff?text=BE",
-    category: "Electronics",
-  },
-  {
-    id: "PRD-004",
-    name: "Leather Crossbody Bag",
-    sku: "SKU-004",
-    price: 3100,
-    stock: 18,
-    image: "https://placehold.co/80x80/10b981/ffffff?text=CB",
-    category: "Accessories",
-  },
-  {
-    id: "PRD-005",
-    name: "Running Sneakers Pro",
-    sku: "SKU-005",
-    price: 2800,
-    stock: 55,
-    image: "https://placehold.co/80x80/f43f5e/ffffff?text=RS",
-    category: "Footwear",
-  },
-  {
-    id: "PRD-006",
-    name: "Organic Face Moisturizer",
-    sku: "SKU-006",
-    price: 650,
-    stock: 200,
-    image: "https://placehold.co/80x80/d946ef/ffffff?text=FM",
-    category: "Beauty",
-  },
-  {
-    id: "PRD-007",
-    name: "Stainless Steel Water Bottle",
-    sku: "SKU-007",
-    price: 480,
-    stock: 310,
-    image: "https://placehold.co/80x80/14b8a6/ffffff?text=WB",
-    category: "Home",
-  },
-  {
-    id: "PRD-008",
-    name: "Smart Fitness Watch",
-    sku: "SKU-008",
-    price: 4500,
-    stock: 29,
-    image: "https://placehold.co/80x80/8b5cf6/ffffff?text=FW",
-    category: "Electronics",
-  },
-  {
-    id: "PRD-009",
-    name: "Classic Polo Shirt",
-    sku: "SKU-009",
-    price: 950,
-    stock: 88,
-    image: "https://placehold.co/80x80/f97316/ffffff?text=PS",
-    category: "Clothing",
-  },
-  {
-    id: "PRD-010",
-    name: "Minimalist Desk Lamp",
-    sku: "SKU-010",
-    price: 1200,
-    stock: 45,
-    image: "https://placehold.co/80x80/0ea5e9/ffffff?text=DL",
-    category: "Home",
-  },
-];
-
-type Product = (typeof productCatalogue)[0];
-
-/* ---- Repeatable item types ---- */
-interface FeatureItem {
-  id: string;
-  title: string;
-  description: string;
-}
-interface WhyChooseItem {
-  id: string;
-  text: string;
-}
-interface ReviewItem {
-  id: string;
-  file: File | null;
-  preview: string;
-}
-interface GalleryItem {
-  id: string;
-  file: File | null;
-  preview: string;
-}
-
-function uid() {
-  return Math.random().toString(36).slice(2, 9);
-}
-
-/* ---- Sub-components ---- */
-
-function SectionCard({
-  icon: Icon,
-  title,
-  description,
-  children,
-  accent = false,
-  className = "",
-}: {
-  icon: React.ElementType;
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-  accent?: boolean;
-  className?: string;
-}) {
-  return (
-    <Card className={[accent ? "ring-2 ring-primary/20" : "", className].filter(Boolean).join(" ")}>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2.5 text-base font-semibold">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Icon className="size-4" />
-          </span>
-          {title}
-        </CardTitle>
-        {description && <CardDescription className="text-xs">{description}</CardDescription>}
-      </CardHeader>
-      <CardContent className="overflow-visible">{children}</CardContent>
-    </Card>
-  );
-}
-
-/* ---- Image Upload Box (single) ---- */
-
-function ImageUploadBox({
-  id,
+function ImageField({
   label,
-  file,
-  preview,
+  value,
   onChange,
-  required,
-  aspectRatio = "aspect-square",
 }: {
-  id: string;
   label: string;
-  file: File | null;
-  preview: string;
-  onChange: (file: File | null, preview: string) => void;
-  required?: boolean;
-  aspectRatio?: string;
+  value: ImageValue;
+  onChange: (value: ImageValue) => void;
 }) {
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = React.useState(false);
-
-  function handleFile(f: File) {
-    const url = URL.createObjectURL(f);
-    onChange(f, url);
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setDragging(false);
-    const f = e.dataTransfer.files?.[0];
-    if (f && f.type.startsWith("image/")) handleFile(f);
-  }
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (f) handleFile(f);
-  }
-
+  const inputId = useId();
+  const [preview, setPreview] = useState("");
+  useEffect(() => {
+    if (!value.file) {
+      setPreview(landingImage(value.path));
+      return;
+    }
+    const url = URL.createObjectURL(value.file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [value.file, value.path]);
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs">
-        {label}
-        {required && <span className="text-destructive ml-0.5">*</span>}
-      </Label>
-
-      <div
-        className={[
-          "group relative flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-colors",
-          aspectRatio,
-          dragging
-            ? "border-primary bg-primary/5"
-            : "border-border bg-muted/30 hover:border-primary/60 hover:bg-muted/50",
-        ].join(" ")}
-        onClick={() => inputRef.current?.click()}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-      >
+    <label htmlFor={inputId} className="flex flex-col gap-2 font-medium text-sm">
+      {label}
+      <div className="flex min-h-36 items-center justify-center overflow-hidden rounded-lg border border-dashed bg-muted/30">
         {preview ? (
-          <>
-            <img src={preview} alt="preview" className="absolute inset-0 size-full rounded-[10px] object-cover" />
-            <div className="absolute inset-0 flex items-center justify-center rounded-[10px] bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-              <div className="flex flex-col items-center gap-1 text-white">
-                <UploadCloud className="size-4" />
-                <span className="text-[11px] font-medium">Change</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              aria-label="Remove image"
-              className="absolute right-1.5 top-1.5 z-10 flex size-5 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                onChange(null, "");
-                if (inputRef.current) inputRef.current.value = "";
-              }}
-            >
-              <X className="size-3" />
-            </button>
-          </>
+          <img src={preview} alt={label} className="h-40 w-full object-contain" />
         ) : (
-          <div className="flex flex-col items-center gap-1.5 p-3 text-center pointer-events-none">
-            <div className="flex size-8 items-center justify-center rounded-full bg-primary/10">
-              <UploadCloud className="size-4 text-primary" />
-            </div>
-            <p className="text-xs text-muted-foreground">Click or drag & drop</p>
-          </div>
+          <ImagePlus className="size-8 text-muted-foreground" />
         )}
-        <input ref={inputRef} id={id} type="file" accept="image/*" className="sr-only" onChange={handleChange} />
       </div>
-    </div>
+      <Input
+        id={inputId}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          if (file.size > 5 * 1024 * 1024) {
+            toast.error("Images must be 5 MB or smaller.");
+            event.target.value = "";
+            return;
+          }
+          onChange({ path: "", file });
+        }}
+      />
+      <span className="font-normal text-muted-foreground text-xs">JPG, PNG, WebP or GIF · up to 5 MB</span>
+    </label>
   );
 }
 
-/* ---- Repeatable image upload (compact card) ---- */
-
-function RepeatableImageUpload({
+function RowActions({
   index,
-  file,
-  preview,
-  onUpdate,
-  onRemove,
+  count,
+  move,
+  remove,
 }: {
   index: number;
-  file: File | null;
-  preview: string;
-  onUpdate: (file: File | null, preview: string) => void;
-  onRemove: () => void;
+  count: number;
+  move: (direction: number) => void;
+  remove: () => void;
 }) {
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = React.useState(false);
-
-  function handleFile(f: File) {
-    const url = URL.createObjectURL(f);
-    onUpdate(f, url);
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setDragging(false);
-    const f = e.dataTransfer.files?.[0];
-    if (f && f.type.startsWith("image/")) handleFile(f);
-  }
-
   return (
-    <div className="flex flex-col gap-1.5">
-      {/* Upload zone — square */}
-      <div
-        className={[
-          "group relative w-full cursor-pointer rounded-xl border-2 border-dashed transition-colors aspect-square",
-          dragging
-            ? "border-primary bg-primary/5"
-            : "border-border bg-muted/30 hover:border-primary/60 hover:bg-muted/50",
-        ].join(" ")}
-        onClick={() => inputRef.current?.click()}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-      >
-        {preview ? (
-          <>
-            <img src={preview} alt="preview" className="absolute inset-0 size-full rounded-[10px] object-cover" />
-            <div className="absolute inset-0 flex items-center justify-center rounded-[10px] bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-              <UploadCloud className="size-4 text-white" />
-            </div>
-          </>
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none">
-            <span className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-primary text-[11px] font-bold">
-              {index + 1}
-            </span>
-            <UploadCloud className="size-4 text-muted-foreground mt-1" />
-            <p className="text-[11px] text-muted-foreground">Upload</p>
-          </div>
-        )}
-        {preview && (
-          <span className="absolute left-1.5 top-1.5 flex size-5 items-center justify-center rounded-md bg-black/50 text-white text-[10px] font-bold">
-            {index + 1}
-          </span>
-        )}
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleFile(f);
-          }}
-        />
-      </div>
-
-      {/* Remove button below */}
+    <div className="flex justify-end gap-1">
       <Button
-        size="sm"
+        type="button"
         variant="ghost"
-        onClick={onRemove}
-        aria-label="Remove"
-        className="h-6 w-full text-[11px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+        size="icon"
+        aria-label="Move up"
+        disabled={index === 0}
+        onClick={() => move(-1)}
       >
-        <Trash2 className="mr-1 size-3" /> Remove
+        <ArrowUp className="size-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label="Move down"
+        disabled={index === count - 1}
+        onClick={() => move(1)}
+      >
+        <ArrowDown className="size-4" />
+      </Button>
+      <Button type="button" variant="ghost" size="icon" aria-label="Remove item" onClick={remove}>
+        <Trash2 className="size-4 text-destructive" />
       </Button>
     </div>
   );
 }
-
-function AddRowButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={onClick}
-      className="mt-1 self-start gap-1.5 border-dashed text-muted-foreground hover:text-foreground"
-    >
-      <Plus className="size-3.5" />
-      {label}
-    </Button>
-  );
+function moved<T>(rows: T[], index: number, direction: number) {
+  const next = [...rows];
+  [next[index], next[index + direction]] = [next[index + direction], next[index]];
+  return next;
 }
 
-/* ================================================================
-   MAIN FORM
-   ================================================================ */
-
-export function CreateLandingPageForm() {
+export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
   const router = useRouter();
+  const [fields, setFields] = useState(empty);
+  const [homeImage, setHomeImage] = useState<ImageValue>({ path: "" });
+  const [featureImage, setFeatureImage] = useState<ImageValue>({ path: "" });
+  const [features, setFeatures] = useState<Feature[]>([]);
+  const [benefits, setBenefits] = useState<Benefit[]>([]);
+  const [gallery, setGallery] = useState<ImageRow[]>([]);
+  const [reviews, setReviews] = useState<ImageRow[]>([]);
+  const [query, setQuery] = useState("");
+  const [products, setProducts] = useState<{ id: number; title: string; sku: string }[]>([]);
+  const [productName, setProductName] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [loading, setLoading] = useState(!!pageId);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
 
-  /* ---- Product search ---- */
-  const [query, setQuery] = React.useState("");
-  const [focused, setFocused] = React.useState(false);
-  const [product, setProduct] = React.useState<Product | null>(null);
-  const searchRef = React.useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!pageId) return;
+    const controller = new AbortController();
+    landingRequest(`/${pageId}`, { signal: controller.signal })
+      .then(({ data }: { data: LandingPage }) => {
+        setFields(
+          Object.fromEntries(
+            Object.keys(empty).map((key) => [key, data[key as keyof typeof empty] ?? empty[key as keyof typeof empty]]),
+          ) as typeof empty,
+        );
+        setProductName(data.product?.title || `Product #${data.product_id}`);
+        setHomeImage({ path: data.home_img });
+        setFeatureImage({ path: data.feature_img });
+        setFeatures(data.features.map((row) => ({ ...row, key: uid() })));
+        setBenefits(data.why_choose_products.map((row) => ({ ...row, key: uid() })));
+        setGallery(data.gallery.map((row) => ({ path: row.img, key: uid() })));
+        setReviews(data.reviews.map((row) => ({ path: row.img, key: uid() })));
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          setLoadError(err.message);
+          setLoading(false);
+        }
+      });
+    return () => controller.abort();
+  }, [pageId]);
 
-  /* ---- Page Info fields ---- */
-  const [homeTitle, setHomeTitle] = React.useState("");
-  const [homeDescription, setHomeDescription] = React.useState("");
-  const [homeImageFile, setHomeImageFile] = React.useState<File | null>(null);
-  const [homeImagePreview, setHomeImagePreview] = React.useState("");
-  const [featureImageFile, setFeatureImageFile] = React.useState<File | null>(null);
-  const [featureImagePreview, setFeatureImagePreview] = React.useState("");
-  const [featuresMainTitle, setFeaturesMainTitle] = React.useState("");
-  const [whyChooseTopTitle, setWhyChooseTopTitle] = React.useState("");
-  const [whyChooseBottomTitle, setWhyChooseBottomTitle] = React.useState("");
-  const [reviewMainTitle, setReviewMainTitle] = React.useState("");
-  const [checkoutMainTitle, setCheckoutMainTitle] = React.useState("");
-  const [youtubeVideoUrl, setYoutubeVideoUrl] = React.useState("");
-
-  /* ---- Repeatable lists ---- */
-  const [features, setFeatures] = React.useState<FeatureItem[]>([{ id: uid(), title: "", description: "" }]);
-  const [whyChoose, setWhyChoose] = React.useState<WhyChooseItem[]>([{ id: uid(), text: "" }]);
-  const [reviews, setReviews] = React.useState<ReviewItem[]>([{ id: uid(), file: null, preview: "" }]);
-  const [gallery, setGallery] = React.useState<GalleryItem[]>([{ id: uid(), file: null, preview: "" }]);
-
-  /* ---- Filtered products ---- */
-  const filtered = React.useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    return productCatalogue.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.category.toLowerCase().includes(q),
-    );
+  useEffect(() => {
+    if (!query.trim()) {
+      setProducts([]);
+      setSearching(false);
+      return;
+    }
+    const controller = new AbortController();
+    setSearching(true);
+    setSearchError("");
+    const timer = setTimeout(async () => {
+      try {
+        const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+        const res = await fetchClient(`${base}/products?per_page=20&search=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error("Product search failed. Please try again.");
+        const result = await res.json();
+        setProducts(result.data.data);
+      } catch (err) {
+        if (!controller.signal.aborted) setSearchError((err as Error).message);
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [query]);
 
-  /* ---- Click outside ---- */
-  React.useEffect(() => {
-    function outside(e: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setFocused(false);
-    }
-    document.addEventListener("mousedown", outside);
-    return () => document.removeEventListener("mousedown", outside);
-  }, []);
-
-  function pickProduct(p: Product) {
-    setProduct(p);
-    setQuery("");
-    setFocused(false);
-    toast.success(`"${p.name}" selected.`);
+  function field(key: keyof typeof empty, value: string | number) {
+    setFields((prev) => ({ ...prev, [key]: value }));
   }
-
-  /* Features */
-  const addFeature = () => setFeatures((p) => [...p, { id: uid(), title: "", description: "" }]);
-  const removeFeature = (id: string) => setFeatures((p) => p.filter((f) => f.id !== id));
-  const updateFeature = (id: string, field: "title" | "description", v: string) =>
-    setFeatures((p) => p.map((f) => (f.id === id ? { ...f, [field]: v } : f)));
-
-  /* WhyChoose */
-  const addWhy = () => setWhyChoose((p) => [...p, { id: uid(), text: "" }]);
-  const removeWhy = (id: string) => setWhyChoose((p) => p.filter((w) => w.id !== id));
-  const updateWhy = (id: string, v: string) => setWhyChoose((p) => p.map((w) => (w.id === id ? { ...w, text: v } : w)));
-
-  /* Reviews */
-  const addReview = () => setReviews((p) => [...p, { id: uid(), file: null, preview: "" }]);
-  const removeReview = (id: string) => setReviews((p) => p.filter((r) => r.id !== id));
-  const updateReview = (id: string, file: File | null, preview: string) =>
-    setReviews((p) => p.map((r) => (r.id === id ? { ...r, file, preview } : r)));
-
-  /* Gallery */
-  const addGallery = () => setGallery((p) => [...p, { id: uid(), file: null, preview: "" }]);
-  const removeGallery = (id: string) => setGallery((p) => p.filter((g) => g.id !== id));
-  const updateGallery = (id: string, file: File | null, preview: string) =>
-    setGallery((p) => p.map((g) => (g.id === id ? { ...g, file, preview } : g)));
-
-  /* Publish */
-  function handlePublish() {
-    if (!product) {
-      toast.error("Please select a product first.");
+  async function save(event: React.FormEvent) {
+    event.preventDefault();
+    if (saving) return;
+    setError("");
+    if (!fields.product_id) {
+      setError("Select a product first.");
       return;
     }
-    if (!homeTitle.trim()) {
-      toast.error("Home title is required.");
+    if ((!homeImage.path && !homeImage.file) || (!featureImage.path && !featureImage.file)) {
+      setError("Upload both the hero and feature images.");
       return;
     }
-    toast.success(`Landing page for "${product.name}" published!`);
-    router.push("/dashboard/landing-pages");
+    const newFiles = [homeImage, featureImage, ...gallery, ...reviews].flatMap((image) =>
+      image.file ? [image.file] : [],
+    );
+    if (newFiles.length > 20 || newFiles.reduce((size, file) => size + file.size, 0) > 35 * 1024 * 1024) {
+      setError(
+        "Upload up to 20 new images (35 MB total) per save. Save this batch first, then add more images by editing the page.",
+      );
+      return;
+    }
+    const body = new FormData();
+    let fileIndex = 0;
+    const serializeImage = (image: ImageValue) => {
+      if (!image.file) return image.path;
+      const key = `image_${fileIndex++}`;
+      body.append(`uploads[${key}]`, image.file);
+      return `upload:${key}`;
+    };
+    body.append(
+      "payload",
+      JSON.stringify({
+        ...fields,
+        home_img: serializeImage(homeImage),
+        feature_img: serializeImage(featureImage),
+        features: features.map(({ title, description }) => ({ title, description })),
+        why_choose_products: benefits.map(({ why_choose_text }) => ({ why_choose_text })),
+        gallery: gallery.map((row) => ({ img: serializeImage(row) })),
+        reviews: reviews.map((row) => ({ img: serializeImage(row) })),
+      }),
+    );
+    if (pageId) body.append("_method", "PUT");
+    setSaving(true);
+    try {
+      await landingRequest(pageId ? `/${pageId}` : "", { method: "POST", body });
+      toast.success(fields.status === "published" ? "Landing page published." : "Draft saved.");
+      router.push("/dashboard/landing-pages");
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
   }
 
-  /* ================================================================
-     RENDER
-     ================================================================ */
+  if (loading)
+    return (
+      <p role="status" className="p-8">
+        Loading landing page…
+      </p>
+    );
+  if (loadError)
+    return (
+      <div role="alert" className="p-8 text-destructive">
+        {loadError} <Link href="/dashboard/landing-pages">Back to landing pages</Link>
+      </div>
+    );
+  const textFields = [
+    ["features_main_title", "Features heading"],
+    ["why_choose_main_title", "Why choose this product heading"],
+    ["why_choose_bottom_title", "Why choose closing title"],
+    ["review_main_title", "Reviews heading"],
+    ["checkout_main_title", "Order section heading"],
+  ] as const;
   return (
-    <div className="flex flex-col gap-6 pb-28">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+    <form onSubmit={save} className="space-y-6 pb-12">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl tracking-tight">Create Landing Page</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Search and select a product, then fill in the landing page details.
+          <h1 className="text-3xl tracking-tight">{pageId ? "Edit Landing Page" : "Create Landing Page"}</h1>
+          <p className="mt-1 text-muted-foreground text-sm">
+            Tell your product’s story and turn visitors into customers.
           </p>
         </div>
-        <Button size="sm" onClick={handlePublish} className="shrink-0">
-          <Send className="mr-2 size-4" />
-          Publish Landing Page
+        <Button variant="outline" asChild>
+          <Link href="/dashboard/landing-pages">All landing pages</Link>
         </Button>
       </div>
-
-      {/* ── STEP 1 · Product search ── */}
-      <SectionCard
-        icon={Package}
-        title="Select Product"
-        description="Search for the product this landing page is for."
-        accent={!!product}
-        className="overflow-visible"
-      >
-        {product ? (
-          /* Selected state */
-          <div className="flex items-center gap-4 rounded-xl border bg-muted/30 px-4 py-3">
-            <div className="size-12 shrink-0 overflow-hidden rounded-xl border bg-muted">
-              <img src={product.image} alt={product.name} className="size-full object-cover" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold leading-none truncate">{product.name}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {product.sku} · {product.category} · ৳{product.price.toLocaleString()}
+      <fieldset disabled={saving} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>1. Choose one product</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {productName && (
+              <div className="rounded-lg border bg-muted/40 p-3 font-medium">
+                {productName} <span className="text-muted-foreground text-sm">(#{fields.product_id})</span>
+              </div>
+            )}
+            <label htmlFor="search-products-by-title-or-sku" className="block space-y-2 font-medium text-sm">
+              <span>Search products by title or SKU</span>
+              <Input
+                id="search-products-by-title-or-sku"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Start typing a product name…"
+              />
+            </label>
+            {searching && (
+              <p role="status" className="text-sm">
+                Searching…
               </p>
-            </div>
-            <Badge variant="default" className="gap-1 shrink-0">
-              <Check className="size-3" /> Selected
-            </Badge>
-            <Button
-              size="icon-sm"
-              variant="ghost"
-              onClick={() => setProduct(null)}
-              aria-label="Change product"
-              className="shrink-0 text-muted-foreground hover:text-foreground"
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
-        ) : (
-          /* Search state */
-          <div ref={searchRef} className="relative overflow-visible">
-            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="h-11 pl-10 text-sm"
-              placeholder="Type product name, SKU, or category…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => setFocused(true)}
-            />
-
-            {/* Dropdown results */}
-            {focused && filtered.length > 0 && (
-              <div className="absolute left-0 right-0 top-full z-[100] mt-2 max-h-72 overflow-y-auto rounded-xl border bg-popover shadow-2xl">
-                {filtered.map((p, i) => (
-                  <React.Fragment key={p.id}>
-                    <button
-                      type="button"
-                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
-                      onClick={() => pickProduct(p)}
-                    >
-                      <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
-                        <img src={p.image} alt={p.name} className="size-full object-cover" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {p.sku} · {p.category}
-                        </p>
-                      </div>
-                      <span className="text-sm font-semibold tabular-nums shrink-0">৳{p.price.toLocaleString()}</span>
-                      <ChevronRight className="size-4 text-muted-foreground shrink-0" />
-                    </button>
-                    {i < filtered.length - 1 && <Separator />}
-                  </React.Fragment>
+            )}
+            {searchError && (
+              <p role="alert" className="text-destructive text-sm">
+                {searchError}
+              </p>
+            )}
+            {!searching && query.trim() && !products.length && !searchError && (
+              <p className="text-sm">No products found.</p>
+            )}
+            {!!products.length && (
+              <div className="max-h-64 overflow-auto rounded-lg border">
+                {products.map((product) => (
+                  <button
+                    type="button"
+                    key={product.id}
+                    className="block w-full border-b p-3 text-left hover:bg-muted"
+                    onClick={() => {
+                      field("product_id", product.id);
+                      setProductName(product.title);
+                      setQuery("");
+                    }}
+                  >
+                    {product.title} <span className="text-muted-foreground">{product.sku}</span>
+                  </button>
                 ))}
               </div>
             )}
-
-            {/* No results */}
-            {focused && query.trim() && filtered.length === 0 && (
-              <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-xl border bg-popover p-8 text-center shadow-2xl">
-                <Package className="mx-auto mb-2 size-8 text-muted-foreground" />
-                <p className="text-sm font-medium">No products found</p>
-                <p className="text-xs text-muted-foreground">Try a different search term.</p>
-              </div>
-            )}
-          </div>
-        )}
-      </SectionCard>
-
-      {/* ── Landing Page Info ── */}
-      <SectionCard icon={Info} title="Landing Page Info" description="Core content sections of the landing page.">
-        <div className="grid gap-3 sm:grid-cols-2 content-start">
-          {/* Home Title */}
-          <div className="space-y-1.5">
-            <Label htmlFor="home-title" className="text-xs">
-              Home Title <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="home-title"
-              placeholder="e.g. Discover Our Best Product"
-              value={homeTitle}
-              onChange={(e) => setHomeTitle(e.target.value)}
-            />
-          </div>
-
-          {/* Features Main Title */}
-          <div className="space-y-1.5">
-            <Label htmlFor="feat-main-title" className="text-xs">
-              Features Main Title
-            </Label>
-            <Input
-              id="feat-main-title"
-              placeholder="e.g. Why You'll Love This"
-              value={featuresMainTitle}
-              onChange={(e) => setFeaturesMainTitle(e.target.value)}
-            />
-          </div>
-
-          {/* Home Description — full row */}
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="home-desc" className="text-xs">
-              Home Description
-            </Label>
-            <Textarea
-              id="home-desc"
-              placeholder="A short intro text shown in the hero section…"
-              className="min-h-[68px] resize-y"
-              value={homeDescription}
-              onChange={(e) => setHomeDescription(e.target.value)}
-            />
-          </div>
-
-          {/* Why Choose Top */}
-          <div className="space-y-1.5">
-            <Label htmlFor="why-top" className="text-xs">
-              Why Choose — Top Title
-            </Label>
-            <Input
-              id="why-top"
-              placeholder="e.g. The Smarter Choice"
-              value={whyChooseTopTitle}
-              onChange={(e) => setWhyChooseTopTitle(e.target.value)}
-            />
-          </div>
-
-          {/* Why Choose Bottom */}
-          <div className="space-y-1.5">
-            <Label htmlFor="why-bottom" className="text-xs">
-              Why Choose — Bottom Title
-            </Label>
-            <Input
-              id="why-bottom"
-              placeholder="e.g. Trusted by thousands"
-              value={whyChooseBottomTitle}
-              onChange={(e) => setWhyChooseBottomTitle(e.target.value)}
-            />
-          </div>
-
-          {/* Review Main Title */}
-          <div className="space-y-1.5">
-            <Label htmlFor="review-main" className="text-xs">
-              Review Main Title
-            </Label>
-            <Input
-              id="review-main"
-              placeholder="e.g. What Our Customers Say"
-              value={reviewMainTitle}
-              onChange={(e) => setReviewMainTitle(e.target.value)}
-            />
-          </div>
-
-          {/* Checkout Main Title */}
-          <div className="space-y-1.5">
-            <Label htmlFor="checkout-main" className="text-xs">
-              Checkout Main Title
-            </Label>
-            <Input
-              id="checkout-main"
-              placeholder="e.g. Order Now & Get it Fast"
-              value={checkoutMainTitle}
-              onChange={(e) => setCheckoutMainTitle(e.target.value)}
-            />
-          </div>
-
-          {/* YouTube Video URL */}
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="yt-url" className="text-xs flex items-center gap-1">
-              <Video className="size-3" /> YouTube Video URL
-            </Label>
-            <Input
-              id="yt-url"
-              placeholder="https://youtube.com/watch?v=…"
-              value={youtubeVideoUrl}
-              onChange={(e) => setYoutubeVideoUrl(e.target.value)}
-            />
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* ── Home & Feature Images ── */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <SectionCard title="" icon={ImageIcon} description="Home Image">
-          <ImageUploadBox
-            id="home-image"
-            label=""
-            file={homeImageFile}
-            preview={homeImagePreview}
-            onChange={(f, p) => {
-              setHomeImageFile(f);
-              setHomeImagePreview(p);
-            }}
-          />
-        </SectionCard>
-        <SectionCard title="" icon={ImageIcon} description="Feature Image">
-          <ImageUploadBox
-            id="feature-image"
-            label=""
-            file={featureImageFile}
-            preview={featureImagePreview}
-            onChange={(f, p) => {
-              setFeatureImageFile(f);
-              setFeatureImagePreview(p);
-            }}
-          />
-        </SectionCard>
-      </div>
-
-      {/* ── Features + Why Choose (side by side) ── */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Features */}
-        <SectionCard icon={Sparkles} title="Features" description="Highlight the key features of this product.">
-          <div className="flex flex-col gap-2.5">
-            {features.map((feat, i) => (
-              <div
-                key={feat.id}
-                className="group flex items-center gap-3 rounded-xl border bg-muted/20 p-3 transition-colors hover:bg-muted/40"
-              >
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary text-[11px] font-bold">
-                  {i + 1}
-                </span>
-                <div className="flex flex-1 flex-col gap-2">
-                  <Input
-                    placeholder="Feature Title"
-                    value={feat.title}
-                    onChange={(e) => updateFeature(feat.id, "title", e.target.value)}
-                  />
-                  <Input
-                    placeholder="Feature Description"
-                    value={feat.description}
-                    onChange={(e) => updateFeature(feat.id, "description", e.target.value)}
-                  />
-                </div>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={() => removeFeature(feat.id)}
-                  aria-label="Remove feature"
-                  className="shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
-              </div>
-            ))}
-            <AddRowButton label="Add Feature" onClick={addFeature} />
-          </div>
-        </SectionCard>
-
-        {/* Why Choose This Product */}
-        <SectionCard icon={Zap} title="Why Choose This Product" description="List the compelling reasons to buy.">
-          <div className="flex flex-col gap-2.5">
-            {whyChoose.map((item, i) => (
-              <div
-                key={item.id}
-                className="group flex items-center gap-3 rounded-xl border bg-muted/20 p-3 transition-colors hover:bg-muted/40"
-              >
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary text-[11px] font-bold">
-                  {i + 1}
-                </span>
+            <p className="text-muted-foreground text-sm">
+              Prices, color/size options, variant images and available stock stay linked to this product automatically.
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>2. Hero & publishing</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <label htmlFor="hero-title" className="block space-y-2 font-medium text-sm">
+              <span>Hero title *</span>
+              <Input
+                id="hero-title"
+                required
+                maxLength={255}
+                value={fields.home_title}
+                onChange={(e) => field("home_title", e.target.value)}
+              />
+            </label>
+            <label htmlFor="hero-description" className="block space-y-2 font-medium text-sm">
+              <span>Hero description *</span>
+              <Textarea
+                id="hero-description"
+                required
+                rows={4}
+                maxLength={20000}
+                value={fields.home_description}
+                onChange={(e) => field("home_description", e.target.value)}
+              />
+            </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label htmlFor="page-url-slug" className="space-y-2 font-medium text-sm">
+                <span>Page URL slug *</span>
                 <Input
-                  className="flex-1"
-                  placeholder="e.g. Free shipping on all orders"
-                  value={item.text}
-                  onChange={(e) => updateWhy(item.id, e.target.value)}
+                  id="page-url-slug"
+                  required
+                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                  maxLength={200}
+                  placeholder="your-product-offer"
+                  value={fields.slug}
+                  onChange={(e) => field("slug", e.target.value)}
                 />
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={() => removeWhy(item.id)}
-                  aria-label="Remove item"
-                  className="shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                <span className="block break-all text-muted-foreground text-xs">
+                  {landingPublicUrl(fields.slug) || `/landing/${fields.slug || "your-product-offer"}`}
+                </span>
+              </label>
+              <label htmlFor="visibility" className="space-y-2 font-medium text-sm">
+                <span>Visibility</span>
+                <select
+                  id="visibility"
+                  className="h-9 w-full rounded-md border bg-background px-3"
+                  value={fields.status}
+                  onChange={(e) => field("status", e.target.value)}
                 >
-                  <Trash2 className="size-3.5" />
-                </Button>
+                  <option value="draft">Draft — hidden from visitors</option>
+                  <option value="published">Published — public</option>
+                </select>
+              </label>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <ImageField label="Hero image *" value={homeImage} onChange={setHomeImage} />
+              <ImageField label="Feature image *" value={featureImage} onChange={setFeatureImage} />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>3. Section headings & video</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            {textFields.map(([key, label]) => (
+              <label htmlFor={key} key={key} className="space-y-2 font-medium text-sm">
+                <span>{label}</span>
+                <Input id={key} maxLength={255} value={fields[key]} onChange={(e) => field(key, e.target.value)} />
+              </label>
+            ))}
+            <label htmlFor="youtube-video-url" className="space-y-2 font-medium text-sm">
+              <span>YouTube video URL</span>
+              <Input
+                id="youtube-video-url"
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=…"
+                value={fields.yt_link}
+                onChange={(e) => field("yt_link", e.target.value)}
+              />
+            </label>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>4. Product features</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {features.map((row, index) => (
+              <div key={row.key} className="space-y-3 rounded-lg border p-4">
+                <RowActions
+                  index={index}
+                  count={features.length}
+                  move={(d) => setFeatures(moved(features, index, d))}
+                  remove={() => setFeatures(features.filter((r) => r.key !== row.key))}
+                />
+                <label htmlFor={`feature-title-${row.key}`} className="block space-y-2 text-sm">
+                  <span>Feature title *</span>
+                  <Input
+                    id={`feature-title-${row.key}`}
+                    required
+                    maxLength={255}
+                    value={row.title}
+                    onChange={(e) =>
+                      setFeatures(features.map((r) => (r.key === row.key ? { ...r, title: e.target.value } : r)))
+                    }
+                  />
+                </label>
+                <label htmlFor={`feature-description-${row.key}`} className="block space-y-2 text-sm">
+                  <span>Description *</span>
+                  <Textarea
+                    id={`feature-description-${row.key}`}
+                    required
+                    maxLength={5000}
+                    value={row.description}
+                    onChange={(e) =>
+                      setFeatures(features.map((r) => (r.key === row.key ? { ...r, description: e.target.value } : r)))
+                    }
+                  />
+                </label>
               </div>
             ))}
-            <AddRowButton label="Add Reason" onClick={addWhy} />
-          </div>
-        </SectionCard>
-      </div>
-
-      {/* ── Reviews + Gallery (side by side) ── */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Reviews */}
-        <SectionCard icon={Quote} title="Reviews" description="Add customer review screenshot images.">
-          <div className="flex flex-col gap-2.5">
-            <div className="grid gap-2.5 grid-cols-3 sm:grid-cols-4 md:grid-cols-5">
-              {reviews.map((rev, i) => (
-                <RepeatableImageUpload
-                  key={rev.id}
-                  index={i}
-                  file={rev.file}
-                  preview={rev.preview}
-                  onUpdate={(f, p) => updateReview(rev.id, f, p)}
-                  onRemove={() => removeReview(rev.id)}
-                />
-              ))}
-            </div>
-            <AddRowButton label="Add Review Image" onClick={addReview} />
-          </div>
-        </SectionCard>
-
-        {/* ── Gallery ── */}
-        <SectionCard icon={GalleryHorizontal} title="Gallery" description="Upload product gallery / lifestyle images.">
-          <div className="flex flex-col gap-2.5">
-            <div className="grid gap-2.5 grid-cols-3 sm:grid-cols-4 md:grid-cols-5">
-              {gallery.map((img, i) => (
-                <RepeatableImageUpload
-                  key={img.id}
-                  index={i}
-                  file={img.file}
-                  preview={img.preview}
-                  onUpdate={(f, p) => updateGallery(img.id, f, p)}
-                  onRemove={() => removeGallery(img.id)}
-                />
-              ))}
-            </div>
-            <AddRowButton label="Add Gallery Image" onClick={addGallery} />
-          </div>
-        </SectionCard>
-      </div>
-
-      {/* ── Fixed bottom publish bar ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-4 px-6 py-3">
-          <div className="flex items-center gap-3 min-w-0">
-            {product ? (
-              <>
-                <div className="size-9 shrink-0 overflow-hidden rounded-lg border bg-muted">
-                  <img src={product.image} alt={product.name} className="size-full object-cover" />
-                </div>
-                <div className="min-w-0 hidden sm:block">
-                  <p className="text-sm font-medium leading-none truncate">{product.name}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground truncate">{product.sku}</p>
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">No product selected</p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={() => router.back()}>
-              Cancel
+            <Button
+              type="button"
+              variant="outline"
+              disabled={features.length >= 50}
+              onClick={() => setFeatures([...features, { key: uid(), title: "", description: "" }])}
+            >
+              <Plus className="mr-2 size-4" />
+              Add feature
             </Button>
-            <Button size="sm" onClick={handlePublish}>
-              <Send className="mr-2 size-4" />
-              Publish Landing Page
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>5. Why choose this product</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {benefits.map((row, index) => (
+              <div key={row.key} className="rounded-lg border p-4">
+                <RowActions
+                  index={index}
+                  count={benefits.length}
+                  move={(d) => setBenefits(moved(benefits, index, d))}
+                  remove={() => setBenefits(benefits.filter((r) => r.key !== row.key))}
+                />
+                <label htmlFor={`benefit-${row.key}`} className="block space-y-2 text-sm">
+                  <span>Benefit *</span>
+                  <Textarea
+                    id={`benefit-${row.key}`}
+                    required
+                    maxLength={5000}
+                    value={row.why_choose_text}
+                    onChange={(e) =>
+                      setBenefits(
+                        benefits.map((r) => (r.key === row.key ? { ...r, why_choose_text: e.target.value } : r)),
+                      )
+                    }
+                  />
+                </label>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={benefits.length >= 50}
+              onClick={() => setBenefits([...benefits, { key: uid(), why_choose_text: "" }])}
+            >
+              <Plus className="mr-2 size-4" />
+              Add benefit
             </Button>
-          </div>
+          </CardContent>
+        </Card>
+        {[
+          { title: "6. Gallery", rows: gallery, setter: setGallery },
+          { title: "7. Customer review screenshots", rows: reviews, setter: setReviews },
+        ].map(({ title, rows, setter }) => (
+          <Card key={title}>
+            <CardHeader>
+              <CardTitle>{title}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {rows.map((row, index) => (
+                  <div key={row.key} className="rounded-lg border p-3">
+                    <RowActions
+                      index={index}
+                      count={rows.length}
+                      move={(d) => setter(moved(rows, index, d))}
+                      remove={() => setter(rows.filter((r) => r.key !== row.key))}
+                    />
+                    <ImageField
+                      label={`Image ${index + 1}`}
+                      value={row}
+                      onChange={(image) => setter(rows.map((r) => (r.key === row.key ? { ...image, key: r.key } : r)))}
+                    />
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={rows.length >= 30}
+                onClick={() => setter([...rows, { key: uid(), path: "" }])}
+              >
+                <Plus className="mr-2 size-4" />
+                Add image
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+        {error && (
+          <p
+            role="alert"
+            className="rounded-lg border border-destructive bg-destructive/5 p-4 text-destructive text-sm"
+          >
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-3">
+          <Button type="submit" disabled={saving}>
+            {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+            {saving ? "Saving…" : fields.status === "published" ? "Save & publish" : "Save draft"}
+          </Button>
         </div>
-      </div>
-    </div>
+      </fieldset>
+    </form>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { StatementContext } from "./_components/statement-context";
 import { format, subDays, subMonths, startOfYear } from "date-fns";
 import { CalendarIcon, Download } from "lucide-react";
 
@@ -26,27 +27,7 @@ const rangeLabels: Record<TimeRange, string> = {
   custom: "Custom Range",
 };
 
-export const StatementContext = React.createContext<{
-  params: AccountStatementParams;
-  searchQuery: string;
-  setSearchQuery: (s: string) => void;
-  activeFilter: string;
-  setActiveFilter: (f: string) => void;
-  page: number;
-  setPage: (p: number) => void;
-  perPage: number;
-  setPerPage: (p: number) => void;
-}>({
-  params: {},
-  searchQuery: "",
-  setSearchQuery: () => {},
-  activeFilter: "All",
-  setActiveFilter: () => {},
-  page: 1,
-  setPage: () => {},
-  perPage: 10,
-  setPerPage: () => {},
-});
+
 
 export default function StatementsPage() {
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
