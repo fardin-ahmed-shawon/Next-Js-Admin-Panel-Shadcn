@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Plus, UploadCloud, X, Image as ImageIcon } from "lucide-react";
+import { UploadCloud, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,11 +11,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 interface AddBrandDialogProps {
   open: boolean;
@@ -28,16 +26,17 @@ export function AddBrandDialog({ open, onOpenChange, onAddBrand }: AddBrandDialo
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("File size must be less than 2MB");
+      if (file.size > 3 * 1024 * 1024) {
+        toast.error("File size must be less than 3MB");
         return;
       }
       if (!file.type.startsWith("image/")) {
-        toast.error("Please upload an image file");
+        toast.error("Please upload a valid image file");
         return;
       }
       setSelectedFile(file);
@@ -49,103 +48,133 @@ export function AddBrandDialog({ open, onOpenChange, onAddBrand }: AddBrandDialo
     }
   };
 
+  const clearSelectedFile = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDialogClose = (isOpen: boolean) => {
+    if (!isOpen) {
+      clearSelectedFile();
+      if (formRef.current) {
+        formRef.current.reset();
+      }
+    }
+    onOpenChange(isOpen);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
+    if (selectedFile) {
+      formData.set("logo", selectedFile);
+    } else {
+      formData.delete("logo");
+    }
 
     try {
       const success = await onAddBrand(formData);
       if (success) {
-        // Reset form
-        setSelectedFile(null);
-        setPreviewUrl(null);
-        if (formRef.current) {
-          formRef.current.reset();
-        }
-        onOpenChange(false);
+        handleDialogClose(false);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Add brand error:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={open} onOpenChange={handleDialogClose}>
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle>Add New Brand</DialogTitle>
-          <DialogDescription>Create a new brand to associate with your products.</DialogDescription>
+          <DialogDescription>Create a new product brand for your store catalog.</DialogDescription>
         </DialogHeader>
-        <form ref={formRef} onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">
-                Brand Name <span className="text-destructive">*</span>
-              </Label>
-              <Input id="name" name="name" placeholder="e.g. Nike" required />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" name="description" placeholder="Brand description..." rows={3} />
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Brand Logo</Label>
-              <input
-                type="file"
-                id="logo"
-                name="logo"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <label
-                htmlFor="logo"
-                className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center gap-2 hover:bg-muted/50 transition-colors cursor-pointer"
-              >
-                {previewUrl ? (
-                  <div className="relative">
-                    <img src={previewUrl} alt="Preview" className="max-h-32 object-contain" />
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setSelectedFile(null);
-                        setPreviewUrl(null);
-                        if (formRef.current) {
-                          (formRef.current.elements.namedItem("logo") as HTMLInputElement).value = "";
-                        }
-                      }}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                    >
-                      <X className="size-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                      <UploadCloud className="size-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Click to upload</p>
-                      <p className="text-xs text-muted-foreground">Max file size: 2MB</p>
-                    </div>
-                  </>
-                )}
-              </label>
-            </div>
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="brand-name">
+              Brand Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="brand-name"
+              name="name"
+              placeholder="e.g. Nike, Apple, Samsung"
+              required
+              disabled={isSubmitting}
+            />
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+
+          <div className="space-y-2">
+            <Label>Brand Logo (Optional)</Label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              id="brand-logo-input"
+              name="logo"
+              accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+              onChange={handleFileChange}
+              className="hidden"
+              disabled={isSubmitting}
+            />
+            {previewUrl ? (
+              <div className="relative border rounded-lg p-4 flex items-center justify-center bg-muted/20">
+                <img
+                  src={previewUrl}
+                  alt="Brand Preview"
+                  className="max-h-32 max-w-full object-contain rounded"
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    clearSelectedFile();
+                  }}
+                  className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 transition-colors shadow-sm"
+                  title="Remove image"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            ) : (
+              <label
+                htmlFor="brand-logo-input"
+                className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center gap-2 hover:bg-muted/40 transition-colors cursor-pointer"
+              >
+                <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <UploadCloud className="size-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Click to upload logo</p>
+                  <p className="text-xs text-muted-foreground">PNG, JPG, WebP, GIF (Max 3MB)</p>
+                </div>
+              </label>
+            )}
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleDialogClose(false)}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save Brand"}
+            <Button type="submit" disabled={isSubmitting} className="gap-2">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Brand"
+              )}
             </Button>
           </DialogFooter>
         </form>

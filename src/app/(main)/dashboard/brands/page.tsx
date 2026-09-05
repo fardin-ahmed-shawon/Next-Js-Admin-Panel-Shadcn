@@ -1,132 +1,33 @@
 "use client";
 
 import * as React from "react";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AddBrandDialog } from "./_components/add-brand-dialog";
 import { BrandsStats } from "./_components/brands-stats";
 import { BrandsTable } from "./_components/brands-table";
 import { toast } from "sonner";
+import { fetchClient } from "@/lib/fetch-client";
+import { useBrands, getBrandsApiUrl } from "@/hooks/useBrands";
 
 export default function BrandsPage() {
   const [isAddOpen, setIsAddOpen] = React.useState(false);
-  const [brandsData, setBrandsData] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [stats, setStats] = React.useState({
-    total: 0,
-    newThisMonth: 0,
-    totalProducts: 0,
-    topTier: 0,
-  });
+  const { brands, stats, loading, refreshBrands } = useBrands();
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin";
-  const BRANDS_URL = process.env.NEXT_PUBLIC_API_BRANDS_URL || "brands";
-  const API_URL = `${API_BASE_URL}/${BRANDS_URL}`;
-
-  // Fetch brands from API
-  const fetchBrands = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(API_URL);
-      const result = await response.json();
-
-      if (result.success) {
-        const formattedData = result.data.map((item: any) => ({
-          id: `BRD-${item.id.toString().padStart(3, "0")}`,
-          name: item.name,
-          totalProducts: item.products_count || 0,
-          logo: item.logo || `https://placehold.co/80x80/1a1a2e/e0e0e0?text=${item.name.substring(0, 2).toUpperCase()}`,
-          joinedDate: item.created_at
-            ? new Date(item.created_at).toISOString().split("T")[0]
-            : new Date().toISOString().split("T")[0],
-        }));
-
-        setBrandsData(formattedData);
-
-        // Update stats
-        setStats({
-          total: formattedData.length,
-          newThisMonth: formattedData.length,
-          totalProducts: formattedData.reduce((sum: number, brand: any) => sum + brand.totalProducts, 0),
-          topTier: Math.ceil(formattedData.length * 0.3),
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching brands:", error);
-      toast.error("Failed to load brands");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Update brand
-  const handleUpdateBrand = async (id: string, formData: FormData) => {
-    try {
-      const numericId = id.replace("BRD-", "");
-      const response = await fetch(`${API_URL}/${numericId}`, {
-        method: "POST",
-        headers: {
-          "X-HTTP-Method-Override": "PUT",
-        },
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        toast.success("Brand updated successfully");
-        await fetchBrands();
-        return true;
-      } else {
-        if (result.errors) {
-          const errors = Object.values(result.errors).flat();
-          toast.error(errors.join(", "));
-        } else {
-          toast.error(result.message || "Failed to update brand");
-        }
-        return false;
-      }
-    } catch (error) {
-      console.error("Update error:", error);
-      toast.error("Failed to update brand");
-      return false;
-    }
-  };
-
-  // Delete brand
-  const handleDeleteBrand = async (id: string) => {
-    try {
-      const numericId = id.replace("BRD-", "");
-      const response = await fetch(`${API_URL}/${numericId}`, {
-        method: "DELETE",
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        toast.success("Brand deleted successfully");
-        await fetchBrands();
-      } else {
-        toast.error(result.message || "Failed to delete brand");
-      }
-    } catch (error) {
-      toast.error("Failed to delete brand");
-    }
-  };
-
-  // Add brand
+  // Add brand handler
   const handleAddBrand = async (formData: FormData) => {
     try {
-      const response = await fetch(API_URL, {
+      const url = getBrandsApiUrl();
+      const response = await fetchClient(url, {
         method: "POST",
         body: formData,
       });
 
       const result = await response.json();
 
-      if (result.success) {
-        toast.success("Brand added successfully");
-        await fetchBrands();
+      if (response.ok && result.success) {
+        toast.success(result.message || "Brand added successfully");
+        await refreshBrands();
         return true;
       } else {
         if (result.errors) {
@@ -138,35 +39,75 @@ export default function BrandsPage() {
         return false;
       }
     } catch (error) {
-      console.error("Add error:", error);
+      console.error("Add brand error:", error);
       toast.error("Failed to add brand");
       return false;
     }
   };
 
-  React.useEffect(() => {
-    fetchBrands();
-  }, []);
+  // Update brand handler
+  const handleUpdateBrand = async (id: string, formData: FormData) => {
+    try {
+      const numericId = id.replace("BRD-", "");
+      if (!formData.has("_method")) {
+        formData.append("_method", "PUT");
+      }
+      const url = getBrandsApiUrl(numericId);
+      const response = await fetchClient(url, {
+        method: "POST",
+        body: formData,
+      });
 
-  if (loading) {
-    return (
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="space-y-1">
-            <h1 className="text-3xl tracking-tight">Brands</h1>
-            <p className="text-muted-foreground text-sm">Manage all product brands and their status.</p>
-          </div>
-        </div>
-        <div className="text-center py-8">Loading...</div>
-      </div>
-    );
-  }
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success(result.message || "Brand updated successfully");
+        await refreshBrands();
+        return true;
+      } else {
+        if (result.errors) {
+          const errors = Object.values(result.errors).flat();
+          toast.error(errors.join(", "));
+        } else {
+          toast.error(result.message || "Failed to update brand");
+        }
+        return false;
+      }
+    } catch (error) {
+      console.error("Update brand error:", error);
+      toast.error("Failed to update brand");
+      return false;
+    }
+  };
+
+  // Delete brand handler
+  const handleDeleteBrand = async (id: string) => {
+    try {
+      const numericId = id.replace("BRD-", "");
+      const url = getBrandsApiUrl(numericId);
+      const response = await fetchClient(url, {
+        method: "DELETE",
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success(result.message || "Brand deleted successfully");
+        await refreshBrands();
+      } else {
+        toast.error(result.message || "Failed to delete brand");
+      }
+    } catch (error) {
+      console.error("Delete brand error:", error);
+      toast.error("Failed to delete brand");
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl tracking-tight">Brands</h1>
+          <h1 className="text-3xl tracking-tight font-semibold">Brands</h1>
           <p className="text-muted-foreground text-sm">Manage all product brands and their status.</p>
         </div>
 
@@ -185,12 +126,22 @@ export default function BrandsPage() {
         totalProducts={stats.totalProducts}
         topTier={stats.topTier}
       />
-      <BrandsTable
-        data={brandsData}
-        onDelete={handleDeleteBrand}
-        onUpdate={handleUpdateBrand}
-        onRefresh={fetchBrands}
-      />
+
+      {loading ? (
+        <div className="flex items-center justify-center min-h-[300px] rounded-xl border bg-card/50">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="size-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading brands...</p>
+          </div>
+        </div>
+      ) : (
+        <BrandsTable
+          data={brands}
+          onDelete={handleDeleteBrand}
+          onUpdate={handleUpdateBrand}
+          onRefresh={refreshBrands}
+        />
+      )}
     </div>
   );
 }

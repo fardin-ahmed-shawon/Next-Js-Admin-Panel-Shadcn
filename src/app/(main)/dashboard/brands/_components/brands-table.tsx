@@ -11,8 +11,8 @@ import {
   getSortedRowModel,
   type PaginationState,
   type SortingState,
-  useReactTable,
 } from "@tanstack/react-table";
+import { useReactTable } from "@tanstack/react-table";
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,11 +20,11 @@ import {
   ChevronsRight,
   Edit,
   MoreHorizontal,
+  RefreshCw,
   Search,
   Tag,
-  Trash,
+  Trash2,
 } from "lucide-react";
-import { toast } from "sonner";
 
 import {
   AlertDialog,
@@ -35,7 +35,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,11 +49,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 import { EditBrandDialog } from "./edit-brand-dialog";
 
-type BrandRow = {
+export type BrandRow = {
   id: string;
+  rawId?: number;
   name: string;
   totalProducts: number;
   logo: string;
@@ -80,21 +81,27 @@ function RowActions({
 }) {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const handleDelete = async () => {
-    await onDelete(row.id);
-    setDeleteOpen(false);
+    try {
+      setIsDeleting(true);
+      await onDelete(row.id);
+    } finally {
+      setIsDeleting(false);
+      setDeleteOpen(false);
+    }
   };
 
   return (
     <div className="flex justify-end">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm">
-            <MoreHorizontal />
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MoreHorizontal className="size-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-40">
           <DropdownMenuItem
             onSelect={(e) => {
               e.preventDefault();
@@ -112,7 +119,7 @@ function RowActions({
               setDeleteOpen(true);
             }}
           >
-            <Trash className="mr-2 size-4" />
+            <Trash2 className="mr-2 size-4" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -123,19 +130,19 @@ function RowActions({
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure you want to delete this brand?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the brand <strong>{row.name}</strong> and all associated products may be
-              affected. This action cannot be undone.
+              This will permanently delete the brand <strong>{row.name}</strong> ({row.id}). Products linked to this brand will remain, but their brand association may be removed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={handleDelete}
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -150,6 +157,16 @@ export function BrandsTable({ data, onDelete, onUpdate, onRefresh }: BrandsTable
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const columns: ColumnDef<BrandRow>[] = [
     {
@@ -184,35 +201,54 @@ export function BrandsTable({ data, onDelete, onUpdate, onRefresh }: BrandsTable
     {
       accessorKey: "id",
       header: "ID",
-      cell: ({ row }) => <span className="font-medium text-muted-foreground">{row.original.id}</span>,
+      cell: ({ row }) => <span className="font-mono text-xs font-semibold text-muted-foreground">{row.original.id}</span>,
     },
     {
       accessorKey: "name",
       header: "Brand Details",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-          <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted p-1">
-            <img
-              src={row.original.logo}
-              alt={row.original.name}
-              className="size-full object-cover rounded-sm"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src =
-                  `https://placehold.co/80x80/1a1a2e/e0e0e0?text=${row.original.name.substring(0, 2).toUpperCase()}`;
-              }}
-            />
+      cell: ({ row }) => {
+        const initials = row.original.name
+          ? row.original.name.substring(0, 2).toUpperCase()
+          : "BR";
+        return (
+          <div className="flex items-center gap-3">
+            <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted/40 flex items-center justify-center">
+              {row.original.logo ? (
+                <img
+                  src={row.original.logo}
+                  alt={row.original.name}
+                  className="size-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                    if (target.parentElement) {
+                      target.parentElement.innerHTML = `<span class="text-xs font-bold text-muted-foreground">${initials}</span>`;
+                    }
+                  }}
+                />
+              ) : (
+                <span className="text-xs font-bold text-muted-foreground">{initials}</span>
+              )}
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <div className="font-medium leading-none text-sm">{row.original.name}</div>
+              <div className="text-muted-foreground text-xs">Joined: {row.original.joinedDate}</div>
+            </div>
           </div>
-          <div className="flex flex-col gap-0.5">
-            <div className="font-medium leading-none text-base">{row.original.name}</div>
-            <div className="text-muted-foreground text-xs">Joined: {row.original.joinedDate}</div>
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       accessorKey: "totalProducts",
-      header: "Total Products",
-      cell: ({ row }) => <span className="tabular-nums font-medium px-4">{row.original.totalProducts}</span>,
+      header: "Products Count",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5">
+          <Badge variant="secondary" className="font-mono font-medium">
+            {row.original.totalProducts}
+          </Badge>
+          <span className="text-xs text-muted-foreground">products</span>
+        </div>
+      ),
     },
     {
       id: "actions",
@@ -249,38 +285,43 @@ export function BrandsTable({ data, onDelete, onUpdate, onRefresh }: BrandsTable
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="font-normal text-muted-foreground text-sm">Brands List</CardTitle>
-        <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
-          {totalCount > 0 ? `${totalCount} brands` : "No brands"}
+      <CardHeader className="pb-3">
+        <CardTitle className="font-medium text-base">Brands Directory</CardTitle>
+        <CardDescription>
+          {totalCount > 0 ? `${totalCount} brands found` : "No brands listed yet"}
         </CardDescription>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4 px-0">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="h-8 w-48 rounded-[min(var(--radius-md),12px)] pl-8 sm:w-64"
-                placeholder="Search brands..."
-                value={searchQuery}
-                onChange={(event) => {
-                  table.getColumn("search")?.setFilterValue(event.target.value || undefined);
-                  table.setPageIndex(0);
-                }}
-              />
-            </div>
-            <Button variant="outline" size="sm" onClick={onRefresh}>
-              Refresh
-            </Button>
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6">
+          <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="h-9 pl-9 pr-4"
+              placeholder="Search brands by name or ID..."
+              value={searchQuery}
+              onChange={(event) => {
+                table.getColumn("search")?.setFilterValue(event.target.value || undefined);
+                table.setPageIndex(0);
+              }}
+            />
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="gap-2"
+          >
+            <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
         </div>
 
         {/* Table */}
         <div className="overflow-x-auto border-y">
           <Table>
-            <TableHeader className="bg-muted/50">
+            <TableHeader className="bg-muted/40">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
@@ -304,11 +345,13 @@ export function BrandsTable({ data, onDelete, onUpdate, onRefresh }: BrandsTable
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-48">
                     <div className="flex flex-col items-center justify-center gap-2 text-center">
-                      <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+                      <div className="flex size-12 items-center justify-center rounded-full bg-muted">
                         <Tag className="size-6 text-muted-foreground" />
                       </div>
                       <p className="text-sm font-medium">No brands found</p>
-                      <p className="text-xs text-muted-foreground">Try adjusting your search or filter.</p>
+                      <p className="text-xs text-muted-foreground">
+                        {searchQuery ? "Try adjusting your search query." : "Click \"Add Brand\" above to create your first brand."}
+                      </p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -318,14 +361,14 @@ export function BrandsTable({ data, onDelete, onUpdate, onRefresh }: BrandsTable
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between gap-4 px-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 pt-2">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Rows per page</span>
+            <span className="text-xs text-muted-foreground">Rows per page:</span>
             <Select
               value={`${pagination.pageSize}`}
               onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}
             >
-              <SelectTrigger className="h-8 w-16">
+              <SelectTrigger className="h-8 w-18">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -337,37 +380,41 @@ export function BrandsTable({ data, onDelete, onUpdate, onRefresh }: BrandsTable
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-sm text-muted-foreground">
-              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground mr-2">
+              Page {table.getState().pagination.pageIndex + 1} of {Math.max(table.getPageCount(), 1)}
             </span>
             <Button
-              size="icon-sm"
+              size="icon"
               variant="outline"
+              className="h-8 w-8"
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
               <ChevronsLeft className="size-4" />
             </Button>
             <Button
-              size="icon-sm"
+              size="icon"
               variant="outline"
+              className="h-8 w-8"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
               <ChevronLeft className="size-4" />
             </Button>
             <Button
-              size="icon-sm"
+              size="icon"
               variant="outline"
+              className="h-8 w-8"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
               <ChevronRight className="size-4" />
             </Button>
             <Button
-              size="icon-sm"
+              size="icon"
               variant="outline"
+              className="h-8 w-8"
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
             >
