@@ -797,7 +797,7 @@ const columns: ColumnDef<OrderRow>[] = [
       const getRelativeTime = (dateStr?: string) => {
         if (!dateStr) return "";
         try {
-          const rawStr = dateStr.replace("Z", "").split(".")[0].replace(" ", "T");
+          const rawStr = dateStr.replace(" ", "T");
           const date = new Date(rawStr);
           const now = new Date();
           const diffMs = now.getTime() - date.getTime();

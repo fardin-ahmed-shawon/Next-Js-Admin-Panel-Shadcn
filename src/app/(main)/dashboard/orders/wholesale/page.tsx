@@ -179,8 +179,8 @@ export default function WholesaleOrdersPage() {
         const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
         const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
 
-        // Remove 'Z' so JS parses it as local time, avoiding double timezone offset addition
-        const rawDateStr = order.created_at ? order.created_at.replace("Z", "") : "";
+        // Preserve the API timezone so JavaScript converts UTC to local time correctly.
+        const rawDateStr = order.created_at ? order.created_at.replace(" ", "T") : "";
         const createdDate = new Date(rawDateStr);
 
         const year = createdDate.getFullYear();

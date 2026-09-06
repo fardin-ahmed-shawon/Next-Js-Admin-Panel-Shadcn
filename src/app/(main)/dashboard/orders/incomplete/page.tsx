@@ -151,7 +151,7 @@ export default function IncompleteOrdersPage() {
       const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
       const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
 
-      const rawDateStr = order.created_at ? order.created_at.replace("Z", "") : "";
+      const rawDateStr = order.created_at ? order.created_at.replace(" ", "T") : "";
       const createdDate = new Date(rawDateStr);
       const year = createdDate.getFullYear();
       const month = String(createdDate.getMonth() + 1).padStart(2, "0");

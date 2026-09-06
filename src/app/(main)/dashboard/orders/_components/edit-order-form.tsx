@@ -121,7 +121,7 @@ function getImageUrl(path: string | null | undefined): string {
 /* ---- date helper ---- */
 function formatDate(dateStr: string) {
   try {
-    const rawStr = dateStr.replace("Z", "");
+    const rawStr = dateStr.replace(" ", "T");
     return new Date(rawStr).toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "short",
@@ -135,7 +135,7 @@ function formatDate(dateStr: string) {
 function getRelativeTime(dateStr?: string) {
   if (!dateStr) return "";
   try {
-    const rawStr = dateStr.replace("Z", "").split(".")[0].replace(" ", "T");
+    const rawStr = dateStr.replace(" ", "T");
     const date = new Date(rawStr);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
