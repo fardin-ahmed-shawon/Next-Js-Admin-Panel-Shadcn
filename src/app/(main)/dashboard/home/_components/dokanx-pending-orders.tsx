@@ -18,21 +18,14 @@ import {
 } from "@tanstack/react-table";
 import {
   ArrowUpDown,
-  CheckCircle,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Download,
-  Edit,
-  Eye,
-  MoreHorizontal,
   Package,
   Search,
-  ShieldAlert,
-  Trash,
   UserRound,
-  XCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -40,11 +33,8 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -54,11 +44,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { formatDashboardOrderDateTime } from "./order-date-time";
+
 export type OrderRow = {
   phone: string;
   invoice: string;
   total: string;
   date: string;
+  time: string;
+  timestamp: number;
   status: string;
 };
 
@@ -87,12 +81,13 @@ const columns: ColumnDef<OrderRow>[] = [
     ),
   },
   {
-    accessorKey: "date",
-    header: "DATE",
+    id: "date",
+    accessorFn: (row) => row.timestamp,
+    header: "DATE / TIME (BD)",
     cell: ({ row }) => (
       <div className="grid gap-0.5">
         <span className="text-sm">{row.original.date}</span>
-        <span className="text-muted-foreground text-xs">at 10:24 AM</span>
+        <span className="text-muted-foreground text-xs">{row.original.time ? "at " + row.original.time : "-"}</span>
       </div>
     ),
   },
@@ -101,57 +96,13 @@ const columns: ColumnDef<OrderRow>[] = [
     header: "TOTAL",
     cell: ({ row }) => <div className="font-medium tabular-nums">{row.original.total}</div>,
   },
-  {
-    id: "actions",
-    header: () => <div className="text-right">ACTIONS</div>,
-    cell: () => (
-      <div className="flex justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm">
-              <MoreHorizontal className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem>
-              <CheckCircle className="mr-2 size-4" />
-              Approve
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive focus:text-destructive">
-              <XCircle className="mr-2 size-4" />
-              Reject
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <ShieldAlert className="mr-2 size-4" />
-              Fraud Check
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Eye className="mr-2 size-4" />
-              View
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Edit className="mr-2 size-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive focus:text-destructive">
-              <Trash className="mr-2 size-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    ),
-  },
 ];
 
 function exportToExcel(data: OrderRow[]) {
-  const headers = ["Phone", "Invoice", "Total", "Date", "Status"];
+  const headers = ["Phone", "Invoice", "Total", "Date (BD)", "Time (BD)", "Status"];
   const csvRows = [
     headers.join(","),
-    ...data.map((row) => [row.phone, row.invoice, `"${row.total}"`, `"${row.date}"`, row.status].join(",")),
+    ...data.map((row) => [row.phone, row.invoice, `"${row.total}"`, `"${row.date}"`, row.time, row.status].join(",")),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -171,13 +122,13 @@ export function DokanxPendingOrders() {
       phone: order.customer_phone || "N/A",
       invoice: order.order_no,
       total: `৳${order.grand_total_amount?.toLocaleString() ?? 0}`,
-      date: new Date(order.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
+      ...formatDashboardOrderDateTime(order.created_at),
       status: order.order_status,
     }));
   }, [data?.lists?.pending]);
 
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [sorting, setSorting] = React.useState<SortingState>([{ id: "date", desc: true }]);
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
     pageSize: 5,
@@ -305,7 +256,7 @@ export function DokanxPendingOrders() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={table.getVisibleLeafColumns().length} className="h-24 text-center">
                     <Skeleton className="h-8 w-full" />
                   </TableCell>
                 </TableRow>
@@ -321,7 +272,7 @@ export function DokanxPendingOrders() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-auto p-0">
+                  <TableCell colSpan={table.getVisibleLeafColumns().length} className="h-auto p-0">
                     <div className="flex flex-col items-center justify-center gap-3 py-12">
                       <div className="flex size-14 items-center justify-center rounded-full bg-muted">
                         <Package className="size-6 text-muted-foreground" />
