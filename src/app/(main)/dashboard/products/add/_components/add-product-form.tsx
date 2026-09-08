@@ -506,77 +506,84 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
               {/* Thumbnail */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-primary font-medium">Thumbnail</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleGenerateImage}
-                    disabled={isGeneratingImage || !productName.trim()}
-                  >
-                    {isGeneratingImage ? (
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                    ) : (
-                      <Wand2 className="mr-2 size-4" />
-                    )}
-                    {isGeneratingImage ? "Generating..." : "Generate image"}
-                  </Button>
-                </div>
-                <div className="flex items-center gap-4">
-                  {thumbnailUrl ? (
-                    <div className="relative size-16 overflow-hidden rounded-lg border">
-                      <img src={thumbnailUrl} alt="Thumbnail" className="size-full object-cover" />
-                    </div>
-                  ) : (
-                    <div className="flex size-16 items-center justify-center rounded-lg border border-dashed">
-                      <Upload className="size-5 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Product thumbnail</p>
-                    <p className="text-xs text-muted-foreground">
-                      JPG or PNG. Keep it square and at least 1000 by 1000 pixels.
-                    </p>
-                    <div className="flex items-center gap-2 pt-1">
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="h-auto p-0 text-xs text-primary"
-                        onClick={() => thumbnailRef.current?.click()}
-                      >
-                        {thumbnailUrl ? "Replace image" : "Upload image"}
-                      </Button>
-                      {thumbnailUrl && (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs text-primary"
-                          onClick={() => {
-                            setThumbnailUrl(null);
-                            setThumbnailFile(null);
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  <input
-                    ref={thumbnailRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) {
-                        setThumbnailUrl(URL.createObjectURL(f));
-                        setThumbnailFile(f);
-                      }
-                    }}
-                  />
-                </div>
-              </div>
+              <div className="space-y-4">
+  <div className="flex items-center justify-between">
+    <Label className="text-primary font-medium">Thumbnail</Label>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleGenerateImage}
+      disabled={isGeneratingImage || !productName.trim()}
+    >
+      {isGeneratingImage ? (
+        <Loader2 className="mr-2 size-4 animate-spin" />
+      ) : (
+        <Wand2 className="mr-2 size-4" />
+      )}
+      {isGeneratingImage ? "Generating..." : "Generate image"}
+    </Button>
+  </div>
+
+  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+    {/* Much Larger Preview Box */}
+    {thumbnailUrl ? (
+      <div className="relative size-48 overflow-hidden rounded-lg border shadow-sm">
+        <img src={thumbnailUrl} alt="Thumbnail" className="size-full object-cover" />
+      </div>
+    ) : (
+      <div 
+        onClick={() => thumbnailRef.current?.click()}
+        className="flex size-48 cursor-pointer items-center justify-center rounded-lg border border-dashed bg-muted/50 hover:bg-muted transition-colors"
+      >
+        <Upload className="size-8 text-muted-foreground" />
+      </div>
+    )}
+
+    <div className="space-y-2">
+      <p className="text-base font-medium">Product thumbnail</p>
+      <p className="text-xs text-muted-foreground max-w-xs">
+        JPG or PNG. Keep it square and at least 1000 by 1000 pixels.
+      </p>
+      <div className="flex items-center gap-3 pt-1">
+        <Button
+          variant="link"
+          size="sm"
+          className="h-auto p-0 text-xs text-primary"
+          onClick={() => thumbnailRef.current?.click()}
+        >
+          {thumbnailUrl ? "Replace image" : "Upload image"}
+        </Button>
+        {thumbnailUrl && (
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-destructive"
+            onClick={() => {
+              setThumbnailUrl(null);
+              setThumbnailFile(null);
+            }}
+          >
+            Remove
+          </Button>
+        )}
+      </div>
+    </div>
+
+    <input
+      ref={thumbnailRef}
+      type="file"
+      accept="image/*"
+      className="hidden"
+      onChange={(e) => {
+        const f = e.target.files?.[0];
+        if (f) {
+          setThumbnailUrl(URL.createObjectURL(f));
+          setThumbnailFile(f);
+        }
+      }}
+    />
+  </div>
+</div>
 
               <Separator />
 

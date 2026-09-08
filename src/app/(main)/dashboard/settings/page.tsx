@@ -26,9 +26,11 @@ import { ChangeLogoTab } from "./_components/change-logo-tab";
 import { ChangePasswordTab } from "./_components/change-password-tab";
 import { GenericContentTab } from "./_components/generic-content-tab";
 import { WebsiteInfoTab } from "./_components/website-info-tab";
+import { GtmTab } from "./_components/gtm-tab";
 
 const TABS = [
   { id: "website-info", label: "Website Information" },
+  { id: "gtm-settings", label: "Google Tag Manager" },
   { id: "change-logo", label: "Change Website Logo" },
   { id: "change-password", label: "Change Password" },
   { id: "about-us", label: "About Us" },
@@ -120,6 +122,7 @@ export default function SettingsPage() {
         {/* Dynamic Content Area */}
         <div className="flex-1 lg:max-w-4xl">
           {displayTab === "website-info" && <WebsiteInfoTab />}
+          {displayTab === "gtm-settings" && <GtmTab />}
           {displayTab === "change-logo" && <ChangeLogoTab />}
           {displayTab === "change-password" && <ChangePasswordTab />}
           {displayTab === "about-us" && (
