@@ -191,7 +191,6 @@ export const sidebarItems: NavGroup[] = [
             title: "Inventory Report",
             url: "/dashboard/reports/inventory",
             module: "reports_inventory",
-            comingSoon: true,
           },
         ],
       },
