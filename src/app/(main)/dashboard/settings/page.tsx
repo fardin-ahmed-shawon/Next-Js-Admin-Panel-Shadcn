@@ -26,9 +26,13 @@ import { ChangeLogoTab } from "./_components/change-logo-tab";
 import { ChangePasswordTab } from "./_components/change-password-tab";
 import { GenericContentTab } from "./_components/generic-content-tab";
 import { WebsiteInfoTab } from "./_components/website-info-tab";
+import { ApiIntegrationsTab } from "./_components/api-integrations-tab";
 import { GtmTab } from "./_components/gtm-tab";
 
+const PRODUCT_FEED_URL = `${(process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/+$/, "")}/productfeed.xml`;
+
 const TABS = [
+  { id: "api-integrations", label: "API Integrations" },
   { id: "website-info", label: "Website Information" },
   { id: "gtm-settings", label: "Google Tag Manager" },
   { id: "change-logo", label: "Change Website Logo" },
@@ -76,7 +80,7 @@ export default function SettingsPage() {
         {isAdmin && (
           <div className="flex items-center gap-2">
             <Input
-              value="https://main-api.uniquelifebd.com/productfeed.xml"
+              value={PRODUCT_FEED_URL}
               readOnly
               className="w-64 bg-muted text-muted-foreground h-9"
             />
@@ -84,7 +88,7 @@ export default function SettingsPage() {
               variant="outline"
               size="sm"
               onClick={() => {
-                navigator.clipboard.writeText("https://main-api.uniquelifebd.com/productfeed.xml");
+                navigator.clipboard.writeText(PRODUCT_FEED_URL);
                 toast.success("Link copied to clipboard!");
               }}
             >
@@ -122,6 +126,7 @@ export default function SettingsPage() {
         {/* Dynamic Content Area */}
         <div className="flex-1 lg:max-w-4xl">
           {displayTab === "website-info" && <WebsiteInfoTab />}
+          {displayTab === "api-integrations" && <ApiIntegrationsTab />}
           {displayTab === "gtm-settings" && <GtmTab />}
           {displayTab === "change-logo" && <ChangeLogoTab />}
           {displayTab === "change-password" && <ChangePasswordTab />}

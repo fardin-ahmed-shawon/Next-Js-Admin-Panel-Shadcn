@@ -447,7 +447,6 @@ export function ProductStockAdjustmentModal({
                     <SelectContent>
                       <SelectItem value="vendor">Vendor / Purchase</SelectItem>
                       <SelectItem value="production">In-house Production</SelectItem>
-                      <SelectItem value="adjustment">Stock Adjustment</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
