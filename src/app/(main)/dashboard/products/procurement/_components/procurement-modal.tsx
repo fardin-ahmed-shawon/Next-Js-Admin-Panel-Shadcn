@@ -1,8 +1,21 @@
 "use client";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
+
+import { ModularFeature } from "@/components/modular-feature";
 
 import * as React from "react";
 import Link from "next/link";
-import { ChevronDown, Loader2, Plus, Search, ExternalLink, Upload, X, Banknote, Image as ImageIcon } from "lucide-react";
+import {
+  ChevronDown,
+  Loader2,
+  Plus,
+  Search,
+  ExternalLink,
+  Upload,
+  X,
+  Banknote,
+  Image as ImageIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -19,13 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchClient } from "@/lib/fetch-client";
 
@@ -61,6 +68,8 @@ const getImageUrl = (path: string | null | undefined) => {
 };
 
 export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
+  const { features } = useModularFeatures();
+
   const [open, setOpen] = React.useState(false);
   const [products, setProducts] = React.useState<LookupProduct[]>([]);
   const [suppliers, setSuppliers] = React.useState<SupplierOption[]>([]);
@@ -112,9 +121,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
       const fetchLookup = async () => {
         try {
           setLoadingProducts(true);
-          const res = await fetchClient(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/products-lookup`
-          );
+          const res = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/products-lookup`);
           const data = await res.json();
           if (res.ok && data.success) {
             setProducts(data.data || []);
@@ -132,9 +139,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
       const fetchSuppliersList = async () => {
         try {
           setLoadingSuppliers(true);
-          const res = await fetchClient(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}suppliers?all=true`
-          );
+          const res = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}suppliers?all=true`);
           const data = await res.json();
           if (res.ok && data.success) {
             setSuppliers(data.data || []);
@@ -157,9 +162,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
 
   const filteredProducts = React.useMemo(() => {
     if (!searchQuery.trim()) return products;
-    return products.filter((p) =>
-      p.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return products.filter((p) => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [products, searchQuery]);
 
   const handleProductChange = (val: string) => {
@@ -229,7 +232,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
           formData.append("created_at", `${purchaseDate} 00:00:00`);
         }
         formData.append("source_type", sourceType);
-        formData.append("supplier_id", supplierId || "0");
+        if (features?.supplier_management) formData.append("supplier_id", supplierId || "0");
         if (comment) formData.append("comment", comment);
         if (invoiceNo) formData.append("invoice_no", invoiceNo);
         formData.append("memo_image", memoImage);
@@ -252,7 +255,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
           date: purchaseDate || null,
           created_at: purchaseDate ? `${purchaseDate} 00:00:00` : undefined,
           source_type: sourceType,
-          supplier_id: Number(supplierId) || 0,
+          ...(features?.supplier_management ? { supplier_id: Number(supplierId) || 0 } : {}),
           comment: comment || null,
           invoice_no: invoiceNo.trim() || null,
           total_amount: totalAmount,
@@ -270,10 +273,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
         };
       }
 
-      const res = await fetchClient(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/lots`,
-        options
-      );
+      const res = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/lots`, options);
 
       const data = await res.json();
       if (res.ok && data.success) {
@@ -309,7 +309,9 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           {/* Product Search & Selection Popover */}
           <div className="space-y-1.5">
-            <Label>Select Product <span className="text-destructive">*</span></Label>
+            <Label>
+              Select Product <span className="text-destructive">*</span>
+            </Label>
             <Popover open={isOpenProductList} onOpenChange={setIsOpenProductList}>
               <PopoverTrigger asChild>
                 <Button
@@ -349,9 +351,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
                 </div>
                 <ScrollArea className="h-64">
                   {filteredProducts.length === 0 ? (
-                    <div className="p-4 text-sm text-center text-muted-foreground">
-                      No products found.
-                    </div>
+                    <div className="p-4 text-sm text-center text-muted-foreground">No products found.</div>
                   ) : (
                     <div className="p-1 space-y-0.5">
                       {filteredProducts.map((p) => (
@@ -375,9 +375,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
                               {p.title}
                             </span>
                             {p.has_variants ? (
-                              <span className="text-[10px] text-muted-foreground font-medium">
-                                Has Variants
-                              </span>
+                              <span className="text-[10px] text-muted-foreground font-medium">Has Variants</span>
                             ) : null}
                           </div>
                         </button>
@@ -392,12 +390,10 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
           {/* Variant Select (Conditionally shown) */}
           {selectedProduct?.has_variants ? (
             <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
-              <Label>Select Variant <span className="text-destructive">*</span></Label>
-              <Select
-                value={selectedVariantId}
-                onValueChange={setSelectedVariantId}
-                disabled={submitting}
-              >
+              <Label>
+                Select Variant <span className="text-destructive">*</span>
+              </Label>
+              <Select value={selectedVariantId} onValueChange={setSelectedVariantId} disabled={submitting}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose variant option..." />
                 </SelectTrigger>
@@ -427,7 +423,9 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
           {/* Quantity & Purchase Price */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="qty">Acquisition Quantity <span className="text-destructive">*</span></Label>
+              <Label htmlFor="qty">
+                Acquisition Quantity <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="qty"
                 type="number"
@@ -439,7 +437,9 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="price">Purchase Price (৳) <span className="text-destructive">*</span></Label>
+              <Label htmlFor="price">
+                Purchase Price (৳) <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="price"
                 type="number"
@@ -508,9 +508,22 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
 
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Due Amount</Label>
-                <div className={`h-9 px-3 flex items-center justify-between bg-background/90 rounded-md border font-bold text-sm tabular-nums ${dueAmount > 0 ? "text-red-500 border-red-200 dark:border-red-950" : "text-emerald-500 border-emerald-200 dark:border-emerald-950"}`}>
-                  <span>৳{dueAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  <Badge variant={dueAmount === 0 ? "default" : dueAmount < totalAmount && Number(paidAmount) > 0 ? "outline" : "destructive"} className="text-[10px] px-1.5 py-0 h-4 uppercase">
+                <div
+                  className={`h-9 px-3 flex items-center justify-between bg-background/90 rounded-md border font-bold text-sm tabular-nums ${dueAmount > 0 ? "text-red-500 border-red-200 dark:border-red-950" : "text-emerald-500 border-emerald-200 dark:border-emerald-950"}`}
+                >
+                  <span>
+                    ৳{dueAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <Badge
+                    variant={
+                      dueAmount === 0
+                        ? "default"
+                        : dueAmount < totalAmount && Number(paidAmount) > 0
+                          ? "outline"
+                          : "destructive"
+                    }
+                    className="text-[10px] px-1.5 py-0 h-4 uppercase"
+                  >
                     {dueAmount === 0 ? "Paid" : dueAmount < totalAmount && Number(paidAmount) > 0 ? "Partial" : "Due"}
                   </Badge>
                 </div>
@@ -522,11 +535,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Source Type</Label>
-              <Select
-                value={sourceType}
-                onValueChange={setSourceType}
-                disabled={submitting}
-              >
+              <Select value={sourceType} onValueChange={setSourceType} disabled={submitting}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -538,36 +547,34 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="supplier-select">Supplier</Label>
-                <Link
-                  href="/dashboard/suppliers"
-                  target="_blank"
-                  className="text-xs text-primary hover:underline flex items-center gap-0.5"
-                >
-                  <span>Manage</span>
-                  <ExternalLink className="size-3" />
-                </Link>
+            <ModularFeature name="supplier_management">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="supplier-select">Supplier</Label>
+                  <Link
+                    href="/dashboard/suppliers"
+                    target="_blank"
+                    className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                  >
+                    <span>Manage</span>
+                    <ExternalLink className="size-3" />
+                  </Link>
+                </div>
+                <Select value={supplierId} onValueChange={setSupplierId} disabled={submitting || loadingSuppliers}>
+                  <SelectTrigger id="supplier-select">
+                    <SelectValue placeholder="Select supplier..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">No Supplier / General</SelectItem>
+                    {suppliers.map((s) => (
+                      <SelectItem key={s.id} value={s.id.toString()}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select
-                value={supplierId}
-                onValueChange={setSupplierId}
-                disabled={submitting || loadingSuppliers}
-              >
-                <SelectTrigger id="supplier-select">
-                  <SelectValue placeholder="Select supplier..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">No Supplier / General</SelectItem>
-                  {suppliers.map((s) => (
-                    <SelectItem key={s.id} value={s.id.toString()}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            </ModularFeature>
           </div>
 
           {/* Purchase Date & Invoice No */}

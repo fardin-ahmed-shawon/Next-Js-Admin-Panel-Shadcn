@@ -1,9 +1,13 @@
+import { checkAiFeature } from "@/lib/check-ai-feature";
 import { NextResponse } from "next/server";
 
 const OPENAI_IMAGE_API_URL = "https://api.openai.com/v1/images/generations";
 const getApiKey = () => process.env.OPEN_AI_API_KEY || process.env.OPENAI_API_KEY;
 
 export async function POST(req: Request) {
+  const featureError = await checkAiFeature();
+  if (featureError) return featureError;
+
   try {
     const { productName, categoryName, subCategoryName } = await req.json();
     if (!productName?.trim()) {

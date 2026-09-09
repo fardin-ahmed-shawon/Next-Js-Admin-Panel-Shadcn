@@ -22,9 +22,9 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
-export function useCustomers() {
+export function useCustomers(report = false) {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-  const customersEndpoint = process.env.NEXT_PUBLIC_API_WEB_CUSTOMERS || "customers";
+  const customersEndpoint = report ? "reports/customers" : process.env.NEXT_PUBLIC_API_WEB_CUSTOMERS || "customers";
 
   const url = `${baseUrl}${customersEndpoint}`;
 

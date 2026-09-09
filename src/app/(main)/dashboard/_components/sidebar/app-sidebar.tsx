@@ -22,6 +22,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { hasModuleAccess } from "@/hooks/useRoles";
 import { useModularFeatures } from "@/hooks/useModularFeatures";
 
+import { featurePathEnabled } from "@/lib/feature-routes";
+
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
 import { SidebarSupportCard } from "./sidebar-support-card";
@@ -63,10 +65,7 @@ const _data = {
   ],
 };
 
-export function AppSidebar({
-  brandName,
-  ...props
-}: React.ComponentProps<typeof Sidebar> & { brandName?: string }) {
+export function AppSidebar({ brandName, ...props }: React.ComponentProps<typeof Sidebar> & { brandName?: string }) {
   const { user } = useAuth();
   const { features } = useModularFeatures();
   const { sidebarVariant, sidebarCollapsible, isSynced } = usePreferencesStore(
@@ -82,43 +81,123 @@ export function AppSidebar({
 
   const filteredItems = sidebarItems.map((group) => {
     const filteredGroupItems = group.items
+      .filter(
+        (item) =>
+          (item.url !== "/dashboard/feature-control" || user?.role?.role_name === "Admin") &&
+          (item.subItems?.length || featurePathEnabled(item.url, features)),
+      )
       .map((item) => {
         // Filter subItems first if they exist
         let filteredSubItems = item.subItems;
         if (filteredSubItems) {
           filteredSubItems = filteredSubItems.filter((subItem) => {
-            if (subItem.url === "/dashboard/products/attributes" && features && (features.variant_management === false || String(features.variant_management) === "0")) {
+            if (!featurePathEnabled(subItem.url, features)) return false;
+            if (
+              subItem.url === "/dashboard/products/attributes" &&
+              features &&
+              (features.variant_management === false || String(features.variant_management) === "0")
+            ) {
               return false;
             }
-            if (subItem.url === "/dashboard/orders/wholesale-create" && features && (features.orders_wholesale_create === false || String(features.orders_wholesale_create) === "0")) {
+            if (
+              subItem.url === "/dashboard/orders/wholesale-create" &&
+              features &&
+              (features.orders_wholesale_create === false || String(features.orders_wholesale_create) === "0")
+            ) {
               return false;
             }
-            if (subItem.url === "/dashboard/orders/create" && features && (features.orders_manual_create === false || String(features.orders_manual_create) === "0")) {
+            if (
+              subItem.url === "/dashboard/orders/create" &&
+              features &&
+              (features.orders_manual_create === false || String(features.orders_manual_create) === "0")
+            ) {
               return false;
             }
-            if (subItem.url === "/dashboard/orders/incomplete" && features && (features.orders_incomplete === false || String(features.orders_incomplete) === "0")) {
+            if (
+              subItem.url === "/dashboard/orders/incomplete" &&
+              features &&
+              (features.orders_incomplete === false || String(features.orders_incomplete) === "0")
+            ) {
               return false;
             }
-            if (subItem.url === "/dashboard/auto-order" && features && (features.employee_management === false || String(features.employee_management) === "0" || features.employee_auto_order_distribution === false || String(features.employee_auto_order_distribution) === "0")) {
+            if (
+              subItem.url === "/dashboard/auto-order" &&
+              features &&
+              (features.employee_management === false ||
+                String(features.employee_management) === "0" ||
+                features.employee_auto_order_distribution === false ||
+                String(features.employee_auto_order_distribution) === "0")
+            ) {
               return false;
             }
-            if (subItem.url === "/dashboard/orders/assign-orders" && features && (features.employee_management === false || String(features.employee_management) === "0")) {
+            if (
+              subItem.url === "/dashboard/orders/assign-orders" &&
+              features &&
+              (features.employee_management === false || String(features.employee_management) === "0")
+            ) {
               return false;
             }
-            if (subItem.url === "/dashboard/reports/product" && features && (features.reports_product === false || String(features.reports_product) === "0")) return false;
-            if (subItem.url === "/dashboard/reports/product-percent" && features && (features.reports_product_percent === false || String(features.reports_product_percent) === "0")) return false;
-            if (subItem.url === "/dashboard/reports/customer" && features && (features.reports_customer === false || String(features.reports_customer) === "0")) return false;
-            if (subItem.url === "/dashboard/reports/employee" && features && (features.reports_employee === false || String(features.reports_employee) === "0")) return false;
-            if (subItem.url === "/dashboard/reports/payment" && features && (features.reports_payment === false || String(features.reports_payment) === "0")) return false;
-            if (subItem.url === "/dashboard/reports/parcel" && features && (features.reports_parcel === false || String(features.reports_parcel) === "0")) return false;
-            if (subItem.url === "/dashboard/reports/courier" && features && (features.reports_courier === false || String(features.reports_courier) === "0")) return false;
-            if (subItem.url === "/dashboard/reports/inventory" && features && (features.reports_inventory === false || String(features.reports_inventory) === "0")) return false;
+            if (
+              subItem.url === "/dashboard/reports/product" &&
+              features &&
+              (features.reports_product === false || String(features.reports_product) === "0")
+            )
+              return false;
+            if (
+              subItem.url === "/dashboard/reports/product-percent" &&
+              features &&
+              (features.reports_product_percent === false || String(features.reports_product_percent) === "0")
+            )
+              return false;
+            if (
+              subItem.url === "/dashboard/reports/customer" &&
+              features &&
+              (features.reports_customer === false || String(features.reports_customer) === "0")
+            )
+              return false;
+            if (
+              subItem.url === "/dashboard/reports/employee" &&
+              features &&
+              (features.reports_employee === false || String(features.reports_employee) === "0")
+            )
+              return false;
+            if (
+              subItem.url === "/dashboard/reports/payment" &&
+              features &&
+              (features.reports_payment === false || String(features.reports_payment) === "0")
+            )
+              return false;
+            if (
+              subItem.url === "/dashboard/reports/parcel" &&
+              features &&
+              (features.reports_parcel === false || String(features.reports_parcel) === "0")
+            )
+              return false;
+            if (
+              subItem.url === "/dashboard/reports/courier" &&
+              features &&
+              (features.reports_courier === false || String(features.reports_courier) === "0")
+            )
+              return false;
+            if (
+              subItem.url === "/dashboard/reports/inventory" &&
+              features &&
+              (features.reports_inventory === false || String(features.reports_inventory) === "0")
+            )
+              return false;
 
             const requiredModule = subItem.module || item.module;
             if (!requiredModule) return true;
             return hasModuleAccess(user, requiredModule);
           });
         }
+
+        if (
+          item.subItems?.length &&
+          !filteredSubItems?.length &&
+          (item.url === "#" || !featurePathEnabled(item.url, features))
+        )
+          return null;
 
         // Check if the parent menu item is allowed
         let isParentAllowed = false;
@@ -131,7 +210,11 @@ export function AppSidebar({
         }
 
         if (isParentAllowed) {
-          if (item.module === "fraud_checker" && features && (features.fraud_checker === false || String(features.fraud_checker) === "0")) {
+          if (
+            item.module === "fraud_checker" &&
+            features &&
+            (features.fraud_checker === false || String(features.fraud_checker) === "0")
+          ) {
             return null;
           }
           return { ...item, subItems: filteredSubItems };

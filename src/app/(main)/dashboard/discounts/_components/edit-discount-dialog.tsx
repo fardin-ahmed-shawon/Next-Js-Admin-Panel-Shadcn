@@ -1,4 +1,6 @@
 "use client";
+import { ModularFeature } from "@/components/modular-feature";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 import * as React from "react";
 import { Search, Package, X } from "lucide-react";
@@ -56,6 +58,8 @@ interface EditDiscountDialogProps {
 }
 
 export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpdated }: EditDiscountDialogProps) {
+  const { features } = useModularFeatures();
+
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Form state
@@ -69,12 +73,10 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
     discount.status === "Active" ? "active" : "inactive",
   );
   const [giftProductId, setGiftProductId] = React.useState<string>(
-    discount.giftProductId ? discount.giftProductId.toString() : "none"
+    discount.giftProductId ? discount.giftProductId.toString() : "none",
   );
   const [giftProductObj, setGiftProductObj] = React.useState<any>(discount.giftProduct || null);
-  const [variantId, setVariantId] = React.useState<string>(
-    discount.variantId ? discount.variantId.toString() : "none"
-  );
+  const [variantId, setVariantId] = React.useState<string>(discount.variantId ? discount.variantId.toString() : "none");
   const [products, setProducts] = React.useState<any[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchFocused, setSearchFocused] = React.useState(false);
@@ -95,7 +97,7 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
       (p) =>
         p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.id?.toString().includes(searchQuery.toLowerCase())
+        p.id?.toString().includes(searchQuery.toLowerCase()),
     );
   }, [products, searchQuery]);
 
@@ -124,7 +126,7 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
         console.error("Failed to fetch products", error);
       }
     };
-    
+
     if (open) {
       fetchProducts();
     }
@@ -162,7 +164,7 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
       newErrors.discountAmount = "Percentage discount cannot exceed 100%";
     }
 
-    if (giftProductObj && giftProductObj.has_variants && variantId === "none") {
+    if (features?.discounts_gift_product && giftProductObj && giftProductObj.has_variants && variantId === "none") {
       newErrors.variantId = "Please select a variant for the gift product";
     }
 
@@ -187,8 +189,9 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
         discount_amount: parseFloat(discountAmount),
         has_free_shipping: freeShipping ? 1 : 0,
         status: status,
-        ...(giftProductId !== "none" && { gift_product_id: parseInt(giftProductId) }),
-        ...(giftProductId === "none" && { gift_product_id: null }),
+        ...(features?.discounts_gift_product &&
+          giftProductId !== "none" && { gift_product_id: parseInt(giftProductId) }),
+        ...(features?.discounts_gift_product && giftProductId === "none" && { gift_product_id: null }),
         ...(variantId !== "none" && { variant_id: parseInt(variantId) }),
         ...(variantId === "none" && { variant_id: null }),
       };
@@ -275,7 +278,10 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="edit-discountType">Discount Type</Label>
-                  <Select value={discountType} onValueChange={(value: "fixed" | "percentage") => setDiscountType(value)}>
+                  <Select
+                    value={discountType}
+                    onValueChange={(value: "fixed" | "percentage") => setDiscountType(value)}
+                  >
                     <SelectTrigger id="edit-discountType">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
@@ -331,128 +337,130 @@ export function EditDiscountDialog({ discount, open, onOpenChange, onDiscountUpd
             </div>
 
             {/* Right Column: Gift Product Selection */}
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-giftProduct">Gift Product (Optional)</Label>
-              {giftProductObj ? (
-                <div className="flex items-center justify-between rounded-lg border p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
-                      <img
-                        src={getImageUrl(giftProductObj.product_thumbnail_img)}
-                        alt={giftProductObj.title}
-                        className="size-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium leading-snug">{giftProductObj.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {giftProductObj.sku || "N/A"} · ৳{(giftProductObj.selling_price || 0).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => {
-                      setGiftProductObj(null);
-                      setGiftProductId("none");
-                      setVariantId("none");
-                      setSearchQuery("");
-                    }}
-                  >
-                    <X className="size-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div ref={searchRef} className="relative">
-                  <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    className="pl-9"
-                    placeholder="Search by product name, SKU, or ID..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => setSearchFocused(true)}
-                  />
-                  {searchFocused && filteredProducts.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-lg">
-                      {filteredProducts.map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
-                          onClick={() => {
-                            setGiftProductObj(p);
-                            setGiftProductId(p.id.toString());
-                            setVariantId("none");
-                            setSearchFocused(false);
-                            setSearchQuery("");
-                          }}
-                        >
-                          <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
-                            <img
-                              src={getImageUrl(p.product_thumbnail_img)}
-                              alt={p.title}
-                              className="size-full object-cover"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium leading-snug">{p.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {p.sku || "N/A"} · Stock: {p.available_stock}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-sm font-semibold tabular-nums">
-                              {p.has_variant_wise_pricing
-                                ? "Variant Pricing"
-                                : `৳${(p.selling_price || 0).toLocaleString()}`}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {searchFocused && searchQuery.trim() && filteredProducts.length === 0 && (
-                    <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-popover p-6 shadow-lg">
-                      <div className="flex flex-col items-center gap-2 text-center">
-                        <Package className="size-8 text-muted-foreground" />
-                        <p className="text-sm font-medium">No products found</p>
-                        <p className="text-xs text-muted-foreground">Try a different search term.</p>
+            <ModularFeature name="discounts_gift_product">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="edit-giftProduct">Gift Product (Optional)</Label>
+                {giftProductObj ? (
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
+                        <img
+                          src={getImageUrl(giftProductObj.product_thumbnail_img)}
+                          alt={giftProductObj.title}
+                          className="size-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium leading-snug">{giftProductObj.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {giftProductObj.sku || "N/A"} · ৳{(giftProductObj.selling_price || 0).toLocaleString()}
+                        </p>
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => {
+                        setGiftProductObj(null);
+                        setGiftProductId("none");
+                        setVariantId("none");
+                        setSearchQuery("");
+                      }}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div ref={searchRef} className="relative">
+                    <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      className="pl-9"
+                      placeholder="Search by product name, SKU, or ID..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => setSearchFocused(true)}
+                    />
+                    {searchFocused && filteredProducts.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-lg">
+                        {filteredProducts.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
+                            onClick={() => {
+                              setGiftProductObj(p);
+                              setGiftProductId(p.id.toString());
+                              setVariantId("none");
+                              setSearchFocused(false);
+                              setSearchQuery("");
+                            }}
+                          >
+                            <div className="size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
+                              <img
+                                src={getImageUrl(p.product_thumbnail_img)}
+                                alt={p.title}
+                                className="size-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium leading-snug">{p.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {p.sku || "N/A"} · Stock: {p.available_stock}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-sm font-semibold tabular-nums">
+                                {p.has_variant_wise_pricing
+                                  ? "Variant Pricing"
+                                  : `৳${(p.selling_price || 0).toLocaleString()}`}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {searchFocused && searchQuery.trim() && filteredProducts.length === 0 && (
+                      <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-popover p-6 shadow-lg">
+                        <div className="flex flex-col items-center gap-2 text-center">
+                          <Package className="size-8 text-muted-foreground" />
+                          <p className="text-sm font-medium">No products found</p>
+                          <p className="text-xs text-muted-foreground">Try a different search term.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {/* Variant Selection if applicable */}
-              {giftProductObj && giftProductObj.has_variants ? (
-                <div className="grid gap-2 mt-2">
-                  <Label htmlFor="edit-variantId">
-                    Select Variant <span className="text-destructive">*</span>
-                  </Label>
-                  <Select value={variantId} onValueChange={setVariantId}>
-                    <SelectTrigger id="edit-variantId" className={errors.variantId ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select a variant" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Choose a variant</SelectItem>
-                      {giftProductObj.variants?.map((v: any) => {
-                        const sizeLabel = v.size?.label || "";
-                        const colorLabel = v.color?.label || "";
-                        const variantLabel = [sizeLabel, colorLabel].filter(Boolean).join(" - ") || v.sku;
-                        return (
-                          <SelectItem key={v.id} value={v.id.toString()}>
-                            {variantLabel} {v.available_stock !== undefined ? `(Stock: ${v.available_stock})` : ""}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                  {errors.variantId && <p className="text-sm text-destructive">{errors.variantId}</p>}
-                </div>
-              ) : null}
-            </div>
+                {/* Variant Selection if applicable */}
+                {giftProductObj && giftProductObj.has_variants ? (
+                  <div className="grid gap-2 mt-2">
+                    <Label htmlFor="edit-variantId">
+                      Select Variant <span className="text-destructive">*</span>
+                    </Label>
+                    <Select value={variantId} onValueChange={setVariantId}>
+                      <SelectTrigger id="edit-variantId" className={errors.variantId ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Select a variant" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Choose a variant</SelectItem>
+                        {giftProductObj.variants?.map((v: any) => {
+                          const sizeLabel = v.size?.label || "";
+                          const colorLabel = v.color?.label || "";
+                          const variantLabel = [sizeLabel, colorLabel].filter(Boolean).join(" - ") || v.sku;
+                          return (
+                            <SelectItem key={v.id} value={v.id.toString()}>
+                              {variantLabel} {v.available_stock !== undefined ? `(Stock: ${v.available_stock})` : ""}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {errors.variantId && <p className="text-sm text-destructive">{errors.variantId}</p>}
+                  </div>
+                ) : null}
+              </div>
+            </ModularFeature>
           </div>
 
           <DialogFooter>

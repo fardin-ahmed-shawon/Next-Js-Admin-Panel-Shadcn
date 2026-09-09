@@ -1,4 +1,5 @@
 "use client";
+import { ModularFeature } from "@/components/modular-feature";
 
 import * as React from "react";
 
@@ -282,8 +283,12 @@ export function ParcelReportsTable({ data }: { data: OrderRow[] }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All Couriers</SelectItem>
-                <SelectItem value="Steadfast">Steadfast</SelectItem>
-                <SelectItem value="Pathao">Pathao</SelectItem>
+                <ModularFeature name="courier_steadfast">
+                  <SelectItem value="Steadfast">Steadfast</SelectItem>
+                </ModularFeature>
+                <ModularFeature name="courier_pathao">
+                  <SelectItem value="Pathao">Pathao</SelectItem>
+                </ModularFeature>
               </SelectContent>
             </Select>
 

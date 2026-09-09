@@ -13,16 +13,7 @@ import { useCustomers } from "@/hooks/useCustomers";
 /* ------------------------------------------------------------------ */
 
 export default function CustomerReportPage() {
-  const { features } = useModularFeatures();
-  if (features?.reports_customer === false || String(features?.reports_customer) === "0") {
-    return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
-        <h2 className="text-2xl font-bold">Feature Disabled</h2>
-        <p className="text-muted-foreground mt-2">This report feature is currently disabled.</p>
-      </div>
-    );
-  }
-  const { data: response, isLoading, error } = useCustomers();
+  const { data: response, isLoading, error } = useCustomers(true);
 
   if (isLoading) {
     return (

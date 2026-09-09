@@ -22,7 +22,7 @@ const fetcher = async (key: string | [string, number | undefined]) => {
   }
 
   const json = await res.json();
-  
+
   return {
     summary: json.summary || {},
     data: json.data?.data || [],
@@ -36,6 +36,7 @@ const fetcher = async (key: string | [string, number | undefined]) => {
 };
 
 interface UseOrdersParams {
+  report?: boolean;
   page?: number;
   per_page?: number;
   search?: string;
@@ -52,9 +53,11 @@ interface UseOrdersParams {
 export function useOrders(params?: UseOrdersParams) {
   const { user } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
-  const ordersEndpoint = params?.isWholesale 
-    ? "wholesale-orders" 
-    : (process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders");
+  const ordersEndpoint = params?.report
+    ? "reports/orders"
+    : params?.isWholesale
+      ? "wholesale-orders"
+      : process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders";
 
   const searchParams = new URLSearchParams();
   if (params?.page) searchParams.append("page", params.page.toString());

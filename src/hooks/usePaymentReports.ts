@@ -2,7 +2,7 @@ import { fetchClient } from "@/lib/fetch-client";
 import { useAuth } from "@/hooks/useAuth";
 import useSWR from "swr";
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/"}${process.env.NEXT_PUBLIC_API_WEB_PAYMENTS || "payments"}`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/"}reports/payments`;
 
 export interface CustomerInfo {
   customer_id: number;

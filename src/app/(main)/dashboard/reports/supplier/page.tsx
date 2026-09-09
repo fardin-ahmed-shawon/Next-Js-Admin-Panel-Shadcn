@@ -25,11 +25,6 @@ const rangeLabels: Record<TimeRange, string> = {
 };
 
 export default function SupplierReportPage() {
-  const { features } = useModularFeatures();
-  if (features?.reports_supplier === false || String(features?.reports_supplier) === "0") {
-    // Enabled by default unless explicitly set to false
-  }
-
   const [timeRange, setTimeRange] = React.useState<TimeRange>("all_time");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
@@ -101,12 +96,12 @@ export default function SupplierReportPage() {
       }
 
       const csvData = items.map((item, index) => ({
-        "SL": index + 1,
+        SL: index + 1,
         "Supplier ID": item.supplier_id || "N/A",
         "Supplier Name": item.supplier_name,
-        "Phone": item.phone || "N/A",
-        "Email": item.email || "N/A",
-        "Address": item.address || "N/A",
+        Phone: item.phone || "N/A",
+        Email: item.email || "N/A",
+        Address: item.address || "N/A",
         "Purchase Count": item.purchase_count,
         "Total Purchase Amount (BDT)": Number(item.total_purchase_amount || 0).toFixed(2),
         "Total Paid Amount (BDT)": Number(item.total_paid_amount || 0).toFixed(2),
@@ -186,13 +181,7 @@ export default function SupplierReportPage() {
           </Button>
 
           {/* Refresh Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9"
-            onClick={() => mutate()}
-            title="Refresh Data"
-          >
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => mutate()} title="Refresh Data">
             <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
         </div>

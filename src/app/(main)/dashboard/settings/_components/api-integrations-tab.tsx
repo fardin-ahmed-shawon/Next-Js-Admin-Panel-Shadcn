@@ -1,5 +1,6 @@
 "use client";
 
+import { ModularFeature } from "@/components/modular-feature";
 import { useCallback, useEffect, useState } from "react";
 
 import { Copy, KeyRound, Loader2, Save, ShieldCheck } from "lucide-react";
@@ -438,12 +439,27 @@ export function ApiIntegrationsTab() {
         </p>
       </div>
       {providers.map((provider) => (
-        <ProviderCard
+        <ModularFeature
           key={provider.id}
-          provider={provider}
-          initial={data.providers[provider.id]}
-          webhookUrl={data.webhook_urls[provider.id]}
-        />
+          name={
+            (
+              {
+                sslcommerz: "sslcommerze",
+                pathao: "courier_pathao",
+                redx: "courier_redx",
+                orderconfirm: "ai_auto_calling",
+                fraud_checker: "fraud_checker",
+              } as Record<string, string>
+            )[provider.id]
+          }
+        >
+          <ProviderCard
+            key={provider.id}
+            provider={provider}
+            initial={data.providers[provider.id]}
+            webhookUrl={data.webhook_urls[provider.id]}
+          />
+        </ModularFeature>
       ))}
     </div>
   );

@@ -56,7 +56,7 @@ const rangeLabels: Record<TimeRange, string> = {
 };
 
 export default function ReportsDashboardPage() {
-  const { orders, isLoading } = useOrders({ per_page: 1000 });
+  const { orders, isLoading } = useOrders({ per_page: 1000, report: true });
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");

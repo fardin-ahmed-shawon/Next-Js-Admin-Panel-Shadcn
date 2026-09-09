@@ -17,6 +17,7 @@ import { NotificationButton } from "./_components/sidebar/notification-button";
 import { SearchDialog } from "./_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { AuthInitializer } from "@/components/auth-initializer";
+import { FeatureGuard } from "@/components/feature-guard";
 import { RoleGuard } from "@/components/role-guard";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
@@ -73,7 +74,9 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
           </div>
         </header>
         <div className="h-full p-4 md:p-6 max-w-full">
-          <RoleGuard>{children}</RoleGuard>
+          <FeatureGuard>
+            <RoleGuard>{children}</RoleGuard>
+          </FeatureGuard>
         </div>
       </SidebarInset>
     </SidebarProvider>

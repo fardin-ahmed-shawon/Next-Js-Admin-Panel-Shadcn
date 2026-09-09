@@ -1,9 +1,20 @@
 "use client";
+import { ModularFeature } from "@/components/modular-feature";
 
 import * as React from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { CalendarIcon, FilePenLine, Loader2, PackageOpen, ExternalLink, Banknote, Upload, X, Image as ImageIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  FilePenLine,
+  Loader2,
+  PackageOpen,
+  ExternalLink,
+  Banknote,
+  Upload,
+  X,
+  Image as ImageIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,13 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchClient } from "@/lib/fetch-client";
@@ -61,7 +66,8 @@ export function ProductStockAdjustmentModal({
   mutate,
 }: ProductStockAdjustmentModalProps) {
   const { features } = useModularFeatures();
-  const allowMultipleLot = features?.inventory_multiple_lot !== false && String(features?.inventory_multiple_lot) !== "0";
+  const allowMultipleLot =
+    features?.inventory_multiple_lot !== false && String(features?.inventory_multiple_lot) !== "0";
 
   const [activeTab, setActiveTab] = React.useState(allowMultipleLot ? "new-lot" : "adjust-lots");
 
@@ -148,7 +154,8 @@ export function ProductStockAdjustmentModal({
                 addQty: "",
                 reduceQty: "",
                 purchasePrice: lot.purchase_price.toString(),
-                sourceType: lot.source_type === "return" || lot.source_type === "adjustment" ? lot.source_type : "adjustment",
+                sourceType:
+                  lot.source_type === "return" || lot.source_type === "adjustment" ? lot.source_type : "adjustment",
                 comment: lot.comment || "",
               };
             });
@@ -214,7 +221,7 @@ export function ProductStockAdjustmentModal({
           formData.append("created_at", `${newPurchaseDate} 00:00:00`);
         }
         formData.append("source_type", newSourceType);
-        formData.append("supplier_id", newSupplierId || "0");
+        if (features?.supplier_management) formData.append("supplier_id", newSupplierId || "0");
         if (newComment) formData.append("comment", newComment);
         if (newInvoiceNo.trim()) formData.append("invoice_no", newInvoiceNo.trim());
         formData.append("memo_image", newMemoImage);
@@ -237,7 +244,7 @@ export function ProductStockAdjustmentModal({
           date: newPurchaseDate || null,
           created_at: newPurchaseDate ? `${newPurchaseDate} 00:00:00` : undefined,
           source_type: newSourceType,
-          supplier_id: Number(newSupplierId) || 0,
+          ...(features?.supplier_management ? { supplier_id: Number(newSupplierId) || 0 } : {}),
           comment: newComment || null,
           invoice_no: newInvoiceNo.trim() || null,
           total_amount: totalLotAmount,
@@ -283,7 +290,7 @@ export function ProductStockAdjustmentModal({
   const handleSaveAdjustments = async () => {
     // Find all lots that actually have an adjustment (add or reduce is not empty)
     const modifiedLotIds = Object.keys(adjustments).filter(
-      (lotId) => adjustments[lotId].addQty !== "" || adjustments[lotId].reduceQty !== ""
+      (lotId) => adjustments[lotId].addQty !== "" || adjustments[lotId].reduceQty !== "",
     );
 
     if (modifiedLotIds.length === 0) {
@@ -335,7 +342,6 @@ export function ProductStockAdjustmentModal({
       toast.success(`${modifiedLotIds.length} lot(s) adjusted successfully.`);
       onOpenChange(false);
       if (mutate) mutate();
-
     } catch (error: any) {
       toast.error(error.message || "An error occurred while saving adjustments.");
     } finally {
@@ -349,7 +355,8 @@ export function ProductStockAdjustmentModal({
         <DialogHeader>
           <DialogTitle>Stock Adjustment</DialogTitle>
           <DialogDescription>
-            Manage stock for <span className="font-semibold text-foreground">{item?.title || item?.name || "Selected Product"}</span>.
+            Manage stock for{" "}
+            <span className="font-semibold text-foreground">{item?.title || item?.name || "Selected Product"}</span>.
           </DialogDescription>
         </DialogHeader>
 
@@ -361,221 +368,275 @@ export function ProductStockAdjustmentModal({
 
           {allowMultipleLot && (
             <TabsContent value="new-lot" className="mt-4 flex-1 overflow-y-auto pr-2">
-            <form onSubmit={handleAddNewLot} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Quantity <span className="text-destructive">*</span></Label>
-                  <Input type="number" min="1" value={newQuantity} onChange={(e) => setNewQuantity(e.target.value)} disabled={submitting} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Purchase Price (per unit) <span className="text-destructive">*</span></Label>
-                  <Input type="number" min="0" step="0.01" value={newPurchasePrice} onChange={(e) => setNewPurchasePrice(e.target.value)} disabled={submitting} />
-                </div>
-              </div>
-
-              {/* Supplier Payment Summary Box */}
-              <div className="rounded-lg border bg-gradient-to-br from-muted/50 to-muted/20 p-3 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <Banknote className="size-3.5 text-primary" /> Supplier Payment Summary
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 text-[11px] px-2 text-primary hover:text-primary hover:bg-primary/10"
-                      onClick={() => setNewPaidAmount(totalLotAmount > 0 ? totalLotAmount.toFixed(2) : "0")}
-                    >
-                      Full Paid
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 text-[11px] px-2 text-muted-foreground hover:bg-muted"
-                      onClick={() => setNewPaidAmount("0")}
-                    >
-                      Mark as Due
-                    </Button>
+              <form onSubmit={handleAddNewLot} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>
+                      Quantity <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={newQuantity}
+                      onChange={(e) => setNewQuantity(e.target.value)}
+                      disabled={submitting}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>
+                      Purchase Price (per unit) <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={newPurchasePrice}
+                      onChange={(e) => setNewPurchasePrice(e.target.value)}
+                      disabled={submitting}
+                    />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-                  <div className="space-y-1">
-                    <span className="text-muted-foreground block text-xs">Total Amount</span>
-                    <div className="h-8 px-2.5 flex items-center bg-background/90 rounded border font-semibold text-sm tabular-nums text-foreground">
-                      ৳{totalLotAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {/* Supplier Payment Summary Box */}
+                <div className="rounded-lg border bg-gradient-to-br from-muted/50 to-muted/20 p-3 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Banknote className="size-3.5 text-primary" /> Supplier Payment Summary
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 text-[11px] px-2 text-primary hover:text-primary hover:bg-primary/10"
+                        onClick={() => setNewPaidAmount(totalLotAmount > 0 ? totalLotAmount.toFixed(2) : "0")}
+                      >
+                        Full Paid
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 text-[11px] px-2 text-muted-foreground hover:bg-muted"
+                        onClick={() => setNewPaidAmount("0")}
+                      >
+                        Mark as Due
+                      </Button>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="stock-adj-paid-amount" className="text-xs font-medium block">
-                      Paid Amount (৳)
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                    <div className="space-y-1">
+                      <span className="text-muted-foreground block text-xs">Total Amount</span>
+                      <div className="h-8 px-2.5 flex items-center bg-background/90 rounded border font-semibold text-sm tabular-nums text-foreground">
+                        ৳
+                        {totalLotAmount.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="stock-adj-paid-amount" className="text-xs font-medium block">
+                        Paid Amount (৳)
+                      </Label>
+                      <Input
+                        id="stock-adj-paid-amount"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={newPaidAmount}
+                        onChange={(e) => setNewPaidAmount(e.target.value)}
+                        disabled={submitting}
+                        className="h-8 bg-background text-xs font-medium px-2.5"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-muted-foreground block text-xs">Due Amount</span>
+                      <div
+                        className={`h-8 px-2.5 flex items-center justify-between bg-background/90 rounded border font-bold text-sm tabular-nums ${dueLotAmount > 0 ? "text-red-500 border-red-200 dark:border-red-950" : "text-emerald-500 border-emerald-200 dark:border-emerald-950"}`}
+                      >
+                        <span>
+                          ৳
+                          {dueLotAmount.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                        <Badge
+                          variant={
+                            dueLotAmount === 0
+                              ? "default"
+                              : dueLotAmount < totalLotAmount && Number(newPaidAmount) > 0
+                                ? "outline"
+                                : "destructive"
+                          }
+                          className="text-[9px] px-1 py-0 h-3.5 uppercase"
+                        >
+                          {dueLotAmount === 0
+                            ? "Paid"
+                            : dueLotAmount < totalLotAmount && Number(newPaidAmount) > 0
+                              ? "Partial"
+                              : "Due"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Source & Supplier */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Source Type</Label>
+                    <Select value={newSourceType} onValueChange={setNewSourceType} disabled={submitting}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="vendor">Vendor / Purchase</SelectItem>
+                        <SelectItem value="production">In-house Production</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <ModularFeature name="supplier_management">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="stock-adj-supplier-select">Supplier</Label>
+                        <Link
+                          href="/dashboard/suppliers"
+                          target="_blank"
+                          className="text-xs text-primary hover:underline flex items-center gap-0.5 font-normal"
+                        >
+                          <span>Manage</span>
+                          <ExternalLink className="size-3" />
+                        </Link>
+                      </div>
+                      <Select
+                        value={newSupplierId}
+                        onValueChange={setNewSupplierId}
+                        disabled={submitting || loadingSuppliers}
+                      >
+                        <SelectTrigger id="stock-adj-supplier-select">
+                          <SelectValue placeholder="Select supplier..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">No Supplier / General</SelectItem>
+                          {suppliers.map((s) => (
+                            <SelectItem key={s.id} value={s.id.toString()}>
+                              {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </ModularFeature>
+                </div>
+
+                {/* Purchase Date & Invoice No */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="adj-purchase-date" className="text-xs font-medium">
+                      Purchase Date <span className="text-muted-foreground font-normal">(Custom Date)</span>
                     </Label>
                     <Input
-                      id="stock-adj-paid-amount"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={newPaidAmount}
-                      onChange={(e) => setNewPaidAmount(e.target.value)}
+                      id="adj-purchase-date"
+                      type="date"
+                      value={newPurchaseDate}
+                      onChange={(e) => setNewPurchaseDate(e.target.value)}
                       disabled={submitting}
-                      className="h-8 bg-background text-xs font-medium px-2.5"
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <span className="text-muted-foreground block text-xs">Due Amount</span>
-                    <div className={`h-8 px-2.5 flex items-center justify-between bg-background/90 rounded border font-bold text-sm tabular-nums ${dueLotAmount > 0 ? "text-red-500 border-red-200 dark:border-red-950" : "text-emerald-500 border-emerald-200 dark:border-emerald-950"}`}>
-                      <span>৳{dueLotAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      <Badge variant={dueLotAmount === 0 ? "default" : dueLotAmount < totalLotAmount && Number(newPaidAmount) > 0 ? "outline" : "destructive"} className="text-[9px] px-1 py-0 h-3.5 uppercase">
-                        {dueLotAmount === 0 ? "Paid" : dueLotAmount < totalLotAmount && Number(newPaidAmount) > 0 ? "Partial" : "Due"}
-                      </Badge>
-                    </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="adj-invoice-no" className="text-xs font-medium">
+                      Invoice No <span className="text-muted-foreground font-normal">(Optional)</span>
+                    </Label>
+                    <Input
+                      id="adj-invoice-no"
+                      placeholder="e.g. INV-2026-991"
+                      value={newInvoiceNo}
+                      onChange={(e) => setNewInvoiceNo(e.target.value)}
+                      disabled={submitting}
+                    />
                   </div>
                 </div>
-              </div>
 
-              {/* Source & Supplier */}
-              <div className="grid grid-cols-2 gap-4">
+                {/* Memo Image */}
                 <div className="space-y-1.5">
-                  <Label>Source Type</Label>
-                  <Select value={newSourceType} onValueChange={setNewSourceType} disabled={submitting}>
-                    <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="vendor">Vendor / Purchase</SelectItem>
-                      <SelectItem value="production">In-house Production</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="stock-adj-supplier-select">Supplier</Label>
-                    <Link
-                      href="/dashboard/suppliers"
-                      target="_blank"
-                      className="text-xs text-primary hover:underline flex items-center gap-0.5 font-normal"
+                  <Label className="text-xs font-medium">
+                    Memo Image <span className="text-muted-foreground font-normal">(Optional)</span>
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    {newMemoImagePreview ? (
+                      <div className="relative size-9 rounded border overflow-hidden bg-muted shrink-0">
+                        <img src={newMemoImagePreview} alt="Memo preview" className="size-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewMemoImage(null);
+                            setNewMemoImagePreview(null);
+                          }}
+                          className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 hover:bg-black"
+                        >
+                          <X className="size-2.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="size-9 rounded border border-dashed flex items-center justify-center text-muted-foreground bg-muted/30 shrink-0">
+                        <ImageIcon className="size-4" />
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9 flex-1 gap-1.5 text-xs"
+                      onClick={() => memoImageRef.current?.click()}
+                      disabled={submitting}
                     >
-                      <span>Manage</span>
-                      <ExternalLink className="size-3" />
-                    </Link>
+                      <Upload className="size-3.5" />
+                      {newMemoImage ? "Change Memo" : "Upload Memo"}
+                    </Button>
+                    <input
+                      ref={memoImageRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setNewMemoImage(file);
+                          setNewMemoImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
                   </div>
-                  <Select
-                    value={newSupplierId}
-                    onValueChange={setNewSupplierId}
-                    disabled={submitting || loadingSuppliers}
-                  >
-                    <SelectTrigger id="stock-adj-supplier-select">
-                      <SelectValue placeholder="Select supplier..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">No Supplier / General</SelectItem>
-                      {suppliers.map((s) => (
-                        <SelectItem key={s.id} value={s.id.toString()}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Purchase Date & Invoice No */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="adj-purchase-date" className="text-xs font-medium">
-                    Purchase Date <span className="text-muted-foreground font-normal">(Custom Date)</span>
-                  </Label>
-                  <Input
-                    id="adj-purchase-date"
-                    type="date"
-                    value={newPurchaseDate}
-                    onChange={(e) => setNewPurchaseDate(e.target.value)}
-                    disabled={submitting}
-                  />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="adj-invoice-no" className="text-xs font-medium">
-                    Invoice No <span className="text-muted-foreground font-normal">(Optional)</span>
-                  </Label>
-                  <Input
-                    id="adj-invoice-no"
-                    placeholder="e.g. INV-2026-991"
-                    value={newInvoiceNo}
-                    onChange={(e) => setNewInvoiceNo(e.target.value)}
+                  <Label>Procurement Notes</Label>
+                  <Textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Optional comments, reference numbers, etc..."
+                    rows={2}
                     disabled={submitting}
                   />
                 </div>
-              </div>
-
-              {/* Memo Image */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">
-                  Memo Image <span className="text-muted-foreground font-normal">(Optional)</span>
-                </Label>
-                <div className="flex items-center gap-2">
-                  {newMemoImagePreview ? (
-                    <div className="relative size-9 rounded border overflow-hidden bg-muted shrink-0">
-                      <img src={newMemoImagePreview} alt="Memo preview" className="size-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNewMemoImage(null);
-                          setNewMemoImagePreview(null);
-                        }}
-                        className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 hover:bg-black"
-                      >
-                        <X className="size-2.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="size-9 rounded border border-dashed flex items-center justify-center text-muted-foreground bg-muted/30 shrink-0">
-                      <ImageIcon className="size-4" />
-                    </div>
-                  )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9 flex-1 gap-1.5 text-xs"
-                    onClick={() => memoImageRef.current?.click()}
-                    disabled={submitting}
-                  >
-                    <Upload className="size-3.5" />
-                    {newMemoImage ? "Change Memo" : "Upload Memo"}
+                <div className="pt-3 flex justify-end gap-2 border-t mt-3">
+                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+                    Cancel
                   </Button>
-                  <input
-                    ref={memoImageRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setNewMemoImage(file);
-                        setNewMemoImagePreview(URL.createObjectURL(file));
-                      }
-                    }}
-                  />
+                  <Button type="submit" disabled={submitting || !newQuantity || !newPurchasePrice}>
+                    {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Procure Stock
+                  </Button>
                 </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Procurement Notes</Label>
-                <Textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Optional comments, reference numbers, etc..." rows={2} disabled={submitting} />
-              </div>
-              <div className="pt-3 flex justify-end gap-2 border-t mt-3">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
-                <Button type="submit" disabled={submitting || !newQuantity || !newPurchasePrice}>
-                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Procure Stock
-                </Button>
-              </div>
-            </form>
-          </TabsContent>
+              </form>
+            </TabsContent>
           )}
 
           <TabsContent value="adjust-lots" className="mt-4 flex-1 flex flex-col min-h-0">
@@ -588,7 +649,9 @@ export function ProductStockAdjustmentModal({
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <PackageOpen className="size-12 text-muted-foreground/50 mb-4" />
                   <p className="text-lg font-medium">No existing lots</p>
-                  <p className="text-sm text-muted-foreground">There are no existing stock lots for this item to adjust.</p>
+                  <p className="text-sm text-muted-foreground">
+                    There are no existing stock lots for this item to adjust.
+                  </p>
                 </div>
               ) : (
                 lots.map((lot) => {
@@ -629,8 +692,12 @@ export function ProductStockAdjustmentModal({
                             <div className="font-medium text-lg">{lot.remaining_qty}</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">After Adj.</div>
-                            <div className={`font-bold text-lg ${afterAdjustment < 0 ? 'text-destructive' : 'text-primary'}`}>
+                            <div className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">
+                              After Adj.
+                            </div>
+                            <div
+                              className={`font-bold text-lg ${afterAdjustment < 0 ? "text-destructive" : "text-primary"}`}
+                            >
                               {afterAdjustment}
                             </div>
                           </div>
@@ -675,7 +742,9 @@ export function ProductStockAdjustmentModal({
                             onValueChange={(val) => handleAdjustLotChange(lot.id, "sourceType", val)}
                             disabled={submitting}
                           >
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="adjustment">Stock Adjustment</SelectItem>
                               <SelectItem value="return">Customer Return</SelectItem>
@@ -701,7 +770,9 @@ export function ProductStockAdjustmentModal({
 
             {lots.length > 0 && (
               <div className="pt-4 flex justify-end gap-2 border-t mt-auto">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+                  Cancel
+                </Button>
                 <Button type="button" onClick={handleSaveAdjustments} disabled={submitting || loadingLots}>
                   {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   <FilePenLine className="mr-2 h-4 w-4" />

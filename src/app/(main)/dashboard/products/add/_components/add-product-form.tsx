@@ -1,11 +1,26 @@
 "use client";
+import { ModularFeature } from "@/components/modular-feature";
 
 import * as React from "react";
 
 import { useRouter } from "next/navigation";
 
 import Link from "next/link";
-import { CirclePlus, ExternalLink, ImagePlus, Loader2, Package, RefreshCw, Save, Upload, Wand2, X, Banknote, FileText, Image as ImageIcon } from "lucide-react";
+import {
+  CirclePlus,
+  ExternalLink,
+  ImagePlus,
+  Loader2,
+  Package,
+  RefreshCw,
+  Save,
+  Upload,
+  Wand2,
+  X,
+  Banknote,
+  FileText,
+  Image as ImageIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -380,7 +395,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
       }
       if (availableStock) formData.append("available_stock", availableStock);
       if (sourceType) formData.append("source_type", sourceType);
-      if (supplierId) formData.append("supplier_id", supplierId);
+      if (features?.supplier_management && supplierId) formData.append("supplier_id", supplierId);
       if (purchaseDate) {
         formData.append("purchase_date", purchaseDate);
         formData.append("date", purchaseDate);
@@ -507,83 +522,85 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
             <CardContent className="flex flex-col gap-6">
               {/* Thumbnail */}
               <div className="space-y-4">
-  <div className="flex items-center justify-between">
-    <Label className="text-primary font-medium">Thumbnail</Label>
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleGenerateImage}
-      disabled={isGeneratingImage || !productName.trim()}
-    >
-      {isGeneratingImage ? (
-        <Loader2 className="mr-2 size-4 animate-spin" />
-      ) : (
-        <Wand2 className="mr-2 size-4" />
-      )}
-      {isGeneratingImage ? "Generating..." : "Generate image"}
-    </Button>
-  </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-primary font-medium">Thumbnail</Label>
+                  <ModularFeature name="other_ai_features">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateImage}
+                      disabled={isGeneratingImage || !productName.trim()}
+                    >
+                      {isGeneratingImage ? (
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                      ) : (
+                        <Wand2 className="mr-2 size-4" />
+                      )}
+                      {isGeneratingImage ? "Generating..." : "Generate image"}
+                    </Button>
+                  </ModularFeature>
+                </div>
 
-  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-    {/* Much Larger Preview Box */}
-    {thumbnailUrl ? (
-      <div className="relative size-48 overflow-hidden rounded-lg border shadow-sm">
-        <img src={thumbnailUrl} alt="Thumbnail" className="size-full object-cover" />
-      </div>
-    ) : (
-      <div 
-        onClick={() => thumbnailRef.current?.click()}
-        className="flex size-48 cursor-pointer items-center justify-center rounded-lg border border-dashed bg-muted/50 hover:bg-muted transition-colors"
-      >
-        <Upload className="size-8 text-muted-foreground" />
-      </div>
-    )}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                  {/* Much Larger Preview Box */}
+                  {thumbnailUrl ? (
+                    <div className="relative size-48 overflow-hidden rounded-lg border shadow-sm">
+                      <img src={thumbnailUrl} alt="Thumbnail" className="size-full object-cover" />
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => thumbnailRef.current?.click()}
+                      className="flex size-48 cursor-pointer items-center justify-center rounded-lg border border-dashed bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <Upload className="size-8 text-muted-foreground" />
+                    </div>
+                  )}
 
-    <div className="space-y-2">
-      <p className="text-base font-medium">Product thumbnail</p>
-      <p className="text-xs text-muted-foreground max-w-xs">
-        JPG or PNG. Keep it square and at least 1000 by 1000 pixels.
-      </p>
-      <div className="flex items-center gap-3 pt-1">
-        <Button
-          variant="link"
-          size="sm"
-          className="h-auto p-0 text-xs text-primary"
-          onClick={() => thumbnailRef.current?.click()}
-        >
-          {thumbnailUrl ? "Replace image" : "Upload image"}
-        </Button>
-        {thumbnailUrl && (
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 text-xs text-destructive"
-            onClick={() => {
-              setThumbnailUrl(null);
-              setThumbnailFile(null);
-            }}
-          >
-            Remove
-          </Button>
-        )}
-      </div>
-    </div>
+                  <div className="space-y-2">
+                    <p className="text-base font-medium">Product thumbnail</p>
+                    <p className="text-xs text-muted-foreground max-w-xs">
+                      JPG or PNG. Keep it square and at least 1000 by 1000 pixels.
+                    </p>
+                    <div className="flex items-center gap-3 pt-1">
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs text-primary"
+                        onClick={() => thumbnailRef.current?.click()}
+                      >
+                        {thumbnailUrl ? "Replace image" : "Upload image"}
+                      </Button>
+                      {thumbnailUrl && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-destructive"
+                          onClick={() => {
+                            setThumbnailUrl(null);
+                            setThumbnailFile(null);
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
 
-    <input
-      ref={thumbnailRef}
-      type="file"
-      accept="image/*"
-      className="hidden"
-      onChange={(e) => {
-        const f = e.target.files?.[0];
-        if (f) {
-          setThumbnailUrl(URL.createObjectURL(f));
-          setThumbnailFile(f);
-        }
-      }}
-    />
-  </div>
-</div>
+                  <input
+                    ref={thumbnailRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        setThumbnailUrl(URL.createObjectURL(f));
+                        setThumbnailFile(f);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
 
               <Separator />
 
@@ -657,14 +674,21 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="short-desc">Short Description</Label>
-                  <Button variant="outline" size="sm" onClick={handleGenerateDescriptions} disabled={isGeneratingText}>
-                    {isGeneratingText ? (
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                    ) : (
-                      <Wand2 className="mr-2 size-4" />
-                    )}
-                    Generate Descriptions
-                  </Button>
+                  <ModularFeature name="other_ai_features">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateDescriptions}
+                      disabled={isGeneratingText}
+                    >
+                      {isGeneratingText ? (
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                      ) : (
+                        <Wand2 className="mr-2 size-4" />
+                      )}
+                      Generate Descriptions
+                    </Button>
+                  </ModularFeature>
                 </div>
                 <RichTextEditor
                   value={shortDescription}
@@ -988,7 +1012,9 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
           <Card>
             <CardHeader>
               <CardTitle className="text-base text-primary">Lot Details & Procurement</CardTitle>
-              <CardDescription>Specify the initial lot details, vendor invoice, and payment for the inventory.</CardDescription>
+              <CardDescription>
+                Specify the initial lot details, vendor invoice, and payment for the inventory.
+              </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="space-y-2">
@@ -1007,34 +1033,36 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="supplier-select" className="text-primary font-medium">
-                    Supplier / Vendor
-                  </Label>
-                  <Link
-                    href="/dashboard/suppliers"
-                    target="_blank"
-                    className="text-xs text-primary hover:underline flex items-center gap-0.5 font-normal"
-                  >
-                    <span>Manage</span>
-                    <ExternalLink className="size-3" />
-                  </Link>
+              <ModularFeature name="supplier_management">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="supplier-select" className="text-primary font-medium">
+                      Supplier / Vendor
+                    </Label>
+                    <Link
+                      href="/dashboard/suppliers"
+                      target="_blank"
+                      className="text-xs text-primary hover:underline flex items-center gap-0.5 font-normal"
+                    >
+                      <span>Manage</span>
+                      <ExternalLink className="size-3" />
+                    </Link>
+                  </div>
+                  <Select value={supplierId} onValueChange={setSupplierId}>
+                    <SelectTrigger id="supplier-select" className="w-full">
+                      <SelectValue placeholder="Select supplier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">No Supplier / General</SelectItem>
+                      {suppliers.map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select value={supplierId} onValueChange={setSupplierId}>
-                  <SelectTrigger id="supplier-select" className="w-full">
-                    <SelectValue placeholder="Select supplier" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">No Supplier / General</SelectItem>
-                    {suppliers.map((s) => (
-                      <SelectItem key={s.id} value={s.id.toString()}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              </ModularFeature>
 
               {/* Purchase Date & Invoice No */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1145,7 +1173,8 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                   <div className="space-y-1">
                     <span className="text-muted-foreground block">Total Amount</span>
                     <div className="h-8 px-2 flex items-center bg-background/90 rounded border font-semibold tabular-nums text-foreground">
-                      ৳{totalLotAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ৳
+                      {totalLotAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
 
@@ -1167,10 +1196,28 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
 
                   <div className="space-y-1">
                     <span className="text-muted-foreground block">Due Amount</span>
-                    <div className={`h-8 px-2 flex items-center justify-between bg-background/90 rounded border font-bold tabular-nums ${dueLotAmount > 0 ? "text-red-500 border-red-200 dark:border-red-950" : "text-emerald-500 border-emerald-200 dark:border-emerald-950"}`}>
-                      <span>৳{dueLotAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      <Badge variant={dueLotAmount === 0 ? "default" : dueLotAmount < totalLotAmount && Number(paidAmount) > 0 ? "outline" : "destructive"} className="text-[9px] px-1 py-0 h-3.5 uppercase">
-                        {dueLotAmount === 0 ? "Paid" : dueLotAmount < totalLotAmount && Number(paidAmount) > 0 ? "Partial" : "Due"}
+                    <div
+                      className={`h-8 px-2 flex items-center justify-between bg-background/90 rounded border font-bold tabular-nums ${dueLotAmount > 0 ? "text-red-500 border-red-200 dark:border-red-950" : "text-emerald-500 border-emerald-200 dark:border-emerald-950"}`}
+                    >
+                      <span>
+                        ৳
+                        {dueLotAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      <Badge
+                        variant={
+                          dueLotAmount === 0
+                            ? "default"
+                            : dueLotAmount < totalLotAmount && Number(paidAmount) > 0
+                              ? "outline"
+                              : "destructive"
+                        }
+                        className="text-[9px] px-1 py-0 h-3.5 uppercase"
+                      >
+                        {dueLotAmount === 0
+                          ? "Paid"
+                          : dueLotAmount < totalLotAmount && Number(paidAmount) > 0
+                            ? "Partial"
+                            : "Due"}
                       </Badge>
                     </div>
                   </div>

@@ -1,4 +1,7 @@
 "use client";
+import { useModularFeatures } from "@/hooks/useModularFeatures";
+
+import { ModularFeature } from "@/components/modular-feature";
 
 import * as React from "react";
 import Link from "next/link";
@@ -7,22 +10,10 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchClient } from "@/lib/fetch-client";
 
@@ -93,15 +84,23 @@ const getInitialDate = (lot: Lot) => {
 };
 
 export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: ProcurementEditModalProps) {
+  const { features } = useModularFeatures();
+
   const [purchasePrice, setPurchasePrice] = React.useState<string>(lot.purchase_price.toString());
   const [quantity, setQuantity] = React.useState<string>(lot.initial_qty.toString());
   const [purchaseDate, setPurchaseDate] = React.useState<string>(() => getInitialDate(lot));
   const [sourceType, setSourceType] = React.useState<string>(lot.source_type || "vendor");
-  const [supplierId, setSupplierId] = React.useState<string>(lot.supplier_id ? lot.supplier_id.toString() : (lot.supplier?.id ? lot.supplier.id.toString() : "0"));
+  const [supplierId, setSupplierId] = React.useState<string>(
+    lot.supplier_id ? lot.supplier_id.toString() : lot.supplier?.id ? lot.supplier.id.toString() : "0",
+  );
   const [invoiceNo, setInvoiceNo] = React.useState<string>(lot.invoice_no || "");
   const [memoImage, setMemoImage] = React.useState<File | null>(null);
-  const [memoImagePreview, setMemoImagePreview] = React.useState<string | null>(lot.memo_image ? getImageUrl(lot.memo_image) : null);
-  const [paidAmount, setPaidAmount] = React.useState<string>(lot.paid_amount !== undefined && lot.paid_amount !== null ? lot.paid_amount.toString() : "");
+  const [memoImagePreview, setMemoImagePreview] = React.useState<string | null>(
+    lot.memo_image ? getImageUrl(lot.memo_image) : null,
+  );
+  const [paidAmount, setPaidAmount] = React.useState<string>(
+    lot.paid_amount !== undefined && lot.paid_amount !== null ? lot.paid_amount.toString() : "",
+  );
   const [comment, setComment] = React.useState<string>(lot.comment || "");
   const [suppliers, setSuppliers] = React.useState<SupplierOption[]>([]);
   const [loadingSuppliers, setLoadingSuppliers] = React.useState(false);
@@ -127,7 +126,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
       setQuantity(lot.initial_qty.toString());
       setPurchaseDate(getInitialDate(lot));
       setSourceType(lot.source_type || "vendor");
-      setSupplierId(lot.supplier_id ? lot.supplier_id.toString() : (lot.supplier?.id ? lot.supplier.id.toString() : "0"));
+      setSupplierId(lot.supplier_id ? lot.supplier_id.toString() : lot.supplier?.id ? lot.supplier.id.toString() : "0");
       setInvoiceNo(lot.invoice_no || "");
       setMemoImage(null);
       setMemoImagePreview(lot.memo_image ? getImageUrl(lot.memo_image) : null);
@@ -137,9 +136,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
       const fetchSuppliersList = async () => {
         try {
           setLoadingSuppliers(true);
-          const res = await fetchClient(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}suppliers?all=true`
-          );
+          const res = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}suppliers?all=true`);
           const data = await res.json();
           if (res.ok && data.success) {
             setSuppliers(data.data || []);
@@ -193,7 +190,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
           formData.append("created_at", `${purchaseDate} 00:00:00`);
         }
         formData.append("source_type", sourceType);
-        formData.append("supplier_id", supplierId || "0");
+        if (features?.supplier_management) formData.append("supplier_id", supplierId || "0");
         if (comment) formData.append("comment", comment);
         if (invoiceNo) formData.append("invoice_no", invoiceNo);
         formData.append("memo_image", memoImage);
@@ -214,7 +211,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
           date: purchaseDate || null,
           created_at: purchaseDate ? `${purchaseDate} 00:00:00` : undefined,
           source_type: sourceType,
-          supplier_id: Number(supplierId) || 0,
+          ...(features?.supplier_management ? { supplier_id: Number(supplierId) || 0 } : {}),
           comment: comment || null,
           invoice_no: invoiceNo.trim() || null,
           total_amount: totalAmount,
@@ -232,10 +229,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
         };
       }
 
-      const res = await fetchClient(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/lots/${lot.id}`,
-        options
-      );
+      const res = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/lots/${lot.id}`, options);
 
       const data = await res.json();
       if (res.ok && data.success) {
@@ -283,21 +277,16 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
               />
             </div>
             <div className="space-y-1 flex-1">
-              <div className="font-medium text-sm">
-                {lot.product?.title || "Unknown Product"}
-              </div>
-              {variantLabel && (
-                <div className="text-xs text-muted-foreground">
-                  {variantLabel}
-                </div>
-              )}
+              <div className="font-medium text-sm">{lot.product?.title || "Unknown Product"}</div>
+              {variantLabel && <div className="text-xs text-muted-foreground">{variantLabel}</div>}
               <div className="flex gap-4 pt-1 mt-2 border-t border-border/50">
-                  <div className="text-xs text-muted-foreground">
-                      Current Consumed: <span className="font-semibold text-foreground">{lot.initial_qty - lot.remaining_qty}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                      Current Remaining: <span className="font-semibold text-foreground">{lot.remaining_qty}</span>
-                  </div>
+                <div className="text-xs text-muted-foreground">
+                  Current Consumed:{" "}
+                  <span className="font-semibold text-foreground">{lot.initial_qty - lot.remaining_qty}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Current Remaining: <span className="font-semibold text-foreground">{lot.remaining_qty}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -305,7 +294,9 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
           {/* Quantity & Purchase Price */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="qty">Acquisition Quantity <span className="text-destructive">*</span></Label>
+              <Label htmlFor="qty">
+                Acquisition Quantity <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="qty"
                 type="number"
@@ -317,7 +308,9 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="price">Purchase Price (৳) <span className="text-destructive">*</span></Label>
+              <Label htmlFor="price">
+                Purchase Price (৳) <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="price"
                 type="number"
@@ -386,9 +379,22 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
 
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Due Amount</Label>
-                <div className={`h-9 px-3 flex items-center justify-between bg-background/90 rounded-md border font-bold text-sm tabular-nums ${dueAmount > 0 ? "text-red-500 border-red-200 dark:border-red-950" : "text-emerald-500 border-emerald-200 dark:border-emerald-950"}`}>
-                  <span>৳{dueAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  <Badge variant={dueAmount === 0 ? "default" : dueAmount < totalAmount && Number(paidAmount) > 0 ? "outline" : "destructive"} className="text-[10px] px-1.5 py-0 h-4 uppercase">
+                <div
+                  className={`h-9 px-3 flex items-center justify-between bg-background/90 rounded-md border font-bold text-sm tabular-nums ${dueAmount > 0 ? "text-red-500 border-red-200 dark:border-red-950" : "text-emerald-500 border-emerald-200 dark:border-emerald-950"}`}
+                >
+                  <span>
+                    ৳{dueAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <Badge
+                    variant={
+                      dueAmount === 0
+                        ? "default"
+                        : dueAmount < totalAmount && Number(paidAmount) > 0
+                          ? "outline"
+                          : "destructive"
+                    }
+                    className="text-[10px] px-1.5 py-0 h-4 uppercase"
+                  >
                     {dueAmount === 0 ? "Paid" : dueAmount < totalAmount && Number(paidAmount) > 0 ? "Partial" : "Due"}
                   </Badge>
                 </div>
@@ -400,11 +406,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Source Type</Label>
-              <Select
-                value={sourceType}
-                onValueChange={setSourceType}
-                disabled={submitting}
-              >
+              <Select value={sourceType} onValueChange={setSourceType} disabled={submitting}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -416,36 +418,34 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="edit-supplier-select">Supplier</Label>
-                <Link
-                  href="/dashboard/suppliers"
-                  target="_blank"
-                  className="text-xs text-primary hover:underline flex items-center gap-0.5"
-                >
-                  <span>Manage</span>
-                  <ExternalLink className="size-3" />
-                </Link>
+            <ModularFeature name="supplier_management">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="edit-supplier-select">Supplier</Label>
+                  <Link
+                    href="/dashboard/suppliers"
+                    target="_blank"
+                    className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                  >
+                    <span>Manage</span>
+                    <ExternalLink className="size-3" />
+                  </Link>
+                </div>
+                <Select value={supplierId} onValueChange={setSupplierId} disabled={submitting || loadingSuppliers}>
+                  <SelectTrigger id="edit-supplier-select">
+                    <SelectValue placeholder="Select supplier..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">No Supplier / General</SelectItem>
+                    {suppliers.map((s) => (
+                      <SelectItem key={s.id} value={s.id.toString()}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select
-                value={supplierId}
-                onValueChange={setSupplierId}
-                disabled={submitting || loadingSuppliers}
-              >
-                <SelectTrigger id="edit-supplier-select">
-                  <SelectValue placeholder="Select supplier..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">No Supplier / General</SelectItem>
-                  {suppliers.map((s) => (
-                    <SelectItem key={s.id} value={s.id.toString()}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            </ModularFeature>
           </div>
 
           {/* Purchase Date & Invoice No */}
@@ -544,12 +544,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={submitting}
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" disabled={submitting} onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={submitting}>
