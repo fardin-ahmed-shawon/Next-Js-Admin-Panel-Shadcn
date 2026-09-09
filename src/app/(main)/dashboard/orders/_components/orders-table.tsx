@@ -1042,7 +1042,7 @@ const columns: ColumnDef<OrderRow>[] = [
                 <Button size="sm" variant="default">Complete Order</Button>
               </DialogTrigger>
               <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[90vh] overflow-y-auto">
-                <EditOrderForm orderId={row.original.id} incompleteMode={true} onCompleted={() => {
+                <EditOrderForm orderId={(row.original as any).order_no || row.original.id} incompleteMode={true} onCompleted={() => {
                   // Refresh the table by mutating
                   mutate((key) => typeof key === "string" && key.includes("orders"));
                 }} />

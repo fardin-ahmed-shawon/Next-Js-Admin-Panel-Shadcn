@@ -276,6 +276,21 @@ const fetcher = async (url: string) => {
   return json.data || [];
 };
 
+const getVariantSellingPrice = (v: any, fallbackPrice: number = 0): number => {
+  if (!v) return fallbackPrice;
+  const vp = v.variant_pricing || v.variantPricing;
+  if (vp && vp.selling_price !== undefined && vp.selling_price !== null && vp.selling_price !== "") {
+    return Number(vp.selling_price) || 0;
+  }
+  if (v.selling_price !== undefined && v.selling_price !== null && v.selling_price !== "") {
+    return Number(v.selling_price) || 0;
+  }
+  if (v.price !== undefined && v.price !== null && v.price !== "") {
+    return Number(v.price) || 0;
+  }
+  return fallbackPrice;
+};
+
 function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, updateUnitPrice }: any) {
   const { data: sizesRes } = useSWR(
     `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SIZES || "sizes"}`,
@@ -286,82 +301,91 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
     fetcher,
   );
 
-  const allSizes = React.useMemo(() => {
-    const list = Array.isArray(sizesRes) ? sizesRes : sizesRes?.data || [];
-    return list;
-  }, [sizesRes]);
+  const allSizes = React.useMemo(() => (Array.isArray(sizesRes) ? sizesRes : sizesRes?.data || []), [sizesRes]);
+  const allColors = React.useMemo(() => (Array.isArray(colorsRes) ? colorsRes : colorsRes?.data || []), [colorsRes]);
 
-  const allColors = React.useMemo(() => {
-    const list = Array.isArray(colorsRes) ? colorsRes : colorsRes?.data || [];
-    return list;
-  }, [colorsRes]);
+  const variants = React.useMemo(() => item.product.variants || [], [item.product.variants]);
 
-  const variants = React.useMemo(() => {
-    return item.product.variants || [];
-  }, [item.product.variants]);
+  const sizes = React.useMemo(() => {
+    const map = new Map<string | number, { id: number; label: string }>();
+    variants.forEach((v: any) => {
+      if (v.size_id) {
+        const label = v.size?.label || allSizes.find((s: any) => s.id === v.size_id)?.label;
+        if (label) map.set(v.size_id, { id: v.size_id, label });
+      }
+    });
+    return Array.from(map.values());
+  }, [variants, allSizes]);
 
-  const sizes = React.useMemo(
-    () => allSizes.filter((s: any) => variants.some((v: any) => v.size_id === s.id)),
-    [allSizes, variants],
-  );
-  const colors = React.useMemo(
-    () => allColors.filter((c: any) => variants.some((v: any) => v.color_id === c.id)),
-    [allColors, variants],
-  );
+  const colors = React.useMemo(() => {
+    const map = new Map<string | number, { id: number; label: string }>();
+    variants.forEach((v: any) => {
+      if (v.color_id) {
+        const label = v.color?.label || allColors.find((c: any) => c.id === v.color_id)?.label;
+        if (label) map.set(v.color_id, { id: v.color_id, label });
+      }
+    });
+    return Array.from(map.values());
+  }, [variants, allColors]);
 
-  const requiresVariant = Number(item.product.has_variants) === 1 && variants.length > 0;
+  const requiresVariant = (Number(item.product.has_variants) === 1 || Boolean(item.product.has_variant_wise_pricing)) && variants.length > 0;
+  const requiresSize = sizes.length > 0;
+  const requiresColor = colors.length > 0;
+  const isSizeComplete = !requiresSize || Boolean(item.size);
+  const isColorComplete = !requiresColor || Boolean(item.color);
+
   let isValidVariant = true;
 
   const availableColors = item.size
     ? colors.filter((c: any) => {
       const sizeId = sizes.find((s: any) => s.label === item.size)?.id;
-      return variants.some((v: any) => v.size_id === sizeId && v.color_id === c.id);
+      return variants.some((v: any) => String(v.size_id) === String(sizeId) && String(v.color_id) === String(c.id));
     })
     : colors;
 
   const availableSizes = item.color
     ? sizes.filter((s: any) => {
       const colorId = colors.find((c: any) => c.label === item.color)?.id;
-      return variants.some((v: any) => v.color_id === colorId && v.size_id === s.id);
+      return variants.some((v: any) => String(v.color_id) === String(colorId) && String(v.size_id) === String(s.id));
     })
     : sizes;
 
   React.useEffect(() => {
-    if (requiresVariant && item.size && item.color) {
-      const selectedSizeId = sizes.find((s: any) => s.label === item.size)?.id || null;
-      const selectedColorId = colors.find((c: any) => c.label === item.color)?.id || null;
-      const variant = variants.find((v: any) => v.size_id === selectedSizeId && v.color_id === selectedColorId);
+    if (!requiresVariant) return;
 
-      if (variant && variant.variant_pricing) {
-        if ((!item.isExisting || item.manualVariantChange) && !item.isGift) {
-          updateUnitPrice(item.product.id, variant.variant_pricing.selling_price);
+    if (isSizeComplete && isColorComplete && (item.size || item.color || (!requiresSize && !requiresColor))) {
+      const selectedSizeId = requiresSize ? sizes.find((s: any) => s.label === item.size)?.id : null;
+      const selectedColorId = requiresColor ? colors.find((c: any) => c.label === item.color)?.id : null;
+
+      const variant = variants.find((v: any) => {
+        const matchSize = requiresSize ? String(v.size_id) === String(selectedSizeId) : true;
+        const matchColor = requiresColor ? String(v.color_id) === String(selectedColorId) : true;
+        return matchSize && matchColor;
+      });
+
+      if (variant) {
+        const price = getVariantSellingPrice(variant, item.product.selling_price || 0);
+        if (!item.isExisting || item.manualVariantChange || Number(item.unitPrice) === 0) {
+          updateUnitPrice(item.product.id, price);
         }
       }
     }
-  }, [item.size, item.color, sizes, colors, variants, item.isExisting, item.manualVariantChange, item.isGift]);
+  }, [item.size, item.color, sizes, colors, variants, requiresVariant, requiresSize, requiresColor, isSizeComplete, isColorComplete, item.isExisting, item.manualVariantChange, item.unitPrice]);
 
   React.useEffect(() => {
     if (requiresVariant) {
-      if (availableSizes.length === 1 && item.size !== availableSizes[0].label) {
-        updateCartItem(item.product.id, "size", availableSizes[0].label);
-      }
-      if (availableColors.length === 1 && item.color !== availableColors[0].label) {
-        updateCartItem(item.product.id, "color", availableColors[0].label);
-      }
+      if (availableSizes.length === 1 && item.size !== availableSizes[0].label) updateCartItem(item.product.id, "size", availableSizes[0].label);
+      if (availableColors.length === 1 && item.color !== availableColors[0].label) updateCartItem(item.product.id, "color", availableColors[0].label);
     }
   }, [availableSizes, availableColors, item.size, item.color, requiresVariant]);
-
-  const requiresSize = sizes.length > 0;
-  const requiresColor = colors.length > 0;
-  const isSizeComplete = !requiresSize || !!item.size;
-  const isColorComplete = !requiresColor || !!item.color;
 
   if (requiresVariant && isSizeComplete && isColorComplete && (item.size || item.color)) {
     const selectedSizeId = requiresSize ? sizes.find((s: any) => s.label === item.size)?.id : null;
     const selectedColorId = requiresColor ? colors.find((c: any) => c.label === item.color)?.id : null;
     isValidVariant = variants.some(
       (v: any) =>
-        (requiresSize ? v.size_id === selectedSizeId : true) && (requiresColor ? v.color_id === selectedColorId : true),
+        (requiresSize ? String(v.size_id) === String(selectedSizeId) : true) &&
+        (requiresColor ? String(v.color_id) === String(selectedColorId) : true),
     );
   }
 
@@ -369,137 +393,66 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
     <div className="rounded-lg border p-3 transition-colors hover:bg-muted/30">
       <div className="flex items-center gap-3">
         <div className="size-12 shrink-0 overflow-hidden rounded-md border bg-muted">
-          <img
-            src={getImageUrl(item.product.product_thumbnail_img)}
-            alt={item.product.title}
-            className="size-full object-cover"
-          />
+          <img src={getImageUrl(item.product.product_thumbnail_img)} alt={item.product.title} className="size-full object-cover" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium leading-snug">{item.product.title}</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground">{item.product.sku || "N/A"}</span>
-            <span className="text-xs text-muted-foreground">·</span>
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground">৳</span>
-              <input
-                type="number"
-                min="0"
-                value={item.unitPrice}
-                onChange={(e) => updateUnitPrice(item.product.id, Math.max(0, parseFloat(e.target.value) || 0))}
-                className="w-16 h-6 text-xs text-right pr-1 rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-mono"
-              />
-              <span className="text-xs text-muted-foreground">each</span>
-              {item.isGift && (
-                <Badge variant="outline" className="ml-1 px-1.5 py-0 text-[10px] bg-green-50 text-green-600 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900/50">
-                  Free Gift
-                </Badge>
-              )}
-            </div>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            {item.product.sku || "N/A"} · ৳{Number(item.unitPrice || 0).toLocaleString()} each
+          </p>
         </div>
         <div className="flex items-center gap-1.5">
-          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, -1)}>
-            <Minus className="size-3" />
-          </Button>
+          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, -1)}><Minus className="size-3" /></Button>
           <span className="w-8 text-center text-sm font-medium tabular-nums">{item.quantity}</span>
-          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, 1)}>
-            <Plus className="size-3" />
-          </Button>
+          <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, 1)}><Plus className="size-3" /></Button>
         </div>
-        <span className="w-20 text-right text-sm font-semibold tabular-nums">
-          ৳{(item.unitPrice * item.quantity).toLocaleString()}
-        </span>
-        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id)}>
-          <X className="size-4 text-muted-foreground" />
-        </Button>
+        <span className="w-20 text-right text-sm font-semibold tabular-nums">৳{(item.unitPrice * item.quantity).toLocaleString()}</span>
+        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id)}><X className="size-4 text-muted-foreground" /></Button>
       </div>
 
       {requiresVariant && (
         <div className="mt-2 flex flex-col gap-2 pl-15">
           <div className="flex items-center gap-3">
             {availableColors.length > 1 ? (
-              <Select 
-                value={item.color} 
-                onValueChange={(v) => {
-                  updateCartItem(item.product.id, "color", v);
-                  updateCartItem(item.product.id, "manualVariantChange", true);
-                }}
-              >
-                <SelectTrigger
-                  className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}
-                >
-                  <SelectValue placeholder="Color" />
-                </SelectTrigger>
+              <Select value={item.color} onValueChange={(v) => updateCartItem(item.product.id, "color", v)}>
+                <SelectTrigger className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}><SelectValue placeholder="Color" /></SelectTrigger>
                 <SelectContent>
-                  {availableColors.map((c: any) => (
-                    <SelectItem key={c.id} value={c.label}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
+                  {availableColors.map((c: any) => {
+                    const optVariant = variants.find((v: any) => {
+                      const matchColor = String(v.color_id) === String(c.id);
+                      const selSizeId = requiresSize ? sizes.find((s: any) => s.label === item.size)?.id : null;
+                      const matchSize = requiresSize && selSizeId ? String(v.size_id) === String(selSizeId) : true;
+                      return matchColor && matchSize;
+                    });
+                    const optPrice = optVariant ? getVariantSellingPrice(optVariant, 0) : null;
+                    return <SelectItem key={c.id} value={c.label}>{c.label} {optPrice !== null && optPrice > 0 && !requiresSize ? `(৳${optPrice.toLocaleString()})` : ""}</SelectItem>;
+                  })}
                 </SelectContent>
               </Select>
-            ) : availableColors.length === 1 ? (
-              <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">
-                Color: {availableColors[0].label}
-              </div>
-            ) : null}
+            ) : availableColors.length === 1 ? <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">Color: {availableColors[0].label}</div> : null}
 
             {availableSizes.length > 1 ? (
-              <Select 
-                value={item.size} 
-                onValueChange={(v) => {
-                  updateCartItem(item.product.id, "size", v);
-                  updateCartItem(item.product.id, "manualVariantChange", true);
-                }}
-              >
-                <SelectTrigger
-                  className={`h-7 w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}
-                >
-                  <SelectValue placeholder="Size" />
-                </SelectTrigger>
+              <Select value={item.size} onValueChange={(v) => updateCartItem(item.product.id, "size", v)}>
+                <SelectTrigger className={`h-7 min-w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}><SelectValue placeholder="Size / Variant" /></SelectTrigger>
                 <SelectContent>
-                  {availableSizes.map((s: any) => (
-                    <SelectItem key={s.id} value={s.label}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
+                  {availableSizes.map((s: any) => {
+                    const optVariant = variants.find((v: any) => {
+                      const matchSize = String(v.size_id) === String(s.id);
+                      const selColorId = requiresColor ? colors.find((c: any) => c.label === item.color)?.id : null;
+                      const matchColor = requiresColor && selColorId ? String(v.color_id) === String(selColorId) : true;
+                      return matchSize && matchColor;
+                    });
+                    const optPrice = optVariant ? getVariantSellingPrice(optVariant, 0) : null;
+                    return <SelectItem key={s.id} value={s.label}>{s.label} {optPrice !== null && optPrice > 0 ? `(৳${optPrice.toLocaleString()})` : ""}</SelectItem>;
+                  })}
                 </SelectContent>
               </Select>
-            ) : availableSizes.length === 1 ? (
-              <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">
-                Size: {availableSizes[0].label}
-              </div>
-            ) : null}
+            ) : availableSizes.length === 1 ? <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">Variant: {availableSizes[0].label}</div> : null}
 
             {(item.color || item.size) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                onClick={() => {
-                  updateCartItem(item.product.id, "color", "");
-                  updateCartItem(item.product.id, "size", "");
-                  updateCartItem(item.product.id, "manualVariantChange", true);
-                  
-                  if (!item.isGift) {
-                    updateUnitPrice(
-                      item.product.id,
-                      item.product.has_variant_wise_pricing ? 0 : item.product.selling_price || 0,
-                    );
-                  }
-                }}
-                title="Clear selections"
-              >
-                <X className="size-3.5" />
-              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { updateCartItem(item.product.id, "color", ""); updateCartItem(item.product.id, "size", ""); const basePrice = item.product.selling_price || (variants[0] ? getVariantSellingPrice(variants[0]) : 0); updateUnitPrice(item.product.id, basePrice); }} title="Clear selections"><X className="size-3.5" /></Button>
             )}
           </div>
-          {!isValidVariant && (item.color || item.size) && (
-            <span className="text-[10px] text-destructive font-medium">
-              Selected combination is out of stock or unavailable.
-            </span>
-          )}
         </div>
       )}
     </div>
@@ -795,7 +748,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
           size: op.size_label || "",
           unitPrice: Number(op.unit_price) || 0,
           isExisting: true,
-          isGift: Number(op.unit_price) === 0,
+          isGift: false,
         }));
         setCart(mappedCart);
       }
@@ -826,8 +779,17 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
-      const initialPrice = product.has_variant_wise_pricing ? 0 : product.selling_price || 0;
-      return [...prev, { product, quantity: 1, color: "", size: "", unitPrice: initialPrice }];
+
+      const variants = product.variants || [];
+      const firstVariant = variants.length > 0 ? variants[0] : null;
+
+      const initialSize = firstVariant?.size?.label || "";
+      const initialColor = firstVariant?.color?.label || "";
+      const initialPrice = firstVariant
+        ? getVariantSellingPrice(firstVariant, product.selling_price || 0)
+        : (product.selling_price || 0);
+
+      return [...prev, { product, quantity: 1, color: initialColor, size: initialSize, unitPrice: initialPrice, isExisting: false, manualVariantChange: true }];
     });
     setSearchQuery("");
     setSearchFocused(false);
@@ -846,12 +808,22 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
     setCart((prev) => prev.filter((i) => i.product.id !== productId));
   }
 
-  function updateCartItem(productId: number, field: "color" | "size", value: string) {
-    setCart((prev) => prev.map((i) => (i.product.id === productId ? { ...i, [field]: value } : i)));
+  function updateCartItem(productId: number, field: string, value: any) {
+    setCart((prev) => prev.map((i) => (i.product.id === productId ? { ...i, [field]: value, manualVariantChange: true } : i)));
   }
 
   function updateUnitPrice(productId: number, price: number) {
-    setCart((prev) => prev.map((i) => (i.product.id === productId ? { ...i, unitPrice: price } : i)));
+    setCart((prev) => {
+      let changed = false;
+      const next = prev.map((i) => {
+        if (i.product.id === productId && Number(i.unitPrice) !== Number(price)) {
+          changed = true;
+          return { ...i, unitPrice: price };
+        }
+        return i;
+      });
+      return changed ? next : prev;
+    });
   }
 
   function selectCustomer(customer: any) {
@@ -1317,9 +1289,24 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
                                   <span className="text-sm font-semibold tabular-nums">
-                                    {p.has_variant_wise_pricing
-                                      ? "Variant Pricing"
-                                      : `৳${(p.selling_price || 0).toLocaleString()}`}
+                                    {(() => {
+                                      if (p.has_variant_wise_pricing || (p.has_variants && p.variants?.length > 0)) {
+                                        const prices = p.variants
+                                          ?.map((v: any) => {
+                                            const vp = v.variant_pricing || v.variantPricing;
+                                            return vp?.selling_price ?? v.selling_price;
+                                          })
+                                          .filter((pr: any) => pr !== undefined && pr !== null && !isNaN(Number(pr)))
+                                          .map(Number) || [];
+
+                                        if (prices.length > 0) {
+                                          const min = Math.min(...prices);
+                                          const max = Math.max(...prices);
+                                          return min === max ? `৳${min.toLocaleString()}` : `৳${min.toLocaleString()} - ৳${max.toLocaleString()}`;
+                                        }
+                                      }
+                                      return `৳${(p.selling_price || 0).toLocaleString()}`;
+                                    })()}
                                   </span>
                                   {inCart && (
                                     <Badge variant="secondary" className="text-[10px]">

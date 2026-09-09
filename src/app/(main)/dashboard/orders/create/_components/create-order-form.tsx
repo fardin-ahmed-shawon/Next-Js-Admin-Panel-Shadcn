@@ -50,6 +50,21 @@ const getImageUrl = (path: string | null) => {
   return `${baseUrl}${path}`;
 };
 
+const getVariantSellingPrice = (v: any, fallbackPrice: number = 0): number => {
+  if (!v) return fallbackPrice;
+  const vp = v.variant_pricing || v.variantPricing;
+  if (vp && vp.selling_price !== undefined && vp.selling_price !== null && vp.selling_price !== "") {
+    return Number(vp.selling_price) || 0;
+  }
+  if (v.selling_price !== undefined && v.selling_price !== null && v.selling_price !== "") {
+    return Number(v.selling_price) || 0;
+  }
+  if (v.price !== undefined && v.price !== null && v.price !== "") {
+    return Number(v.price) || 0;
+  }
+  return fallbackPrice;
+};
+
 function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, updateUnitPrice, setCartItemQuantity, isWholesale }: any) {
   const { data: sizesRes } = useSWR(
     `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SIZES || "sizes"}`,
@@ -74,43 +89,73 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
     return item.product.variants || [];
   }, [item.product.variants]);
 
-  const sizes = React.useMemo(
-    () => allSizes.filter((s: any) => variants.some((v: any) => v.size_id === s.id)),
-    [allSizes, variants],
-  );
-  const colors = React.useMemo(
-    () => allColors.filter((c: any) => variants.some((v: any) => v.color_id === c.id)),
-    [allColors, variants],
-  );
+  const sizes = React.useMemo(() => {
+    const map = new Map<string | number, { id: number; label: string }>();
+    variants.forEach((v: any) => {
+      if (v.size_id) {
+        const label = v.size?.label || allSizes.find((s: any) => s.id === v.size_id)?.label;
+        if (label) {
+          map.set(v.size_id, { id: v.size_id, label });
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [variants, allSizes]);
 
-  const requiresVariant = Number(item.product.has_variants) === 1 && variants.length > 0;
+  const colors = React.useMemo(() => {
+    const map = new Map<string | number, { id: number; label: string }>();
+    variants.forEach((v: any) => {
+      if (v.color_id) {
+        const label = v.color?.label || allColors.find((c: any) => c.id === v.color_id)?.label;
+        if (label) {
+          map.set(v.color_id, { id: v.color_id, label });
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [variants, allColors]);
+
+  const requiresVariant = (Number(item.product.has_variants) === 1 || Boolean(item.product.has_variant_wise_pricing)) && variants.length > 0;
+  const requiresSize = sizes.length > 0;
+  const requiresColor = colors.length > 0;
+  const isSizeComplete = !requiresSize || Boolean(item.size);
+  const isColorComplete = !requiresColor || Boolean(item.color);
+
   let isValidVariant = true;
 
   const availableColors = item.size
     ? colors.filter((c: any) => {
         const sizeId = sizes.find((s: any) => s.label === item.size)?.id;
-        return variants.some((v: any) => v.size_id === sizeId && v.color_id === c.id);
+        return variants.some((v: any) => String(v.size_id) === String(sizeId) && String(v.color_id) === String(c.id));
       })
     : colors;
 
   const availableSizes = item.color
     ? sizes.filter((s: any) => {
         const colorId = colors.find((c: any) => c.label === item.color)?.id;
-        return variants.some((v: any) => v.color_id === colorId && v.size_id === s.id);
+        return variants.some((v: any) => String(v.color_id) === String(colorId) && String(v.size_id) === String(s.id));
       })
     : sizes;
 
   React.useEffect(() => {
-    if (requiresVariant && item.size && item.color) {
-      const selectedSizeId = sizes.find((s: any) => s.label === item.size)?.id || null;
-      const selectedColorId = colors.find((c: any) => c.label === item.color)?.id || null;
-      const variant = variants.find((v: any) => v.size_id === selectedSizeId && v.color_id === selectedColorId);
+    if (!requiresVariant) return;
 
-      if (variant && variant.variant_pricing) {
-        updateUnitPrice(item.product.id, variant.variant_pricing.selling_price);
+    if (isSizeComplete && isColorComplete && (item.size || item.color || (!requiresSize && !requiresColor))) {
+      const selectedSizeId = requiresSize ? sizes.find((s: any) => s.label === item.size)?.id : null;
+      const selectedColorId = requiresColor ? colors.find((c: any) => c.label === item.color)?.id : null;
+
+      const variant = variants.find((v: any) => {
+        const matchSize = requiresSize ? String(v.size_id) === String(selectedSizeId) : true;
+        const matchColor = requiresColor ? String(v.color_id) === String(selectedColorId) : true;
+        return matchSize && matchColor;
+      });
+
+      if (variant) {
+        const price = getVariantSellingPrice(variant, item.product.selling_price || 0);
+        updateUnitPrice(item.product.id, price);
       }
     }
-  }, [item.size, item.color, sizes, colors, variants]);
+  }, [item.size, item.color, sizes, colors, variants, requiresVariant, requiresSize, requiresColor, isSizeComplete, isColorComplete]);
 
   React.useEffect(() => {
     if (requiresVariant) {
@@ -123,17 +168,13 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
     }
   }, [availableSizes, availableColors, item.size, item.color, requiresVariant]);
 
-  const requiresSize = sizes.length > 0;
-  const requiresColor = colors.length > 0;
-  const isSizeComplete = !requiresSize || !!item.size;
-  const isColorComplete = !requiresColor || !!item.color;
-
   if (requiresVariant && isSizeComplete && isColorComplete && (item.size || item.color)) {
     const selectedSizeId = requiresSize ? sizes.find((s: any) => s.label === item.size)?.id : null;
     const selectedColorId = requiresColor ? colors.find((c: any) => c.label === item.color)?.id : null;
     isValidVariant = variants.some(
       (v: any) =>
-        (requiresSize ? v.size_id === selectedSizeId : true) && (requiresColor ? v.color_id === selectedColorId : true),
+        (requiresSize ? String(v.size_id) === String(selectedSizeId) : true) &&
+        (requiresColor ? String(v.color_id) === String(selectedColorId) : true),
     );
   }
 
@@ -164,7 +205,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">
-              {item.product.sku || "N/A"} · ৳{item.unitPrice.toLocaleString()} each
+              {item.product.sku || "N/A"} · ৳{Number(item.unitPrice || 0).toLocaleString()} each
             </p>
           )}
         </div>
@@ -208,11 +249,20 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                   <SelectValue placeholder="Color" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableColors.map((c: any) => (
-                    <SelectItem key={c.id} value={c.label}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
+                  {availableColors.map((c: any) => {
+                    const optVariant = variants.find((v: any) => {
+                      const matchColor = String(v.color_id) === String(c.id);
+                      const selSizeId = requiresSize ? sizes.find((s: any) => s.label === item.size)?.id : null;
+                      const matchSize = requiresSize && selSizeId ? String(v.size_id) === String(selSizeId) : true;
+                      return matchColor && matchSize;
+                    });
+                    const optPrice = optVariant ? getVariantSellingPrice(optVariant, 0) : null;
+                    return (
+                      <SelectItem key={c.id} value={c.label}>
+                        {c.label} {optPrice !== null && optPrice > 0 && !requiresSize ? `(৳${optPrice.toLocaleString()})` : ""}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             ) : availableColors.length === 1 ? (
@@ -224,21 +274,30 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
             {availableSizes.length > 1 ? (
               <Select value={item.size} onValueChange={(v) => updateCartItem(item.product.id, "size", v)}>
                 <SelectTrigger
-                  className={`h-7 w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}
+                  className={`h-7 min-w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}
                 >
-                  <SelectValue placeholder="Size" />
+                  <SelectValue placeholder="Size / Variant" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableSizes.map((s: any) => (
-                    <SelectItem key={s.id} value={s.label}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
+                  {availableSizes.map((s: any) => {
+                    const optVariant = variants.find((v: any) => {
+                      const matchSize = String(v.size_id) === String(s.id);
+                      const selColorId = requiresColor ? colors.find((c: any) => c.label === item.color)?.id : null;
+                      const matchColor = requiresColor && selColorId ? String(v.color_id) === String(selColorId) : true;
+                      return matchSize && matchColor;
+                    });
+                    const optPrice = optVariant ? getVariantSellingPrice(optVariant, 0) : null;
+                    return (
+                      <SelectItem key={s.id} value={s.label}>
+                        {s.label} {optPrice !== null && optPrice > 0 ? `(৳${optPrice.toLocaleString()})` : ""}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             ) : availableSizes.length === 1 ? (
               <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">
-                Size: {availableSizes[0].label}
+                Variant: {availableSizes[0].label}
               </div>
             ) : null}
 
@@ -250,10 +309,8 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 onClick={() => {
                   updateCartItem(item.product.id, "color", "");
                   updateCartItem(item.product.id, "size", "");
-                  updateUnitPrice(
-                    item.product.id,
-                    item.product.has_variant_wise_pricing ? 0 : item.product.selling_price || 0,
-                  );
+                  const basePrice = item.product.selling_price || (variants[0] ? getVariantSellingPrice(variants[0]) : 0);
+                  updateUnitPrice(item.product.id, basePrice);
                 }}
                 title="Clear selections"
               >
@@ -360,10 +417,16 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
 
-      // If it has variant wise pricing, but no variants selected yet, we might want to default to 0 or product.selling_price
-      // It will auto-update when they select a size/color via the useEffect in CartItemRow
-      const initialPrice = product.has_variant_wise_pricing ? 0 : product.selling_price || 0;
-      return [...prev, { product, quantity: 1, color: "", size: "", unitPrice: initialPrice }];
+      const variants = product.variants || [];
+      const firstVariant = variants.length > 0 ? variants[0] : null;
+
+      const initialSize = firstVariant?.size?.label || "";
+      const initialColor = firstVariant?.color?.label || "";
+      const initialPrice = firstVariant
+        ? getVariantSellingPrice(firstVariant, product.selling_price || 0)
+        : (product.selling_price || 0);
+
+      return [...prev, { product, quantity: 1, color: initialColor, size: initialSize, unitPrice: initialPrice }];
     });
     setSearchQuery("");
     setSearchFocused(false);
@@ -656,9 +719,24 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-sm font-semibold tabular-nums">
-                              {p.has_variant_wise_pricing
-                                ? "Variant Pricing"
-                                : `৳${(p.selling_price || 0).toLocaleString()}`}
+                              {(() => {
+                                if (p.has_variant_wise_pricing || (p.has_variants && p.variants?.length > 0)) {
+                                  const prices = p.variants
+                                    ?.map((v: any) => {
+                                      const vp = v.variant_pricing || v.variantPricing;
+                                      return vp?.selling_price ?? v.selling_price;
+                                    })
+                                    .filter((pr: any) => pr !== undefined && pr !== null && !isNaN(Number(pr)))
+                                    .map(Number) || [];
+
+                                  if (prices.length > 0) {
+                                    const min = Math.min(...prices);
+                                    const max = Math.max(...prices);
+                                    return min === max ? `৳${min.toLocaleString()}` : `৳${min.toLocaleString()} - ৳${max.toLocaleString()}`;
+                                  }
+                                }
+                                return `৳${(p.selling_price || 0).toLocaleString()}`;
+                              })()}
                             </span>
                             {inCart && (
                               <Badge variant="secondary" className="text-[10px]">
