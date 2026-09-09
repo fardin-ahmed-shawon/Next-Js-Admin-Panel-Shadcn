@@ -87,7 +87,6 @@ export const sidebarItems: NavGroup[] = [
 
           { title: "All Products", url: "/dashboard/products" },
           { title: "AI Recommendations", url: "/dashboard/products/recommendations" },
-          { title: "Create Bundle", url: "/dashboard/products/create-bundle", comingSoon: true },
           { title: "Variant Attributes", url: "/dashboard/products/attributes" },
           { title: "Home Page Videos", url: "/dashboard/products/homepage-videos" },
           { title: "Purchase & Procurement", url: "/dashboard/products/procurement" },
@@ -224,48 +223,6 @@ export const sidebarItems: NavGroup[] = [
       // { title: "Feature Control", url: "/dashboard/feature-control", icon: SlidersHorizontal, module: "settings" },
       { title: "Settings", url: "/dashboard/settings", icon: Settings, module: "settings" },
       { title: "Logout", url: "#", icon: LogOut },
-    ],
-  },
-  {
-    id: 1,
-    label: "Upcoming AI Features",
-    items: [
-      { title: "AI Assistant", url: "/dashboard/ai-assistant", icon: Bot, module: "ai_assistant", comingSoon: true },
-      {
-        title: "AI Auto Calling",
-        url: "/dashboard/ai-auto-calling",
-        icon: PhoneCall,
-        module: "ai_auto_calling",
-        comingSoon: true,
-      },
-      {
-        title: "AI Business Copilot",
-        url: "/dashboard/ai-business-copilot",
-        icon: Sparkles,
-        module: "ai_business_copilot",
-        comingSoon: true,
-      },
-      {
-        title: "AI Sales Forecasting",
-        url: "/dashboard/ai-sales-forecasting",
-        icon: TrendingUp,
-        module: "ai_sales_forecasting",
-        comingSoon: true,
-      },
-      {
-        title: "AI Inventory Assistant",
-        url: "/dashboard/ai-inventory-assistant",
-        icon: Archive,
-        module: "ai_inventory_assistant",
-        comingSoon: true,
-      },
-      {
-        title: "AI Customer Support",
-        url: "/dashboard/ai-customer-support",
-        icon: MessageCircle,
-        module: "ai_customer_support_agent",
-        comingSoon: true,
-      },
     ],
   },
 ];
