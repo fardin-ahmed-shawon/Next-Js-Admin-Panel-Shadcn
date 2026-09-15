@@ -2,8 +2,6 @@
 
 import * as React from "react";
 
-import Link from "next/link";
-
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -26,7 +24,6 @@ import {
   Download,
   Eye,
   Medal,
-  MoreHorizontal,
   Package,
   Search,
   Award,
@@ -39,18 +36,12 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-import { useCustomers } from "@/hooks/useCustomers";
-import { Loader2 } from "lucide-react";
 
 type OrderRow = any;
 
@@ -158,31 +149,36 @@ const columns: ColumnDef<CustomerRow>[] = [
   },
 ];
 
-export function SalesReportsTopCustomers({ data: _unused }: { data: OrderRow[] }) {
-  const { data: response, isLoading } = useCustomers();
-
-  // Aggregate sales by customer using the customers API
+export function SalesReportsTopCustomers({ data }: { data: OrderRow[] }) {
   const customerSales = React.useMemo(() => {
-    if (!response?.data) return [];
-    const customers = response.data;
+    const customers = new Map<string, Omit<CustomerRow, "rank">>();
 
-    const ranked = [...customers]
-      .filter((c: any) => c.parcel_history?.total_spent > 0)
-      .sort((a: any, b: any) => (b.parcel_history?.total_spent || 0) - (a.parcel_history?.total_spent || 0))
-      .map((c: any, idx: number): CustomerRow => {
-        return {
-          name: c.full_name,
-          phone: c.phone || "",
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.full_name)}&background=random`,
-          totalSpent: c.parcel_history?.total_spent || 0,
-          ordersCount: c.parcel_history?.total || 0,
-          type: "Registered", // Or determine based on data if available
-          rank: idx + 1,
-        };
-      });
+    data.forEach((order) => {
+      const key = order.phone || `order-${order.id}`;
+      const existing = customers.get(key) || {
+        name: order.customer,
+        phone: order.phone,
+        avatar: order.avatar,
+        totalSpent: 0,
+        ordersCount: 0,
+        type: order.customerId ? "Registered" : "Guest",
+      };
 
-    return ranked;
-  }, [response]);
+      existing.ordersCount += 1;
+      if (order.orderStatus === "Delivered") {
+        existing.totalSpent += Number(order.total ?? 0);
+      }
+      customers.set(key, existing);
+    });
+
+    return Array.from(customers.values())
+      .filter((customer) => customer.totalSpent > 0)
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .map((customer, index): CustomerRow => ({
+        ...customer,
+        rank: index + 1,
+      }));
+  }, [data]);
 
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -223,7 +219,6 @@ export function SalesReportsTopCustomers({ data: _unused }: { data: OrderRow[] }
       <CardHeader>
         <CardTitle className="leading-none flex items-center gap-2">
           Top Customers
-          {isLoading && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
         </CardTitle>
         <CardDescription>Most valuable customers by revenue</CardDescription>
         <CardAction className="flex items-center gap-2">

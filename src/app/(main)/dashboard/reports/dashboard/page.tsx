@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { format, startOfYear, subDays, subMonths } from "date-fns";
 import { CalendarIcon, Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -18,32 +19,6 @@ import { SalesReportsTransactions } from "./_components/sales-reports-transactio
 
 type TimeRange = "alltime" | "daily" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "custom";
 
-function getDateFrom(range: TimeRange): string {
-  const now = new Date();
-  const d = new Date(now);
-  switch (range) {
-    case "daily":
-      return now.toISOString().slice(0, 10);
-    case "weekly":
-      d.setDate(d.getDate() - 7);
-      return d.toISOString().slice(0, 10);
-    case "monthly":
-      d.setMonth(d.getMonth() - 1);
-      return d.toISOString().slice(0, 10);
-    case "4months":
-      d.setMonth(d.getMonth() - 4);
-      return d.toISOString().slice(0, 10);
-    case "6months":
-      d.setMonth(d.getMonth() - 6);
-      return d.toISOString().slice(0, 10);
-    case "yearly":
-      d.setFullYear(d.getFullYear() - 1);
-      return d.toISOString().slice(0, 10);
-    default:
-      return "";
-  }
-}
-
 const rangeLabels: Record<TimeRange, string> = {
   alltime: "All Time",
   daily: "Daily",
@@ -56,10 +31,40 @@ const rangeLabels: Record<TimeRange, string> = {
 };
 
 export default function ReportsDashboardPage() {
-  const { orders, isLoading } = useOrders({ per_page: 1000, report: true });
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
+
+  const reportParams = React.useMemo(() => {
+    const params: Record<string, string | boolean> = {
+      report: true,
+      all_records: true,
+    };
+    const now = new Date();
+
+    if (timeRange !== "alltime" && timeRange !== "custom") {
+      let fromDate: Date | null = null;
+
+      if (timeRange === "daily") fromDate = now;
+      else if (timeRange === "weekly") fromDate = subDays(now, 7);
+      else if (timeRange === "monthly") fromDate = subMonths(now, 1);
+      else if (timeRange === "4months") fromDate = subMonths(now, 4);
+      else if (timeRange === "6months") fromDate = subMonths(now, 6);
+      else if (timeRange === "yearly") fromDate = startOfYear(now);
+
+      if (fromDate) {
+        params.start_date = format(fromDate, "yyyy-MM-dd");
+        params.end_date = format(now, "yyyy-MM-dd");
+      }
+    } else if (timeRange === "custom") {
+      if (customFrom) params.start_date = customFrom;
+      if (customTo) params.end_date = customTo;
+    }
+
+    return params;
+  }, [timeRange, customFrom, customTo]);
+
+  const { orders, isLoading } = useOrders(reportParams);
 
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
 
@@ -75,28 +80,34 @@ export default function ReportsDashboardPage() {
   const allOrders = React.useMemo(() => {
     if (!orders) return [];
     return orders.map((order: any) => {
-      const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
+      const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + Number(p.qty ?? 0), 0) || 0;
       const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
       const paymentMethod = order.payments?.[0]?.payment_method || "COD";
+      const totalAmount = Number(order.grand_total_amount ?? 0);
 
       const mappedProducts =
         order.ordered_products?.map((p: any) => ({
-          id: p.id || p.product_id,
+          id: p.product_id || p.id,
+          productId: p.product_id || p.id,
           image: getImageUrl(p.product?.product_thumbnail_img),
           name: p.product?.product_name || p.product?.title || "Unknown Product",
           size: p.size_label || "—",
           color: p.color_label || "—",
-          qty: p.qty || 1,
-          price: p.unit_price || 0,
+          qty: Number(p.qty ?? 0),
+          price: Number(p.unit_price ?? 0),
         })) || [];
       const productImages = mappedProducts.map((p: any) => p.image);
 
       const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
       const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
 
-      const createdDate = new Date(order.created_at);
-      const dateString = createdDate.toISOString().slice(0, 10);
-      const timeString = createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const rawDate = order.created_at ? order.created_at.replace(" ", "T") : "";
+      const createdDate = new Date(rawDate);
+      const hasValidDate = !Number.isNaN(createdDate.getTime());
+      const dateString = hasValidDate ? format(createdDate, "yyyy-MM-dd") : "";
+      const timeString = hasValidDate
+        ? createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : "";
 
       const initials =
         (order.customer_full_name || "Unknown")
@@ -112,9 +123,9 @@ export default function ReportsDashboardPage() {
         customer: order.customer_full_name || "Unknown",
         phone: order.customer_phone || "",
         items: itemsCount,
-        total: order.grand_total_amount || 0,
+        total: totalAmount,
         paid: paidAmount,
-        due: (order.grand_total_amount || 0) - paidAmount,
+        due: totalAmount - paidAmount,
         orderStatus: order.order_status || "Pending",
         paymentStatus: order.payment_status || "Unpaid",
         paymentMethod: paymentMethod,
@@ -122,6 +133,7 @@ export default function ReportsDashboardPage() {
         time: timeString,
         orderType: "regular",
         avatar: avatarUrl,
+        customerId: order.customer_id || null,
         category: mainCategory,
         subCategory: subCategory,
         productImages: productImages,
@@ -138,19 +150,6 @@ export default function ReportsDashboardPage() {
       };
     });
   }, [orders, getImageUrl]);
-
-  const filteredByTime = React.useMemo(() => {
-    if (timeRange === "alltime") return allOrders;
-    if (timeRange === "custom") {
-      return allOrders.filter((o: any) => {
-        if (customFrom && o.date < customFrom) return false;
-        if (customTo && o.date > customTo) return false;
-        return true;
-      });
-    }
-    const from = getDateFrom(timeRange);
-    return allOrders.filter((o: any) => o.date >= from);
-  }, [allOrders, timeRange, customFrom, customTo]);
 
   if (isLoading) {
     return (
@@ -241,17 +240,17 @@ export default function ReportsDashboardPage() {
         </div>
       </div>
 
-      <SalesReportsStats data={filteredByTime} />
+      <SalesReportsStats data={allOrders} />
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <SalesReportsTopProducts data={filteredByTime} />
-        <SalesReportsTopCustomers data={filteredByTime} />
+        <SalesReportsTopProducts data={allOrders} />
+        <SalesReportsTopCustomers data={allOrders} />
       </div>
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <SalesReportsOrderHistory data={filteredByTime} />
-        <SalesReportsTransactions data={filteredByTime} />
+        <SalesReportsOrderHistory data={allOrders} />
+        <SalesReportsTransactions data={allOrders} />
       </div>
       <div className="w-full">
-        <SalesReportsDistrictAnalysis data={filteredByTime} />
+        <SalesReportsDistrictAnalysis data={allOrders} />
       </div>
     </div>
   );

@@ -43,6 +43,7 @@ interface UseOrdersParams {
   status?: string;
   payment_status?: string;
   all_orders?: boolean;
+  all_records?: boolean;
   start_date?: string;
   end_date?: string;
   courier?: string;
@@ -67,6 +68,7 @@ export function useOrders(params?: UseOrdersParams) {
   if (params?.payment_status && params.payment_status !== "All")
     searchParams.append("payment_status", params.payment_status);
   if (params?.all_orders) searchParams.append("all_orders", "1");
+  if (params?.all_records) searchParams.append("all_records", "1");
   if (params?.start_date) searchParams.append("start_date", params.start_date);
   if (params?.end_date) searchParams.append("end_date", params.end_date);
   if (params?.courier && params.courier !== "All") searchParams.append("courier", params.courier);

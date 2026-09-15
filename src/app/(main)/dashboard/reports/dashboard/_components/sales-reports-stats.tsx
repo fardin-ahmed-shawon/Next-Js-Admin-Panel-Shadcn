@@ -6,15 +6,17 @@ type OrderRow = any;
 
 export function SalesReportsStats({ data }: { data: OrderRow[] }) {
   const totalOrders = data.length;
-  const totalOrderValue = data.reduce((sum, order) => sum + order.total, 0);
-  const totalPaid = data.reduce((sum, order) => sum + order.paid, 0);
-  const totalDue = data.reduce((sum, order) => sum + order.due, 0);
-  const totalSoldUnits = data.reduce((sum, order) => sum + order.items, 0);
+  const totalOrderValue = data.reduce((sum, order) => sum + Number(order.total ?? 0), 0);
+  const totalPaid = data.reduce((sum, order) => sum + Number(order.paid ?? 0), 0);
+  const totalDue = data.reduce((sum, order) => sum + Number(order.due ?? 0), 0);
+  const totalSoldUnits = data.reduce((sum, order) => sum + Number(order.items ?? 0), 0);
 
-  const uniqueCustomers = new Set(data.map((order) => order.phone)).size;
-  const uniqueProducts = new Set(data.map((order) => order.subCategory)).size;
+  const uniqueCustomers = new Set(data.map((order) => order.phone).filter(Boolean)).size;
+  const uniqueProducts = new Set(
+    data.flatMap((order) => order.orderedProducts?.map((product: any) => product.productId || product.id) || []),
+  ).size;
 
-  const averageOrderValue = totalOrders > 0 ? (totalOrderValue / totalOrders).toFixed(0) : "0";
+  const averageOrderValue = totalOrders > 0 ? Math.round(totalOrderValue / totalOrders) : 0;
 
   const stats = [
     {
@@ -31,7 +33,7 @@ export function SalesReportsStats({ data }: { data: OrderRow[] }) {
     },
     {
       title: "Average Order Value",
-      value: `৳ ${Number(averageOrderValue).toLocaleString()}`,
+      value: `৳ ${averageOrderValue.toLocaleString()}`,
       icon: Percent,
       subtitle: "Revenue per order",
     },
@@ -57,7 +59,7 @@ export function SalesReportsStats({ data }: { data: OrderRow[] }) {
       title: "Total Sold Products",
       value: uniqueProducts.toLocaleString(),
       icon: Boxes,
-      subtitle: "Product categories",
+      subtitle: "Distinct products",
     },
     {
       title: "Total Sold Unit",

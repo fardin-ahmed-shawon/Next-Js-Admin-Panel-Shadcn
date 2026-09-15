@@ -2,8 +2,6 @@
 
 import * as React from "react";
 
-import Link from "next/link";
-
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -24,7 +22,6 @@ import {
   ChevronsRight,
   Download,
   Eye,
-  MoreHorizontal,
   Package,
   Search,
 } from "lucide-react";
@@ -34,18 +31,12 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-import { useTopProducts } from "@/hooks/useTopProducts";
-import { Loader2 } from "lucide-react";
 
 type OrderRow = any;
 
@@ -112,29 +103,37 @@ const columns: ColumnDef<ProductRow>[] = [
   },
 ];
 
-export function SalesReportsTopProducts({ data: _unused }: { data: OrderRow[] }) {
-  const { data: response, isLoading } = useTopProducts({ limit: 50 });
-
-  // Map API response to the ProductRow structure
+export function SalesReportsTopProducts({ data }: { data: OrderRow[] }) {
   const productSales = React.useMemo(() => {
-    if (!response?.data) return [];
+    const products = new Map<string, ProductRow & { orderIds: Set<string> }>();
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
+    data.forEach((order) => {
+      if (order.orderStatus !== "Delivered") return;
 
-    const getImageUrl = (path: string | null) => {
-      if (!path) return "";
-      if (path.startsWith("http")) return path;
-      return `${baseUrl}${path.startsWith("/") ? path.slice(1) : path}`;
-    };
+      order.orderedProducts?.forEach((product: any) => {
+        const id = String(product.productId || product.id);
+        const existing = products.get(id) || {
+          id,
+          name: product.name,
+          image: product.image,
+          sold: 0,
+          ordersCount: 0,
+          orderIds: new Set<string>(),
+        };
 
-    return response.data.map((item: any) => ({
-      id: item.id.toString(),
-      name: item.product_title,
-      image: getImageUrl(item.product_thumbnail_img),
-      sold: Number(item.total_units) || 0,
-      ordersCount: Number(item.total_orders) || 0,
-    }));
-  }, [response]);
+        existing.sold += Number(product.qty ?? 0);
+        existing.orderIds.add(String(order.id));
+        products.set(id, existing);
+      });
+    });
+
+    return Array.from(products.values())
+      .map(({ orderIds, ...product }) => ({
+        ...product,
+        ordersCount: orderIds.size,
+      }))
+      .sort((a, b) => b.sold - a.sold);
+  }, [data]);
 
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -175,7 +174,6 @@ export function SalesReportsTopProducts({ data: _unused }: { data: OrderRow[] })
       <CardHeader>
         <CardTitle className="leading-none flex items-center gap-2">
           Top Products
-          {isLoading && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
         </CardTitle>
         <CardDescription>Best performing items in this period</CardDescription>
         <CardAction className="flex items-center gap-2">

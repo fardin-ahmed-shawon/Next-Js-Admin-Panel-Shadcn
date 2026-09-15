@@ -49,9 +49,11 @@ function ProductsCell({ row }: { row: any }) {
   const [modalOpen, setModalOpen] = React.useState(false);
   return (
     <>
-      <div
-        className="flex -space-x-2 cursor-pointer hover:opacity-80 transition-opacity w-fit"
+      <button
+        type="button"
+        className="flex w-fit cursor-pointer -space-x-2 border-0 bg-transparent p-0 transition-opacity hover:opacity-80"
         onClick={() => setModalOpen(true)}
+        aria-label={`View products in order ${row.original.id}`}
         title="View all products"
       >
         {row.original.productImages.slice(0, 3).map((img: string, i: number) => (
@@ -64,7 +66,7 @@ function ProductsCell({ row }: { row: any }) {
             +{row.original.productImages.length - 3}
           </div>
         )}
-      </div>
+      </button>
       <ProductsModal order={row.original} open={modalOpen} onOpenChange={setModalOpen} />
     </>
   );
@@ -154,7 +156,7 @@ export function SalesReportsOrderHistory({ data }: { data: OrderRow[] }) {
     <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="leading-none">Total Orders</CardTitle>
-        <CardDescription>Recent fulfilled orders</CardDescription>
+        <CardDescription>Recent orders in this period</CardDescription>
         <CardAction className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Download className="mr-2 size-4" />

@@ -40,14 +40,10 @@ export default function ProductPercentReportPage() {
 
   const [isExporting, setIsExporting] = React.useState(false);
 
-  // Reset page when any filter query changes
-  React.useEffect(() => {
-    setPage(1);
-  }, [timeRange, customFrom, customTo, sortBy, sortDir, searchQuery]);
-
   const queryParams: Record<string, any> = {
     page,
-    limit: 15,
+    per_page: 15,
+    period: timeRange,
     sort_by: sortBy,
     sort_dir: sortDir,
   };
@@ -57,8 +53,6 @@ export default function ProductPercentReportPage() {
   if (timeRange === "custom") {
     if (customFrom) queryParams.start_date = customFrom;
     if (customTo) queryParams.end_date = customTo;
-  } else if (timeRange !== "all_time") {
-    queryParams.period = timeRange;
   }
 
   const { data, isLoading } = useProductPercentReports(queryParams);
@@ -82,7 +76,8 @@ export default function ProductPercentReportPage() {
       setIsExporting(true);
 
       const exportParams = new URLSearchParams();
-      exportParams.append("limit", "10000"); // load all records
+      exportParams.append("per_page", "10000");
+      exportParams.append("period", timeRange);
       exportParams.append("sort_by", sortBy);
       exportParams.append("sort_dir", sortDir);
       if (searchQuery) exportParams.append("search", searchQuery);
@@ -90,8 +85,6 @@ export default function ProductPercentReportPage() {
       if (timeRange === "custom") {
         if (customFrom) exportParams.append("start_date", customFrom);
         if (customTo) exportParams.append("end_date", customTo);
-      } else if (timeRange !== "all_time") {
-        exportParams.append("period", timeRange);
       }
 
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
@@ -151,7 +144,13 @@ export default function ProductPercentReportPage() {
         <div className="flex flex-col gap-2 sm:items-end">
           <div className="flex items-center justify-between gap-2 sm:justify-end">
             {/* Period Select */}
-            <Select value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
+            <Select
+              value={timeRange}
+              onValueChange={(value) => {
+                setTimeRange(value as TimeRange);
+                setPage(1);
+              }}
+            >
               <SelectTrigger className="w-32 sm:w-40 bg-background">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
@@ -174,14 +173,20 @@ export default function ProductPercentReportPage() {
                   type="date"
                   className="h-9 w-36 text-xs"
                   value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
+                  onChange={(event) => {
+                    setCustomFrom(event.target.value);
+                    setPage(1);
+                  }}
                 />
                 <span className="text-xs text-muted-foreground">to</span>
                 <Input
                   type="date"
                   className="h-9 w-36 text-xs"
                   value={customTo}
-                  onChange={(e) => setCustomTo(e.target.value)}
+                  onChange={(event) => {
+                    setCustomTo(event.target.value);
+                    setPage(1);
+                  }}
                 />
               </div>
             )}
@@ -206,14 +211,20 @@ export default function ProductPercentReportPage() {
                 type="date"
                 className="h-9 flex-1 text-xs"
                 value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
+                onChange={(event) => {
+                  setCustomFrom(event.target.value);
+                  setPage(1);
+                }}
               />
               <span className="text-xs text-muted-foreground shrink-0">to</span>
               <Input
                 type="date"
                 className="h-9 flex-1 text-xs"
                 value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
+                onChange={(event) => {
+                  setCustomTo(event.target.value);
+                  setPage(1);
+                }}
               />
             </div>
           )}
@@ -247,9 +258,15 @@ export default function ProductPercentReportPage() {
         searchVal={searchVal}
         setSearchVal={setSearchVal}
         sortBy={sortBy}
-        setSortBy={setSortBy}
+        setSortBy={(value) => {
+          setSortBy(value);
+          setPage(1);
+        }}
         sortDir={sortDir}
-        setSortDir={setSortDir}
+        setSortDir={(value) => {
+          setSortDir(value);
+          setPage(1);
+        }}
         onFilterSubmit={handleFilterSubmit}
         onReset={handleReset}
       />

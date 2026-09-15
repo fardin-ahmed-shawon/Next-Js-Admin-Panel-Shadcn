@@ -29,7 +29,7 @@ const orderStatuses = [
   "All",
   "Pending",
   "Confirmed",
-  "Ready to Ship",
+  "Ready To Ship",
   "In-Courier",
   "Completed",
   "Delivered",
@@ -54,11 +54,6 @@ export default function ProductReportPage() {
 
   const [isExporting, setIsExporting] = React.useState(false);
 
-  // Reset page when filters change
-  React.useEffect(() => {
-    setPage(1);
-  }, [timeRange, customFrom, customTo, orderStatus, sortBy, sortDir, searchQuery]);
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchQuery(searchInput);
@@ -68,7 +63,7 @@ export default function ProductReportPage() {
   const queryParams: Record<string, any> = {
     period: timeRange,
     page,
-    limit: 15,
+    per_page: 15,
     order_status: orderStatus,
     sort_by: sortBy,
     sort_dir: sortDir,
@@ -88,14 +83,14 @@ export default function ProductReportPage() {
 
       const exportParams = new URLSearchParams();
       exportParams.append("period", timeRange);
-      exportParams.append("limit", "10000");
+      exportParams.append("per_page", "10000");
       exportParams.append("order_status", orderStatus);
       exportParams.append("sort_by", sortBy);
       exportParams.append("sort_dir", sortDir);
       if (searchQuery) exportParams.append("search", searchQuery);
-      if (timeRange === "custom" && customFrom && customTo) {
-        exportParams.append("start_date", customFrom);
-        exportParams.append("end_date", customTo);
+      if (timeRange === "custom") {
+        if (customFrom) exportParams.append("start_date", customFrom);
+        if (customTo) exportParams.append("end_date", customTo);
       }
 
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
@@ -130,7 +125,13 @@ export default function ProductReportPage() {
         <div className="flex flex-col gap-2 sm:items-end">
           <div className="flex items-center justify-between gap-2 sm:justify-end">
             {/* Status Select */}
-            <Select value={orderStatus} onValueChange={(v) => setOrderStatus(v)}>
+            <Select
+              value={orderStatus}
+              onValueChange={(value) => {
+                setOrderStatus(value);
+                setPage(1);
+              }}
+            >
               <SelectTrigger className="w-32 sm:w-40 bg-background">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -146,7 +147,13 @@ export default function ProductReportPage() {
             </Select>
 
             {/* Period Select */}
-            <Select value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
+            <Select
+              value={timeRange}
+              onValueChange={(value) => {
+                setTimeRange(value as TimeRange);
+                setPage(1);
+              }}
+            >
               <SelectTrigger className="w-32 sm:w-40 bg-background">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
@@ -169,14 +176,20 @@ export default function ProductReportPage() {
                   type="date"
                   className="h-9 w-36 text-xs"
                   value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
+                  onChange={(event) => {
+                    setCustomFrom(event.target.value);
+                    setPage(1);
+                  }}
                 />
                 <span className="text-xs text-muted-foreground">to</span>
                 <Input
                   type="date"
                   className="h-9 w-36 text-xs"
                   value={customTo}
-                  onChange={(e) => setCustomTo(e.target.value)}
+                  onChange={(event) => {
+                    setCustomTo(event.target.value);
+                    setPage(1);
+                  }}
                 />
               </div>
             )}
@@ -201,14 +214,20 @@ export default function ProductReportPage() {
                 type="date"
                 className="h-9 flex-1 text-xs"
                 value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
+                onChange={(event) => {
+                  setCustomFrom(event.target.value);
+                  setPage(1);
+                }}
               />
               <span className="text-xs text-muted-foreground shrink-0">to</span>
               <Input
                 type="date"
                 className="h-9 flex-1 text-xs"
                 value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
+                onChange={(event) => {
+                  setCustomTo(event.target.value);
+                  setPage(1);
+                }}
               />
             </div>
           )}
@@ -251,7 +270,13 @@ export default function ProductReportPage() {
         {/* Sort Controls */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <span className="text-sm text-muted-foreground shrink-0">Sort by:</span>
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select
+            value={sortBy}
+            onValueChange={(value) => {
+              setSortBy(value);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[160px] bg-background">
               <SelectValue placeholder="Sort By" />
             </SelectTrigger>
@@ -265,7 +290,13 @@ export default function ProductReportPage() {
             </SelectContent>
           </Select>
 
-          <Select value={sortDir} onValueChange={setSortDir}>
+          <Select
+            value={sortDir}
+            onValueChange={(value) => {
+              setSortDir(value);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[100px] bg-background">
               <SelectValue placeholder="Order" />
             </SelectTrigger>
