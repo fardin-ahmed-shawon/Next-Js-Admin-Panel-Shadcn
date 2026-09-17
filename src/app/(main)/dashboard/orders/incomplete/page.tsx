@@ -22,6 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useModularFeatures } from "@/hooks/useModularFeatures";
 import { useIncompleteOrders } from "@/hooks/useIncompleteOrders";
+import { formatOrderDateTime } from "@/lib/utils";
 
 import { OrderStats } from "../_components/order-stats";
 import { OrdersTable } from "../_components/orders-table";
@@ -151,13 +152,7 @@ export default function IncompleteOrdersPage() {
       const mainCategory = order.ordered_products?.[0]?.product?.main_category?.name || "Uncategorized";
       const subCategory = order.ordered_products?.[0]?.product?.sub_category?.name || "Uncategorized";
 
-      const rawDateStr = order.created_at ? order.created_at.replace(" ", "T") : "";
-      const createdDate = new Date(rawDateStr);
-      const year = createdDate.getFullYear();
-      const month = String(createdDate.getMonth() + 1).padStart(2, "0");
-      const day = String(createdDate.getDate()).padStart(2, "0");
-      const dateString = `${year}-${month}-${day}`;
-      const timeString = createdDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const { date: dateString, time: timeString } = formatOrderDateTime(order.created_at);
 
       const initials = (order.customer_full_name || "Unknown")
         .split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "U";

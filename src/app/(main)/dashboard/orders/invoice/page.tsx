@@ -1,21 +1,8 @@
 "use client";
-import { ModularFeature } from "@/components/modular-feature";
 
 import * as React from "react";
 import { format } from "date-fns";
-import {
-  CalendarIcon,
-  FileText,
-  Printer,
-  Truck,
-  FileClock,
-  Search,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
+import { CalendarIcon, FileText, Printer, Truck, FileClock, Search, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { useInvoices } from "@/hooks/useInvoices";
 import { Input } from "@/components/ui/input";
@@ -24,6 +11,12 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { orderStatusVariant, paymentBadge, SendCourierCell } from "../_components/orders-table";
 import { ArrowUpDown } from "lucide-react";
+import { parseDateTime } from "@/lib/utils";
+
+function formatSafeDate(dateStr?: string | null, pattern = "yyyy-MM-dd · hh:mm a"): string {
+  const d = parseDateTime(dateStr);
+  return d ? format(d, pattern) : "—";
+}
 
 const invoiceTypes = ["All", "a4", "pos", "label"];
 
@@ -33,25 +26,13 @@ function getDateFrom(range: TimeRange): string {
   const now = new Date();
   const d = new Date(now);
   switch (range) {
-    case "daily":
-      return now.toISOString().slice(0, 10);
-    case "weekly":
-      d.setDate(d.getDate() - 7);
-      return d.toISOString().slice(0, 10);
-    case "monthly":
-      d.setMonth(d.getMonth() - 1);
-      return d.toISOString().slice(0, 10);
-    case "4months":
-      d.setMonth(d.getMonth() - 4);
-      return d.toISOString().slice(0, 10);
-    case "6months":
-      d.setMonth(d.getMonth() - 6);
-      return d.toISOString().slice(0, 10);
-    case "yearly":
-      d.setFullYear(d.getFullYear() - 1);
-      return d.toISOString().slice(0, 10);
-    default:
-      return "";
+    case "daily": return now.toISOString().slice(0, 10);
+    case "weekly": d.setDate(d.getDate() - 7); return d.toISOString().slice(0, 10);
+    case "monthly": d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 10);
+    case "4months": d.setMonth(d.getMonth() - 4); return d.toISOString().slice(0, 10);
+    case "6months": d.setMonth(d.getMonth() - 6); return d.toISOString().slice(0, 10);
+    case "yearly": d.setFullYear(d.getFullYear() - 1); return d.toISOString().slice(0, 10);
+    default: return "";
   }
 }
 
@@ -67,7 +48,14 @@ const rangeLabels: Record<TimeRange, string> = {
   custom: "Custom Range",
 };
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
@@ -137,27 +125,19 @@ export default function InvoiceDashboardPage() {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case "a4":
-        return <FileText className="size-4 text-blue-500" />;
-      case "pos":
-        return <Printer className="size-4 text-green-500" />;
-      case "label":
-        return <Truck className="size-4 text-purple-500" />;
-      default:
-        return <FileText className="size-4" />;
+      case "a4": return <FileText className="size-4 text-blue-500" />;
+      case "pos": return <Printer className="size-4 text-green-500" />;
+      case "label": return <Truck className="size-4 text-purple-500" />;
+      default: return <FileText className="size-4" />;
     }
   };
 
   const getBadgeColor = (type: string) => {
     switch (type) {
-      case "a4":
-        return "bg-blue-100 text-blue-800 hover:bg-blue-100/80";
-      case "pos":
-        return "bg-green-100 text-green-800 hover:bg-green-100/80";
-      case "label":
-        return "bg-purple-100 text-purple-800 hover:bg-purple-100/80";
-      default:
-        return "bg-gray-100 text-gray-800";
+      case "a4": return "bg-blue-100 text-blue-800 hover:bg-blue-100/80";
+      case "pos": return "bg-green-100 text-green-800 hover:bg-green-100/80";
+      case "label": return "bg-purple-100 text-purple-800 hover:bg-purple-100/80";
+      default: return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -328,34 +308,23 @@ export default function InvoiceDashboardPage() {
                 <SelectContent>
                   <SelectGroup>
                     <SelectItem value="All">All Couriers</SelectItem>
-                    <ModularFeature name="courier_steadfast">
-                      <SelectItem value="Steadfast">Steadfast</SelectItem>
-                    </ModularFeature>
-                    <ModularFeature name="courier_pathao">
-                      <SelectItem value="Pathao">Pathao</SelectItem>
-                    </ModularFeature>
-                    <ModularFeature name="courier_redx">
-                      <SelectItem value="RedX">RedX</SelectItem>
-                    </ModularFeature>
+                    <SelectItem value="Steadfast">Steadfast</SelectItem>
+                    <SelectItem value="Pathao">Pathao</SelectItem>
+                    <SelectItem value="RedX">RedX</SelectItem>
                     <SelectItem value="Pending">Not Sent</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
 
-              {(activeTypeFilter !== "All" || courierFilter !== "All" || searchQuery || timeRange !== "alltime") && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="h-8 shrink-0"
-                  onClick={() => {
-                    setActiveTypeFilter("All");
-                    setCourierFilter("All");
-                    setSearchQuery("");
-                    setTimeRange("alltime");
-                    setCustomFrom("");
-                    setCustomTo("");
-                  }}
-                >
+              {(activeTypeFilter !== "All" || courierFilter !== "All" || searchQuery || (timeRange !== "alltime")) && (
+                <Button variant="secondary" size="sm" className="h-8 shrink-0" onClick={() => {
+                  setActiveTypeFilter("All");
+                  setCourierFilter("All");
+                  setSearchQuery("");
+                  setTimeRange("alltime");
+                  setCustomFrom("");
+                  setCustomTo("");
+                }}>
                   Clear filters
                 </Button>
               )}
@@ -398,11 +367,11 @@ export default function InvoiceDashboardPage() {
                             <span className="font-mono text-sm">{invoice.order_no}</span>
                             {order.created_at ? (
                               <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                                {format(new Date(order.created_at), "yyyy-MM-dd · hh:mm a")}
+                                {formatSafeDate(order.created_at)}
                               </span>
                             ) : (
                               <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                                {format(new Date(invoice.created_at), "yyyy-MM-dd · hh:mm a")}
+                                {formatSafeDate(invoice.created_at)}
                               </span>
                             )}
                           </div>
@@ -414,14 +383,18 @@ export default function InvoiceDashboardPage() {
                         </TableCell>
                         <TableCell>
                           {order.order_status ? (
-                            <Badge variant={orderStatusVariant(order.order_status)}>{order.order_status}</Badge>
+                            <Badge variant={orderStatusVariant(order.order_status)}>
+                              {order.order_status}
+                            </Badge>
                           ) : (
                             <span className="text-muted-foreground text-xs">N/A</span>
                           )}
                         </TableCell>
                         <TableCell>
                           {order.payment_status ? (
-                            <Badge variant={paymentBadge(order.payment_status)}>{order.payment_status}</Badge>
+                            <Badge variant={paymentBadge(order.payment_status)}>
+                              {order.payment_status}
+                            </Badge>
                           ) : (
                             <span className="text-muted-foreground text-xs">N/A</span>
                           )}
@@ -455,7 +428,7 @@ export default function InvoiceDashboardPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground text-sm">
-                          {format(new Date(invoice.created_at), "MMM dd, yyyy - hh:mm a")}
+                          {formatSafeDate(invoice.created_at, "MMM dd, yyyy - hh:mm a")}
                         </TableCell>
                       </TableRow>
                     );
@@ -498,7 +471,12 @@ export default function InvoiceDashboardPage() {
               <span className="text-sm text-muted-foreground">
                 Page {page} of {totalPages}
               </span>
-              <Button size="icon-sm" variant="outline" onClick={() => setPage(1)} disabled={page === 1}>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+              >
                 <ChevronsLeft />
               </Button>
               <Button

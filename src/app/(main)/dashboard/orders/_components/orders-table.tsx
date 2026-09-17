@@ -1,5 +1,4 @@
 "use client";
-import { ModularFeature } from "@/components/modular-feature";
 
 import * as React from "react";
 
@@ -81,6 +80,7 @@ import { AssignOrderDialog } from "../assign-orders/_components/assign-order-dia
 import { UpdatePaymentModal } from "./update-payment-modal";
 import { EditOrderForm } from "./edit-order-form";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { getRelativeTime } from "@/lib/utils";
 
 /* ---- Data ---- */
 
@@ -179,29 +179,25 @@ export function invalidateOrders() {
 }
 
 export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolean }) {
-  const { features } = useModularFeatures();
   const { data: steadfastConfig } = useSteadfastSetup();
   const { data: pathaoConfig } = usePathaoSetup();
   const { data: redxConfig } = useRedxSetup();
 
   const isSteadfastActive =
-    !!features?.courier_steadfast &&
-    (steadfastConfig?.status === "active" ||
-      steadfastConfig?.is_active === 1 ||
-      steadfastConfig?.is_active === "1" ||
-      steadfastConfig?.is_active === true);
+    steadfastConfig?.status === "active" ||
+    steadfastConfig?.is_active === 1 ||
+    steadfastConfig?.is_active === "1" ||
+    steadfastConfig?.is_active === true;
   const isPathaoActive =
-    !!features?.courier_pathao &&
-    (pathaoConfig?.status === "active" ||
-      pathaoConfig?.is_active === 1 ||
-      pathaoConfig?.is_active === "1" ||
-      pathaoConfig?.is_active === true);
+    pathaoConfig?.status === "active" ||
+    pathaoConfig?.is_active === 1 ||
+    pathaoConfig?.is_active === "1" ||
+    pathaoConfig?.is_active === true;
   const isRedxActive =
-    !!features?.courier_redx &&
-    (redxConfig?.status === "active" ||
-      redxConfig?.is_active === 1 ||
-      redxConfig?.is_active === "1" ||
-      redxConfig?.is_active === true);
+    redxConfig?.status === "active" ||
+    redxConfig?.is_active === 1 ||
+    redxConfig?.is_active === "1" ||
+    redxConfig?.is_active === true;
 
   const hasSteadfastParcel = !!row.original.steadfast_parcel || !!row.original.steadfastParcel;
   const hasPathaoParcel = !!row.original.pathao_parcel || !!row.original.pathaoParcel;
@@ -213,12 +209,6 @@ export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolea
 
   React.useEffect(() => {
     if (!hasSteadfastParcel && !hasPathaoParcel && !hasRedxParcel) return;
-    if (
-      (hasSteadfastParcel && !features?.courier_steadfast) ||
-      (hasPathaoParcel && !features?.courier_pathao) ||
-      (hasRedxParcel && !features?.courier_redx)
-    )
-      return;
 
     let isMounted = true;
     const fetchCourierStatus = async () => {
@@ -268,16 +258,7 @@ export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolea
     return () => {
       isMounted = false;
     };
-  }, [
-    row.original.id,
-    hasSteadfastParcel,
-    hasPathaoParcel,
-    hasRedxParcel,
-    row.original.courier_details?.parcel_status,
-    features?.courier_steadfast,
-    features?.courier_pathao,
-    features?.courier_redx,
-  ]);
+  }, [row.original.id, hasSteadfastParcel, hasPathaoParcel, hasRedxParcel, row.original.courier_details?.parcel_status]);
 
   if (hasSteadfastParcel || hasPathaoParcel || hasRedxParcel) {
     if (courierLoading) {
@@ -321,7 +302,9 @@ export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolea
     return (
       <div className="flex flex-col gap-1.5 w-[135px] items-center select-none">
         {courierName && (
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{courierName}</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            {courierName}
+          </span>
         )}
         <Badge
           variant="outline"
@@ -333,27 +316,19 @@ export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolea
           <div className="flex flex-col gap-0.5 w-full text-left px-1 mt-0.5 border-t border-dashed pt-1.5 border-muted-foreground/20">
             <div className="flex items-center justify-between text-[10px]">
               <span className="font-semibold text-muted-foreground uppercase">Inv:</span>
-              <span
-                className="font-mono font-medium text-foreground truncate max-w-[85px]"
-                title={payInfo.invoiceId || "—"}
-              >
+              <span className="font-mono font-medium text-foreground truncate max-w-[85px]" title={payInfo.invoiceId || "—"}>
                 {payInfo.invoiceId || "—"}
               </span>
             </div>
             <div className="flex items-center justify-between text-[10px] mt-0.5">
               <span className="font-semibold text-muted-foreground uppercase">Pay:</span>
               {payInfo.paymentStatus ? (
-                <span
-                  className={`font-bold px-1 rounded-[3px] text-[9px] border ${
-                    payInfo.paymentStatus.toLowerCase().includes("paid")
-                      ? "border-green-500/30 text-green-600 bg-green-500/5"
-                      : payInfo.paymentStatus.toLowerCase().includes("cancel") ||
-                          payInfo.paymentStatus.toLowerCase().includes("fail") ||
-                          payInfo.paymentStatus.toLowerCase().includes("refund")
-                        ? "border-red-500/30 text-red-600 bg-red-500/5"
-                        : "border-amber-500/30 text-amber-600 bg-amber-500/5"
-                  }`}
-                >
+                <span className={`font-bold px-1 rounded-[3px] text-[9px] border ${payInfo.paymentStatus.toLowerCase().includes("paid")
+                  ? "border-green-500/30 text-green-600 bg-green-500/5"
+                  : payInfo.paymentStatus.toLowerCase().includes("cancel") || payInfo.paymentStatus.toLowerCase().includes("fail") || payInfo.paymentStatus.toLowerCase().includes("refund")
+                    ? "border-red-500/30 text-red-600 bg-red-500/5"
+                    : "border-amber-500/30 text-amber-600 bg-amber-500/5"
+                  }`}>
                   {payInfo.paymentStatus.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                 </span>
               ) : (
@@ -615,18 +590,12 @@ function ProductsCell({ row }: { row: any }) {
               {prod.name}
             </p>
             <div className="flex flex-col text-[10px] text-muted-foreground mt-0.5 gap-0.5">
-              <span>
-                Qty: <span className="font-semibold text-foreground">{prod.qty}</span>
-              </span>
+              <span>Qty: <span className="font-semibold text-foreground">{prod.qty}</span></span>
               {prod.size && prod.size !== "—" && (
-                <span>
-                  Size: <span className="font-medium text-foreground">{prod.size}</span>
-                </span>
+                <span>Size: <span className="font-medium text-foreground">{prod.size}</span></span>
               )}
               {prod.color && prod.color !== "—" && (
-                <span>
-                  Color: <span className="font-medium text-foreground">{prod.color}</span>
-                </span>
+                <span>Color: <span className="font-medium text-foreground">{prod.color}</span></span>
               )}
             </div>
           </div>
@@ -681,7 +650,7 @@ function CourierHistoryCell({ row }: { row: any }) {
           setLiveData({ total, delivered, cancelled, successRate });
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (isMounted) setLoading(false);
       });
@@ -765,7 +734,7 @@ function CustomerFraudSuccessRate({ phone }: { phone: string }) {
           setSuccessRate(rate);
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (isMounted) setLoading(false);
       });
@@ -826,40 +795,6 @@ const columns: ColumnDef<OrderRow>[] = [
     id: "order",
     header: "Orders",
     cell: ({ row }) => {
-      const getRelativeTime = (dateStr?: string) => {
-        if (!dateStr) return "";
-        try {
-          const rawStr = dateStr.replace(" ", "T");
-          const date = new Date(rawStr);
-          const now = new Date();
-          const diffMs = now.getTime() - date.getTime();
-          if (isNaN(diffMs) || diffMs < 0) return "just now";
-
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const orderDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-          const calendarDiffDays = Math.floor((today.getTime() - orderDate.getTime()) / 86400000);
-
-          if (calendarDiffDays === 0) {
-            const diffMins = Math.floor(diffMs / 60000);
-            if (diffMins < 1) return "just now";
-            if (diffMins < 60) return `${diffMins}m ago`;
-            const diffHours = Math.floor(diffMins / 60);
-            return `${diffHours}h ago`;
-          } else if (calendarDiffDays === 1) {
-            return "yesterday";
-          } else if (calendarDiffDays < 7) {
-            return `${calendarDiffDays}d ago`;
-          } else {
-            return date.toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "short",
-            });
-          }
-        } catch {
-          return "";
-        }
-      };
-
       return (
         <div className="flex flex-col gap-0.5 text-left w-full max-w-[14ch]">
           <p className="font-mono text-sm font-semibold whitespace-normal break-words">{row.original.id}</p>
@@ -879,11 +814,10 @@ const columns: ColumnDef<OrderRow>[] = [
               {row.original.source && (
                 <Badge
                   variant="outline"
-                  className={`text-[9px] font-bold px-1.5 py-0 h-4 border leading-none shrink-0 ${
-                    row.original.source === "Website"
-                      ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/10"
-                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/10"
-                  }`}
+                  className={`text-[9px] font-bold px-1.5 py-0 h-4 border leading-none shrink-0 ${row.original.source === "Website"
+                    ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/10"
+                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/10"
+                    }`}
                 >
                   {row.original.source === "Incomplete" ? "From Incomplete" : row.original.source}
                 </Badge>
@@ -1031,7 +965,7 @@ const columns: ColumnDef<OrderRow>[] = [
           <SelectContent>
             {orderStatuses
               .filter((s) => s !== "All")
-              .filter((s) => (meta?.showIncompleteStatus ? true : s !== "Incomplete"))
+              .filter((s) => meta?.showIncompleteStatus ? true : s !== "Incomplete")
               .map((status) => (
                 <SelectItem key={status} value={status} className="text-xs">
                   {status}
@@ -1039,7 +973,7 @@ const columns: ColumnDef<OrderRow>[] = [
               ))}
           </SelectContent>
         </Select>
-      );
+      )
     },
   },
 
@@ -1072,19 +1006,13 @@ const columns: ColumnDef<OrderRow>[] = [
           <div className="flex justify-end">
             <Dialog>
               <DialogTrigger asChild>
-                <Button size="sm" variant="default">
-                  Complete Order
-                </Button>
+                <Button size="sm" variant="default">Complete Order</Button>
               </DialogTrigger>
               <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[90vh] overflow-y-auto">
-                <EditOrderForm
-                  orderId={(row.original as any).order_no || row.original.id}
-                  incompleteMode={true}
-                  onCompleted={() => {
-                    // Refresh the table by mutating
-                    mutate((key) => typeof key === "string" && key.includes("orders"));
-                  }}
-                />
+                <EditOrderForm orderId={(row.original as any).order_no || row.original.id} incompleteMode={true} onCompleted={() => {
+                  // Refresh the table by mutating
+                  mutate((key) => typeof key === "string" && key.includes("orders"));
+                }} />
               </DialogContent>
             </Dialog>
           </div>
@@ -1113,36 +1041,18 @@ const columns: ColumnDef<OrderRow>[] = [
               </Link>
             </DropdownMenuItem> */}
               <DropdownMenuSeparator />
-              <ModularFeature name="orders_invoice_a4">
-                <DropdownMenuItem
-                  onClick={() =>
-                    usePrintModal.getState().openModal(row.original.id, "a4", `/invoice/${row.original.id}`)
-                  }
-                >
-                  <FileText className="mr-2 size-4 text-muted-foreground" />
-                  Print A4 Invoice
-                </DropdownMenuItem>
-              </ModularFeature>
-              <ModularFeature name="orders_invoice_pos">
-                <DropdownMenuItem
-                  onClick={() =>
-                    usePrintModal.getState().openModal(row.original.id, "pos", `/invoice/${row.original.id}/pos`)
-                  }
-                >
-                  <Printer className="mr-2 size-4 text-muted-foreground" />
-                  Print POS Receipt
-                </DropdownMenuItem>
-              </ModularFeature>
-              <ModularFeature name="orders_invoice_label">
-                <DropdownMenuItem
-                  onClick={() =>
-                    usePrintModal.getState().openModal(row.original.id, "label", `/invoice/${row.original.id}/label`)
-                  }
-                >
-                  <Truck className="mr-2 size-4 text-muted-foreground" />
-                  Print Courier Label
-                </DropdownMenuItem>
-              </ModularFeature>
+              <DropdownMenuItem onClick={() => usePrintModal.getState().openModal(row.original.id, "a4", `/invoice/${row.original.id}`)}>
+                <FileText className="mr-2 size-4 text-muted-foreground" />
+                Print A4 Invoice
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => usePrintModal.getState().openModal(row.original.id, "pos", `/invoice/${row.original.id}/pos`)}>
+                <Printer className="mr-2 size-4 text-muted-foreground" />
+                Print POS Receipt
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => usePrintModal.getState().openModal(row.original.id, "label", `/invoice/${row.original.id}/label`)}>
+                <Truck className="mr-2 size-4 text-muted-foreground" />
+                Print Courier Label
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               {/* <DropdownMenuItem onClick={() => toast.warning(`Customer ${row.original.customer} blocked.`)}>
               <Ban className="mr-2 size-4" />
@@ -1220,10 +1130,7 @@ const AiAutoCallButton = ({ orderId, isAiCalled }: { orderId: string; isAiCalled
 
   if (isAiCalled) {
     return (
-      <Badge
-        variant="outline"
-        className="h-6 w-full gap-1 text-[10px] px-2 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 transition-colors flex justify-center items-center font-normal"
-      >
+      <Badge variant="outline" className="h-6 w-full gap-1 text-[10px] px-2 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 transition-colors flex justify-center items-center font-normal">
         <Bot className="size-3" />
         Already AI Called!
       </Badge>
@@ -1242,7 +1149,7 @@ const AiAutoCallButton = ({ orderId, isAiCalled }: { orderId: string; isAiCalled
         try {
           const errData = await response.json();
           errMsg = errData.message || errMsg;
-        } catch (e) {}
+        } catch(e) {}
         throw new Error(errMsg);
       }
 
@@ -1255,32 +1162,12 @@ const AiAutoCallButton = ({ orderId, isAiCalled }: { orderId: string; isAiCalled
   };
 
   return (
-    <ModularFeature name="ai_auto_calling">
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-6 w-full gap-1 text-[10px] px-2 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 transition-colors"
-        onClick={handleAiCall}
-        disabled={isCalling}
-      >
-        {isCalling ? <Loader2 className="size-3 animate-spin" /> : <Bot className="size-3" />}
-        AI Auto Call
-      </Button>
-    </ModularFeature>
+    <>
+    </>
   );
 };
 
-export function OrdersTable({
-  data,
-  hideOrderStatusFilter,
-  hidePaymentStatusFilter,
-  hidePaymentStatusColumn,
-  simplifiedPaymentColumn,
-  showIncompleteStatus,
-  incompleteOrdersMode,
-  hideActionsColumn,
-  useServerPagination,
-}: OrdersTableProps) {
+export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus, incompleteOrdersMode, hideActionsColumn, useServerPagination }: OrdersTableProps) {
   const { features } = useModularFeatures();
   const context = React.useContext(OrderContext);
 
@@ -1299,51 +1186,41 @@ export function OrdersTable({
   const searchQuery = useServerPagination ? context.searchQuery : localSearchQuery;
   const statusFilter = useServerPagination ? context.statusFilter : localStatusFilter;
   const paymentFilter = useServerPagination ? context.paymentFilter : localPaymentFilter;
-  const courierFilter =
-    useServerPagination && context.courierFilter !== undefined ? context.courierFilter : localCourierFilter;
+  const courierFilter = useServerPagination && context.courierFilter !== undefined ? context.courierFilter : localCourierFilter;
 
-  const setSearchQuery = useServerPagination
-    ? context.setSearchQuery
-    : (v: string) => {
-        setLocalSearchQuery(v);
-        setColumnFilters((prev) => {
-          const p = prev.filter((f) => f.id !== "search");
-          if (v) p.push({ id: "search", value: v });
-          return p;
-        });
-      };
+  const setSearchQuery = useServerPagination ? context.setSearchQuery : (v: string) => {
+    setLocalSearchQuery(v);
+    setColumnFilters(prev => {
+      const p = prev.filter(f => f.id !== "search");
+      if (v) p.push({ id: "search", value: v });
+      return p;
+    });
+  };
 
-  const setStatusFilter = useServerPagination
-    ? context.setStatusFilter
-    : (v: string) => {
-        setLocalStatusFilter(v);
-        setColumnFilters((prev) => {
-          const p = prev.filter((f) => f.id !== "orderStatus");
-          if (v !== "All") p.push({ id: "orderStatus", value: v });
-          return p;
-        });
-      };
+  const setStatusFilter = useServerPagination ? context.setStatusFilter : (v: string) => {
+    setLocalStatusFilter(v);
+    setColumnFilters(prev => {
+      const p = prev.filter(f => f.id !== "orderStatus");
+      if (v !== "All") p.push({ id: "orderStatus", value: v });
+      return p;
+    });
+  };
 
-  const setPaymentFilter = useServerPagination
-    ? context.setPaymentFilter
-    : (v: string) => {
-        setLocalPaymentFilter(v);
-        setColumnFilters((prev) => {
-          const p = prev.filter((f) => f.id !== "paymentStatus");
-          if (v !== "All") p.push({ id: "paymentStatus", value: v });
-          return p;
-        });
-      };
+  const setPaymentFilter = useServerPagination ? context.setPaymentFilter : (v: string) => {
+    setLocalPaymentFilter(v);
+    setColumnFilters(prev => {
+      const p = prev.filter(f => f.id !== "paymentStatus");
+      if (v !== "All") p.push({ id: "paymentStatus", value: v });
+      return p;
+    });
+  };
 
-  const setCourierFilter =
-    useServerPagination && context.setCourierFilter !== undefined
-      ? context.setCourierFilter
-      : (v: string) => {
-          setLocalCourierFilter(v);
-          // client-side courier filter is complex because it requires looking into parcel objects,
-          // which aren't a flat column in this table structure, so we just set state.
-          // Client-side users typically don't have this filter active in the same way.
-        };
+  const setCourierFilter = useServerPagination && context.setCourierFilter !== undefined ? context.setCourierFilter : (v: string) => {
+    setLocalCourierFilter(v);
+    // client-side courier filter is complex because it requires looking into parcel objects,
+    // which aren't a flat column in this table structure, so we just set state.
+    // Client-side users typically don't have this filter active in the same way.
+  };
 
   const [showFiltersMobile, setShowFiltersMobile] = React.useState(false);
   const [showStatusFilter, setShowStatusFilter] = React.useState(true);
@@ -1384,7 +1261,7 @@ export function OrdersTable({
       incompleteOrdersMode,
     },
     getRowId: (r) => r.id,
-    pageCount: useServerPagination ? context.pagination?.last_page || -1 : Math.ceil(data.length / perPage),
+    pageCount: useServerPagination ? (context.pagination?.last_page || -1) : Math.ceil(data.length / perPage),
     manualPagination: !!useServerPagination,
     manualFiltering: !!useServerPagination,
     enableRowSelection: true,
@@ -1392,7 +1269,7 @@ export function OrdersTable({
     onSortingChange: setSorting,
     onColumnFiltersChange: useServerPagination ? undefined : setColumnFilters,
     onPaginationChange: (updater) => {
-      if (typeof updater === "function") {
+      if (typeof updater === 'function') {
         const newState = updater({ pageIndex: page - 1, pageSize: perPage });
         setPage(newState.pageIndex + 1);
         setPerPage(newState.pageSize);
@@ -1408,7 +1285,7 @@ export function OrdersTable({
   });
 
   const selectedCount = table.getSelectedRowModel().rows.length;
-  const totalCount = useServerPagination ? context.pagination?.total || 0 : table.getFilteredRowModel().rows.length;
+  const totalCount = useServerPagination ? (context.pagination?.total || 0) : table.getFilteredRowModel().rows.length;
 
   function applyOrderFilter(v: string) {
     setStatusFilter(v);
@@ -1428,8 +1305,7 @@ export function OrdersTable({
     setRowSelection({});
   }
 
-  const hasFilters =
-    statusFilter !== (hideOrderStatusFilter ? "All" : "Pending") || paymentFilter !== "All" || searchQuery;
+  const hasFilters = statusFilter !== (hideOrderStatusFilter ? "All" : "Pending") || paymentFilter !== "All" || searchQuery;
 
   const handleBulkUpdate = async (type: "status" | "payment", val: string) => {
     const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
@@ -1497,25 +1373,16 @@ export function OrdersTable({
           <div className="flex items-center gap-2">
             <Select
               value={courierFilter}
-              onValueChange={(v) => {
-                setCourierFilter(v);
-                setPage(1);
-              }}
+              onValueChange={(v) => { setCourierFilter(v); setPage(1); }}
             >
               <SelectTrigger className="h-8 w-[100px] sm:w-[120px]">
                 <SelectValue placeholder="Courier" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All Courier</SelectItem>
-                <ModularFeature name="courier_steadfast">
-                  <SelectItem value="Steadfast">Steadfast</SelectItem>
-                </ModularFeature>
-                <ModularFeature name="courier_pathao">
-                  <SelectItem value="Pathao">Pathao</SelectItem>
-                </ModularFeature>
-                <ModularFeature name="courier_redx">
-                  <SelectItem value="RedX">RedX</SelectItem>
-                </ModularFeature>
+                <SelectItem value="Steadfast">Steadfast</SelectItem>
+                <SelectItem value="Pathao">Pathao</SelectItem>
+                <SelectItem value="RedX">RedX</SelectItem>
                 <SelectItem value="Pending">Pending</SelectItem>
               </SelectContent>
             </Select>
@@ -1525,10 +1392,7 @@ export function OrdersTable({
             <span className="text-sm text-muted-foreground hidden sm:inline">Rows:</span>
             <Select
               value={`${perPage}`}
-              onValueChange={(v) => {
-                setPerPage(Number(v));
-                setPage(1);
-              }}
+              onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}
             >
               <SelectTrigger className="h-8 w-[70px]">
                 <SelectValue />
@@ -1586,7 +1450,7 @@ export function OrdersTable({
               {showStatusFilter && (
                 <div className="flex flex-wrap gap-2">
                   {orderStatuses
-                    .filter((s) => (showIncompleteStatus ? true : s !== "Incomplete"))
+                    .filter((s) => showIncompleteStatus ? true : s !== "Incomplete")
                     .map((s) => (
                       <Button
                         key={s}
@@ -1700,28 +1564,20 @@ export function OrdersTable({
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Bulk Print</DropdownMenuLabel>
-                  <ModularFeature name="orders_invoice_a4">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        const ids = table.getSelectedRowModel().rows.map((r) => r.original.id);
-                        usePrintModal.getState().openModal(ids, "a4", `/invoice/bulk?ids=${ids.join(",")}`);
-                      }}
-                    >
-                      <FileText className="mr-2 size-4" />
-                      Print A4 Invoice
-                    </DropdownMenuItem>
-                  </ModularFeature>
-                  <ModularFeature name="orders_invoice_pos">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        const ids = table.getSelectedRowModel().rows.map((r) => r.original.id);
-                        usePrintModal.getState().openModal(ids, "pos", `/invoice/bulk/pos?ids=${ids.join(",")}`);
-                      }}
-                    >
-                      <Printer className="mr-2 size-4" />
-                      Print Parcel Invoice
-                    </DropdownMenuItem>
-                  </ModularFeature>
+                  <DropdownMenuItem onClick={() => {
+                    const ids = table.getSelectedRowModel().rows.map((r) => r.original.id);
+                    usePrintModal.getState().openModal(ids, "a4", `/invoice/bulk?ids=${ids.join(",")}`);
+                  }}>
+                    <FileText className="mr-2 size-4" />
+                    Print A4 Invoice
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    const ids = table.getSelectedRowModel().rows.map((r) => r.original.id);
+                    usePrintModal.getState().openModal(ids, "pos", `/invoice/bulk/pos?ids=${ids.join(",")}`);
+                  }}>
+                    <Printer className="mr-2 size-4" />
+                    Print Parcel Invoice
+                  </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1772,10 +1628,7 @@ export function OrdersTable({
             <span className="text-sm text-muted-foreground">Rows per page</span>
             <Select
               value={`${perPage}`}
-              onValueChange={(v) => {
-                setPerPage(Number(v));
-                setPage(1);
-              }}
+              onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}
             >
               <SelectTrigger className="h-8 w-16">
                 <SelectValue />

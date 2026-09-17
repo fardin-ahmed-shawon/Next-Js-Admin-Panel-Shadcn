@@ -70,6 +70,7 @@ import { fetchClient } from "@/lib/fetch-client";
 import { usePrintModal } from "@/hooks/usePrintModal";
 
 import { UpdatePaymentModal } from "../_components/update-payment-modal";
+import { formatDate, getRelativeTime } from "@/lib/utils";
 
 /* ---- constants ---- */
 
@@ -116,54 +117,6 @@ function getImageUrl(path: string | null | undefined): string {
   if (path.startsWith("http")) return path;
   const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "http://127.0.0.1:8000";
   return `${base}/${path.replace(/^\//, "")}`;
-}
-
-/* ---- date helper ---- */
-function formatDate(dateStr: string) {
-  try {
-    const rawStr = dateStr.replace(" ", "T");
-    return new Date(rawStr).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
-function getRelativeTime(dateStr?: string) {
-  if (!dateStr) return "";
-  try {
-    const rawStr = dateStr.replace(" ", "T");
-    const date = new Date(rawStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    if (isNaN(diffMs) || diffMs < 0) return "just now";
-
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const orderDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const calendarDiffDays = Math.floor((today.getTime() - orderDate.getTime()) / 86400000);
-
-    if (calendarDiffDays === 0) {
-      const diffMins = Math.floor(diffMs / 60000);
-      if (diffMins < 1) return "just now";
-      if (diffMins < 60) return `${diffMins}m ago`;
-      const diffHours = Math.floor(diffMins / 60);
-      return `${diffHours}h ago`;
-    } else if (calendarDiffDays === 1) {
-      return "yesterday";
-    } else if (calendarDiffDays < 7) {
-      return `${calendarDiffDays}d ago`;
-    } else {
-      return date.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-      });
-    }
-  } catch {
-    return "";
-  }
 }
 
 /* ---- API helpers ---- */
