@@ -41,6 +41,8 @@ import { fetchClient } from "@/lib/fetch-client";
 
 import { ProductVariantsSection, type Variant } from "./product-variants-section";
 
+import { BulkPackOptions, validateBulkPacks } from "./bulk-pack-options";
+
 const isDescriptionEmpty = (html: string) => {
   if (!html) return true;
   const stripped = html.replace(/<[^>]*>/g, "").trim();
@@ -94,6 +96,9 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
   const [isDragging, setIsDragging] = React.useState(false);
 
   // Variants & Stock
+  const [inventoryMode, setInventoryMode] = React.useState("independent");
+  const [inventoryUnit, setInventoryUnit] = React.useState("kg");
+  const isBulk = inventoryMode === "shared_bulk";
   const [hasVariants, setHasVariants] = React.useState(false);
   const [hasVariantWisePricing, setHasVariantWisePricing] = React.useState(false);
   const [hasFreeShipping, setHasFreeShipping] = React.useState(false);
@@ -127,7 +132,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
 
   // Computed financial amounts
   const totalLotAmount = React.useMemo(() => {
-    if (hasVariants && variants.length > 0) {
+    if (!isBulk && hasVariants && variants.length > 0) {
       return variants.reduce((sum, v) => {
         const vQty = Number(v.stock) || 0;
         const vPrice = hasVariantWisePricing && v.purchasePrice ? Number(v.purchasePrice) : Number(purchasePrice) || 0;
@@ -137,7 +142,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
     const qty = Number(availableStock) || 0;
     const price = Number(purchasePrice) || 0;
     return qty * price;
-  }, [hasVariants, variants, hasVariantWisePricing, availableStock, purchasePrice]);
+  }, [hasVariants, variants, hasVariantWisePricing, availableStock, purchasePrice, isBulk]);
 
   const dueLotAmount = React.useMemo(() => {
     const paid = Number(paidAmount) || 0;
@@ -184,9 +189,10 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
 
   const availableSizes = React.useMemo(() => {
     if (!hasVariants) return [];
+    if (isBulk) return variants.filter(v => v.size).map(v => ({ id: v.id, label: v.size }));
     const usedSizeLabels = new Set(variants.map((v) => v.size).filter(Boolean));
     return sizes.filter((s) => usedSizeLabels.has(s.label));
-  }, [hasVariants, variants, sizes]);
+  }, [hasVariants, variants, sizes, isBulk]);
 
   /* ---- media helpers ---- */
   function removeMedia(id: string) {
@@ -289,6 +295,8 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
     setThumbnailFile(null);
     setIsActive(true);
     setMedia([]);
+    setInventoryMode("independent");
+    setInventoryUnit("kg");
     setHasVariants(false);
     setHasVariantWisePricing(false);
     setHasFreeShipping(false);
@@ -362,12 +370,12 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
         return;
       }
       for (let i = 0; i < variants.length; i++) {
-        if (!variants[i].sku.trim() || !variants[i].stock) {
+        if (!variants[i].sku.trim() || (!isBulk && !variants[i].stock)) {
           toast.error(`SKU and Stock are required for Variant ${i + 1}.`);
           return;
         }
         if (hasVariantWisePricing) {
-          if (!variants[i].purchasePrice || !variants[i].sellingPrice) {
+          if ((!isBulk && !variants[i].purchasePrice) || !variants[i].sellingPrice) {
             toast.error(
               `Purchase and Selling pricing fields are required for Variant ${i + 1} when Variant-Wise Pricing is enabled.`,
             );
@@ -380,7 +388,10 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
     setIsSubmitting(true);
 
     try {
+      if (isBulk) { const error = validateBulkPacks(variants); if (error) { toast.error(error); return; } }
       const formData = new FormData();
+      formData.append("inventory_mode", inventoryMode);
+      if (isBulk) formData.append("inventory_unit_code", inventoryUnit);
       formData.append("name", productName.trim());
       formData.append("status", isActive ? "Active" : "Inactive");
 
@@ -388,7 +399,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
       if (subCategory) formData.append("sub_category_id", subCategory);
       formData.append("product_type", productType && productType !== "none" ? productType : "");
 
-      if (!hasVariantWisePricing) {
+      if (!hasVariantWisePricing || isBulk) {
         if (purchasePrice) formData.append("purchase_price", purchasePrice);
         if (regularPrice) formData.append("regular_price", regularPrice);
         if (sellingPrice) formData.append("selling_price", sellingPrice);
@@ -442,9 +453,12 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
       if (hasVariants && variants.length > 0) {
         const mappedVariants = variants.map((v) => ({
           sku: v.sku,
+          option_label: v.option_label,
+          sale_quantity: v.sale_quantity,
+          sale_unit_code: v.sale_unit_code,
           color: v.color || null,
           size: v.size || null,
-          available_stock: v.stock ? Number(v.stock) : undefined,
+          available_stock: !isBulk && v.stock ? Number(v.stock) : undefined,
           purchase_price: hasVariantWisePricing && v.purchasePrice ? Number(v.purchasePrice) : undefined,
           regular_price: hasVariantWisePricing && v.regularPrice ? Number(v.regularPrice) : undefined,
           selling_price: hasVariantWisePricing && v.sellingPrice ? Number(v.sellingPrice) : undefined,
@@ -747,7 +761,9 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
               <CardDescription>Configure alternate sizes or colors with their own inventory.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
-              {features?.variant_management !== false && String(features?.variant_management) !== "0" && (
+              <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Inventory mode</Label><Select value={inventoryMode}  onValueChange={value => { setInventoryMode(value); setVariants([]); if(value === "shared_bulk") { setHasVariants(true); setHasVariantWisePricing(true); } }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="independent">Independent variant stock</SelectItem><SelectItem value="shared_bulk">Shared bulk stock</SelectItem></SelectContent></Select></div>{isBulk && <div className="space-y-2"><Label>Purchase / display unit</Label><Select value={inventoryUnit}  onValueChange={value => {setInventoryUnit(value); setVariants([]);}}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="kg">Kilograms (kg)</SelectItem><SelectItem value="g">Grams (g)</SelectItem><SelectItem value="l">Litres (l)</SelectItem><SelectItem value="ml">Millilitres (ml)</SelectItem></SelectContent></Select></div>}</div>
+              {isBulk && <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Shared stock ({inventoryUnit})</Label><Input type="number" min="0" step="any" value={availableStock}  onChange={e=>setAvailableStock(e.target.value)} /></div><div className="space-y-2"><Label>Purchase price per {inventoryUnit}</Label><Input type="number" min="0" step="0.01" value={purchasePrice} onChange={e=>setPurchasePrice(e.target.value)} /></div></div>}
+              {!isBulk && features?.variant_management !== false && String(features?.variant_management) !== "0" && (
                 <div className="flex flex-col gap-4 mb-4">
                   <div className="flex items-start gap-3">
                     <Switch
@@ -821,7 +837,8 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
                 </>
               )}
 
-              {hasVariants && (
+              {isBulk && <BulkPackOptions variants={variants} setVariants={setVariants} unit={inventoryUnit} baseSku={sku} />}
+              {hasVariants && !isBulk && (
                 <>
                   <Separator className="mb-4" />
                   <ProductVariantsSection

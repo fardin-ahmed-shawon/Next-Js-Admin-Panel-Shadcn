@@ -31,6 +31,13 @@ export function ProfitLossStats() {
       valueClass: "text-destructive",
     },
     {
+      title: "Discarded Return Loss",
+      value: isLoading ? "..." : `৳${Number(summary.discarded_return_loss || 0).toLocaleString()}`,
+      subtitle: "Additional cost outside COGS",
+      icon: PackageOpen,
+      valueClass: "text-destructive",
+    },
+    {
       title: "Net Profit",
       value: isLoading ? "..." : `৳${Number(summary.net_profit || 0).toLocaleString()}`,
       subtitle: "Final bottom line",
@@ -41,7 +48,7 @@ export function ProfitLossStats() {
 
   return (
     <div className="overflow-hidden rounded-xl bg-card shadow-xs ring-1 ring-foreground/10">
-      <div className="grid grid-cols-2 *:data-[slot=card]:rounded-none *:data-[slot=card]:ring-0 [&>*]:border-b [&>*:nth-child(odd)]:border-r md:grid-cols-4 md:[&>*]:border-b-0 md:[&>*:not(:last-child)]:border-r md:[&>*:last-child]:border-r-0">
+      <div className="grid grid-cols-2 *:data-[slot=card]:rounded-none *:data-[slot=card]:ring-0 [&>*]:border-b [&>*:nth-child(odd)]:border-r md:grid-cols-5 md:[&>*]:border-b-0 md:[&>*:not(:last-child)]:border-r md:[&>*:last-child]:border-r-0">
         {stats.map((stat, i) => (
           <Card key={i}>
             <CardHeader>

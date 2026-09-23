@@ -1,3 +1,4 @@
+import { formatStockQuantity } from "@/lib/stock-quantity";
 import { AlertCircle, Banknote, Layers, Package, TrendingUp, XCircle } from "lucide-react";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { InventorySummary } from "@/hooks/useInventory";
@@ -17,10 +18,10 @@ export function InventoryStats({ summary, loading }: InventoryStatsProps) {
       subtitle: "Total products listed",
     },
     {
-      title: "Total Units",
-      value: summary?.total_units?.toLocaleString() || "0",
+      title: "Stock by unit",
+      value: Object.entries(summary?.quantities_by_unit || {piece: summary?.total_units || 0}).map(([unit, quantity]) => <span key={unit} className="block text-base leading-normal">{formatStockQuantity(quantity, unit)}</span>),
       icon: Layers,
-      subtitle: "Items in stock",
+      subtitle: "Shared bulk stock counted once",
     },
     {
       title: "Inventory Value",
@@ -32,7 +33,7 @@ export function InventoryStats({ summary, loading }: InventoryStatsProps) {
       title: "Potential Profit",
       value: `৳${(summary?.potential_profit || 0).toLocaleString()}`,
       icon: TrendingUp,
-      subtitle: "Expected margin",
+      subtitle: summary?.potential_profit_excludes_bulk ? "Independent stock only; bulk margin depends on pack sales" : "Expected margin",
     },
     {
       title: "Low Stock",

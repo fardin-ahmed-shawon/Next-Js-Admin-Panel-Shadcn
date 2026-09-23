@@ -256,7 +256,7 @@ export function ProductsTable() {
       header: "Stock",
       cell: ({ row }) => (
         <span className={`tabular-nums ${row.original.available_stock === 0 ? "text-destructive" : ""}`}>
-          {row.original.available_stock || 0}
+          {row.original.available_stock || 0} {row.original.inventory_mode === "shared_bulk" ? row.original.inventory_unit_code : ""}
         </span>
       ),
     },

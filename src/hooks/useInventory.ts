@@ -4,6 +4,9 @@ import useSWR from "swr";
 export interface InventorySummary {
   total_products: number;
   total_units: number;
+  total_units_scope?: string;
+  quantities_by_unit?: Record<string, number | string>;
+  potential_profit_excludes_bulk?: boolean;
   inventory_value: number;
   potential_profit: number;
   low_stock: number;
@@ -17,6 +20,10 @@ export interface InventoryVariant {
   name: string;
   sku: string;
   stock: number;
+  stock_unit?: string;
+  inventory_mode?: string;
+  inventory_unit_code?: string;
+  inventory_item_id?: number;
   price: {
     selling: number;
     purchase: number;
@@ -35,6 +42,10 @@ export interface InventoryItem {
     sub: string | null;
   };
   stock: number;
+  stock_unit?: string;
+  inventory_mode?: string;
+  inventory_unit_code?: string;
+  inventory_item_id?: number;
   price: {
     selling: number;
     purchase: number;

@@ -35,6 +35,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchClient } from "@/lib/fetch-client";
+import { inventoryOperationKey, type InventoryOperationAttempt } from "@/lib/inventory-operation-key";
 
 interface Variant {
   id: number;
@@ -44,6 +45,9 @@ interface Variant {
 }
 
 interface LookupProduct {
+  inventory_mode?: string;
+  inventory_unit_code?: string;
+  inventory_item_id?: number;
   id: number;
   title: string;
   has_variants: boolean | number;
@@ -102,6 +106,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
   const [submitting, setSubmitting] = React.useState(false);
 
   const memoImageRef = React.useRef<HTMLInputElement>(null);
+  const receiptAttempt = React.useRef<InventoryOperationAttempt | null>(null);
 
   // Computed financial amounts
   const totalAmount = React.useMemo(() => {
@@ -160,6 +165,9 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
     return products.find((p) => p.id.toString() === selectedProductId);
   }, [products, selectedProductId]);
 
+  const isBulk = selectedProduct?.inventory_mode === "shared_bulk";
+  const receiptUnit = isBulk ? selectedProduct?.inventory_unit_code || "kg" : "piece";
+
   const filteredProducts = React.useMemo(() => {
     if (!searchQuery.trim()) return products;
     return products.filter((p) => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -171,6 +179,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
   };
 
   const resetForm = () => {
+    receiptAttempt.current = null;
     setSelectedProductId("");
     setSelectedVariantId("");
     setPurchasePrice("");
@@ -198,7 +207,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
       return;
     }
 
-    if (selectedProduct?.has_variants && !selectedVariantId) {
+    if (!isBulk && selectedProduct?.has_variants && !selectedVariantId) {
       toast.error("This product has variants. Please select a variant.");
       return;
     }
@@ -208,7 +217,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
       return;
     }
 
-    if (!quantity || Number(quantity) <= 0 || !Number.isInteger(Number(quantity))) {
+    if (!quantity || Number(quantity) <= 0 || (!isBulk && !Number.isInteger(Number(quantity)))) {
       toast.error("Please enter a valid quantity (greater than 0).");
       return;
     }
@@ -218,14 +227,25 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
       const paidVal = Number(paidAmount) || 0;
       const paymentStatus = dueAmount === 0 ? "paid" : paidVal > 0 ? "partial" : "due";
 
+      const operationKey = inventoryOperationKey(receiptAttempt, {
+        productId: selectedProductId, variantId: selectedVariantId, quantity, unit: receiptUnit,
+        purchasePrice, purchaseDate, sourceType, supplierId, invoiceNo, paidAmount, comment,
+        memo: memoImage ? [memoImage.name, memoImage.size, memoImage.lastModified] : null,
+      });
       let options: RequestInit;
 
       if (memoImage) {
         const formData = new FormData();
         formData.append("product_id", selectedProductId);
+        if (isBulk) {
+          formData.append("received_quantity", quantity);
+          formData.append("received_unit_code", receiptUnit);
+          if (selectedProduct?.inventory_item_id) formData.append("inventory_item_id", String(selectedProduct.inventory_item_id));
+        }
         if (selectedVariantId) formData.append("product_variant_id", selectedVariantId);
         formData.append("purchase_price", purchasePrice);
         formData.append("initial_qty", quantity);
+        if (isBulk) formData.append("operation_key", operationKey);
         if (purchaseDate) {
           formData.append("purchase_date", purchaseDate);
           formData.append("date", purchaseDate);
@@ -248,9 +268,11 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
       } else {
         const payload = {
           product_id: Number(selectedProductId),
+          ...(isBulk ? {received_quantity: quantity, received_unit_code: receiptUnit, inventory_item_id: selectedProduct?.inventory_item_id} : {}),
           product_variant_id: selectedVariantId ? Number(selectedVariantId) : null,
           purchase_price: Number(purchasePrice),
           initial_qty: Number(quantity),
+          ...(isBulk ? {operation_key: operationKey} : {}),
           purchase_date: purchaseDate || null,
           date: purchaseDate || null,
           created_at: purchaseDate ? `${purchaseDate} 00:00:00` : undefined,
@@ -388,7 +410,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
           </div>
 
           {/* Variant Select (Conditionally shown) */}
-          {selectedProduct?.has_variants ? (
+          {!isBulk && selectedProduct?.has_variants ? (
             <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
               <Label>
                 Select Variant <span className="text-destructive">*</span>
@@ -424,12 +446,12 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="qty">
-                Acquisition Quantity <span className="text-destructive">*</span>
+                Acquisition Quantity ({receiptUnit}) <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="qty"
                 type="number"
-                min="1"
+                min={isBulk ? "0.001" : "1"} step={isBulk ? "any" : "1"}
                 placeholder="100"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
@@ -438,7 +460,7 @@ export function ProcurementModal({ onSuccess }: ProcurementModalProps) {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="price">
-                Purchase Price (৳) <span className="text-destructive">*</span>
+                Purchase Price (৳ / {receiptUnit}) <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="price"

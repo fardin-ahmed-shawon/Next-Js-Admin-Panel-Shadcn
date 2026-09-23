@@ -18,6 +18,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { fetchClient } from "@/lib/fetch-client";
 
 interface Lot {
+  inventory_item_id?: number;
+  received_quantity?: number | string;
+  received_unit_code?: string;
+  received_unit_factor?: number;
+  acquisition_unit_price?: number | string;
+  base_unit_code?: string;
   id: number;
   product_id: number;
   product_variant_id: number | null;
@@ -85,9 +91,11 @@ const getInitialDate = (lot: Lot) => {
 
 export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: ProcurementEditModalProps) {
   const { features } = useModularFeatures();
+  const isBulk = !!lot.received_unit_code && lot.received_unit_code !== "piece";
+  const receiptUnit = lot.received_unit_code || "piece";
 
-  const [purchasePrice, setPurchasePrice] = React.useState<string>(lot.purchase_price.toString());
-  const [quantity, setQuantity] = React.useState<string>(lot.initial_qty.toString());
+  const [purchasePrice, setPurchasePrice] = React.useState<string>((lot.acquisition_unit_price ?? lot.purchase_price).toString());
+  const [quantity, setQuantity] = React.useState<string>((lot.received_quantity ?? lot.initial_qty).toString());
   const [purchaseDate, setPurchaseDate] = React.useState<string>(() => getInitialDate(lot));
   const [sourceType, setSourceType] = React.useState<string>(lot.source_type || "vendor");
   const [supplierId, setSupplierId] = React.useState<string>(
@@ -122,8 +130,8 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
 
   React.useEffect(() => {
     if (open) {
-      setPurchasePrice(lot.purchase_price.toString());
-      setQuantity(lot.initial_qty.toString());
+      setPurchasePrice((lot.acquisition_unit_price ?? lot.purchase_price).toString());
+      setQuantity((lot.received_quantity ?? lot.initial_qty).toString());
       setPurchaseDate(getInitialDate(lot));
       setSourceType(lot.source_type || "vendor");
       setSupplierId(lot.supplier_id ? lot.supplier_id.toString() : lot.supplier?.id ? lot.supplier.id.toString() : "0");
@@ -160,13 +168,13 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
       return;
     }
 
-    if (!quantity || Number(quantity) <= 0 || !Number.isInteger(Number(quantity))) {
+    if (!quantity || Number(quantity) <= 0 || (!isBulk && !Number.isInteger(Number(quantity)))) {
       toast.error("Please enter a valid quantity (greater than 0).");
       return;
     }
 
     // Check if new quantity would result in negative remaining quantity
-    const qtyDelta = Number(quantity) - lot.initial_qty;
+    const qtyDelta = Number(quantity) * (isBulk ? Number(lot.received_unit_factor || (["kg", "l"].includes(receiptUnit) ? 1000 : 1)) : 1) - lot.initial_qty;
     if (lot.remaining_qty + qtyDelta < 0) {
       toast.error("Cannot reduce quantity below the amount already consumed.");
       return;
@@ -182,6 +190,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
       if (memoImage) {
         const formData = new FormData();
         formData.append("_method", "PUT");
+        if (isBulk) {formData.append("received_quantity", quantity); formData.append("received_unit_code", receiptUnit);}
         formData.append("purchase_price", purchasePrice);
         formData.append("initial_qty", quantity);
         if (purchaseDate) {
@@ -207,6 +216,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
         const payload = {
           purchase_price: Number(purchasePrice),
           initial_qty: Number(quantity),
+          ...(isBulk ? {received_quantity: quantity, received_unit_code: receiptUnit} : {}),
           purchase_date: purchaseDate || null,
           date: purchaseDate || null,
           created_at: purchaseDate ? `${purchaseDate} 00:00:00` : undefined,
@@ -295,12 +305,12 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="qty">
-                Acquisition Quantity <span className="text-destructive">*</span>
+                Acquisition Quantity ({receiptUnit}) <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="qty"
                 type="number"
-                min="1"
+                min={isBulk ? "0.001" : "1"} step={isBulk ? "any" : "1"}
                 placeholder="100"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
@@ -309,7 +319,7 @@ export function ProcurementEditModal({ lot, open, onOpenChange, onSuccess }: Pro
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="price">
-                Purchase Price (৳) <span className="text-destructive">*</span>
+                Purchase Price (৳ / {receiptUnit}) <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="price"

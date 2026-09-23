@@ -203,7 +203,7 @@ const columns: ColumnDef<any>[] = [
     accessorKey: "stock",
     header: "Stock",
     cell: ({ row }) => (
-      <span className={`tabular-nums ${row.original.stock === 0 ? "text-destructive" : ""}`}>{row.original.stock}</span>
+      <span className={`tabular-nums ${row.original.stock === 0 ? "text-destructive" : ""}`}>{row.original.stock} {row.original.stock_unit || (row.depth ? "packs" : "")}</span>
     ),
   },
   {
@@ -259,8 +259,12 @@ function RowActions({ row, mutate }: { row: any; mutate?: () => void }) {
   const productId = isVariant ? row.getParentRow()?.original.id : item.id;
   const variantId = isVariant ? item.id : undefined;
 
+  if (isVariant && row.getParentRow()?.original.inventory_mode === "shared_bulk") {
+    return <span className="text-xs text-muted-foreground">Uses shared stock</span>;
+  }
+
   // If this item has variants itself, don't show actions, let them edit per variant or main product elsewhere
-  if (!isVariant && item.variants && item.variants.length > 0) {
+  if (!isVariant && item.inventory_mode !== "shared_bulk" && item.variants && item.variants.length > 0) {
     return <div className="flex w-full justify-end text-muted-foreground text-sm italic pr-4">per variant</div>;
   }
 

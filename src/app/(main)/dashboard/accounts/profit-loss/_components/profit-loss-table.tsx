@@ -50,6 +50,7 @@ export type ProfitLossItem = {
   revenue: number;
   cogs: number;
   expenses: number;
+  discarded_return_loss?: number;
   net_profit: number;
   margin: number;
   status?: "Profit" | "Loss";
@@ -105,6 +106,11 @@ const columns: ColumnDef<ProfitLossItem>[] = [
     ),
   },
   {
+    accessorKey: "discarded_return_loss",
+    header: "Discarded Return Loss",
+    cell: ({ row }) => <span className="tabular-nums text-destructive">৳{Number(row.original.discarded_return_loss || 0).toLocaleString()}</span>,
+  },
+  {
     accessorKey: "net_profit",
     header: "Net Profit / Loss",
     cell: ({ row }) => {
@@ -147,13 +153,13 @@ const columns: ColumnDef<ProfitLossItem>[] = [
 /* ---- CSV Export ---- */
 
 function exportToExcel(data: ProfitLossItem[]) {
-  const headers = ["Month", "Revenue", "COGS", "Expenses", "Net Profit", "Margin", "Status"];
+  const headers = ["Month", "Revenue", "COGS", "Expenses", "Discarded Return Loss", "Net Profit", "Margin", "Status"];
   const csvRows = [
     headers.join(","),
     ...data.map((row) => {
       const isLoss = Number(row.net_profit || 0) < 0;
       const s = isLoss ? "Loss" : "Profit";
-      return [`"${row.month}"`, row.revenue, row.cogs, row.expenses, row.net_profit, `"${row.margin}%"`, s].join(",");
+      return [`"${row.month}"`, row.revenue, row.cogs, row.expenses, row.discarded_return_loss || 0, row.net_profit, `"${row.margin}%"`, s].join(",");
     }),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });

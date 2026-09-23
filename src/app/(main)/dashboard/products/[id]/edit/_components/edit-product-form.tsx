@@ -24,6 +24,9 @@ import { useModularFeatures } from "@/hooks/useModularFeatures";
 import useProduct from "@/hooks/useProduct";
 import { ProductVariantsSection, Variant } from "../../../add/_components/product-variants-section";
 
+import { ConvertBulkInventory } from "../../../add/_components/convert-bulk-inventory";
+import { BulkPackOptions, validateBulkPacks } from "../../../add/_components/bulk-pack-options";
+
 const isDescriptionEmpty = (html: string) => {
   if (!html) return true;
   const stripped = html.replace(/<[^>]*>/g, "").trim();
@@ -84,6 +87,9 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
   const [regularPrice, setRegularPrice] = React.useState("0");
   const [sellingPrice, setSellingPrice] = React.useState("0");
 
+  const [inventoryMode, setInventoryMode] = React.useState("independent");
+  const [inventoryUnit, setInventoryUnit] = React.useState("kg");
+  const isBulk = inventoryMode === "shared_bulk";
   const [hasVariants, setHasVariants] = React.useState(false);
   const [hasVariantWisePricing, setHasVariantWisePricing] = React.useState(false);
   const [hasFreeShipping, setHasFreeShipping] = React.useState(false);
@@ -137,6 +143,8 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
         );
       }
 
+      setInventoryMode(product.inventory_mode || "independent");
+      setInventoryUnit(product.inventory_unit_code || "kg");
       setHasVariants(!!product.has_variants);
       setHasVariantWisePricing(!!product.has_variant_wise_pricing);
       setHasFreeShipping(!!product.has_free_shipping);
@@ -149,8 +157,12 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
 
             return {
               id: v.id.toString(),
+              option_label: v.option_label,
+              sale_quantity: v.sale_quantity?.toString(),
+              sale_unit_code: v.sale_unit_code,
+              inventory_item_id: v.inventory_item_id,
               color: colorLabel,
-              size: sizeLabel,
+              size: v.option_label || sizeLabel,
               sku: v.sku || "",
               stock: v.available_stock?.toString() || "0",
               purchasePrice: v.variant_pricing?.purchase_price?.toString() || "",
@@ -184,9 +196,10 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
 
   const availableSizes = React.useMemo(() => {
     if (!hasVariants) return [];
+    if (isBulk) return variants.filter(v => v.size).map(v => ({ id: v.id, label: v.size }));
     const usedSizeLabels = new Set(variants.map(v => v.size).filter(Boolean));
     return sizes.filter(s => usedSizeLabels.has(s.label));
-  }, [hasVariants, variants, sizes]);
+  }, [hasVariants, variants, sizes, isBulk]);
 
   function removeExistingMedia(id: number) {
     setExistingMedia((p) => p.filter((m) => m.id !== id));
@@ -222,7 +235,10 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
 
     setSaving(true);
     try {
+      if (isBulk) { const error = validateBulkPacks(variants); if (error) { toast.error(error); return; } }
       const formData = new FormData();
+      formData.append("inventory_mode", inventoryMode);
+      if (isBulk) formData.append("inventory_unit_code", inventoryUnit);
       formData.append("_method", "PUT");
       formData.append("name", productName);
       if (categoryId) formData.append("main_category_id", categoryId);
@@ -234,7 +250,7 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
       formData.append("status", isActive ? "Active" : "Inactive");
       formData.append("sku", sku);
       formData.append("available_stock", availableStock.toString());
-      if (!hasVariantWisePricing) {
+      if (!hasVariantWisePricing || isBulk) {
         formData.append("purchase_price", purchasePrice.toString());
         formData.append("regular_price", regularPrice.toString());
         formData.append("selling_price", sellingPrice.toString());
@@ -278,7 +294,7 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
           }
           mapped.color = mapped.color || null;
           mapped.size = mapped.size || null;
-          mapped.available_stock = mapped.stock ? Number(mapped.stock) : undefined;
+          mapped.available_stock = !isBulk && mapped.stock ? Number(mapped.stock) : undefined;
 
           if (hasVariantWisePricing) {
             mapped.purchase_price = mapped.purchasePrice ? Number(mapped.purchasePrice) : undefined;
@@ -519,7 +535,10 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
               <CardTitle className="text-base">Variants & Stock</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
-              {features?.variant_management !== false && String(features?.variant_management) !== "0" && (
+              <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Inventory mode</Label><Select value={inventoryMode} disabled={initialized} onValueChange={value => { setInventoryMode(value); setVariants([]); if(value === "shared_bulk") { setHasVariants(true); setHasVariantWisePricing(true); } }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="independent">Independent variant stock</SelectItem><SelectItem value="shared_bulk">Shared bulk stock</SelectItem></SelectContent></Select></div>{isBulk && <div className="space-y-2"><Label>Purchase / display unit</Label><Select value={inventoryUnit} disabled={initialized} onValueChange={value => {setInventoryUnit(value); setVariants([]);}}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="kg">Kilograms (kg)</SelectItem><SelectItem value="g">Grams (g)</SelectItem><SelectItem value="l">Litres (l)</SelectItem><SelectItem value="ml">Millilitres (ml)</SelectItem></SelectContent></Select></div>}</div>
+              {isBulk && <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Shared stock ({inventoryUnit})</Label><Input type="number" min="0" step="any" value={availableStock} disabled onChange={e=>setAvailableStock(e.target.value)} /></div></div>}
+              {!isBulk && Number(product?.has_variants) !== 1 && <ConvertBulkInventory productId={productId} stock={Number(product?.available_stock || 0)} sku={product?.sku || sku} />}
+              {!isBulk && features?.variant_management !== false && String(features?.variant_management) !== "0" && (
                 <div className="flex flex-col gap-4 mb-4">
                   <div className="flex items-start gap-3">
                     <Switch
@@ -580,7 +599,8 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
                   </div>
                 </>
               )}
-              {hasVariants && (
+              {isBulk && <BulkPackOptions variants={variants} setVariants={setVariants} unit={inventoryUnit} baseSku={sku} />}
+              {hasVariants && !isBulk && (
                 <>
                   <Separator className="mb-4" />
                   <ProductVariantsSection

@@ -33,6 +33,10 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import useAttributes from "@/hooks/useAttributes";
 
 export interface Variant {
+  option_label?: string;
+  sale_quantity?: string;
+  sale_unit_code?: string;
+  inventory_item_id?: number;
   id: string;
   color: string;
   size: string;

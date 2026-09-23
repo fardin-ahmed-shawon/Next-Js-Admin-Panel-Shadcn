@@ -10,6 +10,7 @@ type DashboardPeriod = {
   cogs: number;
   gross_profit: number;
   expenses: number;
+  discarded_return_loss?: number;
   net_profit: number;
   gross_margin: number;
   net_margin: number;
@@ -161,6 +162,7 @@ export function AccountsOverview() {
               <span className="text-muted-foreground">Expenses</span>
               <span className="font-medium">{formatCurrency(data.today.expenses)}</span>
             </div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Discarded return loss</span><span className="font-medium text-destructive">{formatCurrency(data.today.discarded_return_loss ?? 0)}</span></div>
             <div className="flex justify-between border-t pt-2 mt-2">
               <span className="font-medium">Net Profit</span>
               <span className="font-bold">{formatCurrency(data.today.net_profit)}</span>
@@ -190,6 +192,7 @@ export function AccountsOverview() {
               <span className="text-muted-foreground">Expenses</span>
               <span className="font-medium">{formatCurrency(data.this_month.expenses)}</span>
             </div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Discarded return loss</span><span className="font-medium text-destructive">{formatCurrency(data.this_month.discarded_return_loss ?? 0)}</span></div>
             <div className="flex justify-between border-t pt-2 mt-2">
               <span className="font-medium">Net Profit</span>
               <span className="font-bold text-emerald-600 dark:text-emerald-500">
@@ -221,6 +224,7 @@ export function AccountsOverview() {
               <span className="text-muted-foreground">Expenses</span>
               <span className="font-medium">{formatCurrency(data.this_year.expenses)}</span>
             </div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Discarded return loss</span><span className="font-medium text-destructive">{formatCurrency(data.this_year.discarded_return_loss ?? 0)}</span></div>
             <div className="flex justify-between border-t pt-2 mt-2">
               <span className="font-medium">Net Profit</span>
               <span className="font-bold text-emerald-600 dark:text-emerald-500">
@@ -252,6 +256,7 @@ export function AccountsOverview() {
               <span className="text-muted-foreground">Expenses</span>
               <span className="font-medium">{formatCurrency(data.all_time.expenses)}</span>
             </div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Discarded return loss</span><span className="font-medium text-destructive">{formatCurrency(data.all_time.discarded_return_loss ?? 0)}</span></div>
             <div className="flex justify-between border-t pt-2 mt-2">
               <span className="font-medium">Net Profit</span>
               <span className="font-bold text-emerald-600 dark:text-emerald-500">
@@ -294,7 +299,7 @@ export function AccountsOverview() {
               <span className="font-medium text-foreground">Gross Profit:</span> Revenue − COGS
             </p>
             <p className="text-muted-foreground mt-1">
-              <span className="font-medium text-foreground">Net Profit:</span> Gross Profit − Expenses
+              <span className="font-medium text-foreground">Net Profit:</span> Gross Profit − Expenses − Discarded return loss
             </p>
           </div>
         </CardContent>

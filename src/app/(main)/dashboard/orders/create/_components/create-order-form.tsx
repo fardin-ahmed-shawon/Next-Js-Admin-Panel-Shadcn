@@ -23,6 +23,7 @@ import { PartialPaymentForm } from "../../_components/partial-payment-form";
 import { districts, divisions, thanas } from "./bd-locations";
 
 interface CartItem {
+  lineId?: string;
   product: Product;
   quantity: number;
   color: string;
@@ -49,6 +50,15 @@ const getImageUrl = (path: string | null) => {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
   return `${baseUrl}${path}`;
 };
+
+function resolveCartVariant(item: CartItem) {
+  const variants = item.product.variants || [];
+  return variants.find((v: any) => {
+    const size = v.option_label || v.size?.label || v.size?.name || (typeof v.size === "string" ? v.size : "");
+    const color = v.color?.label || v.color?.name || (typeof v.color === "string" ? v.color : "");
+    return (!v.size_id && !size || size === item.size) && (!v.color_id && !color || color === item.color);
+  });
+}
 
 const getVariantSellingPrice = (v: any, fallbackPrice: number = 0): number => {
   if (!v) return fallbackPrice;
@@ -152,7 +162,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
 
       if (variant) {
         const price = getVariantSellingPrice(variant, item.product.selling_price || 0);
-        updateUnitPrice(item.product.id, price);
+        updateUnitPrice(item.lineId ?? item.product.id, price);
       }
     }
   }, [item.size, item.color, sizes, colors, variants, requiresVariant, requiresSize, requiresColor, isSizeComplete, isColorComplete]);
@@ -160,10 +170,10 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
   React.useEffect(() => {
     if (requiresVariant) {
       if (availableSizes.length === 1 && item.size !== availableSizes[0].label) {
-        updateCartItem(item.product.id, "size", availableSizes[0].label);
+        updateCartItem(item.lineId ?? item.product.id, "size", availableSizes[0].label);
       }
       if (availableColors.length === 1 && item.color !== availableColors[0].label) {
-        updateCartItem(item.product.id, "color", availableColors[0].label);
+        updateCartItem(item.lineId ?? item.product.id, "color", availableColors[0].label);
       }
     }
   }, [availableSizes, availableColors, item.size, item.color, requiresVariant]);
@@ -190,6 +200,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium leading-snug">{item.product.title}</p>
+          {item.product.inventory_mode === "shared_bulk" && <p className="text-xs text-muted-foreground">Stock consumed: {Number(resolveCartVariant(item)?.sale_quantity || 0) * item.quantity} {resolveCartVariant(item)?.sale_unit_code}</p>}
           {isWholesale ? (
             <div className="flex items-center gap-2 mt-1">
               <p className="text-xs text-muted-foreground">{item.product.sku || "N/A"}</p>
@@ -198,7 +209,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 type="number"
                 className="w-20 h-7 text-xs px-2"
                 value={item.unitPrice}
-                onChange={(e) => updateUnitPrice(item.product.id, Number(e.target.value) || 0)}
+                onChange={(e) => updateUnitPrice(item.lineId ?? item.product.id, Number(e.target.value) || 0)}
                 min="0"
               />
               <span className="text-xs text-muted-foreground">each</span>
@@ -215,16 +226,16 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
               type="number"
               className="w-20 h-8 text-sm tabular-nums text-center px-2"
               value={item.quantity === 0 ? "" : item.quantity}
-              onChange={(e) => setCartItemQuantity(item.product.id, Number(e.target.value) || 0)}
+              onChange={(e) => setCartItemQuantity(item.lineId ?? item.product.id, Number(e.target.value) || 0)}
               min="1"
             />
           ) : (
             <>
-              <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, -1)}>
+              <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.lineId ?? item.product.id, -1)}>
                 <Minus className="size-3" />
               </Button>
               <span className="w-8 text-center text-sm font-medium tabular-nums">{item.quantity}</span>
-              <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.product.id, 1)}>
+              <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.lineId ?? item.product.id, 1)}>
                 <Plus className="size-3" />
               </Button>
             </>
@@ -233,7 +244,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
         <span className="w-20 text-right text-sm font-semibold tabular-nums">
           ৳{(item.unitPrice * item.quantity).toLocaleString()}
         </span>
-        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.product.id)}>
+        <Button variant="ghost" size="icon-sm" onClick={() => removeFromCart(item.lineId ?? item.product.id)}>
           <X className="size-4 text-muted-foreground" />
         </Button>
       </div>
@@ -242,7 +253,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
         <div className="mt-2 flex flex-col gap-2 pl-15">
           <div className="flex items-center gap-3">
             {availableColors.length > 1 ? (
-              <Select value={item.color} onValueChange={(v) => updateCartItem(item.product.id, "color", v)}>
+              <Select value={item.color} onValueChange={(v) => updateCartItem(item.lineId ?? item.product.id, "color", v)}>
                 <SelectTrigger
                   className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}
                 >
@@ -272,7 +283,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
             ) : null}
 
             {availableSizes.length > 1 ? (
-              <Select value={item.size} onValueChange={(v) => updateCartItem(item.product.id, "size", v)}>
+              <Select value={item.size} onValueChange={(v) => updateCartItem(item.lineId ?? item.product.id, "size", v)}>
                 <SelectTrigger
                   className={`h-7 min-w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}
                 >
@@ -307,10 +318,10 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 size="icon"
                 className="h-7 w-7 text-muted-foreground hover:text-destructive"
                 onClick={() => {
-                  updateCartItem(item.product.id, "color", "");
-                  updateCartItem(item.product.id, "size", "");
+                  updateCartItem(item.lineId ?? item.product.id, "color", "");
+                  updateCartItem(item.lineId ?? item.product.id, "size", "");
                   const basePrice = item.product.selling_price || (variants[0] ? getVariantSellingPrice(variants[0]) : 0);
-                  updateUnitPrice(item.product.id, basePrice);
+                  updateUnitPrice(item.lineId ?? item.product.id, basePrice);
                 }}
                 title="Clear selections"
               >
@@ -414,52 +425,52 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
 
   function addToCart(product: Product) {
     setCart((prev) => {
-      const existing = prev.find((i) => i.product.id === product.id);
+      const existing = product.inventory_mode === "shared_bulk" ? undefined : prev.find((i) => i.product.id === product.id);
       if (existing) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
 
       const variants = product.variants || [];
       const firstVariant = variants.length > 0 ? variants[0] : null;
 
-      const initialSize = firstVariant?.size?.label || "";
+      const initialSize = firstVariant?.option_label || firstVariant?.size?.label || "";
       const initialColor = firstVariant?.color?.label || "";
       const initialPrice = firstVariant
         ? getVariantSellingPrice(firstVariant, product.selling_price || 0)
         : (product.selling_price || 0);
 
-      return [...prev, { product, quantity: 1, color: initialColor, size: initialSize, unitPrice: initialPrice }];
+      return [...prev, { lineId: crypto.randomUUID(), product, quantity: 1, color: initialColor, size: initialSize, unitPrice: initialPrice }];
     });
     setSearchQuery("");
     setSearchFocused(false);
     toast.success(`${product.title} added to order.`);
   }
 
-  function updateQuantity(productId: number, delta: number) {
+  function updateQuantity(productId: number | string, delta: number) {
     setCart((prev) =>
       prev
-        .map((i) => (i.product.id === productId ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i))
+        .map((i) => ((i.lineId ?? i.product.id) === productId ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i))
         .filter((i) => i.quantity > 0),
     );
   }
 
-  function setCartItemQuantity(productId: number, qty: number) {
+  function setCartItemQuantity(productId: number | string, qty: number) {
     setCart((prev) =>
-      prev.map((i) => (i.product.id === productId ? { ...i, quantity: Math.max(0, qty) } : i))
+      prev.map((i) => ((i.lineId ?? i.product.id) === productId ? { ...i, quantity: Math.max(0, qty) } : i))
     );
   }
 
-  function removeFromCart(productId: number) {
-    setCart((prev) => prev.filter((i) => i.product.id !== productId));
+  function removeFromCart(productId: number | string) {
+    setCart((prev) => prev.filter((i) => (i.lineId ?? i.product.id) !== productId));
   }
 
-  function updateCartItem(productId: number, field: "color" | "size", value: string) {
-    setCart((prev) => prev.map((i) => (i.product.id === productId ? { ...i, [field]: value } : i)));
+  function updateCartItem(productId: number | string, field: "color" | "size", value: string) {
+    setCart((prev) => prev.map((i) => ((i.lineId ?? i.product.id) === productId ? { ...i, [field]: value } : i)));
   }
 
-  function updateUnitPrice(productId: number, price: number) {
+  function updateUnitPrice(productId: number | string, price: number) {
     setCart((prev) => {
       let changed = false;
       const next = prev.map((i) => {
-        if (i.product.id === productId && i.unitPrice !== price) {
+        if ((i.lineId ?? i.product.id) === productId && i.unitPrice !== price) {
           changed = true;
           return { ...i, unitPrice: price };
         }
@@ -593,6 +604,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
       source: isWholesale ? "Wholesale" : "Manual",
       products: validCart.map((item) => ({
         product_id: item.product.id,
+          product_variant_id: resolveCartVariant(item)?.id,
         qty: item.quantity,
         unit_price: item.unitPrice,
         ...(item.size ? { size_label: item.size } : {}),
@@ -772,7 +784,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                 <div className="flex flex-col gap-3">
                   {cart.map((item) => (
                     <CartItemRow
-                      key={item.product.id}
+                      key={item.lineId ?? item.product.id}
                       item={item}
                       updateQuantity={updateQuantity}
                       removeFromCart={removeFromCart}

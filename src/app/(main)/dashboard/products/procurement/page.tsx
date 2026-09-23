@@ -33,12 +33,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatStockQuantity } from "@/lib/stock-quantity";
 import { fetchClient } from "@/lib/fetch-client";
 import { ProcurementModal } from "./_components/procurement-modal";
 import { ProcurementEditModal } from "./_components/procurement-edit-modal";
 import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 interface Lot {
+  base_unit_code?: string;
+  received_quantity?: number | string;
+  received_unit_code?: string;
+  acquisition_unit_price?: number | string;
   id: number;
   product_id: number;
   product_variant_id: number | null;
@@ -97,7 +102,11 @@ export default function ProcurementPage() {
   const [totalRecords, setTotalRecords] = React.useState(0);
   
   // Stats & Filters
-  const [stats, setStats] = React.useState({
+  const [stats, setStats] = React.useState<{
+    total_lots: number; total_procured: number | null; total_remaining: number | null; total_invested: number;
+    quantity_unit?: string | null;
+    quantities_by_unit?: {unit: string; total_procured: number | string; total_remaining: number | string}[];
+  }>({
     total_lots: 0,
     total_procured: 0,
     total_remaining: 0,
@@ -299,7 +308,7 @@ export default function ProcurementPage() {
             <PackageOpen className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total_procured.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{stats.quantities_by_unit?.length ? stats.quantities_by_unit.map(row => <span key={row.unit} className="block text-base">{formatStockQuantity(row.total_procured, row.unit)}</span>) : formatStockQuantity(stats.total_procured, stats.quantity_unit || "piece")}</div>
             <p className="text-xs text-muted-foreground mt-1">Lifetime acquired quantity</p>
           </CardContent>
         </Card>
@@ -309,7 +318,7 @@ export default function ProcurementPage() {
             <Boxes className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-500">{stats.total_remaining.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-emerald-500">{stats.quantities_by_unit?.length ? stats.quantities_by_unit.map(row => <span key={row.unit} className="block text-base">{formatStockQuantity(row.total_remaining, row.unit)}</span>) : formatStockQuantity(stats.total_remaining, stats.quantity_unit || "piece")}</div>
             <p className="text-xs text-muted-foreground mt-1">Current active unconsumed inventory</p>
           </CardContent>
         </Card>
@@ -579,7 +588,7 @@ export default function ProcurementPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-semibold text-foreground text-sm">
-                          ৳{Number(lot.purchase_price).toFixed(2)}
+                          ৳{Number(lot.acquisition_unit_price ?? lot.purchase_price).toFixed(2)}{lot.received_unit_code ? " / " + lot.received_unit_code : ""}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex flex-col items-end gap-0.5 text-xs font-mono">
@@ -604,9 +613,9 @@ export default function ProcurementPage() {
                         <TableCell className="text-center">
                           <div className="flex flex-col gap-0.5 items-center justify-center">
                             <div className="flex items-center gap-1 font-mono text-xs">
-                              <span className="font-semibold text-primary">{lot.remaining_qty}</span>
+                              <span className="font-semibold text-primary">{lot.remaining_qty} {lot.base_unit_code || "piece"}</span>
                               <span className="text-muted-foreground">/</span>
-                              <span className="text-muted-foreground/70">{lot.initial_qty}</span>
+                              <span className="text-muted-foreground/70">{lot.initial_qty} {lot.base_unit_code || "piece"}</span>
                             </div>
                             {lot.remaining_qty === 0 ? (
                               <span className="text-[10px] text-red-500 font-medium">Consumed</span>

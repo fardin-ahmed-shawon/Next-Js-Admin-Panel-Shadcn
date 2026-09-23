@@ -33,6 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchClient } from "@/lib/fetch-client";
+import { inventoryOperationKey, type InventoryOperationAttempt } from "@/lib/inventory-operation-key";
 import { useModularFeatures } from "@/hooks/useModularFeatures";
 
 interface ProductStockAdjustmentModalProps {
@@ -66,6 +67,9 @@ export function ProductStockAdjustmentModal({
   mutate,
 }: ProductStockAdjustmentModalProps) {
   const { features } = useModularFeatures();
+  const isBulk = item?.inventory_mode === "shared_bulk";
+  const receiptUnit = item?.inventory_unit_code || item?.stock_unit || "piece";
+  const baseUnit = ["kg", "g"].includes(receiptUnit) ? "g" : "ml";
   const allowMultipleLot =
     features?.inventory_multiple_lot !== false && String(features?.inventory_multiple_lot) !== "0";
 
@@ -90,6 +94,7 @@ export function ProductStockAdjustmentModal({
   const [newComment, setNewComment] = React.useState("");
 
   const memoImageRef = React.useRef<HTMLInputElement>(null);
+  const receiptAttempt = React.useRef<InventoryOperationAttempt | null>(null);
 
   // Computed amounts
   const totalLotAmount = React.useMemo(() => {
@@ -136,7 +141,7 @@ export function ProductStockAdjustmentModal({
         setLoadingLots(true);
         try {
           let url = `${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/lots?product_id=${productId}&per_page=100`;
-          if (variantId) {
+          if (variantId && !isBulk) {
             url += `&product_variant_id=${variantId}`;
           } else {
             url += `&product_variant_id=null`;
@@ -175,6 +180,7 @@ export function ProductStockAdjustmentModal({
   }, [open, productId, variantId]);
 
   const resetNewLotForm = () => {
+    receiptAttempt.current = null;
     setNewPurchasePrice("");
     setNewQuantity("");
     const d = new Date();
@@ -197,7 +203,7 @@ export function ProductStockAdjustmentModal({
       toast.error("Please enter a valid purchase price.");
       return;
     }
-    if (!newQuantity || Number(newQuantity) <= 0 || !Number.isInteger(Number(newQuantity))) {
+    if (!newQuantity || Number(newQuantity) <= 0 || (!isBulk && !Number.isInteger(Number(newQuantity)))) {
       toast.error("Please enter a valid quantity (greater than 0).");
       return;
     }
@@ -207,14 +213,22 @@ export function ProductStockAdjustmentModal({
       const paidVal = Number(newPaidAmount) || 0;
       const paymentStatus = dueLotAmount === 0 && totalLotAmount > 0 ? "paid" : paidVal > 0 ? "partial" : "due";
 
+      const operationKey = inventoryOperationKey(receiptAttempt, {
+        productId, variantId, quantity: newQuantity, unit: receiptUnit, purchasePrice: newPurchasePrice,
+        date: newPurchaseDate, source: newSourceType, supplier: newSupplierId, invoice: newInvoiceNo,
+        paidAmount: newPaidAmount, comment: newComment,
+        memo: newMemoImage ? [newMemoImage.name, newMemoImage.size, newMemoImage.lastModified] : null,
+      });
       let options: RequestInit;
 
       if (newMemoImage) {
         const formData = new FormData();
         formData.append("product_id", String(productId));
-        if (variantId) formData.append("product_variant_id", String(variantId));
+        if (variantId && !isBulk) formData.append("product_variant_id", String(variantId));
         formData.append("purchase_price", newPurchasePrice);
         formData.append("initial_qty", newQuantity);
+        if (isBulk) formData.append("operation_key", operationKey);
+        if(isBulk) {formData.append("received_quantity", newQuantity);formData.append("received_unit_code", receiptUnit);}
         if (newPurchaseDate) {
           formData.append("purchase_date", newPurchaseDate);
           formData.append("date", newPurchaseDate);
@@ -237,9 +251,11 @@ export function ProductStockAdjustmentModal({
       } else {
         const payload = {
           product_id: Number(productId),
-          product_variant_id: variantId ? Number(variantId) : null,
+          product_variant_id: !isBulk && variantId ? Number(variantId) : null,
+          ...(isBulk ? {received_quantity: newQuantity, received_unit_code: receiptUnit} : {}),
           purchase_price: Number(newPurchasePrice),
           initial_qty: Number(newQuantity),
+          ...(isBulk ? {operation_key: operationKey} : {}),
           purchase_date: newPurchaseDate || null,
           date: newPurchaseDate || null,
           created_at: newPurchaseDate ? `${newPurchaseDate} 00:00:00` : undefined,
@@ -318,8 +334,9 @@ export function ProductStockAdjustmentModal({
         }
 
         const payload = {
-          purchase_price: Number(adj.purchasePrice),
+          ...(!isBulk ? {purchase_price: Number(adj.purchasePrice)} : {}),
           adjust_qty: delta,
+          ...(isBulk ? {adjust_unit_code: baseUnit} : {}),
           source_type: adj.sourceType,
           comment: adj.comment || null,
         };
@@ -372,11 +389,12 @@ export function ProductStockAdjustmentModal({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label>
-                      Quantity <span className="text-destructive">*</span>
+                      Quantity ({receiptUnit}) <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       type="number"
-                      min="1"
+                      min={isBulk ? "0.001" : "1"}
+                      step={isBulk ? "any" : "1"}
                       value={newQuantity}
                       onChange={(e) => setNewQuantity(e.target.value)}
                       disabled={submitting}
@@ -384,7 +402,7 @@ export function ProductStockAdjustmentModal({
                   </div>
                   <div className="space-y-1.5">
                     <Label>
-                      Purchase Price (per unit) <span className="text-destructive">*</span>
+                      Purchase Price (per {receiptUnit}) <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       type="number"
@@ -689,7 +707,7 @@ export function ProductStockAdjustmentModal({
                           </div>
                           <div className="text-center">
                             <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Remaining</div>
-                            <div className="font-medium text-lg">{lot.remaining_qty}</div>
+                            <div className="font-medium text-lg">{lot.remaining_qty} {lot.base_unit_code || (isBulk ? baseUnit : "piece")}</div>
                           </div>
                           <div className="text-center">
                             <div className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">
@@ -705,7 +723,7 @@ export function ProductStockAdjustmentModal({
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Add Stock</Label>
+                            <Label>Add Stock ({isBulk ? baseUnit : "piece"})</Label>
                             <Input
                               type="number"
                               min="1"
@@ -719,7 +737,7 @@ export function ProductStockAdjustmentModal({
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Reduce Stock</Label>
+                            <Label>Reduce Stock ({isBulk ? baseUnit : "piece"})</Label>
                             <Input
                               type="number"
                               min="1"
