@@ -202,9 +202,19 @@ const columns: ColumnDef<any>[] = [
   {
     accessorKey: "stock",
     header: "Stock",
-    cell: ({ row }) => (
-      <span className={`tabular-nums ${row.original.stock === 0 ? "text-destructive" : ""}`}>{row.original.stock} {row.original.stock_unit || (row.depth ? "packs" : "")}</span>
-    ),
+    cell: ({ row }) => {
+      const product = row.depth > 0 ? row.getParentRow()?.original : row.original;
+      const inventoryUnit = product?.inventory_unit_code || "piece";
+      const stockUnit = row.depth > 0
+        ? product?.inventory_mode === "shared_bulk" ? "packs" : "Piece"
+        : inventoryUnit === "piece" ? "Piece" : inventoryUnit;
+
+      return (
+        <span className={`tabular-nums ${row.original.stock === 0 ? "text-destructive" : ""}`}>
+          {row.original.stock} {stockUnit}
+        </span>
+      );
+    },
   },
   {
     id: "sellingPrice",
