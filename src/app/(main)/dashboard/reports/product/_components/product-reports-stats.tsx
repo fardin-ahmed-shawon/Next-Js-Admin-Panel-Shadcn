@@ -39,7 +39,7 @@ export function ProductReportStats({ summary }: ProductReportStatsProps) {
       bgColor: "bg-cyan-500/10",
     },
     {
-      title: "Total Purchase Value",
+      title: "Total COGS",
       value: summary?.total_purchase_value || 0,
       display: formatCurrency(summary?.total_purchase_value || 0),
       icon: DollarSign,

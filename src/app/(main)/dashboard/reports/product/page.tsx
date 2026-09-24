@@ -1,18 +1,17 @@
 "use client";
-import { useModularFeatures } from "@/hooks/useModularFeatures";
-
 import * as React from "react";
+
 import { CalendarIcon, Download, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 import { useProductReports } from "@/hooks/useProductReports";
+import { downloadCSV } from "@/lib/csv-export";
+
 import { ProductReportStats } from "./_components/product-reports-stats";
 import { ProductReportsTable } from "./_components/product-reports-table";
-import { downloadCSV } from "@/lib/csv-export";
 
 type TimeRange = "all_time" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
 
@@ -31,12 +30,17 @@ const orderStatuses = [
   "Confirmed",
   "Ready To Ship",
   "In-Courier",
-  "Completed",
-  "Delivered",
-  "Cancelled",
+  "Ship Later",
   "Hold",
   "Returned",
-  "Exchange",
+  "Pre-Order",
+  "Delivered",
+  "Cancelled",
+  "Missing",
+  "Lost",
+  "Fake",
+  "Trash",
+  "Incomplete",
 ];
 
 export default function ProductReportPage() {
@@ -114,7 +118,7 @@ export default function ProductReportPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full">
+    <div className="flex w-full flex-col gap-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
@@ -132,7 +136,7 @@ export default function ProductReportPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-32 sm:w-40 bg-background">
+              <SelectTrigger className="w-32 bg-background sm:w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -154,7 +158,7 @@ export default function ProductReportPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-32 sm:w-40 bg-background">
+              <SelectTrigger className="w-32 bg-background sm:w-40">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
@@ -170,7 +174,7 @@ export default function ProductReportPage() {
 
             {/* Custom date pickers — desktop */}
             {timeRange === "custom" && (
-              <div className="hidden sm:flex items-center gap-2">
+              <div className="hidden items-center gap-2 sm:flex">
                 <CalendarIcon className="size-4 text-muted-foreground" />
                 <Input
                   type="date"
@@ -181,7 +185,7 @@ export default function ProductReportPage() {
                     setPage(1);
                   }}
                 />
-                <span className="text-xs text-muted-foreground">to</span>
+                <span className="text-muted-foreground text-xs">to</span>
                 <Input
                   type="date"
                   className="h-9 w-36 text-xs"
@@ -208,8 +212,8 @@ export default function ProductReportPage() {
 
           {/* Custom date pickers — mobile */}
           {timeRange === "custom" && (
-            <div className="flex sm:hidden items-center gap-2 w-full mt-2">
-              <CalendarIcon className="size-4 text-muted-foreground shrink-0" />
+            <div className="mt-2 flex w-full items-center gap-2 sm:hidden">
+              <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
               <Input
                 type="date"
                 className="h-9 flex-1 text-xs"
@@ -219,7 +223,7 @@ export default function ProductReportPage() {
                   setPage(1);
                 }}
               />
-              <span className="text-xs text-muted-foreground shrink-0">to</span>
+              <span className="shrink-0 text-muted-foreground text-xs">to</span>
               <Input
                 type="date"
                 className="h-9 flex-1 text-xs"
@@ -235,7 +239,7 @@ export default function ProductReportPage() {
           <Button
             variant="outline"
             size="sm"
-            className="sm:hidden w-full mt-2"
+            className="mt-2 w-full sm:hidden"
             onClick={handleExport}
             disabled={isExporting}
           >
@@ -249,15 +253,15 @@ export default function ProductReportPage() {
       <ProductReportStats summary={data?.summary} />
 
       {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-card p-4 rounded-lg border shadow-sm">
+      <div className="flex flex-col items-center justify-between gap-4 rounded-lg border bg-card p-4 shadow-sm sm:flex-row">
         {/* Search */}
-        <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:w-auto">
+        <form onSubmit={handleSearch} className="flex w-full items-center gap-2 sm:w-auto">
           <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search by product name or SKU..."
-              className="pl-8 bg-background"
+              className="bg-background pl-8"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />
@@ -268,8 +272,8 @@ export default function ProductReportPage() {
         </form>
 
         {/* Sort Controls */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-sm text-muted-foreground shrink-0">Sort by:</span>
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <span className="shrink-0 text-muted-foreground text-sm">Sort by:</span>
           <Select
             value={sortBy}
             onValueChange={(value) => {
@@ -284,7 +288,7 @@ export default function ProductReportPage() {
               <SelectItem value="total_profit">Profit</SelectItem>
               <SelectItem value="total_sold_unit">Sold Units</SelectItem>
               <SelectItem value="total_order_value">Order Value</SelectItem>
-              <SelectItem value="total_purchase_value">Purchase Value</SelectItem>
+              <SelectItem value="total_purchase_value">COGS</SelectItem>
               <SelectItem value="product_name">Product Name</SelectItem>
               <SelectItem value="date">Date</SelectItem>
             </SelectContent>

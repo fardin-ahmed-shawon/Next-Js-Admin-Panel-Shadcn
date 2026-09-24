@@ -1,39 +1,52 @@
-import { fetchClient } from "@/lib/fetch-client";
 import useSWR from "swr";
+
+import { fetchClient } from "@/lib/fetch-client";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/"}${process.env.NEXT_PUBLIC_API_PRODUCT_REPORTS_URL || "product-report"}`;
 
 export interface ProductReportVariant {
-  id: number;
-  name: string;
+  product_variant_id: number | null;
   sku: string;
-  stock: number;
-  purchase_price: number;
-  regular_price: number;
-  selling_price: number;
-}
-
-export interface ProductReportItem {
-  sl_no: number;
-  product_name: string;
-  sku: string;
-  img: string;
   size_label: string | null;
   color_label: string | null;
   purchase_price: number;
   selling_price: number;
   total_discount_amount: number;
-  qty: number;
   total_sold_unit: number;
+  total_sold_base: number;
+  base_unit_code: string | null;
   total_order_value: number;
   total_purchase_value: number;
   total_profit: number;
-  date: string;
+  date: string | null;
 }
 
+export interface ProductReportItem {
+  sl_no: number;
+  product_id: number;
+  product_name: string;
+  sku: string;
+  img: string;
+  inventory_mode: "independent" | "shared_bulk";
+  size_label: null;
+  color_label: null;
+  purchase_price: number;
+  selling_price: number;
+  total_discount_amount: number;
+  total_sold_unit: number;
+  total_sold_base: number;
+  base_unit_code: string | null;
+  total_order_value: number;
+  total_purchase_value: number;
+  total_profit: number;
+  date: string | null;
+  variants: ProductReportVariant[];
+}
 export interface ProductReportSummary {
   total_products: number;
   total_sold_unit: number;
+  total_sold_base: number;
+  base_unit_code: string | null;
   total_order_value: number;
   total_purchase_value: number;
   total_profit: number;
