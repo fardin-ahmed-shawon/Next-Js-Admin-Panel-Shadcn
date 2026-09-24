@@ -7,6 +7,7 @@ import { Code2, HelpCircle, CheckCircle2, Copy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { fetchClient } from "@/lib/fetch-client";
 
 export function GtmTab() {
@@ -14,6 +15,7 @@ export function GtmTab() {
   const [saving, setSaving] = useState(false);
   const [gtmHead, setGtmHead] = useState("");
   const [gtmBody, setGtmBody] = useState("");
+  const [purchaseEventSource, setPurchaseEventSource] = useState<"storefront" | "admin_confirmed">("storefront");
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -24,6 +26,7 @@ export function GtmTab() {
           if (res.success && res.data) {
             setGtmHead(res.data.gtm_head || "");
             setGtmBody(res.data.gtm_body || "");
+            setPurchaseEventSource(res.data.purchase_event_source === "admin_confirmed" ? "admin_confirmed" : "storefront");
           }
         } else {
           toast.error("Failed to load Google Tag Manager settings");
@@ -50,6 +53,7 @@ export function GtmTab() {
         body: JSON.stringify({
           gtm_head: gtmHead,
           gtm_body: gtmBody,
+          purchase_event_source: purchaseEventSource,
         }),
       });
 
@@ -92,7 +96,7 @@ export function GtmTab() {
           <h3 className="text-xl font-semibold text-foreground">Google Tag Manager (GTM)</h3>
         </div>
         <p className="text-sm text-muted-foreground">
-          Configure dynamic Google Tag Manager head and body tracking scripts for your Store-Front.
+          Configure dynamic Google Tag Manager head and body tracking scripts for your Store-Front and Admin Panel.
         </p>
       </div>
 
@@ -106,10 +110,27 @@ export function GtmTab() {
           <li>Go to your Google Tag Manager account and click on <strong>Admin &gt; Install Google Tag Manager</strong>.</li>
           <li>Copy the <strong>first code snippet</strong> and paste it into the <strong>GTM Head Code</strong> box below.</li>
           <li>Copy the <strong>second code snippet</strong> and paste it into the <strong>GTM Body Code</strong> box below.</li>
-          <li>Click <strong>Save Changes</strong>. The codes will automatically be injected into your Store-Front.</li>
+          <li>Click <strong>Save Changes</strong>. The codes will automatically be injected into your Store-Front and Admin Panel.</li>
         </ol>
       </div>
 
+      <div className="rounded-lg border p-4 space-y-3">
+        <div className="flex items-center justify-between gap-6">
+          <div className="space-y-1">
+            <label htmlFor="purchase-event-source" className="text-sm font-semibold">Purchase event trigger</label>
+            <p className="text-xs text-muted-foreground">
+              {purchaseEventSource === "admin_confirmed"
+                ? "Fire purchase when an order first changes to Confirmed in the Admin Panel."
+                : "Fire purchase immediately after the customer places the order in the Store-Front."}
+            </p>
+          </div>
+          <Switch id="purchase-event-source" checked={purchaseEventSource === "admin_confirmed"} onCheckedChange={(checked) => setPurchaseEventSource(checked ? "admin_confirmed" : "storefront")} />
+        </div>
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span className={purchaseEventSource === "storefront" ? "font-semibold text-foreground" : ""}>Direct Place Order</span>
+          <span className={purchaseEventSource === "admin_confirmed" ? "font-semibold text-foreground" : ""}>Confirmed Order from Admin</span>
+        </div>
+      </div>
       <div className="space-y-6">
         {/* Head Code */}
         <div className="space-y-2">
