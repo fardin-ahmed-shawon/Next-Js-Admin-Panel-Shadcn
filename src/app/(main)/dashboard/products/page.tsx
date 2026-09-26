@@ -17,6 +17,9 @@ export default function ProductsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link href="/dashboard/products/bundles/create"><Plus className="mr-2 size-4" />Create Bundle</Link>
+          </Button>
           <Button asChild size="sm">
             <Link href="/dashboard/products/add">
               <Plus className="mr-2 size-4" />

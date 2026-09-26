@@ -1,4 +1,5 @@
 "use client";
+import {orderDisplayLines} from "@/lib/order-combos";
 
 import * as React from "react";
 import Link from "next/link";
@@ -134,11 +135,11 @@ export default function IncompleteOrdersPage() {
   const mappedOrders = React.useMemo(() => {
     if (!orders) return [];
     return orders.map((order: any) => {
-      const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
+      const itemsCount = orderDisplayLines(order.ordered_products).reduce((s: number, p: any) => s + p.qty, 0) || 0;
       const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
       const paymentMethod = order.payments?.[0]?.payment_method || "COD";
 
-      const mappedProducts = order.ordered_products?.map((p: any) => ({
+      const mappedProducts = orderDisplayLines(order.ordered_products).map((p: any) => ({
         id: p.id || p.product_id,
         image: getImageUrl(p.product?.product_thumbnail_img),
         name: p.product?.product_name || p.product?.title || "Unknown Product",

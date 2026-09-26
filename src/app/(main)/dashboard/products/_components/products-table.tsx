@@ -97,6 +97,7 @@ export function ProductsTable() {
     error,
     refetch,
   } = useProducts({
+    exclude_bundles: "1",
     page: pageIndex + 1,
     per_page: pageSize,
     search: searchQuery,

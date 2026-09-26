@@ -1,4 +1,5 @@
 "use client";
+import {orderDisplayLines} from "@/lib/order-combos";
 
 import * as React from "react";
 
@@ -161,12 +162,12 @@ export default function WholesaleOrdersPage() {
     return orders
       .filter((order: any) => order.order_status !== "Incomplete")
       .map((order: any) => {
-        const itemsCount = order.ordered_products?.reduce((s: number, p: any) => s + p.qty, 0) || 0;
+        const itemsCount = orderDisplayLines(order.ordered_products).reduce((s: number, p: any) => s + p.qty, 0) || 0;
         const paidAmount = order.payments?.reduce((s: number, p: any) => s + Number(p.paid_amount), 0) || 0;
         const paymentMethod = order.payments?.[0]?.payment_method || "COD";
 
         const mappedProducts =
-          order.ordered_products?.map((p: any) => ({
+          orderDisplayLines(order.ordered_products).map((p: any) => ({
             id: p.id || p.product_id,
             image: getImageUrl(p.product?.product_thumbnail_img),
             name: p.product?.product_name || p.product?.title || "Unknown Product",

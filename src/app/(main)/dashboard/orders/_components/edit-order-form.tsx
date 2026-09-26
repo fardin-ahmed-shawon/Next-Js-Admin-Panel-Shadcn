@@ -1,4 +1,5 @@
 "use client";
+import {orderDisplayLines} from "@/lib/order-combos";
 
 import * as React from "react";
 
@@ -208,6 +209,7 @@ function CustomerOrderHistory({ orders, currentOrderNo }: { orders: CustomerOrde
 
 interface CartItem {
   lineId?: string;
+  bundleSnapshot?: any;
   product: Product;
   quantity: number;
   color: string;
@@ -490,6 +492,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
   const [debouncedCustomerSearch, setDebouncedCustomerSearch] = React.useState("");
   const [customerSearchFocused, setCustomerSearchFocused] = React.useState(false);
   const [isSavingAll, setIsSavingAll] = React.useState(false);
+  const [comboQuantities, setComboQuantities] = React.useState<Record<string, number>>({});
   const [customersData, setCustomersData] = React.useState<any[]>([]);
 
   const customerSearchRef = React.useRef<HTMLDivElement>(null);
@@ -694,6 +697,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
       if (order.ordered_products) {
         const mappedCart = order.ordered_products.map((op: any) => ({
           lineId: String(op.id || crypto.randomUUID()),
+          bundleSnapshot: op.bundle_snapshot,
           product: {
             id: op.product_id || Math.random(),
             title: op.product?.title || "Unknown Product",
@@ -718,6 +722,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
           isGift: false,
         }));
         setCart(mappedCart);
+        setComboQuantities({});
       }
 
       if (order.order_no) {
@@ -741,6 +746,10 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
   }, [order]);
 
   /* ---- handlers ---- */
+
+  const comboRows = orderDisplayLines(order?.ordered_products).filter((line: any) => line.is_bundle);
+  const comboDelta = comboRows.reduce((sum: number, combo: any) => sum + ((comboQuantities[combo.id] ?? combo.qty) - combo.qty) * combo.unit_price, 0);
+  const cartSubtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0) + comboDelta;
 
   function addToCart(product: Product) {
     setCart((prev) => {
@@ -831,7 +840,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
     setIsSavingAll(true);
     const toastId = toast.loading("Saving all changes...");
 
-    const computedSubtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+    const computedSubtotal = cartSubtotal;
     const computedGrandTotal = Math.max(0, computedSubtotal - discountAmountInput + shippingChargeInput);
 
     try {
@@ -841,10 +850,12 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
       const payload: Record<string, any> = {
         shipping_charge: shippingChargeInput,
         discount_amount: discountAmountInput,
+        combo_quantities: comboQuantities,
         subtotal_amount: computedSubtotal,
         grand_total_amount: computedGrandTotal,
         products: cart.map((item) => ({
           product_id: item.product.id,
+          ordered_product_id: item.isExisting ? Number(item.lineId) : undefined,
           product_variant_id: resolveCartVariant(item)?.id,
           qty: item.quantity,
           unit_price: item.unitPrice,
@@ -1290,6 +1301,27 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                     </div>
 
                     {/* Cart items */}
+
+                    {comboRows.map((combo:any)=>(
+                      <div key={combo.id} className="rounded-lg border p-4 mb-4">
+                        <div className="flex gap-3 items-center mb-3">
+                          <img src={getImageUrl(combo.product.product_thumbnail_img)} alt="" className="size-16 rounded object-cover" />
+                          <div className="flex-1"><h3 className="font-semibold">{combo.product.title}</h3><p className="text-sm text-muted-foreground">Combo × {comboQuantities[combo.id] ?? combo.qty} · ৳{Number(combo.unit_price).toLocaleString()} each</p></div>
+                          <div className="flex items-center gap-2">
+                            <Button type="button" variant="outline" size="icon" aria-label="Decrease combo quantity" disabled={isSavingAll || (comboQuantities[combo.id] ?? combo.qty) <= 1} onClick={() => setComboQuantities(prev => ({...prev, [combo.id]: Math.max(1, (prev[combo.id] ?? combo.qty) - 1)}))}><Minus className="size-4" /></Button>
+                            <Input aria-label="Combo quantity" type="number" min={1} max={100000} className="w-20 text-center" value={comboQuantities[combo.id] ?? combo.qty} disabled={isSavingAll} onChange={event => setComboQuantities(prev => ({...prev, [combo.id]: Math.max(1, Math.min(100000, Math.floor(Number(event.target.value) || 1)))}))} />
+                            <Button type="button" variant="outline" size="icon" aria-label="Increase combo quantity" disabled={isSavingAll || (comboQuantities[combo.id] ?? combo.qty) >= 100000} onClick={() => setComboQuantities(prev => ({...prev, [combo.id]: Math.min(100000, (prev[combo.id] ?? combo.qty) + 1)}))}><Plus className="size-4" /></Button>
+                          </div>
+                          <strong>৳{(combo.unit_price*(comboQuantities[combo.id] ?? combo.qty)).toLocaleString()}</strong>
+                        </div>
+                        <p className="text-sm font-medium mb-2">Products in this combo</p>
+                        {combo.components.map((component:any)=><div key={component.id} className="flex items-center gap-3 border-t py-2 text-sm">
+                          <img src={getImageUrl(component.product?.product_thumbnail_img)} alt="" className="size-10 rounded object-cover" />
+                          <div className="flex-1">{component.product_title_snapshot || component.product?.title}<div className="text-muted-foreground">{component.sku_snapshot || component.product?.sku} · {component.option_label_snapshot || [component.size_label,component.color_label].filter(Boolean).join(" / ") || "Piece"}</div></div>
+                          <span>× {component.qty / combo.qty * (comboQuantities[combo.id] ?? combo.qty)}</span>
+                        </div>)}
+                      </div>
+                    ))}
                     <div className="flex flex-col gap-4">
                       {cart.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-8 text-muted-foreground bg-muted/20 border border-dashed rounded-lg">
@@ -1297,7 +1329,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                           <p className="text-sm font-medium">No products in this order</p>
                         </div>
                       ) : (
-                        cart.map((item) => (
+                        cart.filter((item) => !item.bundleSnapshot).map((item) => (
                           <CartItemRow
                             key={item.lineId ?? item.product.id}
                             item={item}
@@ -1323,7 +1355,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                     <div className="flex justify-between items-center h-9">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span className="tabular-nums">
-                        ৳{cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0).toLocaleString()}
+                        ৳{cartSubtotal.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between items-center h-9">
@@ -1362,7 +1394,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                         ৳
                         {Math.max(
                           0,
-                          cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0) -
+                          cartSubtotal -
                           discountAmountInput +
                           shippingChargeInput,
                         ).toLocaleString()}

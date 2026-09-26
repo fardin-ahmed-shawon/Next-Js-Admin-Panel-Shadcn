@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import useProducts from "@/hooks/useProducts";
 
 export function ProductsStats() {
-  const { stats, loading } = useProducts({ per_page: 1 });
+  const { stats, loading } = useProducts({ per_page: 1, exclude_bundles: "1" });
 
   const statsData = [
     {

@@ -34,6 +34,7 @@ export interface ProductsStatsData {
 }
 
 interface FetchProductsOptions {
+  exclude_bundles?: string;
   page?: number;
   per_page?: number;
   search?: string;
@@ -53,6 +54,7 @@ function useProducts(options: FetchProductsOptions = {}) {
     setError(null);
     try {
       const url = new URL(API_URL);
+      if (currentOptions.exclude_bundles) url.searchParams.set("exclude_bundles", "1");
       if (currentOptions.page) url.searchParams.append("page", currentOptions.page.toString());
       if (currentOptions.per_page) url.searchParams.append("per_page", currentOptions.per_page.toString());
       if (currentOptions.search) url.searchParams.append("search", currentOptions.search);

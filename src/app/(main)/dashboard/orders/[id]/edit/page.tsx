@@ -631,6 +631,7 @@ export default function EditOrderPage() {
       payment_status: paymentStatus,
       products: cart.map((item) => ({
         product_id: item.product.id,
+        ordered_product_id: Number(item.lineId) || undefined,
           product_variant_id: resolveCartVariant(item)?.id,
         qty: item.quantity,
         unit_price: item.unitPrice,
