@@ -103,6 +103,7 @@ export const sidebarItems: NavGroup[] = [
         subItems: [
           { title: "Create Order", url: "/dashboard/orders/create", module: "create_orders" },
           { title: "Assign Orders", url: "/dashboard/orders/assign-orders", module: "assign_orders" },
+          { title: "Pending Returns", url: "/dashboard/orders/pending-return", module: "orders" },
           { title: "Order Management", url: "/dashboard/orders", module: "orders" },
           { title: "Invoice", url: "/dashboard/orders/invoice", module: "orders" },
           { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", module: "orders" },
@@ -180,6 +181,7 @@ export const sidebarItems: NavGroup[] = [
         module: "reports",
         subItems: [
           { title: "Dashboard", url: "/dashboard/reports/dashboard", module: "reports_dashboard" },
+          { title: "Return Reports", url: "/dashboard/reports/returns", module: "reports_inventory" },
           { title: "Product Report", url: "/dashboard/reports/product", module: "product_report" },
           { title: "Product Percent", url: "/dashboard/reports/product-percent", module: "product_percent" },
           { title: "Customer Report", url: "/dashboard/reports/customer", module: "customer_report" },

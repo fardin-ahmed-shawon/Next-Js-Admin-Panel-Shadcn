@@ -32,6 +32,8 @@ const orderStatuses = [
   "In-Courier",
   "Ship Later",
   "Hold",
+  "Pending-Return",
+  "Partial",
   "Returned",
   "Pre-Order",
   "Delivered",

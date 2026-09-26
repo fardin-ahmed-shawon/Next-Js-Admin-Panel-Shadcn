@@ -1118,7 +1118,7 @@ export default function EditOrderPage() {
                   <SelectItem value="In-Courier">In-Courier</SelectItem>
                   <SelectItem value="Ship Later">Ship Later</SelectItem>
                   <SelectItem value="Hold">Hold</SelectItem>
-                  <SelectItem value="Returned">Returned</SelectItem>
+                  <SelectItem value="Pending-Return">Pending-Return</SelectItem><SelectItem value="Partial">Partial</SelectItem><SelectItem value="Returned">Returned</SelectItem>
                   <SelectItem value="Pre-Order">Pre-Order</SelectItem>
                   <SelectItem value="Delivered">Delivered</SelectItem>
                   <SelectItem value="Cancelled">Cancelled</SelectItem>

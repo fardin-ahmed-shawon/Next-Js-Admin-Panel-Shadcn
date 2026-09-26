@@ -1,5 +1,6 @@
 "use client";
 
+import useSWR from "swr";
 import { useRef, useState } from "react";
 
 import { toast } from "sonner";
@@ -16,17 +17,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ReturnProductThumbnail } from "@/components/return-product-thumbnail";
 import { fetchClient } from "@/lib/fetch-client";
 
 interface ReturnLine {
   id: number;
+  qty?: number;
+  return_received_qty?: number;
+  bundle_snapshot?: { title?: string };
+  returnable_qty?: number;
+  size_label?: string;
+  color_label?: string;
   inventory_contract_version?: number;
   returnable_quantity_base?: number | string;
   required_quantity_base?: number | string;
   base_quantity_per_sale?: number | string;
   base_unit_code?: string;
   option_label_snapshot?: string;
-  product?: { title?: string };
+  product?: { title?: string; product_thumbnail_img?: string | null };
 }
 interface ReturnOrder {
   order_no: string;
@@ -35,41 +43,82 @@ interface ReturnOrder {
 }
 
 export function BulkReturnReceipts({ order, onSuccess }: { order: ReturnOrder | null; onSuccess: () => unknown }) {
-  const lines = order?.ordered_products?.filter((line) => Number(line.inventory_contract_version) === 2) || [];
+  const lines = order?.ordered_products || [];
+  const { data: history, mutate: refreshHistory } = useSWR(
+    order ? `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}orders/${encodeURIComponent(order.order_no)}/returns` : null,
+    async (url: string) => {
+      const r = await fetchClient(url);
+      if (!r.ok) throw new Error("Could not load receipts");
+      return r.json();
+    },
+  );
+  const received = async () => {
+    await refreshHistory();
+    await onSuccess();
+  };
   if (!order || !lines.length) return null;
-  const canReceive = ["delivered", "returned", "in-courier"].includes(order.order_status?.toLowerCase());
+  const canReceive = ["delivered", "returned", "in-courier", "pending-return", "partial"].includes(
+    order.order_status?.toLowerCase(),
+  );
   return (
     <div className="space-y-3 rounded-lg border p-4">
       <div>
-        <h3 className="font-medium">Receive returned bulk goods</h3>
+        <h3 className="font-medium">Confirm returned products</h3>
         <p className="text-muted-foreground text-sm">
-          A courier return status does not put bulk goods back in stock. Receive the physical return here and choose
-          whether it can be sold again. This records inventory only; process any refund separately. Save other order
-          edits first.
+          Pending-Return does not put goods back in stock. Receive the physical return here and choose whether it can be
+          sold again. This records inventory only; process any refund separately. Save other order edits first.
         </p>
       </div>
       {!canReceive && (
         <p className="text-muted-foreground text-sm">
-          Available when the saved order status is Delivered, Returned, or In-Courier.
+          Save the order as Pending-Return before confirming returned products.
         </p>
       )}
       {lines.map((line) => (
         <div key={line.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-muted/30 p-3">
-          <div>
-            <p className="font-medium text-sm">
-              {line.product?.title || "Product"} — {line.option_label_snapshot ?? "Pack"}
-            </p>
-            <p className="text-muted-foreground text-xs">
-              Returnable:{" "}
-              {Math.floor(
-                Number(line.returnable_quantity_base ?? 0) / Math.max(1, Number(line.base_quantity_per_sale ?? 1)),
-              )}{" "}
-              packs
-            </p>
+          <div className="flex min-w-0 items-center gap-3">
+            <ReturnProductThumbnail
+              src={line.product?.product_thumbnail_img}
+              title={line.product?.title || "Product"}
+            />
+            <div>
+              <p className="font-medium text-sm">
+                {line.product?.title || "Product"} —{" "}
+                {line.option_label_snapshot ||
+                  [line.size_label, line.color_label].filter(Boolean).join(" / ") ||
+                  "Piece"}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                {line.bundle_snapshot?.title && <>Combo: {line.bundle_snapshot.title} · </>}Returned:{" "}
+                {Number(line.return_received_qty || 0)} / {line.qty || 0} · Returnable:{" "}
+                {Number(line.returnable_qty ?? 0)} {Number(line.inventory_contract_version) === 2 ? "packs" : "units"}
+              </p>
+            </div>
           </div>
-          <ReceiveReturnButton orderNo={order.order_no} line={line} canReceive={canReceive} onSuccess={onSuccess} />
+          <ReceiveReturnButton orderNo={order.order_no} line={line} canReceive={canReceive} onSuccess={received} />
         </div>
       ))}
+      {history?.data?.length > 0 && (
+        <div className="space-y-2 border-t pt-3">
+          <h4 className="font-medium">Return history</h4>
+          {history.data.map((receipt: any) => (
+            <div className="flex items-start gap-3 text-sm rounded border p-3" key={receipt.id}>
+              <ReturnProductThumbnail src={receipt.product_thumbnail_img} title={receipt.product_title || "Product"} />
+              <div className="min-w-0">
+                <strong>
+                  {receipt.product_title} · {receipt.option_label} × {receipt.qty}
+                </strong>
+                <p>
+                  {receipt.disposition === "restock" ? "Restocked" : "Discarded"} · {receipt.actor_name} ·{" "}
+                  {new Date(receipt.created_at).toLocaleString()}
+                </p>
+                <p>Reason: {receipt.reason}</p>
+                <p className="whitespace-pre-wrap">Note: {receipt.note}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -87,16 +136,20 @@ function ReceiveReturnButton({
 }) {
   const [open, setOpen] = useState(false);
   const [qty, setQty] = useState("1");
+  const [reason, setReason] = useState("");
+  const [note, setNote] = useState("");
   const [disposition, setDisposition] = useState("restock");
   const [saving, setSaving] = useState(false);
   const [retryPending, setRetryPending] = useState(false);
   const operationKey = useRef<string | null>(null);
-  const max = Math.floor(
-    Number(line.returnable_quantity_base ?? 0) / Math.max(1, Number(line.base_quantity_per_sale ?? 1)),
-  );
+  const max = Number(line.returnable_qty ?? 0);
   async function submit() {
+    if (!reason.trim() || !note.trim()) {
+      toast.error("Reason and note are required.");
+      return;
+    }
     if (!Number.isInteger(Number(qty)) || Number(qty) <= 0 || (!retryPending && Number(qty) > max)) {
-      toast.error("Enter a whole pack quantity within the returnable amount.");
+      toast.error("Enter a whole quantity within the returnable amount.");
       return;
     }
     operationKey.current ||= crypto.randomUUID();
@@ -108,7 +161,13 @@ function ReceiveReturnButton({
         {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ qty: Number(qty), disposition, operation_key: operationKey.current }),
+          body: JSON.stringify({
+            qty: Number(qty),
+            disposition,
+            reason: reason.trim(),
+            note: note.trim(),
+            operation_key: operationKey.current,
+          }),
         },
       );
       const data = await response.json();
@@ -149,18 +208,21 @@ function ReceiveReturnButton({
     >
       <DialogTrigger asChild>
         <Button type="button" variant="outline" disabled={!canReceive || (max < 1 && !retryPending)}>
-          Receive return
+          Mark as Return
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Receive return — {line.option_label_snapshot ?? "Pack"}</DialogTitle>
+          <DialogTitle>
+            Mark as Return —{" "}
+            {line.option_label_snapshot || [line.size_label, line.color_label].filter(Boolean).join(" / ") || "Piece"}
+          </DialogTitle>
           <DialogDescription>
-            Record goods physically received for order {orderNo}. Returnable: {max} packs.
+            Record goods physically received for order {orderNo}. Returnable: {max} units.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          <Label htmlFor={`return-qty-${line.id}`}>Quantity (packs)</Label>
+          <Label htmlFor={`return-qty-${line.id}`}>Quantity</Label>
           <Input
             id={`return-qty-${line.id}`}
             type="number"
@@ -184,11 +246,37 @@ function ReceiveReturnButton({
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-2">
+          <Label htmlFor={`return-reason-${line.id}`}>Reason (required)</Label>
+          <Input
+            id={`return-reason-${line.id}`}
+            maxLength={255}
+            value={reason}
+            disabled={saving || retryPending}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Damaged, wrong item, customer refused…"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`return-note-${line.id}`}>Note (required)</Label>
+          <textarea
+            id={`return-note-${line.id}`}
+            className="w-full border rounded p-2"
+            rows={3}
+            maxLength={5000}
+            value={note}
+            disabled={saving || retryPending}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Inspection details and return context"
+          />
+        </div>
         <p className="text-muted-foreground text-sm">
-          Physical quantity: {Number(qty || 0) * Number(line.base_quantity_per_sale ?? 0)}{" "}
-          {line.base_unit_code ?? "base units"}.{" "}
+          Physical quantity:{" "}
+          {Number(qty || 0) *
+            Number(line.base_quantity_per_sale ?? (/^(\d+)\s*Pieces?$/i.exec(line.size_label || "")?.[1] || 1))}{" "}
+          {line.base_unit_code ?? "piece"}.{" "}
           {disposition === "restock"
-            ? "This quantity will become available for sale."
+            ? "Stock returns to the original lot. Blocked or expired bulk lots remain unavailable."
             : "This quantity will remain unavailable for sale."}
         </p>
         {retryPending && !saving && (
