@@ -180,7 +180,7 @@ function RowActions({ row }: { row: CustomerRow }) {
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/customers/${row.id}`}>
               <Eye className="mr-2 size-4" />
-              View
+              360 View
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />

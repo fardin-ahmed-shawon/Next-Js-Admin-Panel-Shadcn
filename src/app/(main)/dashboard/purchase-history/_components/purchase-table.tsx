@@ -123,9 +123,10 @@ export function PurchaseTable({ data }: { data: CustomerPurchaseEntry[] }) {
       cell: ({ row }) => {
         return (
           <div className="flex items-center justify-end gap-2">
-            <Button variant="outline" size="icon-sm" asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs font-semibold gap-1 px-2.5 hover:border-primary/50" asChild>
               <Link href={`/dashboard/customers/${row.original.id}`}>
-                <Eye className="size-4" />
+                <Eye className="size-3.5" />
+                360 View
               </Link>
             </Button>
           </div>

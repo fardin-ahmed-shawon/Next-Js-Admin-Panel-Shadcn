@@ -35,6 +35,7 @@ import {
   Zap,
   Tag,
   Target,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -1058,6 +1059,20 @@ export default function FollowUpsPage() {
                       {/* Actions */}
                       <td className="py-3.5 px-4 align-top text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* 360 View Button */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            className="h-8 text-xs font-semibold gap-1 px-2.5 hover:border-primary/50 text-foreground"
+                            title="Open Customer 360 View"
+                          >
+                            <Link href={`/dashboard/customers/${item.customer_id}`}>
+                              <Eye className="w-3 h-3 text-muted-foreground" />
+                              360 View
+                            </Link>
+                          </Button>
+
                           {/* Send SMS Action Button */}
                           {customer.phone && (
                             <Button
@@ -1122,7 +1137,7 @@ export default function FollowUpsPage() {
                               <DropdownMenuLabel>Follow-Up Options</DropdownMenuLabel>
                               <DropdownMenuItem asChild>
                                 <Link href={`/dashboard/customers/${item.customer_id}`} className="cursor-pointer">
-                                  <User className="w-3.5 h-3.5 mr-2" /> View Profile
+                                  <Eye className="w-3.5 h-3.5 mr-2" /> 360 View
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />

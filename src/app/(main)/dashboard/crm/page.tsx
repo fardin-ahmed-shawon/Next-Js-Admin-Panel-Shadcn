@@ -536,9 +536,9 @@ export default function CrmDashboardPage() {
                         </p>
                       </div>
 
-                      <Button variant="outline" size="sm" className="h-7 text-xs px-2.5" asChild>
+                      <Button variant="outline" size="sm" className="h-7 text-xs px-2.5 font-medium" asChild>
                         <Link href={`/dashboard/customers/${cust.id}`}>
-                          Profile <ExternalLink className="ml-1 size-3" />
+                          360 View <ExternalLink className="ml-1 size-3" />
                         </Link>
                       </Button>
                     </div>
@@ -600,7 +600,7 @@ export default function CrmDashboardPage() {
                         href={`/dashboard/customers/${item.customer.id}`}
                         className="text-primary hover:underline font-medium text-[11px]"
                       >
-                        View CRM Profile →
+                        360 View →
                       </Link>
                     </div>
                   </div>

@@ -32,6 +32,8 @@ import {
   XCircle,
   Banknote,
   DollarSign,
+  Send,
+  Clock,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -270,6 +272,18 @@ export default function CustomerDetailsPage() {
                 <MessageSquare className="size-3.5 text-emerald-600" />
                 <span className="hidden sm:inline">WhatsApp</span>
               </a>
+            </Button>
+          )}
+
+          {customer.phone && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-purple-500/30 text-purple-600 hover:bg-purple-500/10 hover:text-purple-700 shadow-2xs font-medium"
+              onClick={() => setActiveTab("notes")}
+            >
+              <Send className="size-3.5" />
+              <span className="hidden sm:inline">Send SMS</span>
             </Button>
           )}
 
@@ -642,8 +656,8 @@ export default function CustomerDetailsPage() {
                 <span>Payments ({payments.length})</span>
               </TabsTrigger>
               <TabsTrigger value="notes" className="text-xs gap-1.5">
-                <MessageSquare className="size-3.5" />
-                <span>CRM Notes ({customer.notes?.length || 0})</span>
+                <Clock className="size-3.5 text-primary" />
+                <span>Follow-Ups & Notes ({customer.notes?.length || 0})</span>
               </TabsTrigger>
               <TabsTrigger value="addresses" className="text-xs gap-1.5">
                 <MapPin className="size-3.5" />
@@ -680,10 +694,11 @@ export default function CustomerDetailsPage() {
               <CustomerPaymentsTable payments={payments} customerId={customer.id} />
             </TabsContent>
 
-            {/* Notes Tab */}
+            {/* Follow-Ups & Notes Tab */}
             <TabsContent value="notes" className="mt-4">
               <CustomerNotesSection
                 customerId={customer.id}
+                customer={customer}
                 notes={customer.notes || []}
                 onRefresh={() => mutate()}
               />

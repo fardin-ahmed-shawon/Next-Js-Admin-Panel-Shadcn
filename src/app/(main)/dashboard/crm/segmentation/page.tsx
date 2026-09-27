@@ -1646,9 +1646,9 @@ export default function CustomerSegmentationPage() {
                               <Send className="w-4 h-4" />
                             </a>
                           )}
-                          <Button asChild variant="outline" size="sm" className="h-8 text-xs font-medium gap-1 hover:border-primary">
+                          <Button asChild variant="outline" size="sm" className="h-8 text-xs font-semibold gap-1 hover:border-primary">
                             <Link href={`/dashboard/customers/${customer.id}`}>
-                              Profile
+                              360 View
                               <ArrowRight className="w-3 h-3 opacity-60" />
                             </Link>
                           </Button>
