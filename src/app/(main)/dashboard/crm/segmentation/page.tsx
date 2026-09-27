@@ -1044,60 +1044,7 @@ export default function CustomerSegmentationPage() {
         </div>
       </div>
 
-      {/* Executive CRM Metrics Summary Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-xl border bg-card/70 backdrop-blur-xs flex items-center justify-between shadow-2xs hover:shadow-xs transition-shadow">
-          <div>
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Total CRM Base</p>
-            <div className="text-xl sm:text-2xl font-black text-foreground mt-0.5">{crmStats.total}</div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Active customer accounts</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl border bg-card/70 backdrop-blur-xs flex items-center justify-between shadow-2xs hover:shadow-xs transition-shadow">
-          <div>
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Total Segment Spend</p>
-            <div className="text-xl sm:text-2xl font-black text-foreground mt-0.5">
-              <span className="text-muted-foreground font-normal text-sm mr-0.5">৳</span>
-              {crmStats.totalRevenue.toLocaleString()}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Across all placed orders</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
-            <DollarSign className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl border bg-card/70 backdrop-blur-xs flex items-center justify-between shadow-2xs hover:shadow-xs transition-shadow">
-          <div>
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Average Customer LTV</p>
-            <div className="text-xl sm:text-2xl font-black text-foreground mt-0.5">
-              <span className="text-muted-foreground font-normal text-sm mr-0.5">৳</span>
-              {crmStats.avgSpend.toLocaleString()}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Per segmented customer</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center shrink-0">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl border bg-card/70 backdrop-blur-xs flex items-center justify-between shadow-2xs hover:shadow-xs transition-shadow">
-          <div>
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Repeat Buyer Rate</p>
-            <div className="text-xl sm:text-2xl font-black text-foreground mt-0.5">{crmStats.repeatRate}%</div>
-            <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">{crmStats.repeatBuyers} repeat shoppers</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5" />
-          </div>
-        </div>
-      </div>
-
-      {/* 8 Interactive Cohort KPI Cards */}
+      {/* 8 Interactive Cohort KPI Cards (Matching Executive Card Design) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
         {/* All Customers Tab Card */}
         <Card
@@ -1106,37 +1053,31 @@ export default function CustomerSegmentationPage() {
             setPage(1);
           }}
           className={cn(
-            "cursor-pointer border transition-all duration-200 relative overflow-hidden group hover:-translate-y-0.5",
+            "cursor-pointer border transition-all duration-200 relative overflow-hidden group hover:-translate-y-0.5 p-3.5 rounded-xl bg-card/70 backdrop-blur-xs shadow-2xs hover:shadow-xs",
             selectedSegment === "all"
               ? "border-primary ring-2 ring-primary/20 shadow-md bg-primary/[0.04] dark:bg-primary/[0.08]"
-              : "hover:border-foreground/30 hover:shadow-xs bg-card"
+              : "hover:border-foreground/30"
           )}
         >
           {selectedSegment === "all" && (
             <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
           )}
-          <CardContent className="p-3.5 flex flex-col justify-between h-full">
-            <div className="flex items-center justify-between">
-              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                <Users className="w-4 h-4" />
-              </div>
-              <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0 h-4 border-dashed">
-                All Base
-              </Badge>
-            </div>
-            <div className="my-2">
-              <div className="text-2xl font-black tracking-tight text-foreground">
-                {segmentCounts.all || 0}
-              </div>
-              <p className="text-xs font-semibold text-foreground truncate mt-0.5">
+          <div className="flex items-center justify-between gap-2 h-full">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
                 All Customers
               </p>
+              <div className="text-xl sm:text-2xl font-black text-foreground mt-0.5">
+                {segmentCounts.all || 0}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                100% of CRM base
+              </p>
             </div>
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span className="truncate">Entire directory</span>
-              <span className="font-semibold text-primary">100%</span>
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <Users className="w-5 h-5" />
             </div>
-          </CardContent>
+          </div>
         </Card>
 
         {/* 7 Segment Cards */}
@@ -1153,10 +1094,10 @@ export default function CustomerSegmentationPage() {
                 setPage(1);
               }}
               className={cn(
-                "cursor-pointer border transition-all duration-200 relative overflow-hidden group hover:-translate-y-0.5",
+                "cursor-pointer border transition-all duration-200 relative overflow-hidden group hover:-translate-y-0.5 p-3.5 rounded-xl bg-card/70 backdrop-blur-xs shadow-2xs hover:shadow-xs",
                 isSelected
                   ? "ring-2 shadow-md bg-card"
-                  : "hover:border-foreground/30 hover:shadow-xs bg-card"
+                  : "hover:border-foreground/30"
               )}
               style={{
                 borderColor: isSelected ? rule.color : undefined,
@@ -1170,47 +1111,50 @@ export default function CustomerSegmentationPage() {
                   style={{ backgroundColor: rule.color }}
                 />
               )}
-              <CardContent className="p-3.5 flex flex-col justify-between h-full">
-                <div className="flex items-center justify-between">
-                  <div
-                    className="p-1.5 rounded-lg"
-                    style={{ backgroundColor: `${rule.color}18` }}
-                  >
-                    {getSegmentIcon(rule.key, "w-4 h-4")}
+              <div className="flex items-center justify-between gap-2 h-full">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1">
+                    <p
+                      className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate"
+                      title={rule.name}
+                    >
+                      {rule.name}
+                    </p>
                   </div>
-                  <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground">
-                    #{rule.priority}
-                  </span>
-                </div>
-                <div className="my-2">
                   <div
-                    className="text-2xl font-black tracking-tight"
+                    className="text-xl sm:text-2xl font-black tracking-tight mt-0.5"
                     style={{ color: isSelected ? rule.color : undefined }}
                   >
                     {count}
                   </div>
-                  <p
-                    className="text-xs font-semibold text-foreground truncate mt-0.5"
-                    title={rule.name}
-                  >
-                    {rule.name}
-                  </p>
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground gap-1">
-                  <span className="truncate">
+                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate" title={
+                    rule.min_order_value
+                      ? `≥ ৳${Number(rule.min_order_value).toLocaleString()} • ${percentage}%`
+                      : rule.recency_days_min
+                      ? `> ${rule.recency_days_min}d inact. • ${percentage}%`
+                      : rule.min_orders_count
+                      ? `≥ ${rule.min_orders_count} ord. • ${percentage}%`
+                      : `${percentage}% of base`
+                  }>
                     {rule.min_order_value
                       ? `≥ ৳${Number(rule.min_order_value).toLocaleString()}`
                       : rule.recency_days_min
                       ? `> ${rule.recency_days_min}d inact.`
                       : rule.min_orders_count
-                      ? `≥ ${rule.min_orders_count} orders`
-                      : "Active rule"}
-                  </span>
-                  <span className="font-semibold shrink-0" style={{ color: count > 0 ? rule.color : undefined }}>
-                    {percentage}%
-                  </span>
+                      ? `≥ ${rule.min_orders_count} ord.`
+                      : "Active"} • <span className="font-semibold">{percentage}%</span>
+                  </p>
                 </div>
-              </CardContent>
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{
+                    backgroundColor: `${rule.color}18`,
+                    color: rule.color,
+                  }}
+                >
+                  {getSegmentIcon(rule.key, "w-5 h-5")}
+                </div>
+              </div>
             </Card>
           );
         })}

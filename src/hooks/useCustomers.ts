@@ -89,11 +89,14 @@ export async function addCustomerNote(
   customerId: string | number,
   payload: {
     note: string;
+    action_note?: string;
+    channel?: string;
     type?: string;
     admin_name?: string;
     status?: string;
     priority?: string;
     due_date?: string;
+    next_follow_up_date?: string;
   }
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
@@ -118,10 +121,13 @@ export async function updateCustomerNote(
   noteId: string | number,
   payload: {
     note?: string;
+    action_note?: string;
+    channel?: string;
     type?: string;
     status?: string;
     priority?: string;
     due_date?: string;
+    next_follow_up_date?: string;
   }
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
@@ -176,9 +182,54 @@ export async function updateCustomerTags(customerId: string | number, tags: stri
   return res.json();
 }
 
+export async function sendCustomerSms(payload: {
+  customer_id?: string | number;
+  phone?: string;
+  message: string;
+}) {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+  const res = await fetchClient(`${baseUrl}crm/sms/send`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to send SMS");
+  }
+
+  return res.json();
+}
+
+export async function sendBulkSms(payload: {
+  customer_ids?: (string | number)[];
+  phones?: string[];
+  message: string;
+}) {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+  const res = await fetchClient(`${baseUrl}crm/sms/send-bulk`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to send bulk SMS");
+  }
+
+  return res.json();
+}
+
 export function useFollowUps(params?: {
   status?: string;
   type?: string;
+  channel?: string;
   search?: string;
   page?: number;
   per_page?: number;
@@ -187,6 +238,7 @@ export function useFollowUps(params?: {
   const query = new URLSearchParams();
   if (params?.status && params.status !== "all") query.set("status", params.status);
   if (params?.type && params.type !== "all") query.set("type", params.type);
+  if (params?.channel && params.channel !== "all") query.set("channel", params.channel);
   if (params?.search) query.set("search", params.search);
   if (params?.page) query.set("page", String(params.page));
   if (params?.per_page) query.set("per_page", String(params.per_page));
@@ -201,6 +253,7 @@ export function useFollowUps(params?: {
   return {
     data: data?.data || [],
     total: data?.total || 0,
+    counts: data?.counts || { all: 0, today: 0, upcoming: 0, overdue: 0, completed: 0 },
     currentPage: data?.current_page || 1,
     lastPage: data?.last_page || 1,
     perPage: data?.per_page || 20,
