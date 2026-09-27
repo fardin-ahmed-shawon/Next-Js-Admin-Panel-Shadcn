@@ -27,7 +27,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export type CustomerPurchaseEntry = {
-  id: string;
+  id: string | number;
   customerName: string;
   phone: string;
   avatar: string;

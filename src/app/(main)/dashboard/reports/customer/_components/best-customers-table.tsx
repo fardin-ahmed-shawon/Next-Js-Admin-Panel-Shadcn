@@ -40,6 +40,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export interface BestCustomerRow {
+  id?: number | string;
   rank: number;
   name: string;
   email: string;
@@ -90,7 +91,7 @@ const columns: ColumnDef<BestCustomerRow>[] = [
         </div>
         <div className="flex flex-col gap-0.5">
           <Link
-            href={`/dashboard/customers/CUST-00${row.original.rank}`}
+            href={`/dashboard/customers/${row.original.id || row.original.rank}`}
             className="font-medium leading-none text-sm hover:underline text-primary"
           >
             {row.original.name}

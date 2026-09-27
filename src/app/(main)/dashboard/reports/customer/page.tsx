@@ -47,6 +47,7 @@ export default function CustomerReportPage() {
     .sort((a, b) => (b.parcel_history?.total_spent || 0) - (a.parcel_history?.total_spent || 0))
     .map((c, i) => {
       const bestRow: BestCustomerRow = {
+        id: c.id,
         rank: i + 1,
         name: c.full_name,
         email: c.email || "",

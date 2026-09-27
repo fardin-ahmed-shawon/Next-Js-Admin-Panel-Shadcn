@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { CreditCard, Minus, Package, Plus, RefreshCw, Search, Send, ShoppingCart, Truck, User, X } from "lucide-react";
 import { toast } from "sonner";
@@ -488,19 +488,39 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
     );
   }, [customerSearchQuery, customersData]);
 
+  const searchParams = useSearchParams();
+  const customerIdParam = searchParams.get("customer_id");
+
   function selectCustomer(customer: any) {
     setCustomerId(customer.id);
     setCustomerName(customer.full_name || "");
     setCustomerEmail(customer.email || "");
     setCustomerPhone(customer.phone || "");
 
-    // Automatically fill address if available in parcel_history or orders? No, just address from the model if any.
-    // They don't have address in the root JSON, so leave address blank for them to type.
+    const prefillAddr = customer.primary_address?.address || customer.address;
+    if (prefillAddr) {
+      setShippingAddress(prefillAddr);
+    }
+    if (customer.district || customer.primary_address?.district) {
+      setDistrict(customer.district || customer.primary_address?.district);
+    }
+    if (customer.division || customer.primary_address?.division) {
+      setDivision(customer.division || customer.primary_address?.division);
+    }
 
     setCustomerSearchQuery("");
     setCustomerSearchFocused(false);
     toast.success("Customer details loaded.");
   }
+
+  React.useEffect(() => {
+    if (customerIdParam && customersData.length > 0) {
+      const match = customersData.find((c) => String(c.id) === String(customerIdParam));
+      if (match) {
+        selectCustomer(match);
+      }
+    }
+  }, [customerIdParam, customersData]);
 
   const subtotal = cart.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
   const shippingCost =
