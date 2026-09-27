@@ -30,6 +30,8 @@ import {
   User,
   UserCheck,
   XCircle,
+  Banknote,
+  DollarSign,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,11 +48,14 @@ import { formatDate, getInitials } from "@/lib/utils";
 import { EditCustomerDialog } from "./_components/edit-customer-dialog";
 import { CustomerNotesSection } from "./_components/customer-notes-section";
 import { CustomerOrdersTable } from "./_components/customer-orders-table";
+import { CustomerProductOrdersTable } from "./_components/customer-product-orders-table";
+import { CustomerReturnHistoryTable } from "./_components/customer-return-history-table";
+import { CustomerPaymentsTable } from "./_components/customer-payments-table";
 import { CustomerTagsManager } from "./_components/customer-tags-manager";
 
 export default function CustomerDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const { customer, crmStats, addresses, isLoading, error, mutate } = useCustomer(id);
+  const { customer, crmStats, payments, returns = [], allNames, addresses, isLoading, error, mutate } = useCustomer(id);
 
   const [editOpen, setEditOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("orders");
@@ -72,23 +77,23 @@ export default function CustomerDetailsPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[1, 2, 3, 4, 5].map((i) => (
             <Card key={i}>
               <CardHeader className="pb-2">
                 <Skeleton className="h-4 w-24" />
               </CardHeader>
               <CardContent className="space-y-1.5">
-                <Skeleton className="h-8 w-32" />
-                <Skeleton className="h-3 w-40" />
+                <Skeleton className="h-7 w-28" />
+                <Skeleton className="h-3 w-36" />
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Skeleton className="h-[460px] rounded-xl" />
-          <Skeleton className="h-[460px] lg:col-span-2 rounded-xl" />
+        <div className="grid gap-6 grid-cols-1 xl:grid-cols-12">
+          <Skeleton className="h-[460px] xl:col-span-4 2xl:col-span-3 rounded-xl" />
+          <Skeleton className="h-[460px] xl:col-span-8 2xl:col-span-9 rounded-xl" />
         </div>
       </div>
     );
@@ -119,24 +124,60 @@ export default function CustomerDetailsPage() {
   }
 
   const orders = customer.orders || [];
-  const stats = crmStats || {
-    total_orders: orders.length,
-    delivered_orders: orders.filter((o: any) => o.order_status === "Delivered").length,
-    cancelled_orders: orders.filter((o: any) => o.order_status === "Cancelled").length,
-    returned_orders: orders.filter((o: any) => o.order_status === "Returned").length,
-    pending_orders: orders.filter((o: any) => ["Pending", "Processing", "Confirmed"].includes(o.order_status)).length,
-    total_spent: customer.parcel_history?.total_spent || 0,
-    average_order_value: customer.parcel_history?.average_order_value || 0,
-    success_rate: customer.parcel_history?.success_rate || 0,
-    return_rate: customer.parcel_history?.return_rate || 0,
-    customer_segment: customer.customer_type || "Retail",
-    first_order_date: null,
-    last_order_date: null,
+  const totalOrdersCount = orders.length;
+  const deliveredList = orders.filter((o: any) => o.order_status === "Delivered");
+  const cancelledList = orders.filter((o: any) => o.order_status === "Cancelled");
+  const returnedList = orders.filter((o: any) =>
+    ["Returned", "Partial", "Pending-Return"].includes(o.order_status) || Boolean(o.is_partial_return)
+  );
+
+  const stats = {
+    total_orders: crmStats?.total_orders ?? totalOrdersCount,
+
+    // Delivered: Count, %, Value
+    delivered_orders: crmStats?.delivered_orders ?? deliveredList.length,
+    delivered_percent: crmStats?.delivered_percent ?? (totalOrdersCount > 0 ? Math.round((deliveredList.length / totalOrdersCount) * 100) : 0),
+    delivered_value: crmStats?.delivered_value ?? deliveredList.reduce((acc: number, o: any) => acc + Number(o.grand_total_amount || 0), 0),
+
+    // Cancelled: Count, %, Value
+    cancelled_orders: crmStats?.cancelled_orders ?? cancelledList.length,
+    cancelled_percent: crmStats?.cancelled_percent ?? (totalOrdersCount > 0 ? Math.round((cancelledList.length / totalOrdersCount) * 100) : 0),
+    cancelled_value: crmStats?.cancelled_value ?? cancelledList.reduce((acc: number, o: any) => acc + Number(o.grand_total_amount || 0), 0),
+
+    // Returned: Count, %, Value
+    returned_orders: crmStats?.returned_orders ?? returnedList.length,
+    returned_percent: crmStats?.returned_percent ?? (totalOrdersCount > 0 ? Math.round((returnedList.length / totalOrdersCount) * 100) : 0),
+    returned_value: crmStats?.returned_value ?? returnedList.reduce((acc: number, o: any) => acc + Number(o.grand_total_amount || 0), 0),
+    partial_returns_count: crmStats?.partial_returns_count ?? orders.filter((o: any) => o.order_status === "Partial" || Boolean(o.is_partial_return)).length,
+
+    pending_orders: crmStats?.pending_orders ?? orders.filter((o: any) => ["Pending", "Processing", "Confirmed", "Packaging"].includes(o.order_status)).length,
+    in_courier_orders: crmStats?.in_courier_orders ?? orders.filter((o: any) => ["In-Courier", "Dispatched", "Handover"].includes(o.order_status)).length,
+
+    total_spent: crmStats?.total_spent ?? (customer.parcel_history?.total_spent || 0),
+    total_paid: crmStats?.total_paid ?? 0,
+    total_due: crmStats?.total_due ?? (customer.parcel_history?.total_spent || 0),
+    average_order_value: crmStats?.average_order_value ?? (customer.parcel_history?.average_order_value || 0),
+    success_rate: crmStats?.success_rate ?? (customer.parcel_history?.success_rate || 0),
+    return_rate: crmStats?.return_rate ?? (customer.parcel_history?.return_rate || 0),
+    customer_segment: crmStats?.customer_segment || customer.customer_type || "Retail",
+    first_order_date: crmStats?.first_order_date || null,
+    last_order_date: crmStats?.last_order_date || null,
+    all_names: crmStats?.all_names || [customer.full_name],
   };
 
   const cleanPhone = (customer.phone || "").replace(/[^0-9]/g, "").replace(/^88/, "");
   const whatsappUrl = cleanPhone ? `https://wa.me/88${cleanPhone}` : null;
   const avatarUrl = customer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.full_name || "Customer")}&background=0284c7&color=fff`;
+
+  const customerNamesList: string[] = allNames && allNames.length > 0
+    ? allNames
+    : Array.from(
+        new Set(
+          [customer.full_name, ...(orders.map((o: any) => o.customer_full_name) || [])]
+            .filter(Boolean)
+            .map((n: string) => n.trim())
+        )
+      );
 
   const copyToClipboard = (text: string, label: string) => {
     if (!text) return;
@@ -208,7 +249,7 @@ export default function CustomerDetailsPage() {
             </div>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground ml-10">
-            Comprehensive CRM profile, order history, communication logs, and customer metrics.
+            Complete CRM profile, order history, communication logs, and customer metrics.
           </p>
         </div>
 
@@ -246,123 +287,228 @@ export default function CustomerDetailsPage() {
         </div>
       </div>
 
-      {/* KPI Metric Cards */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {/* LTV */}
-        <Card className="border-border">
-          <CardHeader className="pb-2">
+      {/* KPI Metric Cards (6 Cards: Purchases, Total Paid, Orders, Delivered, Cancelled, Returned) */}
+      <div className="grid gap-3.5 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+        {/* Lifetime Purchases */}
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-1.5">
             <CardTitle className="text-xs font-medium text-muted-foreground flex items-center justify-between">
-              <span>Lifetime Value (LTV)</span>
-              <CreditCard className="size-4 text-primary opacity-80" />
+              <span>Lifetime Purchases</span>
+              <ShoppingBag className="size-3.5 text-primary opacity-80" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-primary">
+            <div className="text-xl font-bold tracking-tight text-primary">
               ৳{Number(stats.total_spent || 0).toLocaleString()}
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              Avg Order: ৳{Number(stats.average_order_value || 0).toLocaleString()}
-            </p>
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1.5 pt-1 border-t border-border/50">
+              <span>Avg Order:</span>
+              <span className="font-semibold text-foreground">
+                ৳{Number(stats.average_order_value || 0).toLocaleString()}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Paid */}
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-1.5">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+              <span>Total Paid</span>
+              <CreditCard className="size-3.5 text-emerald-600 opacity-80" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+              ৳{Number(stats.total_paid || 0).toLocaleString()}
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1.5 pt-1 border-t border-border/50">
+              <span>Due:</span>
+              <span
+                className={
+                  Number(stats.total_due || 0) > 0
+                    ? "font-bold text-amber-600 dark:text-amber-400"
+                    : "font-semibold text-foreground"
+                }
+              >
+                ৳{Number(stats.total_due || 0).toLocaleString()}
+              </span>
+            </div>
           </CardContent>
         </Card>
 
         {/* Total Orders */}
-        <Card className="border-border">
-          <CardHeader className="pb-2">
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-1.5">
             <CardTitle className="text-xs font-medium text-muted-foreground flex items-center justify-between">
-              <span>Total Purchases</span>
-              <Package className="size-4 text-blue-500 opacity-80" />
+              <span>Total Orders</span>
+              <Package className="size-3.5 text-blue-500 opacity-80" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-foreground">
-              {stats.total_orders} <span className="text-xs font-normal text-muted-foreground">orders</span>
+            <div className="text-xl font-bold tracking-tight text-foreground">
+              {stats.total_orders}{" "}
+              <span className="text-xs font-normal text-muted-foreground">orders</span>
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                {stats.delivered_orders} delivered
-              </span>
-              <span>·</span>
-              <span className="text-amber-600 dark:text-amber-400 font-medium">
-                {stats.pending_orders} pending
-              </span>
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1.5 pt-1 border-t border-border/50">
+              <span className="text-amber-600 font-medium">{stats.pending_orders || 0} pending</span>
+              <span className="text-blue-600 font-medium">{stats.in_courier_orders || 0} courier</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Courier Success Rate */}
-        <Card className="border-border">
-          <CardHeader className="pb-2">
+        {/* Delivered */}
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-1.5">
             <CardTitle className="text-xs font-medium text-muted-foreground flex items-center justify-between">
-              <span>Delivery Success</span>
-              <Truck className="size-4 text-emerald-500 opacity-80" />
+              <span>Delivered</span>
+              <CheckCircle2 className="size-3.5 text-emerald-600 opacity-90" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-baseline justify-between">
-              <div className="text-2xl font-bold tracking-tight text-foreground">
-                {stats.success_rate}%
+            <div className="flex items-baseline justify-between gap-1">
+              <div className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+                {stats.delivered_orders}{" "}
+                <span className="text-xs font-normal text-muted-foreground">orders</span>
               </div>
-              <span className="text-[11px] text-muted-foreground">
-                Return: {stats.return_rate}%
+              <Badge
+                variant="outline"
+                className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0 font-semibold"
+              >
+                {stats.delivered_percent}%
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1.5 pt-1 border-t border-border/50">
+              <span>Value:</span>
+              <span className="font-semibold text-foreground">
+                ৳{Number(stats.delivered_value || 0).toLocaleString()}
               </span>
             </div>
-            <Progress value={stats.success_rate} className="h-1.5 mt-2 bg-muted" />
           </CardContent>
         </Card>
 
-        {/* Timeline / Retention */}
-        <Card className="border-border">
-          <CardHeader className="pb-2">
+        {/* Cancelled */}
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-1.5">
             <CardTitle className="text-xs font-medium text-muted-foreground flex items-center justify-between">
-              <span>Customer Activity</span>
-              <Calendar className="size-4 text-purple-500 opacity-80" />
+              <span>Cancelled</span>
+              <XCircle className="size-3.5 text-rose-500 opacity-90" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm font-semibold text-foreground truncate">
-              {stats.last_order_date ? `Last: ${stats.last_order_date.split(" ")[0]}` : "No purchases yet"}
+            <div className="flex items-baseline justify-between gap-1">
+              <div className="text-xl font-bold tracking-tight text-rose-600 dark:text-rose-400">
+                {stats.cancelled_orders}{" "}
+                <span className="text-xs font-normal text-muted-foreground">orders</span>
+              </div>
+              <Badge
+                variant="outline"
+                className="bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 text-[10px] px-1.5 py-0 font-semibold"
+              >
+                {stats.cancelled_percent}%
+              </Badge>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              Joined {formatDate(customer.created_at)}
-            </p>
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1.5 pt-1 border-t border-border/50">
+              <span>Value:</span>
+              <span className="font-semibold text-foreground">
+                ৳{Number(stats.cancelled_value || 0).toLocaleString()}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Returned */}
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-1.5">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+              <span>Returned</span>
+              <RotateCcw className="size-3.5 text-amber-500 opacity-90" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline justify-between gap-1">
+              <div className="text-xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
+                {stats.returned_orders}{" "}
+                <span className="text-xs font-normal text-muted-foreground">orders</span>
+              </div>
+              <Badge
+                variant="outline"
+                className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 text-[10px] px-1.5 py-0 font-semibold"
+              >
+                {stats.returned_percent}%
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1.5 pt-1 border-t border-border/50">
+              <span>Value:</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-foreground">
+                  ৳{Number(stats.returned_value || 0).toLocaleString()}
+                </span>
+                {Number(stats.partial_returns_count || 0) > 0 && (
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                    ({stats.partial_returns_count} Partial)
+                  </span>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Grid: Left Profile Card + Right Tabs */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column: Customer Profile & Details */}
-        <div className="space-y-6 lg:col-span-1">
-          {/* Identity Card */}
-          <Card className="border-border">
-            <CardContent className="pt-6 flex flex-col items-center text-center gap-4">
-              <Avatar className="size-20 border-2 border-primary/20 shadow-sm">
+      {/* Main Grid: Reduced Left Column Width (xl:col-span-4 2xl:col-span-3) + Increased Right Column (xl:col-span-8 2xl:col-span-9) */}
+      <div className="grid gap-6 grid-cols-1 xl:grid-cols-12">
+        {/* Left Column: Compact Profile Summary */}
+        <div className="space-y-6 xl:col-span-4 2xl:col-span-3">
+          <Card className="border-border shadow-sm">
+            <CardContent className="pt-6 flex flex-col items-center text-center gap-3.5">
+              <Avatar className="size-16 border-2 border-primary/20 shadow-sm">
                 <AvatarImage src={avatarUrl} alt={customer.full_name} />
-                <AvatarFallback className="text-xl font-bold bg-primary/10 text-primary">
+                <AvatarFallback className="text-lg font-bold bg-primary/10 text-primary">
                   {getInitials(customer.full_name)}
                 </AvatarFallback>
               </Avatar>
 
               <div className="space-y-1">
-                <h2 className="text-lg font-bold text-foreground">{customer.full_name}</h2>
-                <div className="flex items-center justify-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {customer.password ? "Registered Account" : "Guest Buyer"}
+                <h2 className="text-base font-bold text-foreground leading-snug">{customer.full_name}</h2>
+                <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                  <Badge variant="outline" className="text-[11px] py-0 px-2">
+                    {customer.password ? "Registered" : "Guest Buyer"}
                   </Badge>
-                  <span className="text-xs text-muted-foreground capitalize">
-                    {customer.gender !== "unknown" ? customer.gender : ""}
-                  </span>
+                  {customer.gender && customer.gender !== "unknown" && (
+                    <span className="text-[11px] text-muted-foreground capitalize">
+                      {customer.gender}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Customer All Full Name Variations List */}
+              <div className="w-full text-left space-y-1.5">
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <UserCheck className="size-3 text-primary" /> Full Name Variations ({customerNamesList.length})
+                </span>
+                <div className="flex flex-col gap-1">
+                  {customerNamesList.map((name, i) => (
+                    <div
+                      key={i}
+                      className="text-xs bg-muted/40 border rounded px-2 py-1 flex items-center justify-between"
+                    >
+                      <span className="font-medium text-foreground">{name}</span>
+                      {i === 0 && <span className="text-[10px] text-primary font-semibold">Primary</span>}
+                    </div>
+                  ))}
                 </div>
               </div>
 
               <Separator />
 
               {/* Contact details */}
-              <div className="w-full space-y-3.5 text-xs text-left">
+              <div className="w-full space-y-2.5 text-xs text-left">
                 <div className="flex items-center justify-between group">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Phone className="size-4 text-muted-foreground shrink-0" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Phone className="size-3.5 text-muted-foreground shrink-0" />
                     <span className="font-semibold text-foreground truncate">{customer.phone}</span>
                   </div>
                   <Button
@@ -376,9 +522,9 @@ export default function CustomerDetailsPage() {
                 </div>
 
                 <div className="flex items-center justify-between group">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Mail className="size-4 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-foreground truncate max-w-[190px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Mail className="size-3.5 text-muted-foreground shrink-0" />
+                    <span className="font-medium text-foreground truncate max-w-[170px]">
                       {customer.email || "No email registered"}
                     </span>
                   </div>
@@ -394,10 +540,10 @@ export default function CustomerDetailsPage() {
                   )}
                 </div>
 
-                <div className="flex items-start gap-2.5">
-                  <MapPin className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2">
+                  <MapPin className="size-3.5 text-muted-foreground shrink-0 mt-0.5" />
                   <div className="min-w-0">
-                    <span className="font-medium text-foreground leading-relaxed">
+                    <span className="font-medium text-foreground leading-relaxed block">
                       {primaryAddr.address || "No address recorded"}
                     </span>
                     {(primaryAddr.city || primaryAddr.district) && (
@@ -413,7 +559,7 @@ export default function CustomerDetailsPage() {
 
               <Separator />
 
-              {/* Tags Section */}
+              {/* CRM Tags Section */}
               <div className="w-full text-left">
                 <CustomerTagsManager
                   customerId={customer.id}
@@ -425,36 +571,36 @@ export default function CustomerDetailsPage() {
               <Separator />
 
               {/* Fraud & Courier Assessment */}
-              <div className="w-full text-left space-y-2">
+              <div className="w-full text-left space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <ShieldCheck className="size-3.5" /> Courier Trust Score
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldCheck className="size-3 text-emerald-600" /> Delivery Trust
                   </span>
                   <Badge
                     variant="outline"
                     className={
                       stats.return_rate > 30
-                        ? "text-rose-600 border-rose-200 bg-rose-50"
-                        : "text-emerald-600 border-emerald-200 bg-emerald-50"
+                        ? "text-rose-600 border-rose-200 bg-rose-50 text-[10px]"
+                        : "text-emerald-600 border-emerald-200 bg-emerald-50 text-[10px]"
                     }
                   >
-                    {stats.return_rate > 30 ? "Careful" : "Reliable"}
+                    {stats.return_rate > 30 ? "High Return Risk" : "Good Buyer"}
                   </Badge>
                 </div>
 
-                <div className="rounded-md border bg-muted/40 p-2.5 space-y-1.5 text-xs">
+                <div className="rounded-md border bg-muted/30 p-2 space-y-1 text-xs">
                   <div className="flex justify-between text-muted-foreground">
                     <span>Delivered Orders:</span>
                     <span className="font-semibold text-foreground">{stats.delivered_orders}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Cancelled / Returned:</span>
+                    <span>Cancelled / Returns:</span>
                     <span className="font-semibold text-foreground">
                       {stats.cancelled_orders + stats.returned_orders}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Success Rate:</span>
+                    <span>Delivery Success Rate:</span>
                     <span className="font-bold text-foreground">{stats.success_rate}%</span>
                   </div>
                 </div>
@@ -462,8 +608,8 @@ export default function CustomerDetailsPage() {
 
               <Separator />
 
-              {/* System Metadata */}
-              <div className="w-full space-y-1.5 text-[11px] text-muted-foreground text-left">
+              {/* Metadata */}
+              <div className="w-full space-y-1 text-[11px] text-muted-foreground text-left">
                 <div className="flex justify-between">
                   <span>Customer Since:</span>
                   <span>{formatDate(customer.created_at)}</span>
@@ -479,13 +625,21 @@ export default function CustomerDetailsPage() {
           </Card>
         </div>
 
-        {/* Right Column: Tabbed Sections */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Right Area: Spacious Tabs Content (xl:col-span-8 2xl:col-span-9) */}
+        <div className="xl:col-span-8 2xl:col-span-9 space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
               <TabsTrigger value="orders" className="text-xs gap-1.5">
                 <ShoppingBag className="size-3.5" />
                 <span>Orders ({orders.length})</span>
+              </TabsTrigger>
+              <TabsTrigger value="returns" className="text-xs gap-1.5">
+                <RotateCcw className="size-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Return History ({returns.length || stats.returned_orders || 0})</span>
+              </TabsTrigger>
+              <TabsTrigger value="payments" className="text-xs gap-1.5">
+                <CreditCard className="size-3.5" />
+                <span>Payments ({payments.length})</span>
               </TabsTrigger>
               <TabsTrigger value="notes" className="text-xs gap-1.5">
                 <MessageSquare className="size-3.5" />
@@ -497,9 +651,33 @@ export default function CustomerDetailsPage() {
               </TabsTrigger>
             </TabsList>
 
-            {/* Orders Tab */}
-            <TabsContent value="orders" className="mt-4">
-              <CustomerOrdersTable orders={orders} customerId={customer.id} />
+            {/* Orders Tab: Orders Table + Bottom Product-wise Orders Data */}
+            <TabsContent value="orders" className="mt-4 space-y-6">
+              <CustomerOrdersTable
+                orders={orders}
+                customerId={customer.id}
+                customerPrimaryName={customer.full_name}
+              />
+
+              {/* Bottom Section: Product-wise Orders Data working with delivery status */}
+              <CustomerProductOrdersTable
+                orders={orders}
+                customerId={customer.id}
+              />
+            </TabsContent>
+
+            {/* Return History Tab */}
+            <TabsContent value="returns" className="mt-4">
+              <CustomerReturnHistoryTable
+                returns={returns}
+                orders={orders}
+                customerId={customer.id}
+              />
+            </TabsContent>
+
+            {/* Payments Tab (Requested New Feature) */}
+            <TabsContent value="payments" className="mt-4">
+              <CustomerPaymentsTable payments={payments} customerId={customer.id} />
             </TabsContent>
 
             {/* Notes Tab */}
@@ -513,7 +691,7 @@ export default function CustomerDetailsPage() {
 
             {/* Addresses Tab */}
             <TabsContent value="addresses" className="mt-4">
-              <Card className="border-border">
+              <Card className="border-border shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
                     <MapPin className="size-4 text-primary" /> Delivery Addresses History
@@ -528,11 +706,11 @@ export default function CustomerDetailsPage() {
                       No shipping addresses saved yet.
                     </div>
                   ) : (
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {addresses.map((item: any, idx: number) => (
                         <div
                           key={idx}
-                          className="rounded-lg border p-4 bg-card hover:border-primary/40 transition-colors flex flex-col justify-between gap-3"
+                          className="rounded-lg border p-4 bg-card hover:border-primary/40 transition-colors flex flex-col justify-between gap-3 shadow-sm"
                         >
                           <div className="space-y-1">
                             <div className="flex items-center justify-between">

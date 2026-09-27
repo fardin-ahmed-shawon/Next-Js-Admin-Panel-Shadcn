@@ -56,6 +56,9 @@ export function useCustomer(id: string | number | undefined) {
   return {
     customer: data?.data || null,
     crmStats: data?.crm_stats || null,
+    payments: data?.payments || [],
+    returns: data?.returns || [],
+    allNames: data?.all_names || [],
     addresses: data?.addresses || [],
     raw: data,
     error,
