@@ -21,6 +21,8 @@ import {
   AlertTriangle,
   CreditCard,
   UserX,
+  Crown,
+  Tag,
 } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,12 +31,273 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { useCustomers } from "@/hooks/useCustomers";
-import { formatDate, getInitials } from "@/lib/utils";
+import { useCustomers, useSegmentationRules, CustomerSegmentRule } from "@/hooks/useCustomers";
+import { formatDate, getInitials, cn } from "@/lib/utils";
+
+const DEFAULT_FALLBACK_RULES: CustomerSegmentRule[] = [
+  {
+    id: 1,
+    key: "vip",
+    name: "VIP Spenders",
+    description: "Top spenders with high repeat orders and strong loyalty",
+    color: "#f59e0b",
+    priority: 1,
+    min_order_value: 10000,
+    min_orders_count: 5,
+    recency_days_max: 90,
+    min_delivery_success_rate: 70,
+    is_active: true,
+  },
+  {
+    id: 2,
+    key: "high_value",
+    name: "High Value Customer",
+    description: "High basket size spenders who make substantial purchases",
+    color: "#8b5cf6",
+    priority: 2,
+    min_order_value: 8000,
+    max_order_value: 14999.99,
+    recency_days_max: 90,
+    is_active: true,
+  },
+  {
+    id: 3,
+    key: "returning",
+    name: "Repeat Buyers",
+    description: "Customers who placed 2 or more orders with steady engagement",
+    color: "#3b82f6",
+    priority: 3,
+    min_orders_count: 2,
+    recency_days_max: 60,
+    min_delivery_success_rate: 60,
+    is_active: true,
+  },
+  {
+    id: 4,
+    key: "new",
+    name: "New Buyers",
+    description: "Recently acquired buyers who placed their first order within 30 days",
+    color: "#10b981",
+    priority: 4,
+    min_orders_count: 1,
+    max_orders_count: 1,
+    recency_days_max: 30,
+    is_active: true,
+  },
+  {
+    id: 5,
+    key: "inactive",
+    name: "At-Risk (Inactive)",
+    description: "Past buyers who have not placed any order in 60+ days",
+    color: "#a855f7",
+    priority: 5,
+    min_orders_count: 1,
+    recency_days_min: 60,
+    is_active: true,
+  },
+  {
+    id: 6,
+    key: "lost",
+    name: "Return Risk",
+    description: "Customers with higher return rates or prolonged churn",
+    color: "#ef4444",
+    priority: 6,
+    max_return_rate: 30,
+    recency_days_min: 90,
+    is_active: true,
+  },
+  {
+    id: 7,
+    key: "low_value",
+    name: "Low Value Customer",
+    description: "Buyers with total lifetime purchase value below ৳1,000",
+    color: "#64748b",
+    priority: 7,
+    max_order_value: 1000,
+    max_orders_count: 1,
+    is_active: true,
+  },
+];
+
+// Human-readable criteria summary generator
+function getRuleCriteriaSummary(rule: any): string {
+  const parts: string[] = [];
+  if (rule.min_order_value && rule.max_order_value) {
+    parts.push(`Spend ৳${Number(rule.min_order_value).toLocaleString()} - ৳${Number(rule.max_order_value).toLocaleString()}`);
+  } else if (rule.min_order_value) {
+    parts.push(`Spend ৳${Number(rule.min_order_value).toLocaleString()}+`);
+  } else if (rule.max_order_value) {
+    parts.push(`Spend under ৳${Number(rule.max_order_value).toLocaleString()}`);
+  }
+
+  if (rule.min_orders_count && rule.max_orders_count) {
+    parts.push(`${rule.min_orders_count}-${rule.max_orders_count} orders`);
+  } else if (rule.min_orders_count) {
+    parts.push(`${rule.min_orders_count}+ orders`);
+  } else if (rule.max_orders_count) {
+    parts.push(`≤ ${rule.max_orders_count} orders`);
+  }
+
+  if (rule.recency_days_max && rule.recency_days_min) {
+    parts.push(`Last order ${rule.recency_days_min}-${rule.recency_days_max}d ago`);
+  } else if (rule.recency_days_max) {
+    parts.push(`Joined/ordered in last ${rule.recency_days_max}d`);
+  } else if (rule.recency_days_min) {
+    parts.push(`No purchases in ${rule.recency_days_min}+ days`);
+  }
+
+  if (rule.min_delivery_success_rate) {
+    parts.push(`${rule.min_delivery_success_rate}%+ success`);
+  }
+  if (rule.max_return_rate) {
+    parts.push(`Return rate above ${rule.max_return_rate}%`);
+  }
+
+  return parts.length > 0 ? parts.join(" • ") : (rule.description || "Active criteria");
+}
+
+function getRuleTag(key: string): string {
+  switch (key) {
+    case "vip":
+      return "VIP Tier";
+    case "high_value":
+      return "High Value";
+    case "returning":
+      return "Loyal";
+    case "new":
+      return "Recent";
+    case "inactive":
+      return "Re-engage";
+    case "lost":
+      return "High Risk";
+    case "low_value":
+      return "Budget";
+    default:
+      return "Segment";
+  }
+}
+
+function getRuleFooterNote(key: string, count: number, percent: number): string {
+  if (key === "lost" || key === "return_risk") {
+    return count > 0 ? "Caution on COD" : "Zero risk";
+  }
+  if (key === "inactive" || key === "at_risk") {
+    return count > 0 ? "Win-back target" : "0% of base";
+  }
+  return `${percent}% of base`;
+}
+
+function getSegmentIcon(key: string, className = "size-4") {
+  switch (key) {
+    case "vip":
+      return <Crown className={className} />;
+    case "high_value":
+      return <Sparkles className={className} />;
+    case "returning":
+      return <RotateCcw className={className} />;
+    case "new":
+      return <Calendar className={className} />;
+    case "inactive":
+      return <Clock className={className} />;
+    case "lost":
+      return <UserX className={className} />;
+    case "low_value":
+      return <Tag className={className} />;
+    default:
+      return <Users className={className} />;
+  }
+}
 
 export default function CrmDashboardPage() {
   const { data: response, isLoading, error } = useCustomers();
   const rawCustomers: any[] = response?.data || [];
+
+  const { rules: fetchedRules = [], isLoading: isRulesLoading } = useSegmentationRules();
+  const segmentationRules = React.useMemo(() => {
+    return fetchedRules && fetchedRules.length > 0 ? fetchedRules : DEFAULT_FALLBACK_RULES;
+  }, [fetchedRules]);
+
+  // Evaluate dynamic customer segmentation using actual admin rules
+  const { segmentCounts } = React.useMemo(() => {
+    const activeRules = [...(segmentationRules || [])]
+      .filter((r) => r.is_active)
+      .sort((a, b) => a.priority - b.priority);
+
+    const counts: Record<string, number> = { all: rawCustomers.length };
+    activeRules.forEach((r) => {
+      counts[r.key] = 0;
+    });
+
+    rawCustomers.forEach((c: any) => {
+      const orders = c.orders || [];
+      const orderCount = orders.length;
+      const spent = orders.reduce((sum: number, o: any) => sum + Number(o.grand_total_amount || 0), 0);
+      let productsCount = 0;
+      orders.forEach((o: any) => {
+        if (o.ordered_products && Array.isArray(o.ordered_products)) {
+          o.ordered_products.forEach((p: any) => {
+            productsCount += Number(p.qty || 1);
+          });
+        }
+      });
+      if (c.segment_metrics?.products_count !== undefined) {
+        productsCount = c.segment_metrics.products_count;
+      }
+
+      const delivered = orders.filter((o: any) => o.order_status === "Delivered").length;
+      const returned = orders.filter((o: any) =>
+        ["Returned", "Partial", "Pending-Return"].includes(o.order_status) || Boolean(o.is_partial_return)
+      ).length;
+
+      const successRate = orderCount > 0 ? Math.round((delivered / orderCount) * 100) : 0;
+      const returnRate = orderCount > 0 ? Math.round((returned / orderCount) * 100) : 0;
+
+      let daysSinceLastOrder: number | null = null;
+      if (orders.length > 0) {
+        const timestamps = orders
+          .map((o: any) => new Date(o.created_at).getTime())
+          .filter((t: number) => !isNaN(t));
+        if (timestamps.length > 0) {
+          const lastOrderDate = new Date(Math.max(...timestamps));
+          const diffMs = new Date().getTime() - lastOrderDate.getTime();
+          daysSinceLastOrder = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+        }
+      }
+
+      // Check matching rule dynamically against active rules
+      let matchedRule: CustomerSegmentRule | null = null;
+      for (const rule of activeRules) {
+        let isMatch = true;
+
+        if (rule.min_order_value !== null && rule.min_order_value !== undefined && spent < rule.min_order_value) isMatch = false;
+        if (rule.max_order_value !== null && rule.max_order_value !== undefined && spent > rule.max_order_value) isMatch = false;
+        if (rule.min_orders_count !== null && rule.min_orders_count !== undefined && orderCount < rule.min_orders_count) isMatch = false;
+        if (rule.max_orders_count !== null && rule.max_orders_count !== undefined && orderCount > rule.max_orders_count) isMatch = false;
+        if (rule.min_products_count !== null && rule.min_products_count !== undefined && productsCount < rule.min_products_count) isMatch = false;
+        if (rule.max_products_count !== null && rule.max_products_count !== undefined && productsCount > rule.max_products_count) isMatch = false;
+        if (rule.recency_days_min !== null && rule.recency_days_min !== undefined) {
+          if (daysSinceLastOrder === null || daysSinceLastOrder < rule.recency_days_min) isMatch = false;
+        }
+        if (rule.recency_days_max !== null && rule.recency_days_max !== undefined) {
+          if (daysSinceLastOrder === null || daysSinceLastOrder > rule.recency_days_max) isMatch = false;
+        }
+        if (rule.min_delivery_success_rate !== null && rule.min_delivery_success_rate !== undefined && successRate < rule.min_delivery_success_rate) isMatch = false;
+        if (rule.max_return_rate !== null && rule.max_return_rate !== undefined && returnRate > rule.max_return_rate) isMatch = false;
+
+        if (isMatch) {
+          matchedRule = rule;
+          break;
+        }
+      }
+
+      const segmentKey = matchedRule ? matchedRule.key : "returning";
+      if (counts[segmentKey] !== undefined) {
+        counts[segmentKey]++;
+      }
+    });
+
+    return { segmentCounts: counts };
+  }, [rawCustomers, segmentationRules]);
 
   // Compute CRM Aggregates
   const crmAnalytics = React.useMemo(() => {
@@ -191,9 +454,6 @@ export default function CrmDashboardPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-bold tracking-tight">CRM Dashboard</h1>
-            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs">
-              Customer Intelligence
-            </Badge>
           </div>
           <p className="text-muted-foreground text-sm">
             Holistic relationship metrics, lifetime value, segmentation cohorts, and follow-up activities.
@@ -324,151 +584,79 @@ export default function CrmDashboardPage() {
         </CardHeader>
 
         <CardContent className="p-4 sm:p-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {/* VIP High Spenders */}
-            <Link
-              href="/dashboard/crm/segmentation?tab=vip"
-              className="rounded-xl border p-4 bg-card hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group shadow-sm flex flex-col justify-between"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="size-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
-                    <Award className="size-4" />
-                  </span>
-                  <Badge className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30 text-[10px]">
-                    VIP Tier
-                  </Badge>
-                </div>
-                <h4 className="text-sm font-semibold text-foreground group-hover:text-amber-600 transition-colors">
-                  VIP Spenders
-                </h4>
-                <p className="text-xs text-muted-foreground">Spend ৳10,000+ or 5+ orders</p>
-              </div>
-              <div className="pt-4 border-t mt-4 flex items-baseline justify-between">
-                <span className="text-2xl font-bold text-foreground">
-                  {crmAnalytics.vipCustomersCount}
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  {crmAnalytics.totalCustomers > 0 ? Math.round((crmAnalytics.vipCustomersCount / crmAnalytics.totalCustomers) * 100) : 0}% of base
-                </span>
-              </div>
-            </Link>
+          <div className="grid gap-3.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+            {segmentationRules.filter((r) => r.is_active).map((rule) => {
+              const count = segmentCounts[rule.key] || 0;
+              const percent = crmAnalytics.totalCustomers > 0 ? Math.round((count / crmAnalytics.totalCustomers) * 100) : 0;
+              const tag = getRuleTag(rule.key);
+              const criteria = getRuleCriteriaSummary(rule);
+              const footerNote = getRuleFooterNote(rule.key, count, percent);
+              const isHighRisk = rule.key === "lost";
 
-            {/* Loyal Customers */}
-            <Link
-              href="/dashboard/crm/segmentation?tab=loyal"
-              className="rounded-xl border p-4 bg-card hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group shadow-sm flex flex-col justify-between"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="size-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-                    <UserCheck className="size-4" />
-                  </span>
-                  <Badge className="bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30 text-[10px]">
-                    Loyal
-                  </Badge>
-                </div>
-                <h4 className="text-sm font-semibold text-foreground group-hover:text-blue-600 transition-colors">
-                  Repeat Buyers
-                </h4>
-                <p className="text-xs text-muted-foreground">2+ orders & 60%+ success</p>
-              </div>
-              <div className="pt-4 border-t mt-4 flex items-baseline justify-between">
-                <span className="text-2xl font-bold text-foreground">
-                  {crmAnalytics.loyalCustomersCount}
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  {crmAnalytics.totalCustomers > 0 ? Math.round((crmAnalytics.loyalCustomersCount / crmAnalytics.totalCustomers) * 100) : 0}% of base
-                </span>
-              </div>
-            </Link>
+              return (
+                <Link
+                  key={rule.key}
+                  href={`/dashboard/crm/segmentation?segment=${rule.key}`}
+                  className="rounded-xl border p-4 bg-card hover:border-primary/50 hover:shadow-sm transition-all group shadow-2xs flex flex-col justify-between hover:-translate-y-0.5"
+                  style={{
+                    borderColor: `${rule.color}35`,
+                  }}
+                >
+                  <div className="space-y-2">
+                    {/* Top Row: Icon + Badge */}
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="size-8 rounded-lg flex items-center justify-center font-bold"
+                        style={{
+                          backgroundColor: `${rule.color}15`,
+                          color: rule.color,
+                        }}
+                      >
+                        {getSegmentIcon(rule.key, "size-4")}
+                      </span>
+                      <Badge
+                        className="text-[10px] px-2 py-0.5 rounded-full font-medium border"
+                        style={{
+                          backgroundColor: `${rule.color}18`,
+                          color: rule.color,
+                          borderColor: `${rule.color}35`,
+                        }}
+                      >
+                        {tag}
+                      </Badge>
+                    </div>
 
-            {/* New Customers */}
-            <Link
-              href="/dashboard/crm/segmentation?tab=new"
-              className="rounded-xl border p-4 bg-card hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all group shadow-sm flex flex-col justify-between"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="size-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-                    <Calendar className="size-4" />
-                  </span>
-                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[10px]">
-                    Recent
-                  </Badge>
-                </div>
-                <h4 className="text-sm font-semibold text-foreground group-hover:text-emerald-600 transition-colors">
-                  New Buyers
-                </h4>
-                <p className="text-xs text-muted-foreground">Joined within last 30 days</p>
-              </div>
-              <div className="pt-4 border-t mt-4 flex items-baseline justify-between">
-                <span className="text-2xl font-bold text-foreground">
-                  {crmAnalytics.newCustomersCount}
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  {crmAnalytics.totalCustomers > 0 ? Math.round((crmAnalytics.newCustomersCount / crmAnalytics.totalCustomers) * 100) : 0}% of base
-                </span>
-              </div>
-            </Link>
+                    {/* Middle: Title + Criteria */}
+                    <h4 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                      {rule.name}
+                    </h4>
+                    <p className="text-xs text-muted-foreground line-clamp-1" title={criteria}>
+                      {criteria}
+                    </p>
+                  </div>
 
-            {/* At-Risk / Inactive */}
-            <Link
-              href="/dashboard/crm/segmentation?tab=at_risk"
-              className="rounded-xl border p-4 bg-card hover:border-purple-500/50 hover:bg-purple-500/5 transition-all group shadow-sm flex flex-col justify-between"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="size-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
-                    <Clock className="size-4" />
-                  </span>
-                  <Badge className="bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30 text-[10px]">
-                    Re-engage
-                  </Badge>
-                </div>
-                <h4 className="text-sm font-semibold text-foreground group-hover:text-purple-600 transition-colors">
-                  At-Risk (Inactive)
-                </h4>
-                <p className="text-xs text-muted-foreground">No purchases in 60+ days</p>
-              </div>
-              <div className="pt-4 border-t mt-4 flex items-baseline justify-between">
-                <span className="text-2xl font-bold text-foreground">
-                  {crmAnalytics.atRiskCustomersCount}
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  Win-back target
-                </span>
-              </div>
-            </Link>
-
-            {/* High Return Risk */}
-            <Link
-              href="/dashboard/crm/segmentation?tab=high_risk"
-              className="rounded-xl border p-4 bg-card hover:border-rose-500/50 hover:bg-rose-500/5 transition-all group shadow-sm flex flex-col justify-between"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="size-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold">
-                    <ShieldAlert className="size-4" />
-                  </span>
-                  <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 text-[10px]">
-                    High Risk
-                  </Badge>
-                </div>
-                <h4 className="text-sm font-semibold text-foreground group-hover:text-rose-600 transition-colors">
-                  Return Risk
-                </h4>
-                <p className="text-xs text-muted-foreground">Return rate above 30%</p>
-              </div>
-              <div className="pt-4 border-t mt-4 flex items-baseline justify-between">
-                <span className="text-2xl font-bold text-rose-600 dark:text-rose-400">
-                  {crmAnalytics.highReturnRiskCount}
-                </span>
-                <span className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold">
-                  Caution on COD
-                </span>
-              </div>
-            </Link>
+                  {/* Divider & Bottom: Count + % of base */}
+                  <div className="pt-3 border-t mt-3 flex items-baseline justify-between">
+                    <span
+                      className={cn(
+                        "text-2xl font-bold",
+                        isHighRisk ? "text-rose-600 dark:text-rose-400" : "text-foreground"
+                      )}
+                    >
+                      {count}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[11px]",
+                        isHighRisk ? "text-rose-600 dark:text-rose-400 font-semibold" : "text-muted-foreground"
+                      )}
+                    >
+                      {footerNote}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

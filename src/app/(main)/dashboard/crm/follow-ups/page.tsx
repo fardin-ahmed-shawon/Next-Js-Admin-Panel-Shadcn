@@ -391,9 +391,6 @@ export default function FollowUpsPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               Customer Follow-Up Management
             </h1>
-            <Badge variant="secondary" className="font-semibold text-xs bg-primary/10 text-primary border-primary/20">
-              Active CRM Queue
-            </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             Organize scheduled customer follow-up dates, next actions, multi-channel outreach, and instant single/bulk SMS notifications.

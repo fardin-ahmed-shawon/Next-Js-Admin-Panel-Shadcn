@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Users,
   Award,
@@ -91,17 +92,213 @@ const COLOR_PRESETS = [
   "#06b6d4", // Cyan
 ];
 
-export default function CustomerSegmentationPage() {
+const DEFAULT_FALLBACK_RULES: CustomerSegmentRule[] = [
+  {
+    id: 1,
+    key: "vip",
+    name: "VIP Spenders",
+    description: "Top spenders with high repeat orders and strong loyalty",
+    color: "#f59e0b",
+    priority: 1,
+    min_order_value: 10000,
+    min_orders_count: 5,
+    recency_days_max: 90,
+    min_delivery_success_rate: 70,
+    is_active: true,
+  },
+  {
+    id: 2,
+    key: "high_value",
+    name: "High Value Customer",
+    description: "High basket size spenders who make substantial purchases",
+    color: "#8b5cf6",
+    priority: 2,
+    min_order_value: 8000,
+    max_order_value: 14999.99,
+    recency_days_max: 90,
+    is_active: true,
+  },
+  {
+    id: 3,
+    key: "returning",
+    name: "Repeat Buyers",
+    description: "Customers who placed 2 or more orders with steady engagement",
+    color: "#3b82f6",
+    priority: 3,
+    min_orders_count: 2,
+    recency_days_max: 60,
+    min_delivery_success_rate: 60,
+    is_active: true,
+  },
+  {
+    id: 4,
+    key: "new",
+    name: "New Buyers",
+    description: "Recently acquired buyers who placed their first order within 30 days",
+    color: "#10b981",
+    priority: 4,
+    min_orders_count: 1,
+    max_orders_count: 1,
+    recency_days_max: 30,
+    is_active: true,
+  },
+  {
+    id: 5,
+    key: "inactive",
+    name: "At-Risk (Inactive)",
+    description: "Past buyers who have not placed any order in 60+ days",
+    color: "#a855f7",
+    priority: 5,
+    min_orders_count: 1,
+    recency_days_min: 60,
+    is_active: true,
+  },
+  {
+    id: 6,
+    key: "lost",
+    name: "Return Risk",
+    description: "Customers with high return rate or prolonged churn",
+    color: "#ef4444",
+    priority: 6,
+    max_return_rate: 30,
+    recency_days_min: 90,
+    is_active: true,
+  },
+  {
+    id: 7,
+    key: "low_value",
+    name: "Low Value Customer",
+    description: "Buyers with total lifetime purchase value below ৳1,000",
+    color: "#64748b",
+    priority: 7,
+    max_order_value: 1000,
+    max_orders_count: 1,
+    is_active: true,
+  },
+];
+
+// Human-readable criteria summary generator
+function getRuleCriteriaSummary(rule: any): string {
+  const parts: string[] = [];
+  if (rule.min_order_value && rule.max_order_value) {
+    parts.push(`Spend ৳${Number(rule.min_order_value).toLocaleString()} - ৳${Number(rule.max_order_value).toLocaleString()}`);
+  } else if (rule.min_order_value) {
+    parts.push(`Spend ৳${Number(rule.min_order_value).toLocaleString()}+`);
+  } else if (rule.max_order_value) {
+    parts.push(`Spend under ৳${Number(rule.max_order_value).toLocaleString()}`);
+  }
+
+  if (rule.min_orders_count && rule.max_orders_count) {
+    parts.push(`${rule.min_orders_count}-${rule.max_orders_count} orders`);
+  } else if (rule.min_orders_count) {
+    parts.push(`${rule.min_orders_count}+ orders`);
+  } else if (rule.max_orders_count) {
+    parts.push(`≤ ${rule.max_orders_count} orders`);
+  }
+
+  if (rule.recency_days_max && rule.recency_days_min) {
+    parts.push(`Last order ${rule.recency_days_min}-${rule.recency_days_max}d ago`);
+  } else if (rule.recency_days_max) {
+    parts.push(`Joined/ordered in last ${rule.recency_days_max}d`);
+  } else if (rule.recency_days_min) {
+    parts.push(`No purchases in ${rule.recency_days_min}+ days`);
+  }
+
+  if (rule.min_delivery_success_rate) {
+    parts.push(`${rule.min_delivery_success_rate}%+ success`);
+  }
+  if (rule.max_return_rate) {
+    parts.push(`Return rate above ${rule.max_return_rate}%`);
+  }
+
+  return parts.length > 0 ? parts.join(" • ") : (rule.description || "Active criteria");
+}
+
+function getRuleTag(key: string): string {
+  switch (key) {
+    case "vip":
+      return "VIP Tier";
+    case "high_value":
+      return "High Value";
+    case "returning":
+      return "Loyal";
+    case "new":
+      return "Recent";
+    case "inactive":
+      return "Re-engage";
+    case "lost":
+      return "High Risk";
+    case "low_value":
+      return "Budget";
+    default:
+      return "Segment";
+  }
+}
+
+function getRuleFooterNote(key: string, count: number, percent: number): string {
+  if (key === "lost" || key === "return_risk") {
+    return count > 0 ? "Caution on COD" : "Zero risk";
+  }
+  if (key === "inactive" || key === "at_risk") {
+    return count > 0 ? "Win-back target" : "0% of base";
+  }
+  return `${percent}% of base`;
+}
+
+function CustomerSegmentationContent() {
+  const searchParams = useSearchParams();
+  const segmentParam = searchParams.get("segment") || searchParams.get("tab");
+
   const { data: customerResponse, isLoading: isCustomersLoading, mutate: mutateCustomers } = useCustomers();
   const rawCustomers: any[] = customerResponse?.data || [];
 
-  const { rules, isLoading: isRulesLoading, mutate: mutateRules } = useSegmentationRules();
+  const { rules: fetchedRules, isLoading: isRulesLoading, mutate: mutateRules } = useSegmentationRules();
+  const rules = React.useMemo(() => {
+    return fetchedRules && fetchedRules.length > 0 ? fetchedRules : DEFAULT_FALLBACK_RULES;
+  }, [fetchedRules]);
 
   const [selectedSegment, setSelectedSegment] = React.useState<string>("all");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [sortBy, setSortBy] = React.useState<string>("spent-desc");
   const [page, setPage] = React.useState<number>(1);
   const [pageSize, setPageSize] = React.useState<number>(10);
+
+  // Normalize segment parameter if alias is passed from routes
+  const normalizeSegmentKey = React.useCallback((key: string | null): string => {
+    if (!key) return "all";
+    const clean = key.toLowerCase().trim();
+    if (clean === "loyal" || clean === "repeat" || clean === "repeat_buyers") return "returning";
+    if (clean === "at_risk" || clean === "at-risk" || clean === "risk") return "inactive";
+    if (clean === "high_risk" || clean === "high-risk" || clean === "churn" || clean === "return_risk") return "lost";
+    if (clean === "new_buyers") return "new";
+    if (clean === "vip_spenders") return "vip";
+    return clean;
+  }, []);
+
+  // Sync segment from URL query parameter
+  React.useEffect(() => {
+    if (segmentParam) {
+      setSelectedSegment(normalizeSegmentKey(segmentParam));
+      setPage(1);
+    }
+  }, [segmentParam, normalizeSegmentKey]);
+
+  // Handle segment selection with URL route synchronization
+  const handleSelectSegment = (key: string) => {
+    setSelectedSegment(key);
+    setPage(1);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (key === "all") {
+        url.searchParams.delete("segment");
+        url.searchParams.delete("tab");
+      } else {
+        url.searchParams.set("segment", key);
+        url.searchParams.delete("tab");
+      }
+      window.history.replaceState(null, "", url.toString());
+    }
+  };
 
   // Dynamic Rule Configuration Modal state
   const [isConfigOpen, setIsConfigOpen] = React.useState<boolean>(false);
@@ -468,9 +665,6 @@ export default function CustomerSegmentationPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               Customer Segmentation
             </h1>
-            <Badge variant="secondary" className="font-semibold text-xs bg-primary/10 text-primary border-primary/20">
-              Dynamic CRM Rules
-            </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             Segment and analyze customer behaviors automatically based on Order Value, Product Volume, and Purchase Recency.
@@ -1044,121 +1238,160 @@ export default function CustomerSegmentationPage() {
         </div>
       </div>
 
-      {/* 8 Interactive Cohort KPI Cards (Matching Executive Card Design) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
-        {/* All Customers Tab Card */}
-        <Card
-          onClick={() => {
-            setSelectedSegment("all");
-            setPage(1);
-          }}
-          className={cn(
-            "cursor-pointer border transition-all duration-200 relative overflow-hidden group hover:-translate-y-0.5 p-3.5 rounded-xl bg-card/70 backdrop-blur-xs shadow-2xs hover:shadow-xs",
-            selectedSegment === "all"
-              ? "border-primary ring-2 ring-primary/20 shadow-md bg-primary/[0.04] dark:bg-primary/[0.08]"
-              : "hover:border-foreground/30"
-          )}
-        >
-          {selectedSegment === "all" && (
-            <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
-          )}
-          <div className="flex items-center justify-between gap-2 h-full">
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
-                All Customers
-              </p>
-              <div className="text-xl sm:text-2xl font-black text-foreground mt-0.5">
-                {segmentCounts.all || 0}
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                100% of CRM base
-              </p>
+      {/* Customer Segmentation Cohorts Card Container */}
+      <Card className="border shadow-xs">
+        <CardHeader className="pb-3 border-b">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Sparkles className="size-4 text-amber-500" />
+                <span>Customer Segmentation Cohorts</span>
+              </CardTitle>
+              <CardDescription className="text-xs mt-0.5">
+                Targeted behavioral clusters for retention, personalized re-engagement, and risk mitigation.
+              </CardDescription>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <Users className="w-5 h-5" />
-            </div>
+            {selectedSegment !== "all" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSelectSegment("all")}
+                className="text-xs gap-1.5"
+              >
+                <RotateCcw className="size-3.5" />
+                View All Segments
+              </Button>
+            ) : (
+              <Badge variant="secondary" className="text-xs px-2.5 py-1">
+                Showing All {segmentCounts.all || 0} Customers
+              </Badge>
+            )}
           </div>
-        </Card>
+        </CardHeader>
 
-        {/* 7 Segment Cards */}
-        {rules.map((rule) => {
-          const isSelected = selectedSegment === rule.key;
-          const count = segmentCounts[rule.key] || 0;
-          const percentage = crmStats.total > 0 ? Math.round((count / crmStats.total) * 100) : 0;
-
-          return (
-            <Card
-              key={rule.key}
-              onClick={() => {
-                setSelectedSegment(isSelected ? "all" : rule.key);
-                setPage(1);
-              }}
+        <CardContent className="p-4 sm:p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-3.5">
+            {/* All Customers Card */}
+            <div
+              onClick={() => handleSelectSegment("all")}
               className={cn(
-                "cursor-pointer border transition-all duration-200 relative overflow-hidden group hover:-translate-y-0.5 p-3.5 rounded-xl bg-card/70 backdrop-blur-xs shadow-2xs hover:shadow-xs",
-                isSelected
-                  ? "ring-2 shadow-md bg-card"
+                "rounded-xl border p-4 bg-card transition-all cursor-pointer group shadow-2xs flex flex-col justify-between hover:shadow-xs",
+                selectedSegment === "all"
+                  ? "border-primary ring-2 ring-primary/20 shadow-md bg-primary/[0.04] dark:bg-primary/[0.08]"
                   : "hover:border-foreground/30"
               )}
-              style={{
-                borderColor: isSelected ? rule.color : undefined,
-                boxShadow: isSelected ? `0 0 0 1.5px ${rule.color}40, 0 4px 12px ${rule.color}15` : undefined,
-                backgroundColor: isSelected ? `${rule.color}0a` : undefined,
-              }}
             >
-              {isSelected && (
-                <div
-                  className="absolute top-0 left-0 right-0 h-1"
-                  style={{ backgroundColor: rule.color }}
-                />
-              )}
-              <div className="flex items-center justify-between gap-2 h-full">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1">
-                    <p
-                      className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate"
-                      title={rule.name}
-                    >
-                      {rule.name}
-                    </p>
-                  </div>
-                  <div
-                    className="text-xl sm:text-2xl font-black tracking-tight mt-0.5"
-                    style={{ color: isSelected ? rule.color : undefined }}
-                  >
-                    {count}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate" title={
-                    rule.min_order_value
-                      ? `≥ ৳${Number(rule.min_order_value).toLocaleString()} • ${percentage}%`
-                      : rule.recency_days_min
-                      ? `> ${rule.recency_days_min}d inact. • ${percentage}%`
-                      : rule.min_orders_count
-                      ? `≥ ${rule.min_orders_count} ord. • ${percentage}%`
-                      : `${percentage}% of base`
-                  }>
-                    {rule.min_order_value
-                      ? `≥ ৳${Number(rule.min_order_value).toLocaleString()}`
-                      : rule.recency_days_min
-                      ? `> ${rule.recency_days_min}d inact.`
-                      : rule.min_orders_count
-                      ? `≥ ${rule.min_orders_count} ord.`
-                      : "Active"} • <span className="font-semibold">{percentage}%</span>
-                  </p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
+                    <Users className="size-4" />
+                  </span>
+                  <Badge variant="secondary" className="text-[10px] px-2 py-0.5 rounded-full font-medium">
+                    All Base
+                  </Badge>
                 </div>
+                <h4 className={cn("text-sm font-bold text-foreground transition-colors", selectedSegment === "all" && "text-primary")}>
+                  All Customers
+                </h4>
+                <p className="text-xs text-muted-foreground line-clamp-1">
+                  Total directory base
+                </p>
+              </div>
+              <div className="pt-3 border-t mt-3 flex items-baseline justify-between">
+                <span className={cn("text-2xl font-bold text-foreground", selectedSegment === "all" && "text-primary")}>
+                  {segmentCounts.all || 0}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  100% of base
+                </span>
+              </div>
+            </div>
+
+            {/* 7 Segment Cards */}
+            {rules.map((rule) => {
+              const isSelected = selectedSegment === rule.key;
+              const count = segmentCounts[rule.key] || 0;
+              const percentage = crmStats.total > 0 ? Math.round((count / crmStats.total) * 100) : 0;
+              const tag = getRuleTag(rule.key);
+              const criteria = getRuleCriteriaSummary(rule);
+              const footerNote = getRuleFooterNote(rule.key, count, percentage);
+              const isHighRisk = rule.key === "lost";
+
+              return (
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  key={rule.key}
+                  onClick={() => handleSelectSegment(isSelected ? "all" : rule.key)}
+                  className={cn(
+                    "rounded-xl border p-4 bg-card transition-all cursor-pointer group shadow-2xs flex flex-col justify-between hover:shadow-xs",
+                    isSelected
+                      ? "ring-2 shadow-md"
+                      : "hover:border-foreground/30"
+                  )}
                   style={{
-                    backgroundColor: `${rule.color}18`,
-                    color: rule.color,
+                    borderColor: isSelected ? rule.color : undefined,
+                    boxShadow: isSelected ? `0 0 0 1.5px ${rule.color}50, 0 4px 14px ${rule.color}18` : undefined,
+                    backgroundColor: isSelected ? `${rule.color}0c` : undefined,
                   }}
                 >
-                  {getSegmentIcon(rule.key, "w-5 h-5")}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="size-8 rounded-lg flex items-center justify-center font-bold"
+                        style={{
+                          backgroundColor: `${rule.color}15`,
+                          color: rule.color,
+                        }}
+                      >
+                        {getSegmentIcon(rule.key, "size-4")}
+                      </span>
+                      <Badge
+                        className="text-[10px] px-2 py-0.5 rounded-full font-medium border"
+                        style={{
+                          backgroundColor: `${rule.color}18`,
+                          color: rule.color,
+                          borderColor: `${rule.color}35`,
+                        }}
+                      >
+                        {tag}
+                      </Badge>
+                    </div>
+
+                    <h4
+                      className="text-sm font-bold text-foreground transition-colors line-clamp-1"
+                      style={{ color: isSelected ? rule.color : undefined }}
+                    >
+                      {rule.name}
+                    </h4>
+                    <p className="text-xs text-muted-foreground line-clamp-1" title={criteria}>
+                      {criteria}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t mt-3 flex items-baseline justify-between">
+                    <span
+                      className={cn(
+                        "text-2xl font-bold",
+                        isHighRisk ? "text-rose-600 dark:text-rose-400" : "text-foreground"
+                      )}
+                      style={{ color: isSelected ? rule.color : undefined }}
+                    >
+                      {count}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[11px]",
+                        isHighRisk ? "text-rose-600 dark:text-rose-400 font-semibold" : "text-muted-foreground"
+                      )}
+                    >
+                      {footerNote}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Main Table Card with Sleek Tab Navigation System */}
       <Card className="border shadow-xs overflow-hidden">
@@ -1187,10 +1420,7 @@ export default function CustomerSegmentationPage() {
             {/* "All Customers" Tab Button */}
             <button
               type="button"
-              onClick={() => {
-                setSelectedSegment("all");
-                setPage(1);
-              }}
+              onClick={() => handleSelectSegment("all")}
               className={cn(
                 "group relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0 border",
                 selectedSegment === "all"
@@ -1221,10 +1451,7 @@ export default function CustomerSegmentationPage() {
                 <button
                   key={rule.key}
                   type="button"
-                  onClick={() => {
-                    setSelectedSegment(rule.key);
-                    setPage(1);
-                  }}
+                  onClick={() => handleSelectSegment(rule.key)}
                   className={cn(
                     "group relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0 border",
                     isSelected
@@ -1676,5 +1903,20 @@ export default function CustomerSegmentationPage() {
         />
       </Card>
     </div>
+  );
+}
+
+export default function CustomerSegmentationPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex items-center justify-center p-12 text-sm text-muted-foreground">
+          <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+          Loading Customer Segmentation...
+        </div>
+      }
+    >
+      <CustomerSegmentationContent />
+    </React.Suspense>
   );
 }
