@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Users,
   Award,
+  Crown,
   TrendingUp,
   Sparkles,
   RotateCcw,
@@ -31,6 +32,15 @@ import {
   CheckCircle2,
   ShieldAlert,
   Info,
+  X,
+  Tag,
+  ChevronRight,
+  ArrowRight,
+  ChevronLeft,
+  DollarSign,
+  BarChart3,
+  Flame,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -40,7 +50,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -100,6 +109,43 @@ export default function CustomerSegmentationPage() {
   const [activeRuleKey, setActiveRuleKey] = React.useState<string>("vip");
   const [isSavingRules, setIsSavingRules] = React.useState<boolean>(false);
   const [isResettingRules, setIsResettingRules] = React.useState<boolean>(false);
+
+  // Tab scroll navigation state & ref
+  const tabsContainerRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+  const [canScrollRight, setCanScrollRight] = React.useState(false);
+
+  const checkTabScroll = React.useCallback(() => {
+    if (tabsContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = tabsContainerRef.current;
+      setCanScrollLeft(scrollLeft > 4);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 4);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    checkTabScroll();
+    window.addEventListener("resize", checkTabScroll);
+    return () => window.removeEventListener("resize", checkTabScroll);
+  }, [checkTabScroll, rules]);
+
+  const scrollTabs = (direction: "left" | "right") => {
+    if (tabsContainerRef.current) {
+      const scrollDistance = 240;
+      tabsContainerRef.current.scrollBy({
+        left: direction === "left" ? -scrollDistance : scrollDistance,
+        behavior: "smooth",
+      });
+      setTimeout(checkTabScroll, 250);
+    }
+  };
+
+  const openConfigModal = (ruleKey?: string) => {
+    if (ruleKey && rules.some((r) => r.key === ruleKey)) {
+      setActiveRuleKey(ruleKey);
+    }
+    setIsConfigOpen(true);
+  };
 
   // Sync editable rules when backend rules arrive
   React.useEffect(() => {
@@ -253,6 +299,27 @@ export default function CustomerSegmentationPage() {
     return counts;
   }, [processedCustomers, rules]);
 
+  // Executive CRM Metrics for Hero Banner
+  const crmStats = React.useMemo(() => {
+    const total = processedCustomers.length;
+    const totalRevenue = processedCustomers.reduce((sum, c) => sum + (c.spent || 0), 0);
+    const totalOrders = processedCustomers.reduce((sum, c) => sum + (c.orderCount || 0), 0);
+    const totalProducts = processedCustomers.reduce((sum, c) => sum + (c.productsCount || 0), 0);
+    const avgSpend = total > 0 ? Math.round(totalRevenue / total) : 0;
+    const repeatBuyers = processedCustomers.filter((c) => c.orderCount > 1).length;
+    const repeatRate = total > 0 ? Math.round((repeatBuyers / total) * 100) : 0;
+
+    return {
+      total,
+      totalRevenue,
+      totalOrders,
+      totalProducts,
+      avgSpend,
+      repeatBuyers,
+      repeatRate,
+    };
+  }, [processedCustomers]);
+
   // Filtering & Sorting
   const filteredCustomers = React.useMemo(() => {
     let result = [...processedCustomers];
@@ -347,19 +414,41 @@ export default function CustomerSegmentationPage() {
     });
   };
 
+  // Icon helper per segment
+  const getSegmentIcon = (key: string, className = "w-4 h-4") => {
+    switch (key) {
+      case "vip":
+        return <Crown className={cn(className, "text-amber-500")} />;
+      case "high_value":
+        return <Sparkles className={cn(className, "text-purple-500")} />;
+      case "returning":
+        return <RotateCcw className={cn(className, "text-blue-500")} />;
+      case "new":
+        return <UserCheck className={cn(className, "text-emerald-500")} />;
+      case "inactive":
+        return <Clock className={cn(className, "text-orange-500")} />;
+      case "lost":
+        return <UserX className={cn(className, "text-rose-500")} />;
+      case "low_value":
+        return <Tag className={cn(className, "text-slate-500")} />;
+      default:
+        return <Users className={cn(className, "text-primary")} />;
+    }
+  };
+
   const renderSegmentBadge = (customer: any) => {
     return (
       <Badge
         variant="outline"
-        className="text-xs font-semibold px-2 py-0.5"
+        className="text-xs font-semibold px-2.5 py-1 rounded-full shadow-2xs gap-1.5 whitespace-nowrap"
         style={{
-          backgroundColor: `${customer.segmentColor}15`,
+          backgroundColor: `${customer.segmentColor}12`,
           color: customer.segmentColor,
-          borderColor: `${customer.segmentColor}40`,
+          borderColor: `${customer.segmentColor}35`,
         }}
       >
         <span
-          className="inline-block w-1.5 h-1.5 rounded-full mr-1.5"
+          className="inline-block w-2 h-2 rounded-full shadow-xs shrink-0"
           style={{ backgroundColor: customer.segmentColor }}
         />
         {customer.segmentName}
@@ -367,34 +456,37 @@ export default function CustomerSegmentationPage() {
     );
   };
 
+  // Active filter rule object
+  const currentActiveRule = rules.find((r) => r.key === selectedSegment);
+
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1680px] mx-auto w-full">
       {/* Header section */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-5">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               Customer Segmentation
             </h1>
-            <Badge variant="secondary" className="font-semibold text-xs">
+            <Badge variant="secondary" className="font-semibold text-xs bg-primary/10 text-primary border-primary/20">
               Dynamic CRM Rules
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Classify your customer base into 7 core segments with dynamic rules: Order Value, Total Products, and Purchase Recency.
+            Segment and analyze customer behaviors automatically based on Order Value, Product Volume, and Purchase Recency.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Configure Rules Modal */}
           <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5 bg-primary shadow-xs">
+              <Button size="sm" className="gap-2 bg-primary text-primary-foreground font-medium shadow-xs hover:bg-primary/90">
                 <SlidersHorizontal className="w-4 h-4" />
                 Configure Rules
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-4xl lg:max-w-5xl w-[95vw] h-[88vh] max-h-[850px] p-0 flex flex-col overflow-hidden">
+            <DialogContent className="sm:max-w-4xl lg:max-w-5xl w-[95vw] h-[88vh] max-h-[850px] p-0 flex flex-col overflow-hidden shadow-2xl border-border">
               {/* Header */}
               <div className="p-5 pb-4 border-b bg-card shrink-0">
                 <div className="flex items-center justify-between pr-6">
@@ -797,7 +889,7 @@ export default function CustomerSegmentationPage() {
                             }
                           />
                           <p className="text-[11px] text-muted-foreground">
-                            Use this for <strong>Inactive</strong> or <strong>Lost</strong> customers who haven't ordered in $X$ days.
+                            Use this for <strong>Inactive</strong> or <strong>Lost</strong> customers who haven't ordered in days.
                           </p>
                         </div>
 
@@ -952,11 +1044,106 @@ export default function CustomerSegmentationPage() {
         </div>
       </div>
 
-      {/* 7 Core Segmentation Cohort Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+      {/* Executive CRM Metrics Summary Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3.5 rounded-xl border bg-card/70 backdrop-blur-xs flex items-center justify-between shadow-2xs hover:shadow-xs transition-shadow">
+          <div>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Total CRM Base</p>
+            <div className="text-xl sm:text-2xl font-black text-foreground mt-0.5">{crmStats.total}</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Active customer accounts</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl border bg-card/70 backdrop-blur-xs flex items-center justify-between shadow-2xs hover:shadow-xs transition-shadow">
+          <div>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Total Segment Spend</p>
+            <div className="text-xl sm:text-2xl font-black text-foreground mt-0.5">
+              <span className="text-muted-foreground font-normal text-sm mr-0.5">৳</span>
+              {crmStats.totalRevenue.toLocaleString()}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Across all placed orders</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+            <DollarSign className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl border bg-card/70 backdrop-blur-xs flex items-center justify-between shadow-2xs hover:shadow-xs transition-shadow">
+          <div>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Average Customer LTV</p>
+            <div className="text-xl sm:text-2xl font-black text-foreground mt-0.5">
+              <span className="text-muted-foreground font-normal text-sm mr-0.5">৳</span>
+              {crmStats.avgSpend.toLocaleString()}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Per segmented customer</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center shrink-0">
+            <TrendingUp className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl border bg-card/70 backdrop-blur-xs flex items-center justify-between shadow-2xs hover:shadow-xs transition-shadow">
+          <div>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Repeat Buyer Rate</p>
+            <div className="text-xl sm:text-2xl font-black text-foreground mt-0.5">{crmStats.repeatRate}%</div>
+            <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">{crmStats.repeatBuyers} repeat shoppers</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* 8 Interactive Cohort KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
+        {/* All Customers Tab Card */}
+        <Card
+          onClick={() => {
+            setSelectedSegment("all");
+            setPage(1);
+          }}
+          className={cn(
+            "cursor-pointer border transition-all duration-200 relative overflow-hidden group hover:-translate-y-0.5",
+            selectedSegment === "all"
+              ? "border-primary ring-2 ring-primary/20 shadow-md bg-primary/[0.04] dark:bg-primary/[0.08]"
+              : "hover:border-foreground/30 hover:shadow-xs bg-card"
+          )}
+        >
+          {selectedSegment === "all" && (
+            <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
+          )}
+          <CardContent className="p-3.5 flex flex-col justify-between h-full">
+            <div className="flex items-center justify-between">
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                <Users className="w-4 h-4" />
+              </div>
+              <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0 h-4 border-dashed">
+                All Base
+              </Badge>
+            </div>
+            <div className="my-2">
+              <div className="text-2xl font-black tracking-tight text-foreground">
+                {segmentCounts.all || 0}
+              </div>
+              <p className="text-xs font-semibold text-foreground truncate mt-0.5">
+                All Customers
+              </p>
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+              <span className="truncate">Entire directory</span>
+              <span className="font-semibold text-primary">100%</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 7 Segment Cards */}
         {rules.map((rule) => {
           const isSelected = selectedSegment === rule.key;
           const count = segmentCounts[rule.key] || 0;
+          const percentage = crmStats.total > 0 ? Math.round((count / crmStats.total) * 100) : 0;
 
           return (
             <Card
@@ -965,36 +1152,63 @@ export default function CustomerSegmentationPage() {
                 setSelectedSegment(isSelected ? "all" : rule.key);
                 setPage(1);
               }}
-              className={`cursor-pointer border transition-all hover:scale-[1.01] ${
+              className={cn(
+                "cursor-pointer border transition-all duration-200 relative overflow-hidden group hover:-translate-y-0.5",
                 isSelected
-                  ? "ring-2 shadow-xs"
-                  : "hover:border-foreground/30 opacity-90 hover:opacity-100"
-              }`}
+                  ? "ring-2 shadow-md bg-card"
+                  : "hover:border-foreground/30 hover:shadow-xs bg-card"
+              )}
               style={{
                 borderColor: isSelected ? rule.color : undefined,
-                boxShadow: isSelected ? `0 0 0 1px ${rule.color}` : undefined,
+                boxShadow: isSelected ? `0 0 0 1.5px ${rule.color}40, 0 4px 12px ${rule.color}15` : undefined,
+                backgroundColor: isSelected ? `${rule.color}0a` : undefined,
               }}
             >
-              <CardContent className="p-3">
+              {isSelected && (
+                <div
+                  className="absolute top-0 left-0 right-0 h-1"
+                  style={{ backgroundColor: rule.color }}
+                />
+              )}
+              <CardContent className="p-3.5 flex flex-col justify-between h-full">
                 <div className="flex items-center justify-between">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: rule.color }}
-                  />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <div
+                    className="p-1.5 rounded-lg"
+                    style={{ backgroundColor: `${rule.color}18` }}
+                  >
+                    {getSegmentIcon(rule.key, "w-4 h-4")}
+                  </div>
+                  <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground">
                     #{rule.priority}
                   </span>
                 </div>
-                <div className="text-xl font-bold mt-1 text-foreground">{count}</div>
-                <p className="text-xs font-medium text-foreground truncate mt-0.5" title={rule.name}>
-                  {rule.name}
-                </p>
-                <div className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                  {rule.min_order_value
-                    ? `≥ ৳${Number(rule.min_order_value).toLocaleString()}`
-                    : rule.recency_days_min
-                    ? `> ${rule.recency_days_min}d inactive`
-                    : "Rule active"}
+                <div className="my-2">
+                  <div
+                    className="text-2xl font-black tracking-tight"
+                    style={{ color: isSelected ? rule.color : undefined }}
+                  >
+                    {count}
+                  </div>
+                  <p
+                    className="text-xs font-semibold text-foreground truncate mt-0.5"
+                    title={rule.name}
+                  >
+                    {rule.name}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground gap-1">
+                  <span className="truncate">
+                    {rule.min_order_value
+                      ? `≥ ৳${Number(rule.min_order_value).toLocaleString()}`
+                      : rule.recency_days_min
+                      ? `> ${rule.recency_days_min}d inact.`
+                      : rule.min_orders_count
+                      ? `≥ ${rule.min_orders_count} orders`
+                      : "Active rule"}
+                  </span>
+                  <span className="font-semibold shrink-0" style={{ color: count > 0 ? rule.color : undefined }}>
+                    {percentage}%
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -1002,73 +1216,252 @@ export default function CustomerSegmentationPage() {
         })}
       </div>
 
-      {/* Main Table Card */}
-      <Card className="border shadow-xs">
-        <CardHeader className="p-4 sm:p-5 border-b space-y-4">
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-            {/* Cohort Tabs */}
-            <Tabs
-              value={selectedSegment}
-              onValueChange={(val) => {
-                setSelectedSegment(val);
+      {/* Main Table Card with Sleek Tab Navigation System */}
+      <Card className="border shadow-xs overflow-hidden">
+        {/* Dedicated Modern Tab System Navigation Strip */}
+        <div className="border-b bg-card/60 backdrop-blur-xs px-3 sm:px-4 py-2.5 flex items-center gap-2">
+          {/* Scroll Left Chevron */}
+          {canScrollLeft && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => scrollTabs("left")}
+              className="h-8 w-8 rounded-full border shadow-2xs shrink-0 hover:bg-muted"
+              title="Scroll tabs left"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          )}
+
+          {/* Smooth Scroll Tab Container with ZERO native scrollbar */}
+          <div
+            ref={tabsContainerRef}
+            onScroll={checkTabScroll}
+            className="flex items-center gap-2 overflow-x-auto scroll-smooth py-1 px-0.5 flex-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {/* "All Customers" Tab Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedSegment("all");
                 setPage(1);
               }}
-              className="w-full lg:w-auto overflow-x-auto"
+              className={cn(
+                "group relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0 border",
+                selectedSegment === "all"
+                  ? "bg-primary text-primary-foreground border-primary shadow-xs font-bold"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
             >
-              <TabsList className="flex h-9 bg-muted/60 p-1 w-max">
-                <TabsTrigger value="all" className="text-xs">
-                  All ({segmentCounts.all})
-                </TabsTrigger>
-                {rules.map((r) => (
-                  <TabsTrigger key={r.key} value={r.key} className="text-xs">
-                    {r.name} ({segmentCounts[r.key] || 0})
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+              <Users className="w-3.5 h-3.5 shrink-0" />
+              <span>All Customers</span>
+              <span
+                className={cn(
+                  "px-2 py-0.5 rounded-full text-[10px] font-bold font-mono transition-colors",
+                  selectedSegment === "all"
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-muted text-muted-foreground group-hover:bg-muted-foreground/20 group-hover:text-foreground"
+                )}
+              >
+                {segmentCounts.all || 0}
+              </span>
+            </button>
 
-            {/* Search and Sort controls */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="relative flex-1 sm:w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search customer, phone, ID..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
+            {/* 7 Segment Tab Buttons */}
+            {rules.map((rule) => {
+              const isSelected = selectedSegment === rule.key;
+              const count = segmentCounts[rule.key] || 0;
+
+              return (
+                <button
+                  key={rule.key}
+                  type="button"
+                  onClick={() => {
+                    setSelectedSegment(rule.key);
                     setPage(1);
                   }}
-                  className="pl-8 h-9 text-xs"
-                />
-              </div>
+                  className={cn(
+                    "group relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0 border",
+                    isSelected
+                      ? "bg-card text-foreground shadow-xs font-bold"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                  style={{
+                    borderColor: isSelected ? `${rule.color}60` : undefined,
+                    boxShadow: isSelected ? `0 0 0 1px ${rule.color}40, 0 1px 3px rgba(0,0,0,0.05)` : undefined,
+                  }}
+                >
+                  {/* Colored Icon */}
+                  <span
+                    className="p-1 rounded-md shrink-0 flex items-center justify-center"
+                    style={{ backgroundColor: `${rule.color}15` }}
+                  >
+                    {getSegmentIcon(rule.key, "w-3.5 h-3.5")}
+                  </span>
 
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="h-9 text-xs w-[185px]">
-                  <ArrowUpDown className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
-                  <SelectValue placeholder="Sort customers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="spent-desc">Spend: High to Low</SelectItem>
-                  <SelectItem value="spent-asc">Spend: Low to High</SelectItem>
-                  <SelectItem value="products-desc">Products Count: High</SelectItem>
-                  <SelectItem value="orders-desc">Orders: High to Low</SelectItem>
-                  <SelectItem value="recency-desc">Recent Purchase First</SelectItem>
-                  <SelectItem value="recency-asc">Longest Inactive First</SelectItem>
-                  <SelectItem value="success-desc">Success Rate: High</SelectItem>
-                  <SelectItem value="return-desc">Return Rate: High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                  <span>{rule.name}</span>
+
+                  {/* Count Pill */}
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 rounded-full text-[10px] font-bold font-mono transition-colors",
+                      isSelected
+                        ? "text-white"
+                        : count > 0
+                        ? "bg-muted text-foreground"
+                        : "bg-muted/50 text-muted-foreground/70"
+                    )}
+                    style={{
+                      backgroundColor: isSelected ? rule.color : undefined,
+                    }}
+                  >
+                    {count}
+                  </span>
+
+                  {/* Active bottom indicator line */}
+                  {isSelected && (
+                    <span
+                      className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full"
+                      style={{ backgroundColor: rule.color }}
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
-        </CardHeader>
+
+          {/* Scroll Right Chevron */}
+          {canScrollRight && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => scrollTabs("right")}
+              className="h-8 w-8 rounded-full border shadow-2xs shrink-0 hover:bg-muted"
+              title="Scroll tabs right"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {/* Sub-Toolbar: Filter Info, Active Pill, Search & Sort */}
+        <div className="p-4 sm:p-5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 border-b bg-card/40">
+          {/* Left: Active cohort status & filter reset */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {selectedSegment === "all" ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Users className="w-4 h-4 text-primary shrink-0" />
+                <span>
+                  Showing all <strong className="text-foreground">{filteredCustomers.length}</strong> customers across all CRM segmentation rules
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className="text-xs font-semibold px-2.5 py-1 rounded-full shadow-2xs gap-1.5"
+                  style={{
+                    backgroundColor: `${currentActiveRule?.color}15`,
+                    color: currentActiveRule?.color,
+                    borderColor: `${currentActiveRule?.color}40`,
+                  }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: currentActiveRule?.color }}
+                  />
+                  {currentActiveRule?.name} ({filteredCustomers.length})
+                </Badge>
+
+                {currentActiveRule && (
+                  <span className="text-xs text-muted-foreground hidden sm:inline">
+                    {currentActiveRule.min_order_value ? `Spend ≥ ৳${Number(currentActiveRule.min_order_value).toLocaleString()}` : ""}
+                    {currentActiveRule.recency_days_min ? `Inactive > ${currentActiveRule.recency_days_min} days` : ""}
+                    {currentActiveRule.min_orders_count ? `Orders ≥ ${currentActiveRule.min_orders_count}` : ""}
+                  </span>
+                )}
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedSegment("all");
+                    setPage(1);
+                  }}
+                  className="h-7 text-xs px-2 gap-1 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Clear filter
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openConfigModal(selectedSegment)}
+                  className="h-7 text-xs px-2.5 gap-1 border-dashed hover:border-primary"
+                >
+                  <SlidersHorizontal className="w-3 h-3 text-primary" />
+                  Edit Rule
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Instant Search & Multi-Criteria Sort */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="relative flex-1 sm:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search name, phone, ID..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
+                className="pl-8 pr-7 h-9 text-xs bg-background"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="h-9 text-xs w-[190px] bg-background">
+                <ArrowUpDown className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
+                <SelectValue placeholder="Sort customers" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="spent-desc">Spend: High to Low</SelectItem>
+                <SelectItem value="spent-asc">Spend: Low to High</SelectItem>
+                <SelectItem value="orders-desc">Orders: High to Low</SelectItem>
+                <SelectItem value="orders-asc">Orders: Low to High</SelectItem>
+                <SelectItem value="products-desc">Products Count: High</SelectItem>
+                <SelectItem value="recency-desc">Recent Purchase First</SelectItem>
+                <SelectItem value="recency-asc">Longest Inactive First</SelectItem>
+                <SelectItem value="success-desc">Success Rate: High</SelectItem>
+                <SelectItem value="return-desc">Return Rate: High</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
         {/* Table Content */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="border-b bg-muted/40 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                <th className="py-3 px-4">Customer Profile</th>
-                <th className="py-3 px-4">Segment Status</th>
+                <th className="py-3 px-4 min-w-[220px]">Customer Profile</th>
+                <th className="py-3 px-4 min-w-[150px]">Segment Status</th>
                 <th className="py-3 px-4 text-center">Orders</th>
                 <th className="py-3 px-4 text-center">Products</th>
                 <th className="py-3 px-4">Total Order Value</th>
@@ -1082,26 +1475,87 @@ export default function CustomerSegmentationPage() {
               {isCustomersLoading ? (
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={idx} className="animate-pulse">
-                    <td className="py-3.5 px-4"><Skeleton className="h-8 w-36" /></td>
-                    <td className="py-3.5 px-4"><Skeleton className="h-6 w-24" /></td>
+                    <td className="py-3.5 px-4"><Skeleton className="h-8 w-44" /></td>
+                    <td className="py-3.5 px-4"><Skeleton className="h-6 w-28" /></td>
                     <td className="py-3.5 px-4"><Skeleton className="h-6 w-12 mx-auto" /></td>
                     <td className="py-3.5 px-4"><Skeleton className="h-6 w-12 mx-auto" /></td>
                     <td className="py-3.5 px-4"><Skeleton className="h-6 w-20" /></td>
                     <td className="py-3.5 px-4"><Skeleton className="h-6 w-16" /></td>
                     <td className="py-3.5 px-4"><Skeleton className="h-6 w-24" /></td>
                     <td className="py-3.5 px-4"><Skeleton className="h-6 w-20" /></td>
-                    <td className="py-3.5 px-4 text-right"><Skeleton className="h-8 w-16 ml-auto" /></td>
+                    <td className="py-3.5 px-4 text-right"><Skeleton className="h-8 w-20 ml-auto" /></td>
                   </tr>
                 ))
               ) : paginatedCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Users className="w-10 h-10 text-muted-foreground/40" />
-                      <p className="font-medium text-sm">No customers matched this segmentation criteria.</p>
-                      <p className="text-xs text-muted-foreground">
-                        Try selecting another segment tab, adjusting the rules, or clearing your search.
-                      </p>
+                  <td colSpan={9} className="py-16 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center gap-3 max-w-md mx-auto px-4">
+                      <div
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-xs border"
+                        style={{
+                          backgroundColor: currentActiveRule ? `${currentActiveRule.color}15` : undefined,
+                          borderColor: currentActiveRule ? `${currentActiveRule.color}35` : undefined,
+                        }}
+                      >
+                        {currentActiveRule ? (
+                          getSegmentIcon(currentActiveRule.key, "w-8 h-8")
+                        ) : (
+                          <Users className="w-8 h-8 text-muted-foreground/60" />
+                        )}
+                      </div>
+
+                      <div className="space-y-1 text-center">
+                        <h3 className="font-bold text-lg text-foreground">
+                          {selectedSegment !== "all" && currentActiveRule
+                            ? `No "${currentActiveRule.name}" Customers Found`
+                            : "No Customers Found"}
+                        </h3>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {searchQuery
+                            ? `No customer records matched "${searchQuery}". Try a different name, phone, or ID.`
+                            : selectedSegment !== "all" && currentActiveRule
+                            ? `None of your customers currently meet the qualification criteria for ${currentActiveRule.name}. You can adjust the minimum spend, order count, or recency threshold in the rules.`
+                            : "No customer records currently exist in your CRM database."}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                        {selectedSegment !== "all" && currentActiveRule && (
+                          <Button
+                            size="sm"
+                            onClick={() => openConfigModal(currentActiveRule.key)}
+                            className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold"
+                          >
+                            <SlidersHorizontal className="w-3.5 h-3.5" />
+                            Adjust {currentActiveRule.name} Criteria
+                          </Button>
+                        )}
+                        {selectedSegment !== "all" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedSegment("all");
+                              setSearchQuery("");
+                            }}
+                            className="text-xs gap-1"
+                          >
+                            <Users className="w-3.5 h-3.5" />
+                            View All Customers ({segmentCounts.all})
+                          </Button>
+                        )}
+                        {searchQuery && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSearchQuery("")}
+                            className="text-xs gap-1"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            Clear Search
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -1117,21 +1571,21 @@ export default function CustomerSegmentationPage() {
                       {/* Customer Info */}
                       <td className="py-3.5 px-4 align-middle">
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9 border">
-                            <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                          <Avatar className="h-9 w-9 border border-border/80 shadow-2xs">
+                            <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
                               {getInitials(customer.full_name || "Customer")}
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0">
                             <Link
                               href={`/dashboard/customers/${customer.id}`}
-                              className="font-medium text-foreground hover:text-primary transition-colors flex items-center gap-1 group-hover:underline text-xs"
+                              className="font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1 group-hover:underline text-xs whitespace-nowrap"
                             >
                               <span>{customer.full_name || "Customer"}</span>
-                              <ExternalLink className="w-3 h-3 opacity-60" />
+                              <ExternalLink className="w-3 h-3 opacity-60 shrink-0" />
                             </Link>
-                            <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                              <span className="font-mono text-primary font-medium">#{customer.id}</span>
+                            <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
+                              <span className="font-mono text-primary font-bold">#{customer.id}</span>
                               {customer.phone && (
                                 <>
                                   <span>•</span>
@@ -1150,54 +1604,74 @@ export default function CustomerSegmentationPage() {
 
                       {/* Orders Count */}
                       <td className="py-3.5 px-4 align-middle text-center">
-                        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground">
+                        <span className="inline-flex items-center justify-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border shadow-2xs">
+                          <ShoppingBag className="w-3 h-3 text-muted-foreground" />
                           {customer.orderCount}
                         </span>
                       </td>
 
                       {/* Products Count */}
                       <td className="py-3.5 px-4 align-middle text-center">
-                        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+                        <span className="inline-flex items-center justify-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 shadow-2xs">
+                          <Package className="w-3 h-3 text-primary" />
                           {customer.productsCount}
                         </span>
                       </td>
 
                       {/* Total Order Value */}
-                      <td className="py-3.5 px-4 align-middle font-medium text-xs text-foreground">
-                        ৳{Number(customer.spent || 0).toLocaleString()}
+                      <td className="py-3.5 px-4 align-middle font-bold text-xs text-foreground whitespace-nowrap">
+                        <span className="text-muted-foreground font-normal mr-0.5">৳</span>
+                        {Number(customer.spent || 0).toLocaleString()}
                       </td>
 
                       {/* AOV */}
-                      <td className="py-3.5 px-4 align-middle text-xs text-muted-foreground">
-                        ৳{Number(customer.aov || 0).toLocaleString()}
+                      <td className="py-3.5 px-4 align-middle text-xs text-muted-foreground whitespace-nowrap">
+                        <span className="text-muted-foreground/70 mr-0.5">৳</span>
+                        {Number(customer.aov || 0).toLocaleString()}
                       </td>
 
                       {/* Success / Return Rate */}
                       <td className="py-3.5 px-4 align-middle">
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="text-emerald-600 font-medium">
+                        <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                            <CheckCircle2 className="w-3 h-3" />
                             {customer.successRate}% DLV
                           </span>
-                          <span className="text-muted-foreground/60">/</span>
-                          <span className={`${customer.returnRate > 20 ? "text-rose-600 font-semibold" : "text-muted-foreground"}`}>
+                          <span
+                            className={cn(
+                              "px-2 py-0.5 rounded-full text-[11px] font-semibold border",
+                              customer.returnRate > 20
+                                ? "bg-rose-500/15 text-rose-600 border-rose-500/30"
+                                : "bg-muted text-muted-foreground border-transparent"
+                            )}
+                          >
                             {customer.returnRate}% RET
                           </span>
                         </div>
                       </td>
 
-                      {/* Last Purchase Date Scheduled */}
-                      <td className="py-3.5 px-4 align-middle text-xs">
+                      {/* Last Purchase Date */}
+                      <td className="py-3.5 px-4 align-middle text-xs whitespace-nowrap">
                         {customer.lastOrderDate ? (
                           <div>
-                            <div className="text-foreground font-medium">
+                            <div className="text-foreground font-medium flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-muted-foreground" />
                               {customer.lastOrderDate.toLocaleDateString()}
                             </div>
-                            <div className="text-[11px] text-muted-foreground mt-0.5">
-                              {customer.daysSinceLastOrder === 0
-                                ? "Today"
-                                : customer.daysSinceLastOrder === 1
-                                ? "Yesterday"
-                                : `${customer.daysSinceLastOrder} days ago`}
+                            <div className="text-[11px] mt-0.5 flex items-center gap-1">
+                              {customer.daysSinceLastOrder === 0 ? (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-500/15 text-emerald-600 border-emerald-500/30">
+                                  Today
+                                </Badge>
+                              ) : customer.daysSinceLastOrder === 1 ? (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                                  Yesterday
+                                </Badge>
+                              ) : (
+                                <span className={customer.daysSinceLastOrder > 30 ? "text-amber-600 font-medium" : "text-muted-foreground"}>
+                                  {customer.daysSinceLastOrder} days ago
+                                </span>
+                              )}
                             </div>
                           </div>
                         ) : (
@@ -1212,7 +1686,7 @@ export default function CustomerSegmentationPage() {
                             <a
                               href={`tel:${customer.phone}`}
                               className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                              title="Call"
+                              title="Call Customer"
                             >
                               <PhoneCall className="w-4 h-4" />
                             </a>
@@ -1223,14 +1697,15 @@ export default function CustomerSegmentationPage() {
                               target="_blank"
                               rel="noreferrer"
                               className="p-1.5 rounded-md hover:bg-emerald-500/10 text-muted-foreground hover:text-emerald-600 transition-colors"
-                              title="WhatsApp"
+                              title="Message on WhatsApp"
                             >
                               <Send className="w-4 h-4" />
                             </a>
                           )}
-                          <Button asChild variant="outline" size="sm" className="h-8 text-xs font-medium">
+                          <Button asChild variant="outline" size="sm" className="h-8 text-xs font-medium gap-1 hover:border-primary">
                             <Link href={`/dashboard/customers/${customer.id}`}>
                               Profile
+                              <ArrowRight className="w-3 h-3 opacity-60" />
                             </Link>
                           </Button>
                         </div>
