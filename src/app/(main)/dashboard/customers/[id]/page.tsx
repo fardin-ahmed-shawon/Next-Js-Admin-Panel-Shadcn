@@ -485,8 +485,8 @@ export default function CustomerDetailsPage() {
               <div className="space-y-1">
                 <h2 className="text-base font-bold text-foreground leading-snug">{customer.full_name}</h2>
                 <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                  <Badge variant="outline" className="text-[11px] py-0 px-2">
-                    {customer.password ? "Registered" : "Guest Buyer"}
+                  <Badge variant="outline" className="text-[11px] py-0 px-2 bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20">
+                    Registered
                   </Badge>
                   {customer.gender && customer.gender !== "unknown" && (
                     <span className="text-[11px] text-muted-foreground capitalize">

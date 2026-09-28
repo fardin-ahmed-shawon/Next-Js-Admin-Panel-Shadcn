@@ -1,57 +1,159 @@
 "use client";
 
+import * as React from "react";
 import { useCustomers } from "@/hooks/useCustomers";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { CustomersStats } from "./_components/customers-stats";
 import { CustomerRow, CustomersTable } from "./_components/customers-table";
 
 export default function CustomersPage() {
-  const { data: response, isLoading, error } = useCustomers();
+  const { data: response, isLoading, error, mutate } = useCustomers();
 
   if (isLoading) {
     return (
-      <div className="flex h-[400px] w-full items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      <div className="flex h-[450px] w-full flex-col items-center justify-center gap-3">
+        <Loader2 className="size-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground animate-pulse">Loading Customer Intelligence Directory...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex h-[400px] w-full items-center justify-center">
-        <p className="text-destructive">Failed to load customers.</p>
+      <div className="flex h-[400px] w-full flex-col items-center justify-center gap-3">
+        <p className="text-destructive font-medium">Failed to load customer directory.</p>
+        <Button variant="outline" size="sm" onClick={() => mutate()} className="gap-2">
+          <RefreshCw className="size-4" /> Try Again
+        </Button>
       </div>
     );
   }
 
-  // Map API data to CustomerRow
-  const apiCustomers = response?.data || [];
-  const mappedData: CustomerRow[] = apiCustomers.map((c: any) => ({
-    id: c.id,
-    name: c.full_name,
-    email: c.email || "",
-    phone: c.phone || "",
-    totalOrders: c.parcel_history?.total || 0,
-    totalSpent: c.parcel_history?.total_spent || 0,
-    // For demo purposes, we consider active users with a password as 'Registered',
-    // otherwise 'Guest'. Or simply if status is active, they are registered.
-    status: c.password ? "Registered" : "Guest",
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.full_name)}&background=random`,
-    joinDate: new Date(c.created_at).toISOString().split("T")[0],
-  }));
+  // Map API data to rich CustomerRow with all behavioral and transaction metrics
+  const apiCustomers: any[] = response?.data || [];
+  const mappedData: CustomerRow[] = apiCustomers.map((c: any) => {
+    const orders = c.orders || [];
+    const orderCount = c.segment_metrics?.order_count ?? orders.length;
+
+    let spent = c.segment_metrics?.spent;
+    if (spent === undefined || spent === null) {
+      spent = orders.reduce((sum: number, o: any) => sum + Number(o.grand_total_amount || 0), 0);
+      if (spent === 0 && c.parcel_history?.total_spent) {
+        spent = Number(c.parcel_history.total_spent);
+      }
+    }
+    spent = Number(spent || 0);
+
+    const aov = orderCount > 0 ? Math.round(spent / orderCount) : 0;
+
+    let productsCount = c.segment_metrics?.products_count;
+    if (productsCount === undefined || productsCount === null) {
+      productsCount = 0;
+      orders.forEach((o: any) => {
+        if (o.ordered_products && Array.isArray(o.ordered_products)) {
+          o.ordered_products.forEach((p: any) => {
+            productsCount += Number(p.qty || 1);
+          });
+        }
+      });
+    }
+
+    const delivered = orders.filter((o: any) => o.order_status === "Delivered").length;
+    const returned = orders.filter((o: any) =>
+      ["Returned", "Partial", "Pending-Return"].includes(o.order_status) || Boolean(o.is_partial_return)
+    ).length;
+
+    let successRate = c.segment_metrics?.success_rate;
+    if (successRate === undefined || successRate === null) {
+      successRate = orderCount > 0 ? Math.round((delivered / orderCount) * 100) : 0;
+    }
+
+    let returnRate = c.segment_metrics?.return_rate;
+    if (returnRate === undefined || returnRate === null) {
+      returnRate = orderCount > 0 ? Math.round((returned / orderCount) * 100) : 0;
+    }
+
+    let lastOrderDate: string | null = c.segment_metrics?.last_order_date || null;
+    let daysSinceLastOrder: number | null = c.segment_metrics?.days_since_last_order ?? null;
+    if (!lastOrderDate && orders.length > 0) {
+      const timestamps = orders
+        .map((o: any) => new Date(o.created_at).getTime())
+        .filter((t: number) => !isNaN(t));
+      if (timestamps.length > 0) {
+        const latestTime = Math.max(...timestamps);
+        lastOrderDate = new Date(latestTime).toISOString().split("T")[0];
+        const diffMs = Date.now() - latestTime;
+        daysSinceLastOrder = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+      }
+    }
+
+    const segmentKey = c.dynamic_segment?.key || "returning";
+    const segmentName = c.dynamic_segment?.name || (orderCount > 1 ? "Repeat Buyer" : orderCount === 1 ? "New Buyer" : "Standard Customer");
+    const segmentColor = c.dynamic_segment?.color || (orderCount > 1 ? "#3b82f6" : "#10b981");
+
+    const status: "Registered" = "Registered";
+    const joinDate = c.created_at ? new Date(c.created_at).toISOString().split("T")[0] : "";
+
+    return {
+      id: c.id,
+      name: c.full_name || "Unnamed Customer",
+      email: c.email || "",
+      phone: c.phone || "",
+      totalOrders: orderCount,
+      productsCount: Number(productsCount || 0),
+      totalSpent: spent,
+      aov,
+      status,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.full_name || "C")}&background=random`,
+      joinDate,
+      lastOrderDate,
+      daysSinceLastOrder,
+      successRate: Number(successRate || 0),
+      returnRate: Number(returnRate || 0),
+      segmentKey,
+      segmentName,
+      segmentColor,
+      city: c.city || c.state || "",
+      address: c.address || "",
+      notesCount: c.notes?.length || 0,
+    };
+  });
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl tracking-tight">All Customers</h1>
-          <p className="text-muted-foreground text-sm">Manage your customer base and track engagement.</p>
+    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1680px] mx-auto w-full">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+              Customers Directory
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Data-driven customer intelligence, behavioral segmentation, spending lifetime value, and courier delivery reliability.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => mutate()}
+            className="gap-1.5 shadow-2xs"
+          >
+            <RefreshCw className="size-3.5" />
+            Refresh
+          </Button>
         </div>
       </div>
 
+      {/* Top 4 Modern KPI Cards */}
       <CustomersStats data={mappedData} />
-      <CustomersTable data={mappedData} />
+
+      {/* Advanced Data-Driven Customers Table */}
+      <CustomersTable data={mappedData} onRefresh={() => mutate()} />
     </div>
   );
 }
