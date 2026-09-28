@@ -416,14 +416,14 @@ export default function EmployeesDirectoryPage() {
                 <div className="space-y-1">
                   <Label>Reports To (কার অধীনে কাজ করে) *</Label>
                   <Select
-                    value={String(formState.reports_to_id || "")}
-                    onValueChange={(val) => setFormState({ ...formState, reports_to_id: val })}
+                    value={formState.reports_to_id ? String(formState.reports_to_id) : "none"}
+                    onValueChange={(val) => setFormState({ ...formState, reports_to_id: val === "none" ? "" : val })}
                   >
                     <SelectTrigger className="text-xs h-9">
                       <SelectValue placeholder="Select Reporting Manager" />
                     </SelectTrigger>
                     <SelectContent className="text-xs">
-                      <SelectItem value="">None (Top Level / Board)</SelectItem>
+                      <SelectItem value="none">None (Top Level / Board)</SelectItem>
                       {employees
                         .filter((u) => !selectedUser || u.id !== selectedUser.id)
                         .map((u) => (

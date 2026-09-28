@@ -47,7 +47,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <script key={`gtm-head-${index}`} dangerouslySetInnerHTML={{ __html: script.content }} />
         ))}
       </head>
-      <body className="min-h-screen antialiased">
+      <body className="min-h-screen antialiased" suppressHydrationWarning>
         {gtmBodyNoscripts.map((content, index) => <noscript key={`gtm-body-${index}`} dangerouslySetInnerHTML={{ __html: content }} />)}
         <TooltipProvider>
           <PreferencesStoreProvider themeMode={theme_mode} themePreset={theme_preset} contentLayout={content_layout} navbarStyle={navbar_style} font={font}>

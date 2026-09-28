@@ -730,14 +730,14 @@ export default function OrganizationStructurePage() {
               <div className="space-y-1">
                 <Label>Parent Division</Label>
                 <Select
-                  value={String(deptForm.parent_id || "")}
-                  onValueChange={(val) => setDeptForm({ ...deptForm, parent_id: val })}
+                  value={deptForm.parent_id ? String(deptForm.parent_id) : "none"}
+                  onValueChange={(val) => setDeptForm({ ...deptForm, parent_id: val === "none" ? "" : val })}
                 >
                   <SelectTrigger className="text-xs h-9">
                     <SelectValue placeholder="None (Top Level)" />
                   </SelectTrigger>
                   <SelectContent className="text-xs">
-                    <SelectItem value="">None (Top Level)</SelectItem>
+                    <SelectItem value="none">None (Top Level)</SelectItem>
                     {allDepartments
                       .filter((d) => !editingDept || d.id !== editingDept.id)
                       .map((d) => (
