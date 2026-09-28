@@ -79,7 +79,7 @@ export default function PurchaseHistoryPage() {
         lastOrderDate = c.orders[c.orders.length - 1].created_at;
       }
       return {
-        id: `CUST-${c.id?.toString().padStart(3, "0")}`,
+        id: c.id,
         customerName: c.full_name || "Unknown",
         phone: c.phone || "N/A",
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.full_name || "U")}&background=random`,

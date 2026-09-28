@@ -112,3 +112,14 @@ export function formatDate(dateStr?: string | null): string {
     year: "numeric",
   });
 }
+
+/**
+ * Resolves full URL for backend image assets
+ */
+export function getImageUrl(path: string | null | undefined): string {
+  if (!path) return "/placeholder.svg";
+  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) return path;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:8000/";
+  return `${baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+}
+

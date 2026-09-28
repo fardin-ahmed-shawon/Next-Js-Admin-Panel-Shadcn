@@ -135,10 +135,16 @@ export const sidebarItems: NavGroup[] = [
         ],
       },
       {
-        title: "Customers",
-        url: "/dashboard/customers",
+        title: "CRM",
+        url: "/dashboard/crm",
         icon: Users,
         module: "customers",
+        subItems: [
+          { title: "Dashboard", url: "/dashboard/crm", module: "customers" },
+          { title: "All Customers", url: "/dashboard/customers", module: "customers" },
+          { title: "Follow-Ups", url: "/dashboard/crm/follow-ups", module: "customers" },
+          { title: "Customer Segmentation", url: "/dashboard/crm/segmentation", module: "customers" },
+        ],
       },
       // { title: "Auto Calling AI", url: "/dashboard/auto-calling", icon: PhoneCall, module: "auto_calling", comingSoon: true },
       {
