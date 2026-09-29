@@ -513,6 +513,43 @@ export default function EmployeeReportsPage() {
           </p>
         </div>
 
+        {/* HRM Leaderboard Link Banner */}
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="default" asChild className="gap-1.5 bg-gradient-to-r from-primary to-primary/80">
+            <Link href="/dashboard/hrm/leaderboard">
+              <Trophy className="w-4 h-4 text-amber-300" />
+              HRM Leaderboard
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-4 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-primary text-primary-foreground">
+            <Trophy className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
+              Looking for Department Rankings & Upsell Tracking?
+              <Badge variant="secondary" className="text-[10px]">New</Badge>
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Check out the new HRM Performance Profile & Leaderboard with Gold/Silver/Bronze podiums and activity audit trails.
+            </p>
+          </div>
+        </div>
+        <Button size="sm" variant="outline" asChild className="gap-1.5 shrink-0">
+          <Link href="/dashboard/hrm/leaderboard">
+            Open Leaderboard
+          </Link>
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div />
+
+
         {/* Date Filter */}
         <div className="flex flex-col sm:flex-row gap-2 items-center">
           {timeRange === "custom" && (

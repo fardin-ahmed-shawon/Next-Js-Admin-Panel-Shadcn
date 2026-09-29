@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
 import {
+  Activity,
   ArrowLeft,
   Ban,
   Check,
@@ -41,6 +42,7 @@ import { toast } from "sonner";
 import useSWR, { mutate as globalMutate } from "swr";
 
 import { districts } from "@/app/(main)/dashboard/orders/create/_components/bd-locations";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1217,6 +1219,15 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
               Parcel History
             </TabsTrigger>
           )}
+          <TabsTrigger value="activity-logs">
+            <Activity className="mr-1.5 size-4 text-emerald-500" />
+            Audit & Edit Logs
+            {((order as any)?.activity_logs?.length > 0 || (order as any)?.activityLogs?.length > 0) && (
+              <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 px-1.5 text-[10px] font-bold">
+                {((order as any)?.activity_logs || (order as any)?.activityLogs || []).length}
+              </span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* â”€â”€â”€ OVERVIEW TAB â”€â”€â”€ */}
@@ -2241,6 +2252,219 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
           </Card>
         </TabsContent>
         )}
+
+        {/* Activity & Edit Logs Tab */}
+        <TabsContent value="activity-logs">
+          <Card>
+            <CardHeader className="border-b bg-muted/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <Activity className="size-4 text-primary" />
+                    Employee Order Status Changing & Activity Log
+                  </CardTitle>
+                  <CardDescription className="text-xs mt-0.5">
+                    Complete audit trail of status changes, product exchanges, quantity edits, customer information updates, and courier sent button clicks.
+                  </CardDescription>
+                </div>
+                {((order as any)?.upsells?.length > 0) && (
+                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1 font-bold">
+                    <TrendingUp className="size-3.5" />
+                    Upsell Credited: +৳{((order as any).upsells.reduce((acc: number, u: any) => acc + Number(u.upsell_amount || 0), 0)).toLocaleString()}
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              {((order as any)?.activity_logs?.length === 0 && (!(order as any)?.statusLogs || (order as any)?.statusLogs?.length === 0)) ? (
+                <div className="text-center py-12 text-muted-foreground border border-dashed rounded-xl">
+                  <Activity className="size-8 mx-auto mb-2 opacity-40" />
+                  <p className="font-semibold text-sm">No activity logs recorded yet</p>
+                  <p className="text-xs mt-1">Actions performed by employees on this order will appear here.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {((order as any)?.activity_logs || (order as any)?.activityLogs || []).map((log: any) => {
+                    const userName = log.user?.full_name || log.user?.name || "System";
+                    const userDept = log.user?.employee_detail?.department?.name;
+                    const userDesig = log.user?.employee_detail?.designation?.title;
+
+                    const renderActionBadge = (type: string) => {
+                      switch (type) {
+                        case "discount_edit":
+                          return (
+                            <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 text-[11px] font-semibold">
+                              Discount Edited
+                            </Badge>
+                          );
+                        case "shipping_edit":
+                          return (
+                            <Badge className="bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30 text-[11px] font-semibold">
+                              Shipping Edited
+                            </Badge>
+                          );
+                        case "product_removed":
+                          return (
+                            <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30 text-[11px] font-semibold">
+                              Product Removed
+                            </Badge>
+                          );
+                        case "product_added":
+                          return (
+                            <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-[11px] font-semibold">
+                              Product Added
+                            </Badge>
+                          );
+                        case "product_qty_edit":
+                          return (
+                            <Badge className="bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-500/30 text-[11px] font-semibold">
+                              Quantity Changed
+                            </Badge>
+                          );
+                        case "product_price_edit":
+                          return (
+                            <Badge className="bg-violet-500/15 text-violet-700 dark:text-violet-400 border-violet-500/30 text-[11px] font-semibold">
+                              Price Adjusted
+                            </Badge>
+                          );
+                        case "product_variant_edit":
+                          return (
+                            <Badge className="bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 border-cyan-500/30 text-[11px] font-semibold">
+                              Variant Exchanged
+                            </Badge>
+                          );
+                        case "status_change":
+                          return (
+                            <Badge className="bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30 text-[11px] font-semibold">
+                              Status Changed
+                            </Badge>
+                          );
+                        case "courier_sent":
+                          return (
+                            <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 text-[11px] font-semibold">
+                              Courier Sent
+                            </Badge>
+                          );
+                        case "customer_update":
+                          return (
+                            <Badge className="bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 border-cyan-500/30 text-[11px] font-semibold">
+                              Customer Info
+                            </Badge>
+                          );
+                        case "payment_edit":
+                          return (
+                            <Badge className="bg-teal-500/15 text-teal-700 dark:text-teal-400 border-teal-500/30 text-[11px] font-semibold">
+                              Payment Edit
+                            </Badge>
+                          );
+                        case "upsell":
+                          return (
+                            <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-[11px] font-bold">
+                              Upsell Gain
+                            </Badge>
+                          );
+                        default:
+                          return (
+                            <Badge variant="outline" className="text-[11px] capitalize">
+                              {type?.replace(/_/g, " ")}
+                            </Badge>
+                          );
+                      }
+                    };
+
+                    return (
+                      <div key={log.id} className="p-4 rounded-xl border bg-card hover:bg-muted/30 transition-colors shadow-sm">
+                        <div className="flex items-start justify-between gap-4 mb-2">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8 border">
+                              <AvatarImage
+                                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`}
+                                alt={userName}
+                              />
+                              <AvatarFallback className="text-[10px] font-bold">
+                                {userName.slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-xs text-foreground">
+                                  {userName}
+                                </span>
+                                {userDept && (
+                                  <Badge variant="secondary" className="text-[10px] py-0 px-1.5 font-medium">
+                                    {userDept}
+                                  </Badge>
+                                )}
+                                {userDesig && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    • {userDesig}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {renderActionBadge(log.action_type)}
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              {new Date(log.created_at).toLocaleString("en-GB", {
+                                dateStyle: "medium",
+                                timeStyle: "short",
+                              })}
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-foreground pl-11 leading-relaxed">
+                          {log.description}
+                        </p>
+
+                        {/* Upsell Delta Highlight */}
+                        {log.action_type === "upsell" && log.details?.upsell_amount && (
+                          <div className="ml-11 mt-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+                            <span className="flex items-center gap-1">
+                              <TrendingUp className="size-3.5" /> Order Value Gain
+                            </span>
+                            <span>+৳{Number(log.details.upsell_amount).toLocaleString()}</span>
+                          </div>
+                        )}
+
+                        {/* Customer Changes List */}
+                        {log.details?.changes && Array.isArray(log.details.changes) && (
+                          <div className="ml-11 mt-2 space-y-1">
+                            {log.details.changes.map((c: string, idx: number) => (
+                              <div key={idx} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                <span className="size-1.5 rounded-full bg-primary/60 shrink-0" />
+                                {c}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Fallback to legacy statusLogs if no activity_logs yet */}
+                  {(!((order as any)?.activity_logs?.length) && !((order as any)?.activityLogs?.length) && (order as any)?.statusLogs?.length > 0) && (
+                    (order as any).statusLogs.map((slog: any) => (
+                      <div key={slog.id} className="p-3.5 rounded-xl border bg-card text-xs flex items-center justify-between">
+                        <div>
+                          <span className="font-semibold text-foreground">Status changed: </span>
+                          <span className="text-muted-foreground">{slog.old_status}</span> &rarr;{" "}
+                          <span className="font-bold text-primary">{slog.new_status}</span>
+                        </div>
+                        <span className="text-muted-foreground text-[11px]">
+                          {new Date(slog.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );

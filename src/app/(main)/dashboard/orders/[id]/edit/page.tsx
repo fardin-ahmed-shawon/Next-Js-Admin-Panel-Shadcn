@@ -642,12 +642,12 @@ export default function EditOrderPage() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}orders/${id}`, {
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const url = base.endsWith("/") ? `${base}orders/${id}` : `${base}/orders/${id}`;
+      const res = await fetchClient(url, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}`,
         },
         body: JSON.stringify(payload),
       });

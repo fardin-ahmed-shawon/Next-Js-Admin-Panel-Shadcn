@@ -194,6 +194,7 @@ export const sidebarItems: NavGroup[] = [
           { title: "Customer Report", url: "/dashboard/reports/customer", module: "customer_report" },
           { title: "Supplier Report", url: "/dashboard/reports/supplier", module: "supplier_report" },
           { title: "Employee Report", url: "/dashboard/reports/employee", module: "employee_report" },
+          { title: "Upsell Report", url: "/dashboard/reports/upsell", module: "employee_report", isNew: true },
           { title: "Payment Report", url: "/dashboard/reports/payment", module: "payment_report" },
           { title: "Parcel Report", url: "/dashboard/reports/parcel", module: "parcel_report" },
           { title: "Courier Report", url: "/dashboard/reports/courier", module: "courier_report" },
@@ -224,6 +225,8 @@ export const sidebarItems: NavGroup[] = [
         module: "hrm",
         subItems: [
           { title: "Overview", url: "/dashboard/hrm" },
+          { title: "Leaderboard", url: "/dashboard/hrm/leaderboard", isNew: true },
+          { title: "Upsell Tracking", url: "/dashboard/hrm/upsell-report" },
           { title: "Organization Tree", url: "/dashboard/hrm/organization" },
           { title: "Employees", url: "/dashboard/hrm/employees" },
           { title: "Attendance", url: "/dashboard/hrm/attendance" },
