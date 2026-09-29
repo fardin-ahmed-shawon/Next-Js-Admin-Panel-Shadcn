@@ -8,15 +8,8 @@ import {
   PlusCircle,
   Pencil,
   Trash2,
-  ChevronDown,
-  ChevronRight,
   UserCheck,
-  Briefcase,
   Layers,
-  ArrowRight,
-  ShieldCheck,
-  CheckCircle2,
-  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -53,11 +46,13 @@ import {
   Designation,
 } from "@/hooks/useHrm";
 
+import { CompanyOrgTree } from "./CompanyOrgTree";
+import { ReportingHierarchyView } from "./ReportingHierarchyView";
+
 export default function OrganizationStructurePage() {
   const { orgData, loading, refetch } = useHrmOrgTree();
 
   const [activeTab, setActiveTab] = React.useState("chart");
-  const [searchQuery, setSearchQuery] = React.useState("");
 
   // Dialog states for Department
   const [deptModalOpen, setDeptModalOpen] = React.useState(false);
@@ -82,22 +77,6 @@ export default function OrganizationStructurePage() {
   const employees = orgData?.employees || [];
   const allDepartments: Department[] = orgData?.all_departments || [];
   const allDesignations: Designation[] = orgData?.all_designations || [];
-
-  // Group employees by manager ("কার অধীনে কাজ করে")
-  const managerGroups = React.useMemo(() => {
-    const groups: { [key: string]: { managerName: string; subordinates: typeof employees } } = {};
-
-    employees.forEach((emp: any) => {
-      const mgrKey = emp.reports_to_id ? String(emp.reports_to_id) : "top";
-      const mgrName = emp.manager_name || "Board / Executive Level";
-      if (!groups[mgrKey]) {
-        groups[mgrKey] = { managerName: mgrName, subordinates: [] };
-      }
-      groups[mgrKey].subordinates.push(emp);
-    });
-
-    return groups;
-  }, [employees]);
 
   // Handle department save
   const handleSaveDept = async (e: React.FormEvent) => {
@@ -237,281 +216,48 @@ export default function OrganizationStructurePage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* 1. VISUAL ORG CHART */}
+        {/* 1. VISUAL ORG CHART (DYNAMIC HIERARCHICAL COMPANY TREE) */}
         <TabsContent value="chart" className="space-y-6">
-          <Card className="border shadow-xs bg-card overflow-hidden">
-            <CardHeader className="border-b bg-muted/20">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div>
-                  <CardTitle className="text-base font-bold text-foreground">
-                    Hierarchical Company Tree (CEO → Management → Divisions)
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Interactive organizational flow diagram illustrating leadership tiers and subordinate teams
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs">
-                    {employees.length} Total Workforce Members
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-6 overflow-x-auto min-w-[750px]">
-              {/* LEVEL 1: CEO / MD */}
-              <div className="flex flex-col items-center">
-                <div className="p-4 rounded-2xl border-2 border-primary bg-primary/5 shadow-md max-w-xs w-full text-center relative hover:shadow-lg transition-all">
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full shadow-xs">
-                    Tier 1 • Top Leadership
-                  </span>
-                  <div className="size-14 rounded-full bg-primary/20 text-primary font-extrabold text-lg flex items-center justify-center mx-auto mb-2 border-2 border-primary/30">
-                    CEO
-                  </div>
-                  <h3 className="font-extrabold text-sm text-foreground">CEO / Managing Director</h3>
-                  <p className="text-xs text-primary font-semibold">Executive & Board Leadership</p>
-                  <div className="mt-2 pt-2 border-t text-[11px] text-muted-foreground flex justify-center items-center gap-1.5">
-                    <ShieldCheck className="size-3 text-emerald-600 inline" />
-                    <span>Company Strategic Head</span>
-                  </div>
-                </div>
-
-                {/* Connector Down */}
-                <div className="w-0.5 h-10 bg-primary/40 my-1" />
-
-                {/* LEVEL 2: General Management */}
-                <div className="p-3.5 rounded-xl border-2 border-indigo-500/40 bg-indigo-500/5 shadow-xs max-w-sm w-full text-center relative hover:shadow-md transition-all">
-                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[9px] uppercase font-bold px-2 py-0.2 rounded-full">
-                    Tier 2 • Management
-                  </span>
-                  <h4 className="font-bold text-sm text-foreground">General Management</h4>
-                  <p className="text-xs text-indigo-600 font-medium">Operations & Strategic Alignment</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">General Manager & Operations Lead</p>
-                </div>
-
-                {/* Connector Down with Horizontal Cross-Branch */}
-                <div className="w-0.5 h-10 bg-border my-1" />
-                <div className="w-4/5 h-0.5 bg-border relative">
-                  <div className="absolute left-0 -top-1 size-2 rounded-full bg-border" />
-                  <div className="absolute left-1/3 -top-1 size-2 rounded-full bg-border" />
-                  <div className="absolute left-2/3 -top-1 size-2 rounded-full bg-border" />
-                  <div className="absolute right-0 -top-1 size-2 rounded-full bg-border" />
-                </div>
-
-                {/* LEVEL 3: Functional Departments (Marketing, Sales, Accounts, IT) */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full mt-4">
-                  {/* Branch 1: Marketing */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-0.5 h-4 bg-border -mt-4 mb-2" />
-                    <Card className="w-full border-t-4 border-t-purple-500 shadow-2xs">
-                      <CardHeader className="p-3 pb-2 text-center bg-purple-500/5">
-                        <Badge variant="outline" className="w-fit mx-auto text-[10px] bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30">
-                          MKT Dept
-                        </Badge>
-                        <CardTitle className="text-xs font-bold mt-1 text-foreground">
-                          Marketing Department
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-3 space-y-2 text-xs">
-                        <div className="p-2 rounded-lg bg-muted/30 border space-y-1">
-                          <p className="font-semibold text-foreground flex items-center gap-1.5">
-                            <span className="size-1.5 rounded-full bg-purple-500" /> Digital Marketer
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">Ads, campaigns & SEO</p>
-                        </div>
-                        <div className="p-2 rounded-lg bg-muted/30 border space-y-1">
-                          <p className="font-semibold text-foreground flex items-center gap-1.5">
-                            <span className="size-1.5 rounded-full bg-purple-500" /> Graphic Designer
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">Creative branding & UI</p>
-                        </div>
-                        <div className="p-2 rounded-lg bg-muted/30 border space-y-1">
-                          <p className="font-semibold text-foreground flex items-center gap-1.5">
-                            <span className="size-1.5 rounded-full bg-purple-500" /> Video Editor
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">Reels, ads & media</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Branch 2: Sales & Support */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-0.5 h-4 bg-border -mt-4 mb-2" />
-                    <Card className="w-full border-t-4 border-t-blue-500 shadow-2xs">
-                      <CardHeader className="p-3 pb-2 text-center bg-blue-500/5">
-                        <Badge variant="outline" className="w-fit mx-auto text-[10px] bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30">
-                          SLS Dept
-                        </Badge>
-                        <CardTitle className="text-xs font-bold mt-1 text-foreground">
-                          Sales Department
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-3 space-y-2 text-xs">
-                        <div className="p-2 rounded-lg bg-muted/30 border space-y-1">
-                          <p className="font-semibold text-foreground flex items-center gap-1.5">
-                            <span className="size-1.5 rounded-full bg-blue-500" /> Sales Executive
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">Lead closing & order management</p>
-                        </div>
-                        <div className="p-2 rounded-lg bg-muted/30 border space-y-1">
-                          <p className="font-semibold text-foreground flex items-center gap-1.5">
-                            <span className="size-1.5 rounded-full bg-blue-500" /> Customer Support
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">CRM & parcel dispatch care</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Branch 3: Accounts */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-0.5 h-4 bg-border -mt-4 mb-2" />
-                    <Card className="w-full border-t-4 border-t-emerald-500 shadow-2xs">
-                      <CardHeader className="p-3 pb-2 text-center bg-emerald-500/5">
-                        <Badge variant="outline" className="w-fit mx-auto text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">
-                          ACC Dept
-                        </Badge>
-                        <CardTitle className="text-xs font-bold mt-1 text-foreground">
-                          Accounts & Finance
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-3 space-y-2 text-xs">
-                        <div className="p-2 rounded-lg bg-muted/30 border space-y-1">
-                          <p className="font-semibold text-foreground flex items-center gap-1.5">
-                            <span className="size-1.5 rounded-full bg-emerald-500" /> Accountant
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">General ledger & reconciliations</p>
-                        </div>
-                        <div className="p-2 rounded-lg bg-muted/30 border space-y-1">
-                          <p className="font-semibold text-foreground flex items-center gap-1.5">
-                            <span className="size-1.5 rounded-full bg-emerald-500" /> Payroll Officer
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">Salary, loans & tax calculations</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Branch 4: IT & Tech */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-0.5 h-4 bg-border -mt-4 mb-2" />
-                    <Card className="w-full border-t-4 border-t-amber-500 shadow-2xs">
-                      <CardHeader className="p-3 pb-2 text-center bg-amber-500/5">
-                        <Badge variant="outline" className="w-fit mx-auto text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30">
-                          IT Dept
-                        </Badge>
-                        <CardTitle className="text-xs font-bold mt-1 text-foreground">
-                          IT & Software
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-3 space-y-2 text-xs">
-                        <div className="p-2 rounded-lg bg-muted/30 border space-y-1">
-                          <p className="font-semibold text-foreground flex items-center gap-1.5">
-                            <span className="size-1.5 rounded-full bg-amber-500" /> Tech Lead
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">Platform architecture & cloud</p>
-                        </div>
-                        <div className="p-2 rounded-lg bg-muted/30 border space-y-1">
-                          <p className="font-semibold text-foreground flex items-center gap-1.5">
-                            <span className="size-1.5 rounded-full bg-amber-500" /> Developers
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">Web, API & automation features</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CompanyOrgTree
+            departments={orgData?.department_tree || []}
+            allDepartments={allDepartments}
+            allDesignations={allDesignations}
+            employees={employees}
+            companyName={orgData?.company?.name || "Zymerce"}
+            onAddDepartment={() => {
+              setEditingDept(null);
+              setDeptForm({ name: "", code: "", parent_id: "", description: "" });
+              setDeptModalOpen(true);
+            }}
+            onAddDesignation={(departmentId) => {
+              setEditingDesig(null);
+              setDesigForm({
+                department_id: departmentId || allDepartments[0]?.id || "",
+                title: "",
+                grade: "Executive",
+                description: "",
+              });
+              setDesigModalOpen(true);
+            }}
+            onEditDepartment={(dept) => {
+              setEditingDept(dept);
+              setDeptForm({
+                name: dept.name,
+                code: dept.code || "",
+                parent_id: dept.parent_id || "",
+                description: dept.description || "",
+              });
+              setDeptModalOpen(true);
+            }}
+          />
         </TabsContent>
 
-        {/* 2. REPORTING HIERARCHY ("কার অধীনে কাজ করে") */}
+        {/* 2. REPORTING HIERARCHY (GENERAL VIEW & TREE VIEW) */}
         <TabsContent value="reporting" className="space-y-4">
-          <Card className="border shadow-xs bg-card">
-            <CardHeader className="border-b">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div>
-                  <CardTitle className="text-base font-bold text-foreground">
-                    Employee Reporting Lines ("কার অধীনে কে কাজ করে")
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Direct mapping showing which manager oversees which subordinates
-                  </CardDescription>
-                </div>
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
-                  <Input
-                    placeholder="Search employee or manager..."
-                    className="pl-8 h-8 text-xs"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-4 sm:p-6 space-y-6">
-              {employees
-                .filter((emp: any) => {
-                  if (!searchQuery.trim()) return true;
-                  const q = searchQuery.toLowerCase();
-                  return (
-                    emp.name?.toLowerCase().includes(q) ||
-                    emp.department?.toLowerCase().includes(q) ||
-                    emp.designation?.toLowerCase().includes(q) ||
-                    emp.manager_name?.toLowerCase().includes(q)
-                  );
-                })
-                .map((emp: any) => (
-                  <div
-                    key={emp.id}
-                    className="p-4 rounded-xl border bg-muted/15 hover:bg-muted/30 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-                  >
-                    {/* Employee Profile */}
-                    <div className="flex items-center gap-3.5">
-                      <div className="size-11 rounded-full bg-primary/10 text-primary font-extrabold flex items-center justify-center border shadow-2xs shrink-0 text-sm">
-                        {emp.name?.slice(0, 2).toUpperCase() || "EM"}
-                      </div>
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-sm text-foreground">{emp.name}</span>
-                          <Badge variant="outline" className="text-[10px] font-mono">
-                            {emp.employee_id}
-                          </Badge>
-                          <Badge variant="secondary" className="text-[10px] bg-blue-500/10 text-blue-700 dark:text-blue-300">
-                            {emp.designation}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className="font-medium text-foreground">{emp.department}</span>
-                          <span>•</span>
-                          <span>{emp.email}</span>
-                          <span>•</span>
-                          <span className="font-mono">{emp.phone}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Reporting To Manager Box */}
-                    <div className="flex items-center gap-2.5 bg-card p-2.5 px-3.5 rounded-lg border shadow-2xs shrink-0">
-                      <div className="size-7 rounded-md bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-bold text-xs">
-                        <UserCheck className="size-4" />
-                      </div>
-                      <div className="text-left">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                          Reports To (কার অধীনে)
-                        </span>
-                        <span className="text-xs font-bold text-foreground">
-                          {emp.manager_name || "Board / Managing Director"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </CardContent>
-          </Card>
+          <ReportingHierarchyView
+            employees={employees}
+            allDepartments={allDepartments}
+          />
         </TabsContent>
 
         {/* 3. DEPARTMENTS LIST */}

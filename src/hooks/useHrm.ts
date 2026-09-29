@@ -32,6 +32,7 @@ export interface Department {
   designations?: Designation[];
   manager?: { id: number; full_name: string; email: string; phone: string } | null;
   children?: Department[];
+  employees?: any[];
 }
 
 export interface Designation {
