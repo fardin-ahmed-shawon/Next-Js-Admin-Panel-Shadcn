@@ -9,30 +9,43 @@ import {
   Archive,
   ArrowLeft,
   BarChart,
+  BarChart3,
   Box,
   Briefcase,
   Check,
+  CheckSquare,
+  Clock,
   CreditCard,
+  DollarSign,
   FileText,
+  FolderGit2,
   History,
   Image as ImageIcon,
+  Landmark,
   Layout,
   LayoutDashboard,
   List,
   MessageCircle,
   MessageSquare,
+  Network,
   Package,
   Percent,
   PieChart,
+  Receipt,
   Save,
   Settings,
   Shield,
   ShieldAlert,
+  ShieldCheck,
   ShoppingCart,
   Star,
   Tag,
   Ticket,
+  TrendingUp,
+  Trophy,
   Truck,
+  UserCheck,
+  UserMinus,
   UserX,
   Users,
   X,
@@ -50,6 +63,9 @@ type PermissionItem = {
   label: string;
   icon: React.ElementType;
   alwaysOn?: boolean;
+  isSubToggle?: boolean;
+  dependsOn?: string;
+  badge?: string;
 };
 
 type PermissionGroupType = {
@@ -127,6 +143,42 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     ],
   },
   {
+    id: "hrm",
+    title: "HRM & People",
+    icon: Briefcase,
+    items: [
+      { id: "hrm_overview", label: "Overview", icon: LayoutDashboard, badge: "Access Based" },
+      { id: "hrm_leaderboard", label: "Leaderboard", icon: Trophy, badge: "Access Based" },
+      { id: "hrm_department_performance", label: "Dept Performance", icon: BarChart3, badge: "Access Based" },
+      { id: "hrm_org_tree", label: "Organization Tree", icon: Network, badge: "Access Based" },
+      { id: "hrm_employees", label: "Employees Directory", icon: Users, badge: "Access Based" },
+      { id: "hrm_salaries", label: "Salary & Payroll", icon: DollarSign, badge: "Access Based" },
+
+      { id: "hrm_upsells", label: "Upsell Tracking", icon: TrendingUp, badge: "Access Based" },
+      { id: "hrm_all_upsells", label: "All User Upsell Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_upsells" },
+
+      { id: "hrm_tasks", label: "Peer Tasks", icon: CheckSquare, badge: "Access Based" },
+      { id: "hrm_all_tasks", label: "All User Tasks Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_tasks" },
+
+      { id: "hrm_attendance", label: "Attendance", icon: Clock, badge: "Access Based" },
+      { id: "hrm_all_attendance", label: "All User Attendance Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_attendance" },
+
+      { id: "hrm_cash_flow", label: "Employee Cash Flow", icon: Receipt, badge: "Access Based" },
+      { id: "hrm_all_cash_flow", label: "All User Cash Flow Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_cash_flow" },
+
+      { id: "hrm_loans", label: "Loans & Advance", icon: Landmark, badge: "Access Based" },
+      { id: "hrm_all_loans", label: "All User Loans Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_loans" },
+
+      { id: "hrm_documents", label: "Documents", icon: FolderGit2, badge: "Access Based" },
+      { id: "hrm_all_documents", label: "All User Documents Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_documents" },
+
+      { id: "hrm_exits", label: "Resignations & Exit", icon: UserMinus, badge: "Access Based" },
+      { id: "hrm_all_exits", label: "All User Exits Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_exits" },
+
+      { id: "hrm_self_service", label: "Self-Service Portal", icon: UserCheck, badge: "Attribute Based" },
+    ],
+  },
+  {
     id: "reports",
     title: "Reports",
     icon: PieChart,
@@ -174,9 +226,30 @@ export default function AddRolePage() {
     });
   });
 
-  const handleToggle = (id: string, alwaysOn?: boolean) => {
+  const handleToggle = (id: string, alwaysOn?: boolean, dependsOn?: string) => {
     if (alwaysOn) return;
-    setSelected((prev) => ({ ...prev, [id]: !prev[id] }));
+    setSelected((prev) => {
+      const nextVal = !prev[id];
+      const updated = { ...prev, [id]: nextVal };
+
+      // If turning ON a sub-toggle that depends on a parent, turn the parent on too
+      if (nextVal && dependsOn) {
+        updated[dependsOn] = true;
+      }
+
+      // If turning OFF a parent, turn off all sub-toggles that depend on it
+      if (!nextVal) {
+        PERMISSION_GROUPS.forEach((group) => {
+          group.items.forEach((item) => {
+            if (item.dependsOn === id) {
+              updated[item.id] = false;
+            }
+          });
+        });
+      }
+
+      return updated;
+    });
   };
 
   const handleToggleGroup = (group: PermissionGroupType) => {
@@ -229,6 +302,14 @@ export default function AddRolePage() {
           }
         });
       });
+
+      // Master HRM flag: 1 if any hrm_* permission is enabled
+      const hasAnyHrm = Object.keys(pageAccessPayload).some(
+        (key) => key.startsWith("hrm_") && pageAccessPayload[key] === 1
+      );
+      if (hasAnyHrm) {
+        pageAccessPayload["hrm"] = 1;
+      }
 
       const payload = {
         role_name: roleName.trim(),
@@ -357,14 +438,62 @@ export default function AddRolePage() {
                 <CardContent className="flex flex-col p-2 space-y-1 flex-1">
                   {group.items.map((item) => {
                     const isOn = item.alwaysOn || !!selected[item.id];
+                    const isParentActive = item.dependsOn ? !!selected[item.dependsOn] : true;
+
+                    if (item.isSubToggle) {
+                      return (
+                        <div
+                          key={item.id}
+                          className={`flex items-center justify-between p-2 pl-4 rounded-md transition-colors border-l-2 ml-4 my-0.5 ${
+                            isParentActive
+                              ? "bg-primary/5 border-primary/40 hover:bg-primary/10"
+                              : "opacity-40 bg-muted/20 border-muted pointer-events-none"
+                          }`}
+                        >
+                          <div className="flex flex-col min-w-0 overflow-hidden pr-2">
+                            <div className="flex items-center gap-2">
+                              <item.icon className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span className="text-xs font-semibold truncate">{item.label}</span>
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">
+                                All User Access
+                              </Badge>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground ml-5">
+                              {selected[item.id]
+                                ? "Full Access: Can see all employees' data"
+                                : "Attribute-Based: Strictly sees own data"}
+                            </span>
+                          </div>
+                          <Switch
+                            className="shrink-0 scale-90"
+                            checked={!!selected[item.id]}
+                            onCheckedChange={() => handleToggle(item.id, item.alwaysOn, item.dependsOn)}
+                            disabled={item.alwaysOn || !isParentActive}
+                          />
+                        </div>
+                      );
+                    }
+
                     return (
                       <div
                         key={item.id}
                         className="flex items-center justify-between p-2 rounded-md hover:bg-muted/40 transition-colors"
                       >
-                        <div className="flex items-center gap-3 min-w-0 overflow-hidden pr-2">
+                        <div className="flex items-center gap-2.5 min-w-0 overflow-hidden pr-2">
                           <item.icon className="h-4 w-4 text-muted-foreground shrink-0" />
                           <span className="text-sm font-medium truncate">{item.label}</span>
+                          {item.badge && (
+                            <Badge
+                              variant="secondary"
+                              className={`text-[9px] px-1.5 py-0 h-4.5 shrink-0 ${
+                                item.badge === "Attribute Based"
+                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {item.badge}
+                            </Badge>
+                          )}
                           {item.alwaysOn && (
                             <Badge variant="secondary" className="text-[10px] uppercase font-bold py-0 h-5 shrink-0">
                               Always On
@@ -374,7 +503,7 @@ export default function AddRolePage() {
                         <Switch
                           className="shrink-0"
                           checked={isOn}
-                          onCheckedChange={() => handleToggle(item.id, item.alwaysOn)}
+                          onCheckedChange={() => handleToggle(item.id, item.alwaysOn, item.dependsOn)}
                           disabled={item.alwaysOn}
                         />
                       </div>

@@ -51,6 +51,28 @@ export interface PageAccess {
   courier: number;
   history: number;
   settings: number;
+  hrm?: number;
+  hrm_overview?: number;
+  hrm_leaderboard?: number;
+  hrm_department_performance?: number;
+  hrm_upsells?: number;
+  hrm_all_upsells?: number;
+  hrm_tasks?: number;
+  hrm_all_tasks?: number;
+  hrm_org_tree?: number;
+  hrm_employees?: number;
+  hrm_attendance?: number;
+  hrm_all_attendance?: number;
+  hrm_salaries?: number;
+  hrm_cash_flow?: number;
+  hrm_all_cash_flow?: number;
+  hrm_loans?: number;
+  hrm_all_loans?: number;
+  hrm_documents?: number;
+  hrm_all_documents?: number;
+  hrm_exits?: number;
+  hrm_all_exits?: number;
+  hrm_self_service?: number;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -108,6 +130,23 @@ export const ORDER_CONNECTED_MODULES = [
   "courier_report",
 ];
 
+export const HRM_MODULE_KEYS: (keyof PageAccess)[] = [
+  "hrm_overview",
+  "hrm_leaderboard",
+  "hrm_department_performance",
+  "hrm_upsells",
+  "hrm_tasks",
+  "hrm_org_tree",
+  "hrm_employees",
+  "hrm_attendance",
+  "hrm_salaries",
+  "hrm_cash_flow",
+  "hrm_loans",
+  "hrm_documents",
+  "hrm_exits",
+  "hrm_self_service",
+];
+
 export function hasModuleAccess(user: any, module: string): boolean {
   if (!user || !user.role) return false;
   if (user.role.role_name === "Admin") return true;
@@ -121,5 +160,32 @@ export function hasModuleAccess(user: any, module: string): boolean {
     return true;
   }
 
+  // Parent HRM menu check: accessible if master 'hrm' is 1 OR any specific HRM sub-module is 1
+  if (module === "hrm") {
+    if (user.role.page_access.hrm === 1) return true;
+    return HRM_MODULE_KEYS.some((key) => user.role.page_access[key] === 1);
+  }
+
+  // If role has All User Access for a submodule, it implies page access as well
+  if (module.startsWith("hrm_") && !module.startsWith("hrm_all_")) {
+    const allKey = `hrm_all_${module.replace("hrm_", "")}` as keyof PageAccess;
+    if (user.role.page_access[allKey] === 1) return true;
+  }
+
   return false;
+}
+
+export function hasAllUserAccess(user: any, module: string): boolean {
+  if (!user || !user.role) return false;
+  if (user.role.role_name === "Admin") return true;
+  const pageAccess = user.role.page_access || user.role.pageAccess;
+  if (!pageAccess) return false;
+
+  const key = module.startsWith("hrm_all_")
+    ? module
+    : module.startsWith("hrm_")
+    ? `hrm_all_${module.replace("hrm_", "")}`
+    : `hrm_all_${module}`;
+
+  return pageAccess[key as keyof PageAccess] === 1;
 }

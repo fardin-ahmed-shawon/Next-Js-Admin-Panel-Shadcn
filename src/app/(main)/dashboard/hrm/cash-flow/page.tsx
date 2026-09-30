@@ -44,6 +44,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/useAuth";
+import { hasAllUserAccess } from "@/hooks/useRoles";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -113,6 +115,9 @@ const WEEKDAYS = [
 ];
 
 export default function EmployeeCashFlowPage() {
+  const { user } = useAuth();
+  const canAccessAllCashFlow = hasAllUserAccess(user, "cash_flow");
+
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
@@ -122,13 +127,21 @@ export default function EmployeeCashFlowPage() {
   const [displayTab, setDisplayTab] = React.useState<"statement" | "grid">("statement"); // 'statement' (passbook) vs 'grid' (payroll table)
   const [selectedYear, setSelectedYear] = React.useState<number>(currentYear);
   const [selectedMonth, setSelectedMonth] = React.useState<number>(currentMonth);
-  const [selectedUserId, setSelectedUserId] = React.useState<string>("all");
+  const [selectedUserId, setSelectedUserId] = React.useState<string>(
+    !canAccessAllCashFlow && user?.id ? String(user.id) : "all"
+  );
   const [selectedDeptId, setSelectedDeptId] = React.useState<string>("all");
   const [selectedDesigId, setSelectedDesigId] = React.useState<string>("all");
   const [sortBy, setSortBy] = React.useState<string>("date");
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("desc");
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const [categoryFilter, setCategoryFilter] = React.useState<string>("all");
+
+  React.useEffect(() => {
+    if (!canAccessAllCashFlow && user?.id) {
+      setSelectedUserId(String(user.id));
+    }
+  }, [canAccessAllCashFlow, user?.id]);
 
   // Data Fetching
   const { data, loading, refetch } = useHrmCashFlow({
@@ -333,6 +346,11 @@ export default function EmployeeCashFlowPage() {
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
             <DollarSign className="size-7 text-primary" />
             Employee Cash Flow & Payment Statement
+            {!canAccessAllCashFlow && (
+              <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                Attribute Based (Self Data)
+              </Badge>
+            )}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Financial ledger statement tracking gross compensation inflows, incentive commissions, weekday working hour deficit penalties, and net disbursements.
@@ -483,21 +501,32 @@ export default function EmployeeCashFlowPage() {
                 Employee
               </label>
               <Select
-                value={selectedUserId}
-                onValueChange={(val) => setSelectedUserId(val)}
+                value={!canAccessAllCashFlow && user?.id ? String(user.id) : selectedUserId}
+                onValueChange={(val) => {
+                  if (canAccessAllCashFlow) setSelectedUserId(val);
+                }}
+                disabled={!canAccessAllCashFlow}
               >
                 <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="All Employees" />
+                  <SelectValue placeholder={!canAccessAllCashFlow ? (user?.full_name || "My Cash Flow") : "All Employees"} />
                 </SelectTrigger>
                 <SelectContent className="max-h-64">
-                  <SelectItem value="all" className="text-xs font-semibold">
-                    All Employees ({employees.length})
-                  </SelectItem>
-                  {employees.map((emp) => (
-                    <SelectItem key={emp.id} value={String(emp.id)} className="text-xs">
-                      {emp.full_name} ({emp.employee_id || `#${emp.id}`})
+                  {canAccessAllCashFlow ? (
+                    <>
+                      <SelectItem value="all" className="text-xs font-semibold">
+                        All Employees ({employees.length})
+                      </SelectItem>
+                      {employees.map((emp) => (
+                        <SelectItem key={emp.id} value={String(emp.id)} className="text-xs">
+                          {emp.full_name} ({emp.employee_id || `#${emp.id}`})
+                        </SelectItem>
+                      ))}
+                    </>
+                  ) : (
+                    <SelectItem value={String(user?.id)} className="text-xs font-semibold">
+                      {user?.full_name || "My Profile"} (Self Records)
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>

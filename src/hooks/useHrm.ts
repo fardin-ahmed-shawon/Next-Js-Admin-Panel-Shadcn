@@ -78,10 +78,14 @@ export interface EmployeeProfile {
 export interface HrmEmployee {
   id: number;
   full_name: string;
+  name?: string;
   email: string;
   phone: string;
   status: "active" | "inactive";
   role?: { id: number; role_name: string };
+  employee_id?: string;
+  department?: Department | null;
+  designation?: Designation | null;
   employee_detail?: EmployeeProfile | null;
 }
 
@@ -857,6 +861,7 @@ export interface CashFlowStatementEntry {
   credit: number | null;
   balance: number;
   status: string;
+  type?: string;
   ref?: string;
 }
 
