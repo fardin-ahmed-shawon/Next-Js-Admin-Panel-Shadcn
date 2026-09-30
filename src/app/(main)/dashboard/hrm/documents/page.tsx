@@ -184,8 +184,8 @@ export default function EmployeeDocumentsPage() {
               <ArrowLeft className="h-3.5 w-3.5" /> HRM Dashboard
             </Link>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" /> Employee Document Vault
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Employee Document Vault
           </h1>
           <p className="text-sm text-muted-foreground">
             Central repository for employee records: CV, Contract, Offer & Joining Letters, NID, and Certificates

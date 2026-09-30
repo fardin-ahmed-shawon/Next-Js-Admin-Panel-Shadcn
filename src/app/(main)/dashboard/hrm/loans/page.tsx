@@ -150,14 +150,9 @@ export default function LoansAdvancesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
         <div>
-          <div className="flex items-center gap-2.5">
-            <div className="size-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-              <DollarSign className="size-5" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Employee Loans & Salary Advances
-            </h1>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+            Employee Loans & Salary Advances
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Manage advance amounts, installments, remaining balance, and automated monthly salary deductions.
           </p>

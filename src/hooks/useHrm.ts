@@ -101,6 +101,28 @@ export interface AttendanceRecord {
   user?: HrmEmployee;
 }
 
+export interface SalaryIncentiveRule {
+  id: number;
+  rule_name: string;
+  department_id?: number | null;
+  user_id?: number | null;
+  min_delivered_orders: number;
+  order_delivered_bonus: number;
+  min_delivered_value: number;
+  delivered_value_commission_pct: number;
+  collection_commission_pct: number;
+  upsell_commission_pct: number;
+  extra_hours_bonus_rate: number;
+  extra_hours_min_threshold: number;
+  extra_hours_salary_pct: number;
+  status: "active" | "inactive";
+  notes?: string | null;
+  department?: Department | null;
+  user?: HrmEmployee | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface SalaryRecord {
   id: number;
   user_id: number;
@@ -108,6 +130,23 @@ export interface SalaryRecord {
   year: number;
   basic_salary: number;
   total_allowance: number;
+  commission_amount?: number;
+  incentive_rule_id?: number | null;
+  incentive_details?: {
+    delivered_orders_count?: number;
+    delivered_orders_bonus?: number;
+    delivered_order_value?: number;
+    delivered_value_commission?: number;
+    collection_value?: number;
+    collection_commission?: number;
+    upsell_count?: number;
+    upsell_value?: number;
+    upsell_commission?: number;
+    overtime_hours?: number;
+    overtime_amount?: number;
+    extra_hours_bonus?: number;
+  } | null;
+  incentive_rule?: SalaryIncentiveRule | null;
   bonus: number;
   overtime_amount: number;
   gross_salary: number;
@@ -122,6 +161,68 @@ export interface SalaryRecord {
   transaction_ref?: string | null;
   notes?: string | null;
   user?: HrmEmployee;
+}
+
+export interface TaskRecord {
+  id: number;
+  assigned_to: number;
+  assigned_by?: number | null;
+  title: string;
+  description?: string | null;
+  due_date?: string | null;
+  priority: "low" | "medium" | "high" | "urgent";
+  status: "pending" | "in_progress" | "completed";
+  created_at: string;
+  updated_at: string;
+  assignee?: HrmEmployee | null;
+  creator?: HrmEmployee | null;
+}
+
+export interface DepartmentPerformanceData {
+  summary: {
+    total_employees: number;
+    total_orders: number;
+    delivered_orders: number;
+    cancelled_orders: number;
+    returned_orders: number;
+    total_revenue: number;
+    total_upsell_value: number;
+    total_tasks: number;
+    completed_tasks: number;
+    delivery_rate: number;
+    cancellation_rate: number;
+    return_rate: number;
+    task_completion_rate: number;
+  };
+  departments: Array<{
+    department_id: number;
+    department_name: string;
+    department_code?: string | null;
+    employee_count: number;
+    designations_count: number;
+    orders: {
+      total: number;
+      delivered: number;
+      cancelled: number;
+      returned: number;
+      pending: number;
+      delivery_rate: number;
+      cancellation_rate: number;
+      return_rate: number;
+    };
+    financials: {
+      total_revenue: number;
+      total_upsell_value: number;
+      avg_revenue_per_employee: number;
+    };
+    tasks: {
+      total: number;
+      completed: number;
+      in_progress: number;
+      pending: number;
+      completion_rate: number;
+    };
+  }>;
 }
 
 export interface LoanRecord {
@@ -221,17 +322,6 @@ export interface WarningRecord {
   issuer?: { id: number; full_name: string } | null;
 }
 
-export interface TaskRecord {
-  id: number;
-  assigned_to: number;
-  assigned_by?: number | null;
-  title: string;
-  description?: string | null;
-  due_date?: string | null;
-  priority: "low" | "medium" | "high";
-  status: "pending" | "in_progress" | "completed";
-  assignee?: HrmEmployee;
-}
 
 // ==========================================
 // HOOKS
@@ -525,3 +615,114 @@ export async function updateTaskStatus(id: number, status: string) {
     body: JSON.stringify({ status }),
   });
 }
+
+export async function deleteTask(id: number) {
+  return hrmApiRequest(`tasks/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// ------------------------------------------
+// Dynamic Incentive Rules Engine (Phase 4)
+// ------------------------------------------
+
+export function useHrmIncentiveRules() {
+  const { data, error, isLoading, mutate } = useSWR<SalaryIncentiveRule[]>(
+    `${HRM_BASE}/incentive-rules`,
+    fetcher
+  );
+
+  return {
+    rules: data || [],
+    loading: isLoading,
+    error,
+    refetch: mutate,
+  };
+}
+
+export async function createIncentiveRule(data: Partial<SalaryIncentiveRule>) {
+  return hrmApiRequest("incentive-rules", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateIncentiveRule(id: number, data: Partial<SalaryIncentiveRule>) {
+  return hrmApiRequest(`incentive-rules/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteIncentiveRule(id: number) {
+  return hrmApiRequest(`incentive-rules/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function previewIncentiveCalculation(userId: number, month: number, year: number) {
+  return hrmApiRequest("incentive-rules/preview", {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId, month, year }),
+  });
+}
+
+// ------------------------------------------
+// Peer Task Management (Phase 5)
+// ------------------------------------------
+
+export function useHrmTasks(params?: {
+  scope?: "all" | "assigned_to_me" | "assigned_by_me";
+  assigned_to?: number | string;
+  status?: string;
+  priority?: string;
+  department_id?: number | string;
+  search?: string;
+}) {
+  const query = new URLSearchParams();
+  if (params?.scope) query.append("scope", params.scope);
+  if (params?.assigned_to && params.assigned_to !== "all") query.append("assigned_to", String(params.assigned_to));
+  if (params?.status && params.status !== "all") query.append("status", params.status);
+  if (params?.priority && params.priority !== "all") query.append("priority", params.priority);
+  if (params?.department_id && params.department_id !== "all") query.append("department_id", String(params.department_id));
+  if (params?.search) query.append("search", params.search);
+
+  const { data, error, isLoading, mutate } = useSWR<{
+    tasks: TaskRecord[];
+    summary: { total: number; pending: number; in_progress: number; completed: number };
+  }>(`${HRM_BASE}/tasks?${query.toString()}`, fetcher);
+
+  return {
+    tasks: data?.tasks || [],
+    summary: data?.summary || { total: 0, pending: 0, in_progress: 0, completed: 0 },
+    loading: isLoading,
+    error,
+    refetch: mutate,
+  };
+}
+
+// ------------------------------------------
+// Department Performance Report (Phase 5)
+// ------------------------------------------
+
+export function useDepartmentPerformance(params?: {
+  start_date?: string;
+  end_date?: string;
+}) {
+  const query = new URLSearchParams();
+  if (params?.start_date) query.append("start_date", params.start_date);
+  if (params?.end_date) query.append("end_date", params.end_date);
+
+  const { data, error, isLoading, mutate } = useSWR<DepartmentPerformanceData>(
+    `${HRM_BASE}/department-performance?${query.toString()}`,
+    fetcher
+  );
+
+  return {
+    data,
+    loading: isLoading,
+    error,
+    refetch: mutate,
+  };
+}
+

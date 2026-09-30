@@ -56,14 +56,9 @@ export default function HrmDashboardPage() {
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-5">
         <div>
-          <div className="flex items-center gap-2.5">
-            <div className="size-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-              <Briefcase className="size-5" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              HRM & People Management
-            </h1>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+            HRM & People Management
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Complete workforce intelligence, organization hierarchy, automated attendance, payroll, loans, documents, and self-service.
           </p>

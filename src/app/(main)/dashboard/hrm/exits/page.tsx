@@ -251,8 +251,8 @@ export default function ResignationExitManagementPage() {
               <ArrowLeft className="h-3.5 w-3.5" /> HRM Dashboard
             </Link>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <UserMinus className="h-6 w-6 text-primary" /> Resignation & Termination Management
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Resignation & Termination Management
           </h1>
           <p className="text-sm text-muted-foreground">
             Complete employee offboarding: Resignation requests, notice periods, asset recovery, and final settlement calculation

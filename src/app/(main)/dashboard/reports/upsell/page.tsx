@@ -60,6 +60,7 @@ import {
   UpsellProductRecord,
   UpsellEmployeeRecord,
 } from "@/hooks/useUpsellReport";
+import { getImageUrl } from "@/lib/utils";
 import Link from "next/link";
 
 type TimePreset = "today" | "this_week" | "this_month" | "last_month" | "all_time" | "custom";
@@ -217,10 +218,7 @@ export default function UpsellReportPage() {
       {/* Top Banner */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold mb-1.5">
-            <Flame className="w-3.5 h-3.5" /> Upsell Order Tracking &amp; Commission Base
-          </div>
-          <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tight">
             Upsell Performance Report
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -686,17 +684,16 @@ export default function UpsellReportPage() {
                     <TableHead className="min-w-[130px]">Department</TableHead>
                     <TableHead className="min-w-[140px]">Order &amp; Status</TableHead>
                     <TableHead className="min-w-[160px]">Customer (History)</TableHead>
-                    <TableHead className="min-w-[200px]">Products Upsold</TableHead>
+                    <TableHead className="min-w-[220px]">Upsold Product</TableHead>
                     <TableHead className="text-right min-w-[90px]">Initial</TableHead>
-                    <TableHead className="text-right min-w-[90px]">Upsold</TableHead>
-                    <TableHead className="text-right min-w-[100px]">Delivered</TableHead>
+                    <TableHead className="text-right min-w-[95px]">Order Value</TableHead>
                     <TableHead className="text-right min-w-[140px]">Upsell Gain</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="py-16 text-center text-muted-foreground">
+                      <TableCell colSpan={9} className="py-16 text-center text-muted-foreground">
                         <div className="flex flex-col items-center justify-center gap-2">
                           <Loader2 className="w-8 h-8 animate-spin text-primary" />
                           <span className="text-sm">Loading upsell records...</span>
@@ -705,7 +702,7 @@ export default function UpsellReportPage() {
                     </TableRow>
                   ) : records.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="py-16 text-center text-muted-foreground">
+                      <TableCell colSpan={9} className="py-16 text-center text-muted-foreground">
                         <div className="flex flex-col items-center justify-center gap-1">
                           <Flame className="w-10 h-10 text-muted-foreground/30 mb-2" />
                           <p className="font-semibold text-sm text-foreground">No delivered upsells found</p>
@@ -811,25 +808,42 @@ export default function UpsellReportPage() {
                           </div>
                         </TableCell>
 
-                        {/* Products Upsold in this Order */}
+                        {/* Upsold Product Only with Image */}
                         <TableCell>
-                          <div className="flex flex-col gap-1 max-w-[240px]">
+                          <div className="flex flex-col gap-2 min-w-[200px] max-w-[280px]">
                             {item.items && item.items.length > 0 ? (
                               item.items.map((prod, idx) => (
-                                <div
-                                  key={idx}
-                                  className="text-[11px] leading-tight flex items-center justify-between gap-1 border-b border-muted/50 pb-0.5 last:border-none"
-                                >
-                                  <span className="truncate text-foreground font-medium" title={prod.title}>
-                                    {prod.title}
-                                  </span>
-                                  <span className="shrink-0 font-bold text-muted-foreground">
-                                    {prod.delivered_qty}x ৳{prod.unit_price}
-                                  </span>
+                                <div key={idx} className="flex items-center gap-2.5">
+                                  {prod.img ? (
+                                    <img
+                                      src={getImageUrl(prod.img)}
+                                      alt={prod.title}
+                                      className="w-10 h-10 rounded-md object-cover border shrink-0 bg-muted/20"
+                                    />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center border text-muted-foreground shrink-0">
+                                      <Package className="w-5 h-5 opacity-60" />
+                                    </div>
+                                  )}
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="text-xs font-bold text-foreground truncate max-w-[160px]" title={prod.title}>
+                                      {prod.title}
+                                    </span>
+                                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                      <span className="font-semibold text-primary">
+                                        {prod.qty || prod.delivered_qty || 1}x ৳{Number(prod.unit_price).toLocaleString()}
+                                      </span>
+                                      {prod.sku && prod.sku !== "-" && (
+                                        <span className="font-mono text-[10px] text-muted-foreground/70">
+                                          ({prod.sku})
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
                               ))
                             ) : (
-                              <span className="text-xs text-muted-foreground">Products in Order</span>
+                              <span className="text-xs text-muted-foreground italic">No upsold item specified</span>
                             )}
                           </div>
                         </TableCell>
@@ -839,14 +853,9 @@ export default function UpsellReportPage() {
                           ৳{Number(item.previous_amount).toLocaleString()}
                         </TableCell>
 
-                        {/* Upsold Amount */}
+                        {/* Order Value (Upsold Subtotal) */}
                         <TableCell className="text-right text-xs font-bold text-foreground">
                           ৳{Number(item.new_amount).toLocaleString()}
-                        </TableCell>
-
-                        {/* Delivered Amount */}
-                        <TableCell className="text-right text-xs font-bold text-foreground">
-                          ৳{Number(item.delivered_amount ?? 0).toLocaleString()}
                         </TableCell>
 
                         {/* Upsell Gain */}
@@ -876,9 +885,9 @@ export default function UpsellReportPage() {
                     <TableHead className="min-w-[260px]">Product</TableHead>
                     <TableHead className="min-w-[140px]">Main Category</TableHead>
                     <TableHead className="text-right min-w-[120px]">Units Delivered</TableHead>
-                    <TableHead className="text-right min-w-[140px]">Upsell Revenue</TableHead>
+                    <TableHead className="text-right min-w-[140px]">Upsell Gain</TableHead>
                     <TableHead className="text-right min-w-[120px]">Orders Count</TableHead>
-                    <TableHead className="text-right min-w-[140px]">Avg Rev / Order</TableHead>
+                    <TableHead className="text-right min-w-[140px]">Avg Gain / Order</TableHead>
                     <TableHead className="text-center min-w-[100px]">Action</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -912,7 +921,7 @@ export default function UpsellReportPage() {
                           <div className="flex items-center gap-3">
                             {prod.img ? (
                               <img
-                                src={prod.img}
+                                src={getImageUrl(prod.img)}
                                 alt={prod.title}
                                 className="w-9 h-9 rounded-md object-cover border"
                               />

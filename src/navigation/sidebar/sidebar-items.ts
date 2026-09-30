@@ -226,7 +226,9 @@ export const sidebarItems: NavGroup[] = [
         subItems: [
           { title: "Overview", url: "/dashboard/hrm" },
           { title: "Leaderboard", url: "/dashboard/hrm/leaderboard", isNew: true },
+          { title: "Dept Performance", url: "/dashboard/hrm/department-performance", isNew: true },
           { title: "Upsell Tracking", url: "/dashboard/hrm/upsell-report" },
+          { title: "Peer Tasks", url: "/dashboard/hrm/tasks", isNew: true },
           { title: "Organization Tree", url: "/dashboard/hrm/organization" },
           { title: "Employees", url: "/dashboard/hrm/employees" },
           { title: "Attendance", url: "/dashboard/hrm/attendance" },

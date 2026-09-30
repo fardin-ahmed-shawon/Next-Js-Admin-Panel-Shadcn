@@ -2,15 +2,17 @@ import { fetchClient } from "@/lib/fetch-client";
 import useSWR from "swr";
 
 export interface UpsellOrderItem {
-  id: number;
+  id?: number;
   product_id: number;
   title: string;
   sku: string;
+  img?: string | null;
   main_category_name: string;
   qty: number;
-  delivered_qty: number;
+  delivered_qty?: number;
   unit_price: number;
-  line_total: number;
+  line_total?: number;
+  total_price?: number;
 }
 
 export interface UpsellRecord {
