@@ -233,6 +233,7 @@ export const sidebarItems: NavGroup[] = [
           { title: "Employees", url: "/dashboard/hrm/employees" },
           { title: "Attendance", url: "/dashboard/hrm/attendance" },
           { title: "Salary & Payroll", url: "/dashboard/hrm/salaries" },
+          { title: "Employee Cash Flow", url: "/dashboard/hrm/cash-flow", isNew: true },
           { title: "Loans & Advance", url: "/dashboard/hrm/loans" },
           { title: "Documents", url: "/dashboard/hrm/documents" },
           { title: "Resignation & Exit", url: "/dashboard/hrm/exits" },

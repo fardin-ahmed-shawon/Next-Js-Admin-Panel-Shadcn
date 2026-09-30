@@ -266,6 +266,27 @@ export default function HrmDashboardPage() {
             </Card>
           </Link>
 
+          {/* 3.1 Employee Cash Flow */}
+          <Link href="/dashboard/hrm/cash-flow">
+            <Card className="p-4 border hover:border-primary/50 hover:shadow-sm transition-all group bg-card h-full flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="size-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <DollarSign className="size-5" />
+                </div>
+                <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+                  Employee Cash Flow
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Monthly & yearly cash flow, incentive earnings, weekday working hours rule & under-worked hour deficit deductions.
+                </p>
+              </div>
+              <div className="pt-3 flex items-center text-xs font-semibold text-primary gap-1">
+                <span>Cash Flow & Outflow</span>
+                <ArrowRight className="size-3 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Card>
+          </Link>
+
           {/* 4. Loans & Advances */}
           <Link href="/dashboard/hrm/loans">
             <Card className="p-4 border hover:border-primary/50 hover:shadow-sm transition-all group bg-card h-full flex flex-col justify-between">

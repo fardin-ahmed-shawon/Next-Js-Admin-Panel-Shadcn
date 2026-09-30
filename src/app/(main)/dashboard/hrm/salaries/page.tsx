@@ -28,6 +28,7 @@ import {
   Briefcase,
   AlertCircle,
   FileCheck,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -59,6 +60,7 @@ import {
   useHrmSalaries,
   generatePayroll,
   updateSalaryPayment,
+  fetchPayslip,
   SalaryRecord,
   useHrmIncentiveRules,
   createIncentiveRule,
@@ -118,6 +120,7 @@ export default function SalaryManagementPage() {
   // Payslip modal & breakdown modal
   const [payslipModalOpen, setPayslipModalOpen] = React.useState(false);
   const [payslipData, setPayslipData] = React.useState<SalaryRecord | null>(null);
+  const [isPayslipLoading, setIsPayslipLoading] = React.useState(false);
   const [breakdownModalOpen, setBreakdownModalOpen] = React.useState(false);
   const [activeBreakdown, setActiveBreakdown] = React.useState<SalaryRecord | null>(null);
 
@@ -126,13 +129,14 @@ export default function SalaryManagementPage() {
   const [editingRuleId, setEditingRuleId] = React.useState<number | null>(null);
   const [ruleForm, setRuleForm] = React.useState({
     rule_name: "",
-    department_id: "all",
+    department_id: "",
     user_id: "none",
     min_delivered_orders: 0,
     order_delivered_bonus: 0,
     min_delivered_value: 0,
     delivered_value_commission_pct: 0,
     collection_commission_pct: 0,
+    min_upsell_value: 0,
     upsell_commission_pct: 0,
     extra_hours_bonus_rate: 0,
     extra_hours_min_threshold: 0,
@@ -193,9 +197,20 @@ export default function SalaryManagementPage() {
     setPayModalOpen(true);
   };
 
-  const openPayslip = (sal: SalaryRecord) => {
+  const openPayslip = async (sal: SalaryRecord) => {
     setPayslipData(sal);
     setPayslipModalOpen(true);
+    setIsPayslipLoading(true);
+    try {
+      const res = await fetchPayslip(sal.id);
+      if (res && res.data) {
+        setPayslipData(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to load fresh payslip", err);
+    } finally {
+      setIsPayslipLoading(false);
+    }
   };
 
   const openBreakdown = (sal: SalaryRecord) => {
@@ -207,13 +222,14 @@ export default function SalaryManagementPage() {
     setEditingRuleId(null);
     setRuleForm({
       rule_name: "",
-      department_id: "all",
+      department_id: departments[0]?.id ? String(departments[0].id) : "",
       user_id: "none",
       min_delivered_orders: 0,
       order_delivered_bonus: 0,
       min_delivered_value: 0,
       delivered_value_commission_pct: 0,
       collection_commission_pct: 0,
+      min_upsell_value: 0,
       upsell_commission_pct: 0,
       extra_hours_bonus_rate: 0,
       extra_hours_min_threshold: 0,
@@ -228,17 +244,18 @@ export default function SalaryManagementPage() {
     setEditingRuleId(r.id);
     setRuleForm({
       rule_name: r.rule_name,
-      department_id: r.department_id ? String(r.department_id) : "all",
-      user_id: r.user_id ? String(r.user_id) : "none",
-      min_delivered_orders: r.min_delivered_orders || 0,
-      order_delivered_bonus: r.order_delivered_bonus || 0,
+      department_id: r.department_id ? String(r.department_id) : (departments[0]?.id ? String(departments[0].id) : ""),
+      user_id: "none",
+      min_delivered_orders: 0,
+      order_delivered_bonus: 0,
       min_delivered_value: r.min_delivered_value || 0,
       delivered_value_commission_pct: r.delivered_value_commission_pct || 0,
-      collection_commission_pct: r.collection_commission_pct || 0,
+      collection_commission_pct: 0,
+      min_upsell_value: (r as any).min_upsell_value || 0,
       upsell_commission_pct: r.upsell_commission_pct || 0,
       extra_hours_bonus_rate: r.extra_hours_bonus_rate || 0,
       extra_hours_min_threshold: r.extra_hours_min_threshold || 0,
-      extra_hours_salary_pct: r.extra_hours_salary_pct || 0,
+      extra_hours_salary_pct: 0,
       status: r.status,
       notes: r.notes || "",
     });
@@ -248,7 +265,11 @@ export default function SalaryManagementPage() {
   const handleSaveRule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ruleForm.rule_name.trim()) {
-      toast.error("Please enter a rule name");
+      toast.error("Please enter a policy name");
+      return;
+    }
+    if (!ruleForm.department_id || ruleForm.department_id === "all" || ruleForm.department_id === "none") {
+      toast.error("Please select a target department. Each rule only works for one department.");
       return;
     }
 
@@ -256,30 +277,27 @@ export default function SalaryManagementPage() {
     try {
       const payload: any = {
         rule_name: ruleForm.rule_name.trim(),
-        department_id: ruleForm.department_id !== "all" ? Number(ruleForm.department_id) : null,
-        user_id: ruleForm.user_id !== "none" ? Number(ruleForm.user_id) : null,
-        min_delivered_orders: Number(ruleForm.min_delivered_orders),
-        order_delivered_bonus: Number(ruleForm.order_delivered_bonus),
-        min_delivered_value: Number(ruleForm.min_delivered_value),
-        delivered_value_commission_pct: Number(ruleForm.delivered_value_commission_pct),
-        collection_commission_pct: Number(ruleForm.collection_commission_pct),
-        upsell_commission_pct: Number(ruleForm.upsell_commission_pct),
-        extra_hours_bonus_rate: Number(ruleForm.extra_hours_bonus_rate),
-        extra_hours_min_threshold: Number(ruleForm.extra_hours_min_threshold),
-        extra_hours_salary_pct: Number(ruleForm.extra_hours_salary_pct),
+        department_id: Number(ruleForm.department_id),
+        min_delivered_value: Number(ruleForm.min_delivered_value) || 0,
+        delivered_value_commission_pct: Number(ruleForm.delivered_value_commission_pct) || 0,
+        min_upsell_value: Number(ruleForm.min_upsell_value) || 0,
+        upsell_commission_pct: Number(ruleForm.upsell_commission_pct) || 0,
+        extra_hours_bonus_rate: Number(ruleForm.extra_hours_bonus_rate) || 0,
+        extra_hours_min_threshold: Number(ruleForm.extra_hours_min_threshold) || 0,
         status: ruleForm.status,
         notes: ruleForm.notes.trim() || null,
       };
 
       if (editingRuleId) {
         await updateIncentiveRule(editingRuleId, payload);
-        toast.success("Incentive rule updated successfully");
+        toast.success("Incentive policy updated successfully");
       } else {
         await createIncentiveRule(payload);
-        toast.success("Incentive rule created successfully");
+        toast.success("Incentive policy created successfully");
       }
       setRuleModalOpen(false);
       refetchRules();
+      refetch();
     } catch (err: any) {
       toast.error(err.message || "Failed to save incentive rule");
     } finally {
@@ -293,6 +311,7 @@ export default function SalaryManagementPage() {
       await deleteIncentiveRule(ruleId);
       toast.success("Incentive rule deleted");
       refetchRules();
+      refetch();
     } catch (err: any) {
       toast.error(err.message || "Failed to delete rule");
     }
@@ -671,7 +690,7 @@ export default function SalaryManagementPage() {
                 Configured Incentive Policies
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Rules can be configured department-wide, with optional individual employee overrides.
+                Each policy is assigned to one department with 3 simple rules: Sales Target Commission, Upsold Items Commission, and Overtime Rate.
               </p>
             </div>
 
@@ -692,7 +711,7 @@ export default function SalaryManagementPage() {
               <SlidersHorizontal className="size-12 text-muted-foreground/50 mx-auto mb-3" />
               <h3 className="text-lg font-semibold">No Incentive Rules Configured</h3>
               <p className="text-xs text-muted-foreground max-w-md mx-auto mt-1">
-                Configure dynamic rules for departments or employees to automate commission calculations based on delivered orders, sales value, collections, and upsells.
+                Configure department-specific policies with targeted sales commission, upsold items commission, and hourly extra work rates.
               </p>
               <Button onClick={openCreateRuleModal} className="mt-4 gap-2 text-xs">
                 <Plus className="size-4" />
@@ -702,33 +721,21 @@ export default function SalaryManagementPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {rules.map((rule) => {
-                const isEmployeeOverride = !!rule.user_id;
-
                 return (
                   <Card key={rule.id} className="border shadow-xs flex flex-col justify-between">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <Badge
                               variant={rule.status === "active" ? "default" : "secondary"}
                               className="text-[10px] capitalize"
                             >
                               {rule.status}
                             </Badge>
-                            {isEmployeeOverride ? (
-                              <Badge variant="outline" className="border-primary/40 text-primary text-[10px]">
-                                Employee Override: {rule.user?.full_name}
-                              </Badge>
-                            ) : rule.department ? (
-                              <Badge variant="outline" className="text-[10px]">
-                                Department: {rule.department.name}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-[10px]">
-                                Global Default
-                              </Badge>
-                            )}
+                            <Badge variant="outline" className="text-[10px] font-semibold border-primary/30 text-primary">
+                              Department: {rule.department?.name || "Assigned Department"}
+                            </Badge>
                           </div>
                           <CardTitle className="text-base font-bold text-foreground">
                             {rule.rule_name}
@@ -765,66 +772,85 @@ export default function SalaryManagementPage() {
                     </CardHeader>
 
                     <CardContent className="pt-0 space-y-2.5">
-                      <div className="grid grid-cols-2 gap-2 text-xs bg-muted/30 p-2.5 rounded-lg border border-border/60">
-                        {/* Delivered Orders */}
-                        <div className="space-y-0.5">
-                          <span className="text-[11px] text-muted-foreground block">
-                            Delivered Orders Bonus:
-                          </span>
-                          <span className="font-semibold text-foreground">
-                            {rule.order_delivered_bonus > 0
-                              ? `৳${rule.order_delivered_bonus} / order (min: ${rule.min_delivered_orders})`
-                              : "None"}
-                          </span>
+                      <div className="space-y-2 text-xs bg-muted/30 p-3 rounded-lg border border-border/60">
+                        {/* Rule 1: Sales Value Incentive */}
+                        <div className="flex items-start justify-between gap-2 border-b border-border/40 pb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="size-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
+                              1
+                            </div>
+                            <span className="font-semibold text-foreground text-xs">
+                              Sales Value Incentive:
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            {rule.delivered_value_commission_pct > 0 ? (
+                              <div>
+                                <span className="font-bold text-primary">
+                                  {rule.delivered_value_commission_pct}%
+                                </span>
+                                <span className="text-[11px] text-muted-foreground ml-1">
+                                  {rule.min_delivered_value > 0
+                                    ? `on extra sales (target: ৳${rule.min_delivered_value.toLocaleString()})`
+                                    : "on total sales value"}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground font-normal">None</span>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Delivered Value */}
-                        <div className="space-y-0.5">
-                          <span className="text-[11px] text-muted-foreground block">
-                            Delivered Value Commission:
-                          </span>
-                          <span className="font-semibold text-foreground">
-                            {rule.delivered_value_commission_pct > 0
-                              ? `${rule.delivered_value_commission_pct}% (min: ৳${rule.min_delivered_value.toLocaleString()})`
-                              : "None"}
-                          </span>
+                        {/* Rule 2: Upsold Items Incentive */}
+                        <div className="flex items-start justify-between gap-2 border-b border-border/40 pb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="size-5 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center text-[10px] font-bold">
+                              2
+                            </div>
+                            <span className="font-semibold text-foreground text-xs">
+                              Upsold Items Incentive:
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            {rule.upsell_commission_pct > 0 ? (
+                              <div>
+                                <span className="font-bold text-amber-600">
+                                  {rule.upsell_commission_pct}%
+                                </span>
+                                <span className="text-[11px] text-muted-foreground ml-1">
+                                  {(rule.min_upsell_value || 0) > 0
+                                    ? `on extra upsells (target: ৳${(rule.min_upsell_value || 0).toLocaleString()})`
+                                    : "on total upsell value"}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground font-normal">None</span>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Collections */}
-                        <div className="space-y-0.5">
-                          <span className="text-[11px] text-muted-foreground block">
-                            Collection / Paid Commission:
-                          </span>
-                          <span className="font-semibold text-foreground">
-                            {rule.collection_commission_pct > 0
-                              ? `${rule.collection_commission_pct}% of cash collected`
-                              : "None"}
-                          </span>
-                        </div>
-
-                        {/* Upsells */}
-                        <div className="space-y-0.5">
-                          <span className="text-[11px] text-muted-foreground block">
-                            Delivered Upsell Commission:
-                          </span>
-                          <span className="font-semibold text-amber-600">
-                            {rule.upsell_commission_pct > 0
-                              ? `${rule.upsell_commission_pct}% of upsell value`
-                              : "None"}
-                          </span>
-                        </div>
-
-                        {/* Extra Hours */}
-                        <div className="col-span-2 pt-1 border-t border-border/40 flex justify-between items-center text-[11px]">
-                          <span className="text-muted-foreground">Extra Hours / Overtime Policy:</span>
-                          <span className="font-medium text-blue-600">
-                            {rule.extra_hours_bonus_rate > 0
-                              ? `৳${rule.extra_hours_bonus_rate}/hr`
-                              : "Standard 1.5x Basic"}
-                            {rule.extra_hours_salary_pct > 0
-                              ? ` + ${rule.extra_hours_salary_pct}% basic bonus (≥${rule.extra_hours_min_threshold}h)`
-                              : ""}
-                          </span>
+                        {/* Rule 3: Extra Working Hours & Overtime */}
+                        <div className="flex items-start justify-between gap-2 pt-0.5">
+                          <div className="flex items-center gap-2">
+                            <div className="size-5 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center text-[10px] font-bold">
+                              3
+                            </div>
+                            <span className="font-semibold text-foreground text-xs">
+                              Extra Hours / Overtime:
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold text-blue-600">
+                              {rule.extra_hours_bonus_rate > 0
+                                ? `৳${rule.extra_hours_bonus_rate}/hr`
+                                : "Standard 1.5x Basic"}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground ml-1">
+                              {rule.extra_hours_min_threshold > 0
+                                ? `(extra hours beyond ${rule.extra_hours_min_threshold}h min)`
+                                : "(for each extra hour)"}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -1050,42 +1076,65 @@ export default function SalaryManagementPage() {
                   </div>
 
                   {previewResult.calculation?.breakdown && (
-                    <div className="p-3 rounded-lg border bg-muted/20 space-y-1.5 text-[11px]">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Delivered Orders:</span>
-                        <span className="font-semibold">
-                          {previewResult.calculation.breakdown.delivered_orders_count} orders (Bonus: ৳
-                          {previewResult.calculation.breakdown.delivered_orders_bonus})
-                        </span>
+                    <div className="p-3 rounded-lg border bg-muted/20 space-y-2 text-[11px]">
+                      {/* Rule 1: Sales Value */}
+                      <div className="space-y-0.5 border-b border-border/40 pb-1.5">
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-foreground">1. Sales Value Incentive:</span>
+                          <span className="text-primary font-mono">
+                            +৳{(previewResult.calculation.breakdown.sales_commission ?? previewResult.calculation.breakdown.delivered_value_commission ?? 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground text-[10px]">
+                          <span>
+                            Delivered Sales: ৳{(previewResult.calculation.breakdown.delivered_order_value || 0).toLocaleString()}
+                            {(previewResult.calculation.breakdown.sales_target || 0) > 0 &&
+                              ` (Target: ৳${(previewResult.calculation.breakdown.sales_target || 0).toLocaleString()})`}
+                          </span>
+                          <span>
+                            {(previewResult.calculation.breakdown.sales_commission_pct || 0)}% comm
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Delivered Sales Value:</span>
-                        <span className="font-semibold">
-                          ৳{previewResult.calculation.breakdown.delivered_order_value} (Comm: ৳
-                          {previewResult.calculation.breakdown.delivered_value_commission})
-                        </span>
+
+                      {/* Rule 2: Upsell */}
+                      <div className="space-y-0.5 border-b border-border/40 pb-1.5">
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-foreground">2. Upsold Items Incentive:</span>
+                          <span className="text-amber-600 font-mono">
+                            +৳{(previewResult.calculation.breakdown.upsell_commission || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground text-[10px]">
+                          <span>
+                            Eligible Upsells: ৳{(previewResult.calculation.breakdown.upsell_value || 0).toLocaleString()}
+                            {(previewResult.calculation.breakdown.upsell_target || 0) > 0 &&
+                              ` (Target: ৳${(previewResult.calculation.breakdown.upsell_target || 0).toLocaleString()})`}
+                          </span>
+                          <span>
+                            {(previewResult.calculation.breakdown.upsell_commission_pct || 0)}% comm
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Collected Cash:</span>
-                        <span className="font-semibold">
-                          ৳{previewResult.calculation.breakdown.collection_value} (Comm: ৳
-                          {previewResult.calculation.breakdown.collection_commission})
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Delivered Upsells:</span>
-                        <span className="font-semibold text-amber-600">
-                          {previewResult.calculation.breakdown.upsell_count} items (৳
-                          {previewResult.calculation.breakdown.upsell_value}, Comm: ৳
-                          {previewResult.calculation.breakdown.upsell_commission})
-                        </span>
-                      </div>
-                      <div className="flex justify-between pt-1 border-t">
-                        <span className="text-muted-foreground">Overtime / Extra Hours:</span>
-                        <span className="font-semibold text-blue-600">
-                          {previewResult.calculation.breakdown.overtime_hours}h (৳
-                          {previewResult.calculation.breakdown.overtime_amount})
-                        </span>
+
+                      {/* Rule 3: Extra Hours / Overtime */}
+                      <div className="space-y-0.5 pt-0.5">
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-foreground">3. Extra Hours / Overtime:</span>
+                          <span className="text-blue-600 font-mono">
+                            ৳{(previewResult.calculation.breakdown.overtime_amount || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground text-[10px]">
+                          <span>
+                            Extra Hours: {previewResult.calculation.breakdown.overtime_hours || 0}h
+                            {(previewResult.calculation.breakdown.min_extra_hours_threshold || 0) > 0 &&
+                              ` (Min: ${previewResult.calculation.breakdown.min_extra_hours_threshold}h)`}
+                          </span>
+                          <span>
+                            Rate: ৳{previewResult.calculation.breakdown.overtime_hourly_rate || 0}/hr
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1111,38 +1160,36 @@ export default function SalaryManagementPage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <SlidersHorizontal className="size-5 text-primary" />
-                {editingRuleId ? "Edit Incentive Policy" : "Create Dynamic Incentive Policy"}
+                {editingRuleId ? "Edit Department Incentive Policy" : "Create Department Incentive Policy"}
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Configure threshold criteria for delivered orders count, sales value, collections, upsells, and extra hours.
+                Configure 3 simple incentive rules: Sales Target Commission, Upsold Items Commission, and Overtime Hourly Rate for a specific department.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 py-4 text-xs">
-              {/* Rule Name */}
-              <div className="space-y-1.5">
-                <Label>Policy Name *</Label>
-                <Input
-                  placeholder="e.g. Sales Team Q4 Incentive Rule"
-                  value={ruleForm.rule_name}
-                  onChange={(e) => setRuleForm({ ...ruleForm, rule_name: e.target.value })}
-                  required
-                />
-              </div>
-
-              {/* Target Scope */}
-              <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-4 py-3 text-xs">
+              {/* Policy Name & Target Department */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Department Scope</Label>
+                  <Label>Policy Name *</Label>
+                  <Input
+                    placeholder="e.g. Sales Team Incentive Policy"
+                    value={ruleForm.rule_name}
+                    onChange={(e) => setRuleForm({ ...ruleForm, rule_name: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Target Department *</Label>
                   <Select
                     value={ruleForm.department_id}
                     onValueChange={(val) => setRuleForm({ ...ruleForm, department_id: val })}
                   >
                     <SelectTrigger className="text-xs h-9">
-                      <SelectValue placeholder="All Departments" />
+                      <SelectValue placeholder="Choose Department..." />
                     </SelectTrigger>
                     <SelectContent className="text-xs">
-                      <SelectItem value="all">Company Wide (All)</SelectItem>
                       {departments.map((d) => (
                         <SelectItem key={d.id} value={String(d.id)}>
                           {d.name}
@@ -1150,198 +1197,180 @@ export default function SalaryManagementPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>Employee Specific Override</Label>
-                  <Select
-                    value={ruleForm.user_id}
-                    onValueChange={(val) => setRuleForm({ ...ruleForm, user_id: val })}
-                  >
-                    <SelectTrigger className="text-xs h-9">
-                      <SelectValue placeholder="None (Department Rule)" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60 text-xs">
-                      <SelectItem value="none">None (Use Department Policy)</SelectItem>
-                      {employees.map((emp) => (
-                        <SelectItem key={emp.id} value={String(emp.id)}>
-                          {emp.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <p className="text-[10px] text-muted-foreground">Each rule works for only one department.</p>
                 </div>
               </div>
 
-              <Separator />
-
-              {/* Criteria 1: Delivered Orders Count */}
-              <div className="space-y-2">
-                <span className="font-bold text-foreground flex items-center gap-1.5">
-                  <Target className="size-4 text-primary" />
-                  Criteria 1: Delivered Orders Slab
-                </span>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label>Min Delivered Orders Threshold</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={ruleForm.min_delivered_orders}
-                      onChange={(e) =>
-                        setRuleForm({ ...ruleForm, min_delivered_orders: Number(e.target.value) })
-                      }
-                    />
+              {/* RULE 1: SALES VALUE INCENTIVE */}
+              <div className="p-3.5 rounded-lg border bg-muted/20 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="size-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                    1
                   </div>
-                  <div className="space-y-1">
-                    <Label>Bonus Per Delivered Order (৳)</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      step={0.5}
-                      value={ruleForm.order_delivered_bonus}
-                      onChange={(e) =>
-                        setRuleForm({ ...ruleForm, order_delivered_bonus: Number(e.target.value) })
-                      }
-                    />
+                  <div>
+                    <span className="font-bold text-foreground text-xs block">
+                      Sales Value Incentive
+                    </span>
+                    <span className="text-[11px] text-muted-foreground block">
+                      % Commission on extra sales above target (or total sales value if target is empty).
+                    </span>
                   </div>
                 </div>
-              </div>
 
-              {/* Criteria 2: Delivered Order Value */}
-              <div className="space-y-2">
-                <span className="font-bold text-foreground flex items-center gap-1.5">
-                  <DollarSign className="size-4 text-primary" />
-                  Criteria 2: Total Delivered Sales Value
-                </span>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 pt-1">
                   <div className="space-y-1">
-                    <Label>Min Delivered Sales Threshold (৳)</Label>
+                    <Label className="text-xs">Targeted Sales Value (৳)</Label>
                     <Input
                       type="number"
                       min={0}
-                      value={ruleForm.min_delivered_value}
+                      placeholder="0 or empty for total sales"
+                      value={ruleForm.min_delivered_value || ""}
                       onChange={(e) =>
-                        setRuleForm({ ...ruleForm, min_delivered_value: Number(e.target.value) })
+                        setRuleForm({ ...ruleForm, min_delivered_value: Number(e.target.value) || 0 })
                       }
+                      className="h-8 text-xs"
                     />
+                    <p className="text-[10px] text-muted-foreground">
+                      If set, % applies only to extra sales above target.
+                    </p>
                   </div>
+
                   <div className="space-y-1">
-                    <Label>Sales Value Commission (%)</Label>
+                    <Label className="text-xs">Sales Commission (%)</Label>
                     <Input
                       type="number"
                       min={0}
                       max={100}
                       step={0.1}
-                      placeholder="e.g. 2.5"
-                      value={ruleForm.delivered_value_commission_pct}
+                      placeholder="e.g. 5.0"
+                      value={ruleForm.delivered_value_commission_pct || ""}
                       onChange={(e) =>
                         setRuleForm({
                           ...ruleForm,
-                          delivered_value_commission_pct: Number(e.target.value),
+                          delivered_value_commission_pct: Number(e.target.value) || 0,
                         })
                       }
+                      className="h-8 text-xs"
                     />
+                    <p className="text-[10px] text-muted-foreground">
+                      % commission on sales value.
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Criteria 3 & 4: Collections & Upsells */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="font-bold text-foreground flex items-center gap-1.5">
-                    <Percent className="size-3.5 text-primary" />
-                    Criteria 3: Collection %
-                  </Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    placeholder="e.g. 1.0"
-                    value={ruleForm.collection_commission_pct}
-                    onChange={(e) =>
-                      setRuleForm({
-                        ...ruleForm,
-                        collection_commission_pct: Number(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-[10px] text-muted-foreground">% of cash collected/paid</p>
+              {/* RULE 2: UPSELL INCENTIVE */}
+              <div className="p-3.5 rounded-lg border bg-muted/20 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="size-6 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center text-xs font-bold">
+                    2
+                  </div>
+                  <div>
+                    <span className="font-bold text-foreground text-xs block">
+                      Upsold Items Incentive
+                    </span>
+                    <span className="text-[11px] text-muted-foreground block">
+                      % Commission on extra delivered upsell value above target (or total upsell if target is empty).
+                    </span>
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="font-bold text-foreground flex items-center gap-1.5">
-                    <Sparkles className="size-3.5 text-amber-500" />
-                    Criteria 4: Upsell Commission %
-                  </Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    placeholder="e.g. 5.0"
-                    value={ruleForm.upsell_commission_pct}
-                    onChange={(e) =>
-                      setRuleForm({ ...ruleForm, upsell_commission_pct: Number(e.target.value) })
-                    }
-                  />
-                  <p className="text-[10px] text-muted-foreground">% of delivered upsell value</p>
-                </div>
-              </div>
-
-              {/* Criteria 5: Extra Working Hours */}
-              <div className="space-y-2">
-                <span className="font-bold text-foreground flex items-center gap-1.5">
-                  <Clock className="size-4 text-blue-500" />
-                  Criteria 5: Extra Hours / Overtime Policy
-                </span>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3 pt-1">
                   <div className="space-y-1">
-                    <Label>Hourly Overtime Rate (৳)</Label>
+                    <Label className="text-xs">Targeted Upsell Value (৳)</Label>
                     <Input
                       type="number"
                       min={0}
-                      placeholder="0 for 1.5x basic"
-                      value={ruleForm.extra_hours_bonus_rate}
+                      placeholder="0 or empty for total upsells"
+                      value={ruleForm.min_upsell_value || ""}
                       onChange={(e) =>
-                        setRuleForm({
-                          ...ruleForm,
-                          extra_hours_bonus_rate: Number(e.target.value),
-                        })
+                        setRuleForm({ ...ruleForm, min_upsell_value: Number(e.target.value) || 0 })
                       }
+                      className="h-8 text-xs"
                     />
+                    <p className="text-[10px] text-muted-foreground">
+                      If set, % applies only to extra upsells above target.
+                    </p>
                   </div>
+
                   <div className="space-y-1">
-                    <Label>Min Extra Hours Threshold</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={ruleForm.extra_hours_min_threshold}
-                      onChange={(e) =>
-                        setRuleForm({
-                          ...ruleForm,
-                          extra_hours_min_threshold: Number(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Salary Bonus % If Threshold Met</Label>
+                    <Label className="text-xs">Upsell Commission (%)</Label>
                     <Input
                       type="number"
                       min={0}
                       max={100}
-                      step={0.5}
-                      placeholder="e.g. 5.0"
-                      value={ruleForm.extra_hours_salary_pct}
+                      step={0.1}
+                      placeholder="e.g. 2.0"
+                      value={ruleForm.upsell_commission_pct || ""}
+                      onChange={(e) =>
+                        setRuleForm({ ...ruleForm, upsell_commission_pct: Number(e.target.value) || 0 })
+                      }
+                      className="h-8 text-xs"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      % commission on delivered upsell value.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* RULE 3: EXTRA WORK HOURS & OVERTIME */}
+              <div className="p-3.5 rounded-lg border bg-muted/20 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="size-6 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center text-xs font-bold">
+                    3
+                  </div>
+                  <div>
+                    <span className="font-bold text-foreground text-xs block">
+                      Extra Work Hours / Overtime
+                    </span>
+                    <span className="text-[11px] text-muted-foreground block">
+                      Hourly overtime rate paid for extra working hours.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Hourly Overtime Rate (৳)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1}
+                      placeholder="0 for standard 1.5x basic"
+                      value={ruleForm.extra_hours_bonus_rate || ""}
                       onChange={(e) =>
                         setRuleForm({
                           ...ruleForm,
-                          extra_hours_salary_pct: Number(e.target.value),
+                          extra_hours_bonus_rate: Number(e.target.value) || 0,
                         })
                       }
+                      className="h-8 text-xs"
                     />
+                    <p className="text-[10px] text-muted-foreground">
+                      Hourly rate paid per extra hour worked.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Minimum Extra Hours Threshold</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      placeholder="0 or empty for each extra hour"
+                      value={ruleForm.extra_hours_min_threshold || ""}
+                      onChange={(e) =>
+                        setRuleForm({
+                          ...ruleForm,
+                          extra_hours_min_threshold: Number(e.target.value) || 0,
+                        })
+                      }
+                      className="h-8 text-xs"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      If empty, employee gets incentive for each extra hour.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1367,7 +1396,7 @@ export default function SalaryManagementPage() {
                 <div className="space-y-1">
                   <Label>Policy Notes / Description</Label>
                   <Input
-                    placeholder="e.g. Effective from Q4 sales sprint"
+                    placeholder="e.g. Applicable for sales representatives"
                     value={ruleForm.notes}
                     onChange={(e) => setRuleForm({ ...ruleForm, notes: e.target.value })}
                   />
@@ -1652,6 +1681,14 @@ export default function SalaryManagementPage() {
                     DEDUCTIONS & ADJUSTMENTS
                   </span>
                   <div className="space-y-1.5 pt-1">
+                    {((payslipData as any).hour_deficit_deduction ?? 0) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Hour Deficit Penalty:</span>
+                        <span className="font-mono font-semibold text-amber-600">
+                          ৳{((payslipData as any).hour_deficit_deduction).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Loan / Advance Deduction:</span>
                       <span className="font-mono font-semibold text-amber-600">
@@ -1695,14 +1732,41 @@ export default function SalaryManagementPage() {
               </div>
 
               {/* Actions */}
-              <div className="flex justify-end gap-2 pt-2 border-t">
-                <Button variant="outline" size="sm" onClick={() => setPayslipModalOpen(false)}>
-                  Close
+              <div className="flex justify-between items-center pt-2 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isPayslipLoading}
+                  onClick={async () => {
+                    if (!payslipData) return;
+                    setIsPayslipLoading(true);
+                    try {
+                      const res = await fetchPayslip(payslipData.id);
+                      if (res && res.data) {
+                        setPayslipData(res.data);
+                        toast.success("Payslip recalculated with latest incentive rules");
+                        refetch();
+                      }
+                    } catch {
+                      toast.error("Failed to recalculate payslip");
+                    } finally {
+                      setIsPayslipLoading(false);
+                    }
+                  }}
+                  className="gap-1.5 text-xs"
+                >
+                  <RefreshCw className={`size-3.5 ${isPayslipLoading ? "animate-spin" : ""}`} />
+                  <span>Recalculate with Latest Rules</span>
                 </Button>
-                <Button size="sm" onClick={() => window.print()} className="gap-1.5">
-                  <Printer className="size-3.5" />
-                  <span>Print Payslip</span>
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPayslipModalOpen(false)}>
+                    Close
+                  </Button>
+                  <Button size="sm" onClick={() => window.print()} className="gap-1.5">
+                    <Printer className="size-3.5" />
+                    <span>Print Payslip</span>
+                  </Button>
+                </div>
               </div>
             </div>
           )}

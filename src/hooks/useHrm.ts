@@ -111,6 +111,7 @@ export interface SalaryIncentiveRule {
   min_delivered_value: number;
   delivered_value_commission_pct: number;
   collection_commission_pct: number;
+  min_upsell_value?: number;
   upsell_commission_pct: number;
   extra_hours_bonus_rate: number;
   extra_hours_min_threshold: number;
@@ -498,6 +499,12 @@ export async function updateSalaryPayment(id: number, data: any) {
   });
 }
 
+export async function fetchPayslip(id: number) {
+  return hrmApiRequest(`salaries/${id}/payslip`, {
+    method: "GET",
+  });
+}
+
 export async function createLoan(data: any) {
   return hrmApiRequest("loans", {
     method: "POST",
@@ -725,4 +732,224 @@ export function useDepartmentPerformance(params?: {
     refetch: mutate,
   };
 }
+
+// ------------------------------------------
+// Employee Cash Flow & Work Hour Policies
+// ------------------------------------------
+
+export interface WorkHourPolicy {
+  id?: number;
+  policy_name: string;
+  department_id?: number | null;
+  expected_daily_hours: number;
+  working_days: string[];
+  enable_deficit_deduction: boolean;
+  calculation_basis: "basic_salary" | "gross_salary";
+  handle_absent_days: "hour_deficit_only" | "both_separate";
+  grace_hours_monthly?: number;
+  status: "active" | "inactive";
+  notes?: string | null;
+  department?: Department | null;
+}
+
+export interface CashFlowSummary {
+  total_gross_inflow: number;
+  total_basic_salary: number;
+  total_allowance: number;
+  total_commissions: number;
+  total_bonus_overtime: number;
+  total_hour_deficit_deduction: number;
+  total_absent_deduction: number;
+  total_loan_deduction: number;
+  total_other_deduction: number;
+  total_deductions: number;
+  total_net_cash_outflow: number;
+  paid_cash_outflow: number;
+  unpaid_cash_outflow: number;
+  total_expected_hours: number;
+  total_actual_hours: number;
+  total_deficit_hours: number;
+  employee_count: number;
+  records_count: number;
+}
+
+export interface CashFlowTimelineItem {
+  month_number: number;
+  month_name: string;
+  period: string;
+  gross_salary: number;
+  basic_salary: number;
+  commissions: number;
+  hour_deficit_deduction: number;
+  total_deductions: number;
+  net_outflow: number;
+  paid: number;
+  unpaid: number;
+  is_current?: boolean;
+  records_count?: number;
+}
+
+export interface CashFlowLedgerRecord {
+  id: number;
+  user_id: number;
+  month: number;
+  year: number;
+  basic_salary: number;
+  total_allowance: number;
+  bonus: number;
+  overtime_amount: number;
+  expected_working_hours: number;
+  actual_working_hours: number;
+  deficit_hours: number;
+  commission_amount: number;
+  incentive_rule_id?: number | null;
+  incentive_details?: any;
+  gross_salary: number;
+  loan_deduction: number;
+  hour_deficit_deduction: number;
+  absent_deduction: number;
+  other_deduction: number;
+  total_deduction: number;
+  net_salary: number;
+  payment_status: "paid" | "unpaid" | "partial";
+  payment_method?: string | null;
+  payment_date?: string | null;
+  transaction_ref?: string | null;
+  notes?: string | null;
+  work_hours_details?: {
+    policy_id: number;
+    policy_name: string;
+    expected_daily_hours: number;
+    working_days: string[];
+    expected_working_days: number;
+    expected_working_hours: number;
+    actual_working_hours: number;
+    deficit_hours: number;
+    calculation_basis: string;
+    basis_amount: number;
+    hourly_rate: number;
+    enable_deficit_deduction: boolean;
+    hour_deficit_deduction: number;
+    absent_days: number;
+    present_days: number;
+    late_days: number;
+    absent_deduction: number;
+    notes: string;
+  };
+  user?: HrmEmployee;
+  incentive_rule?: any;
+}
+
+export interface CashFlowStatementEntry {
+  id: string;
+  salary_id: number;
+  user_id: number;
+  employee_name: string;
+  employee_id: string;
+  department: string;
+  designation: string;
+  date: string;
+  raw_date: string;
+  category: string;
+  category_label: string;
+  description: string;
+  debit: number | null;
+  credit: number | null;
+  balance: number;
+  status: string;
+  ref?: string;
+}
+
+export interface CashFlowResponseData {
+  view: "monthly" | "yearly";
+  year: number;
+  month: number;
+  summary: CashFlowSummary;
+  timeline: CashFlowTimelineItem[];
+  ledger: CashFlowLedgerRecord[];
+  statement_entries: CashFlowStatementEntry[];
+  departments: Department[];
+  designations: Designation[];
+  active_policy: WorkHourPolicy;
+}
+
+export function useHrmCashFlow(params?: {
+  view?: "monthly" | "yearly";
+  year?: number;
+  month?: number;
+  user_id?: number | string;
+  department_id?: number | string;
+  designation_id?: number | string;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+  search?: string;
+}) {
+  const query = new URLSearchParams();
+  if (params?.view) query.append("view", params.view);
+  if (params?.year) query.append("year", String(params.year));
+  if (params?.month && params.view !== "yearly") query.append("month", String(params.month));
+  if (params?.user_id && params.user_id !== "all") query.append("user_id", String(params.user_id));
+  if (params?.department_id && params.department_id !== "all") query.append("department_id", String(params.department_id));
+  if (params?.designation_id && params.designation_id !== "all") query.append("designation_id", String(params.designation_id));
+  if (params?.sort_by) query.append("sort_by", params.sort_by);
+  if (params?.sort_order) query.append("sort_order", params.sort_order);
+  if (params?.search) query.append("search", params.search);
+
+  const { data, error, isLoading, mutate } = useSWR<CashFlowResponseData>(
+    `${HRM_BASE}/cash-flow?${query.toString()}`,
+    fetcher
+  );
+
+  return {
+    data,
+    loading: isLoading,
+    error,
+    refetch: mutate,
+  };
+}
+
+export function useWorkHourPolicy(departmentId?: number | string) {
+  const query = departmentId && departmentId !== "all" ? `?department_id=${departmentId}` : "";
+  const { data, error, isLoading, mutate } = useSWR<{
+    policy: WorkHourPolicy;
+    all_policies: WorkHourPolicy[];
+    departments: Department[];
+  }>(`${HRM_BASE}/work-hour-policy${query}`, fetcher);
+
+  return {
+    policy: data?.policy,
+    allPolicies: data?.all_policies || [],
+    departments: data?.departments || [],
+    loading: isLoading,
+    error,
+    refetch: mutate,
+  };
+}
+
+export async function saveWorkHourPolicy(payload: Partial<WorkHourPolicy> & { recalculate_unpaid?: boolean }) {
+  const res = await fetchClient(`${HRM_BASE}/work-hour-policy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to save work hour policy");
+  }
+  return res.json();
+}
+
+export async function recalculateCashFlow(params: { month: number; year: number; user_id?: number }) {
+  const res = await fetchClient(`${HRM_BASE}/cash-flow/recalculate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to recalculate cash flow");
+  }
+  return res.json();
+}
+
 
