@@ -73,6 +73,25 @@ export interface PageAccess {
   hrm_exits?: number;
   hrm_all_exits?: number;
   hrm_self_service?: number;
+  procurement?: number;
+  suppliers?: number;
+  product_bundles?: number;
+  product_attributes?: number;
+  product_recommendations?: number;
+  homepage_videos?: number;
+  wholesale_orders?: number;
+  order_returns?: number;
+  invoices?: number;
+  incomplete_orders?: number;
+  ai_calling_logs?: number;
+  customer_followups?: number;
+  customer_segmentation?: number;
+  capital?: number;
+  flash_sales?: number;
+  reports_inventory?: number;
+  supplier_report?: number;
+  auto_order?: number;
+  user_behaviour_logs?: number;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -119,6 +138,11 @@ export function useRoles() {
 
 export const ORDER_CONNECTED_MODULES = [
   "orders",
+  "wholesale_orders",
+  "order_returns",
+  "invoices",
+  "incomplete_orders",
+  "ai_calling_logs",
   "create_orders",
   "assign_orders",
   "courier",

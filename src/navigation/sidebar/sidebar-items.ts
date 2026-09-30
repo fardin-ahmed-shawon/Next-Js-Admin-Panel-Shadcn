@@ -84,16 +84,15 @@ export const sidebarItems: NavGroup[] = [
         icon: Package,
         module: "products",
         subItems: [
-          { title: "Add Product", url: "/dashboard/products/add" },
-          { title: "Bundle List", url: "/dashboard/products/bundles" },
-          { title: "Create Bundle", url: "/dashboard/products/bundles/create" },
-
-          { title: "All Products", url: "/dashboard/products" },
-          { title: "AI Recommendations", url: "/dashboard/products/recommendations" },
-          { title: "Variant Attributes", url: "/dashboard/products/attributes" },
-          { title: "Home Page Videos", url: "/dashboard/products/homepage-videos" },
-          { title: "Purchase & Procurement", url: "/dashboard/products/procurement" },
-          { title: "Suppliers", url: "/dashboard/suppliers" },
+          { title: "Add Product", url: "/dashboard/products/add", module: "products" },
+          { title: "Bundle List", url: "/dashboard/products/bundles", module: "product_bundles" },
+          { title: "Create Bundle", url: "/dashboard/products/bundles/create", module: "product_bundles" },
+          { title: "All Products", url: "/dashboard/products", module: "products" },
+          { title: "AI Recommendations", url: "/dashboard/products/recommendations", module: "product_recommendations" },
+          { title: "Variant Attributes", url: "/dashboard/products/attributes", module: "product_attributes" },
+          { title: "Home Page Videos", url: "/dashboard/products/homepage-videos", module: "homepage_videos" },
+          { title: "Purchase & Procurement", url: "/dashboard/products/procurement", module: "procurement" },
+          { title: "Suppliers", url: "/dashboard/suppliers", module: "suppliers" },
         ],
       },
       {
@@ -104,11 +103,11 @@ export const sidebarItems: NavGroup[] = [
         subItems: [
           { title: "Create Order", url: "/dashboard/orders/create", module: "create_orders" },
           { title: "Assign Orders", url: "/dashboard/orders/assign-orders", module: "assign_orders" },
-          { title: "Pending Returns", url: "/dashboard/orders/pending-return", module: "orders" },
+          { title: "Pending Returns", url: "/dashboard/orders/pending-return", module: "order_returns" },
           { title: "Order Management", url: "/dashboard/orders", module: "orders" },
-          { title: "Invoice", url: "/dashboard/orders/invoice", module: "orders" },
-          { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", module: "orders" },
-          { title: "AI Calling Logs", url: "/dashboard/ai-calling-logs", module: "orders", isNew: true }
+          { title: "Invoice", url: "/dashboard/orders/invoice", module: "invoices" },
+          { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", module: "incomplete_orders" },
+          { title: "AI Calling Logs", url: "/dashboard/ai-calling-logs", module: "ai_calling_logs", isNew: true }
         ],
       },
 
@@ -117,11 +116,11 @@ export const sidebarItems: NavGroup[] = [
         title: "Wholesale Orders",
         url: "/dashboard/orders/wholesale",
         icon: ShoppingCart,
-        module: "orders",
+        module: "wholesale_orders",
         subItems: [
-          { title: "Order Create", url: "/dashboard/orders/wholesale-create", module: "orders" , isNew: true  },
-          { title: "Order History", url: "/dashboard/orders/wholesale", module: "orders" , isNew: true  },
-          { title: "Order Due", url: "/dashboard/orders/wholesale/due", module: "orders" , isNew: true  }
+          { title: "Order Create", url: "/dashboard/orders/wholesale-create", module: "wholesale_orders", isNew: true },
+          { title: "Order History", url: "/dashboard/orders/wholesale", module: "wholesale_orders", isNew: true },
+          { title: "Order Due", url: "/dashboard/orders/wholesale/due", module: "wholesale_orders", isNew: true }
         ],
       },
 
@@ -143,8 +142,8 @@ export const sidebarItems: NavGroup[] = [
         subItems: [
           { title: "Dashboard", url: "/dashboard/crm", module: "customers" },
           { title: "All Customers", url: "/dashboard/customers", module: "customers" },
-          { title: "Follow-Ups", url: "/dashboard/crm/follow-ups", module: "customers" },
-          { title: "Customer Segmentation", url: "/dashboard/crm/segmentation", module: "customers" },
+          { title: "Follow-Ups", url: "/dashboard/crm/follow-ups", module: "customer_followups" },
+          { title: "Customer Segmentation", url: "/dashboard/crm/segmentation", module: "customer_segmentation" },
         ],
       },
       // { title: "Auto Calling AI", url: "/dashboard/auto-calling", icon: PhoneCall, module: "auto_calling", comingSoon: true },
@@ -174,7 +173,7 @@ export const sidebarItems: NavGroup[] = [
       { title: "Reviews", url: "/dashboard/reviews", icon: Star, module: "reviews" },
       { title: "Testimonials", url: "/dashboard/testimonials", icon: MessageSquareQuote, module: "testimonials" },
       { title: "Fraud Checker", url: "/dashboard/fraud-checker", icon: ShieldAlert, module: "fraud_checker" },
-      { title: "User Behaviour Logs", url: "/dashboard/user-behaviour-logs", icon: History },
+      { title: "User Behaviour Logs", url: "/dashboard/user-behaviour-logs", icon: History, module: "user_behaviour_logs" },
       {
         title: "Blogs",
         url: "/dashboard/blogs",
@@ -188,7 +187,7 @@ export const sidebarItems: NavGroup[] = [
         module: "reports",
         subItems: [
           { title: "Dashboard", url: "/dashboard/reports/dashboard", module: "reports_dashboard" },
-          { title: "Return Reports", url: "/dashboard/reports/returns", module: "reports_inventory" },
+          { title: "Return Reports", url: "/dashboard/reports/returns", module: "order_returns" },
           { title: "Product Report", url: "/dashboard/reports/product", module: "product_report" },
           { title: "Product Percent", url: "/dashboard/reports/product-percent", module: "product_percent" },
           { title: "Customer Report", url: "/dashboard/reports/customer", module: "customer_report" },
@@ -248,7 +247,7 @@ export const sidebarItems: NavGroup[] = [
         subItems: [
           { title: "Add Role", url: "/dashboard/roles/add" },
           { title: "View Roles & Users", url: "/dashboard/roles" },
-          { title: "Auto Order", url: "/dashboard/auto-order" },
+          { title: "Auto Order", url: "/dashboard/auto-order", module: "auto_order" },
         ],
       },
       { title: "Users", url: "/dashboard/users", icon: Users, module: "users", className: "hidden" },
