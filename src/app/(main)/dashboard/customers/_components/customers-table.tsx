@@ -35,6 +35,10 @@ import {
   AlertCircle,
   Copy,
   ExternalLink,
+  MapPin,
+  Package,
+  Hash,
+  Building2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -71,6 +75,73 @@ import {
 import { sendCustomerSms, sendBulkSms } from "@/hooks/useCustomers";
 import { cn, getInitials } from "@/lib/utils";
 
+export const BANGLADESH_DISTRICTS = [
+  "Dhaka",
+  "Chattogram",
+  "Gazipur",
+  "Narayanganj",
+  "Sylhet",
+  "Rajshahi",
+  "Khulna",
+  "Barishal",
+  "Rangpur",
+  "Mymensingh",
+  "Cumilla",
+  "Bogura",
+  "Cox's Bazar",
+  "Tangail",
+  "Jessore",
+  "Dinajpur",
+  "Brahmanbaria",
+  "Narsingdi",
+  "Jamalpur",
+  "Pabna",
+  "Kushtia",
+  "Faridpur",
+  "Sirajganj",
+  "Noakhali",
+  "Feni",
+  "Chandpur",
+  "Habiganj",
+  "Moulvibazar",
+  "Sunamganj",
+  "Natore",
+  "Naogaon",
+  "Chapai Nawabganj",
+  "Joypurhat",
+  "Gaibandha",
+  "Kurigram",
+  "Lalmonirhat",
+  "Nilphamari",
+  "Panchagarh",
+  "Thakurgaon",
+  "Jashore",
+  "Satkhira",
+  "Bagerhat",
+  "Jhenaidah",
+  "Magura",
+  "Narail",
+  "Chuadanga",
+  "Meherpur",
+  "Bhola",
+  "Jhalokathi",
+  "Patuakhali",
+  "Pirojpur",
+  "Barguna",
+  "Kishoreganj",
+  "Manikganj",
+  "Munshiganj",
+  "Netrokona",
+  "Rajbari",
+  "Shariatpur",
+  "Gopalganj",
+  "Madaripur",
+  "Sherpur",
+  "Bandarban",
+  "Khagrachhari",
+  "Rangamati",
+];
+
 export interface CustomerRow {
   id: number | string;
   name: string;
@@ -92,6 +163,14 @@ export interface CustomerRow {
   segmentColor: string;
   city: string;
   address: string;
+  district?: string;
+  shippingArea?: string;
+  allDistricts?: string[];
+  orderIds?: string[];
+  orderNos?: string[];
+  recentOrderNo?: string;
+  productNames?: string[];
+  productSkus?: string[];
   notesCount?: number;
 }
 
@@ -104,6 +183,14 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   // --- Filter states ---
   const [activeTab, setActiveTab] = React.useState<string>("all");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
+  const [searchMode, setSearchMode] = React.useState<"all" | "district" | "order" | "product">("all");
+
+  // --- Specific targeted filters ---
+  const [districtFilter, setDistrictFilter] = React.useState<string>("all");
+  const [orderIdFilter, setOrderIdFilter] = React.useState<string>("");
+  const [productFilter, setProductFilter] = React.useState<string>("");
+
+  // --- Behavioral filters ---
   const [selectedSegment, setSelectedSegment] = React.useState<string>("all");
   const [spendFilter, setSpendFilter] = React.useState<string>("all");
   const [orderFilter, setOrderFilter] = React.useState<string>("all");
@@ -126,6 +213,36 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   const [activeCustomerForSms, setActiveCustomerForSms] = React.useState<CustomerRow | null>(null);
   const [smsMessage, setSmsMessage] = React.useState<string>("");
   const [isSendingSms, setIsSendingSms] = React.useState<boolean>(false);
+
+  // --- Dynamically extract all districts detected across customers with counts ---
+  const availableDistricts = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    data.forEach((c) => {
+      const set = new Set<string>();
+      if (c.district) set.add(c.district);
+      if (c.city && c.city !== "Inside Dhaka" && c.city !== "Outside Dhaka") set.add(c.city);
+      if (c.allDistricts) {
+        c.allDistricts.forEach((d) => {
+          if (d && d !== "Inside Dhaka" && d !== "Outside Dhaka") set.add(d);
+        });
+      }
+      set.forEach((d) => {
+        counts.set(d, (counts.get(d) || 0) + 1);
+      });
+    });
+
+    const detected = Array.from(counts.entries())
+      .map(([district, count]) => ({ district, count }))
+      .sort((a, b) => b.count - a.count || a.district.localeCompare(b.district));
+
+    const detectedNames = new Set(detected.map((d) => d.district.toLowerCase()));
+    const remaining = BANGLADESH_DISTRICTS.filter((d) => !detectedNames.has(d.toLowerCase())).map((d) => ({
+      district: d,
+      count: 0,
+    }));
+
+    return [...detected, ...remaining];
+  }, [data]);
 
   // --- Pre-calculated counts for quick filter tabs ---
   const tabCounts = React.useMemo(() => {
@@ -152,50 +269,116 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
       // 2. Specific Segment Filter
       if (selectedSegment !== "all" && c.segmentKey !== selectedSegment) return false;
 
-      // 3. Spend Filter
+      // 3. Dedicated District Filter
+      if (districtFilter !== "all") {
+        const target = districtFilter.toLowerCase();
+        const hasDistrict =
+          (c.district && c.district.toLowerCase().includes(target)) ||
+          (c.city && c.city.toLowerCase().includes(target)) ||
+          (c.address && c.address.toLowerCase().includes(target)) ||
+          (c.allDistricts && c.allDistricts.some((d) => d.toLowerCase().includes(target)));
+        if (!hasDistrict) return false;
+      }
+
+      // 4. Dedicated Order ID / No Filter
+      if (orderIdFilter.trim()) {
+        const oQuery = orderIdFilter.toLowerCase().trim().replace(/^#/, "");
+        const hasOrder =
+          (c.orderIds && c.orderIds.some((id) => id.toLowerCase().includes(oQuery))) ||
+          (c.orderNos && c.orderNos.some((no) => no.toLowerCase().includes(oQuery)));
+        if (!hasOrder) return false;
+      }
+
+      // 5. Dedicated Product Name / SKU Filter
+      if (productFilter.trim()) {
+        const pQuery = productFilter.toLowerCase().trim();
+        const hasProduct =
+          (c.productNames && c.productNames.some((p) => p.toLowerCase().includes(pQuery))) ||
+          (c.productSkus && c.productSkus.some((s) => s.toLowerCase().includes(pQuery)));
+        if (!hasProduct) return false;
+      }
+
+      // 6. Spend Filter
       if (spendFilter === "vip" && c.totalSpent < 15000) return false;
       if (spendFilter === "high" && (c.totalSpent < 8000 || c.totalSpent >= 15000)) return false;
       if (spendFilter === "mid" && (c.totalSpent < 2000 || c.totalSpent >= 8000)) return false;
       if (spendFilter === "low" && (c.totalSpent <= 0 || c.totalSpent >= 2000)) return false;
       if (spendFilter === "zero" && c.totalSpent > 0) return false;
 
-      // 5. Order Count Filter
+      // 7. Order Count Filter
       if (orderFilter === "5plus" && c.totalOrders < 5) return false;
       if (orderFilter === "2to4" && (c.totalOrders < 2 || c.totalOrders > 4)) return false;
       if (orderFilter === "single" && c.totalOrders !== 1) return false;
       if (orderFilter === "zero" && c.totalOrders > 0) return false;
 
-      // 6. Delivery Rate Filter
+      // 8. Delivery Rate Filter
       if (deliveryFilter === "high" && c.successRate < 80) return false;
       if (deliveryFilter === "mid" && (c.successRate < 50 || c.successRate >= 80)) return false;
       if (deliveryFilter === "risk" && c.returnRate <= 30) return false;
 
-      // 7. Recency Filter
+      // 9. Recency Filter
       if (recencyFilter === "recent" && (c.daysSinceLastOrder === null || c.daysSinceLastOrder > 30)) return false;
       if (recencyFilter === "inactive" && (c.daysSinceLastOrder === null || c.daysSinceLastOrder <= 30 || c.daysSinceLastOrder > 90)) return false;
       if (recencyFilter === "dormant" && (c.daysSinceLastOrder === null || c.daysSinceLastOrder <= 90)) return false;
       if (recencyFilter === "never" && c.daysSinceLastOrder !== null) return false;
 
-      // 8. Universal Search Query
+      // 10. Universal or Scope-Based Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const idStr = String(c.id).toLowerCase();
-        const nameStr = (c.name || "").toLowerCase();
-        const phoneStr = (c.phone || "").toLowerCase();
-        const emailStr = (c.email || "").toLowerCase();
-        const cityStr = (c.city || "").toLowerCase();
-        const segmentStr = (c.segmentName || "").toLowerCase();
+        const cleanQ = q.replace(/^#/, "");
 
-        const matches =
-          idStr.includes(q) ||
-          `#${idStr}`.includes(q) ||
-          nameStr.includes(q) ||
-          phoneStr.includes(q) ||
-          emailStr.includes(q) ||
-          cityStr.includes(q) ||
-          segmentStr.includes(q);
+        if (searchMode === "district") {
+          const matches =
+            (c.district && c.district.toLowerCase().includes(q)) ||
+            (c.city && c.city.toLowerCase().includes(q)) ||
+            (c.address && c.address.toLowerCase().includes(q)) ||
+            (c.allDistricts && c.allDistricts.some((d) => d.toLowerCase().includes(q)));
+          if (!matches) return false;
+        } else if (searchMode === "order") {
+          const matches =
+            (c.orderIds && c.orderIds.some((id) => id.toLowerCase().includes(cleanQ))) ||
+            (c.orderNos && c.orderNos.some((no) => no.toLowerCase().includes(cleanQ)));
+          if (!matches) return false;
+        } else if (searchMode === "product") {
+          const matches =
+            (c.productNames && c.productNames.some((p) => p.toLowerCase().includes(q))) ||
+            (c.productSkus && c.productSkus.some((s) => s.toLowerCase().includes(q)));
+          if (!matches) return false;
+        } else {
+          // "all" mode matches customer fields, location, order IDs, and products!
+          const idStr = String(c.id).toLowerCase();
+          const nameStr = (c.name || "").toLowerCase();
+          const phoneStr = (c.phone || "").toLowerCase();
+          const emailStr = (c.email || "").toLowerCase();
+          const cityStr = (c.city || "").toLowerCase();
+          const districtStr = (c.district || "").toLowerCase();
+          const segmentStr = (c.segmentName || "").toLowerCase();
 
-        if (!matches) return false;
+          const matchesCustomer =
+            idStr.includes(q) ||
+            `#${idStr}`.includes(q) ||
+            nameStr.includes(q) ||
+            phoneStr.includes(q) ||
+            emailStr.includes(q) ||
+            cityStr.includes(q) ||
+            districtStr.includes(q) ||
+            segmentStr.includes(q);
+
+          const matchesDistrict =
+            c.allDistricts && c.allDistricts.some((d) => d.toLowerCase().includes(q));
+
+          const matchesOrders =
+            (c.orderIds && c.orderIds.some((id) => id.toLowerCase().includes(cleanQ))) ||
+            (c.orderNos && c.orderNos.some((no) => no.toLowerCase().includes(cleanQ)));
+
+          const matchesProducts =
+            (c.productNames && c.productNames.some((p) => p.toLowerCase().includes(q))) ||
+            (c.productSkus && c.productSkus.some((s) => s.toLowerCase().includes(q)));
+
+          if (!matchesCustomer && !matchesDistrict && !matchesOrders && !matchesProducts) {
+            return false;
+          }
+        }
       }
 
       return true;
@@ -204,11 +387,15 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
     data,
     activeTab,
     selectedSegment,
+    districtFilter,
+    orderIdFilter,
+    productFilter,
     spendFilter,
     orderFilter,
     deliveryFilter,
     recencyFilter,
     searchQuery,
+    searchMode,
   ]);
 
   // --- Sorting Logic ---
@@ -299,6 +486,10 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   const hasActiveFilters =
     activeTab !== "all" ||
     selectedSegment !== "all" ||
+    districtFilter !== "all" ||
+    Boolean(orderIdFilter.trim()) ||
+    Boolean(productFilter.trim()) ||
+    searchMode !== "all" ||
     spendFilter !== "all" ||
     orderFilter !== "all" ||
     deliveryFilter !== "all" ||
@@ -308,6 +499,10 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   const resetAllFilters = () => {
     setActiveTab("all");
     setSelectedSegment("all");
+    setDistrictFilter("all");
+    setOrderIdFilter("");
+    setProductFilter("");
+    setSearchMode("all");
     setSpendFilter("all");
     setOrderFilter("all");
     setDeliveryFilter("all");
@@ -342,8 +537,12 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
       "Return Rate (%)",
       "Last Order Date",
       "Joined Date",
-      "City/District",
+      "District",
+      "City/Shipping Area",
       "Address",
+      "Order IDs",
+      "Recent Order",
+      "Purchased Products",
     ];
 
     const csvLines = [
@@ -364,8 +563,12 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
           `${c.returnRate}%`,
           c.lastOrderDate || "Never",
           c.joinDate || "",
+          `"${(c.district || "").replace(/"/g, '""')}"`,
           `"${(c.city || "").replace(/"/g, '""')}"`,
           `"${(c.address || "").replace(/"/g, '""')}"`,
+          `"${(c.orderNos || c.orderIds || []).join(" | ")}"`,
+          `"${c.recentOrderNo || ""}"`,
+          `"${(c.productNames || []).join(" | ").replace(/"/g, '""')}"`,
         ].join(",")
       ),
     ];
@@ -598,13 +801,103 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
 
       {/* 2. Main Search, Multi-Filter, and Sorting Control Bar */}
       <div className="p-4 border-b bg-card space-y-3.5">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-          {/* Universal Search Input */}
-          <div className="relative flex-1 max-w-md">
+        {/* Top Control Header: Search Scope Tabs, Universal Search Input, Sort By & Export */}
+        <div className="space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
+            {/* Search Scope Pills */}
+            <div className="flex items-center gap-1 p-1 bg-muted/60 dark:bg-muted/30 rounded-lg border text-xs">
+              <span className="text-[11px] font-semibold text-muted-foreground px-2 hidden sm:inline">Search By:</span>
+              {[
+                { id: "all", label: "All Fields", icon: Search },
+                { id: "district", label: "District / City", icon: MapPin },
+                { id: "order", label: "Order ID / No", icon: Hash },
+                { id: "product", label: "Product / SKU", icon: Package },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const isCurrent = searchMode === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      setSearchMode(tab.id as any);
+                      setPage(1);
+                    }}
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all",
+                      isCurrent
+                        ? "bg-background text-foreground shadow-2xs font-bold border border-border"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+                    )}
+                  >
+                    <Icon className={cn("size-3.5", isCurrent ? "text-primary" : "text-muted-foreground")} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Right Action Tools: Sort By Dropdown & Export Button */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Sorting Preset Dropdown */}
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="shrink-0 hidden md:inline font-medium">Sort By:</span>
+                <Select
+                  value={sortBy}
+                  onValueChange={(val) => {
+                    setSortBy(val);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-[180px] text-xs font-medium">
+                    <SelectValue placeholder="Sort customers by..." />
+                  </SelectTrigger>
+                  <SelectContent align="end" className="text-xs">
+                    <SelectItem value="spent-desc">Highest Spend (Revenue)</SelectItem>
+                    <SelectItem value="spent-asc">Lowest Spend</SelectItem>
+                    <SelectItem value="orders-desc">Most Orders</SelectItem>
+                    <SelectItem value="orders-asc">Least Orders</SelectItem>
+                    <SelectItem value="success-desc">Highest Delivery Rate (%)</SelectItem>
+                    <SelectItem value="return-desc">Highest Return Rate (%)</SelectItem>
+                    <SelectItem value="recency-desc">Recently Active (Latest Order)</SelectItem>
+                    <SelectItem value="recency-asc">Oldest Last Order</SelectItem>
+                    <SelectItem value="newest">Newest Joined</SelectItem>
+                    <SelectItem value="oldest">Oldest Customer</SelectItem>
+                    <SelectItem value="name-asc">Name (A → Z)</SelectItem>
+                    <SelectItem value="name-desc">Name (Z → A)</SelectItem>
+                    <SelectItem value="id-desc">Customer ID (High → Low)</SelectItem>
+                    <SelectItem value="id-asc">Customer ID (Low → High)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Export CSV Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExportCsv(false)}
+                className="h-9 gap-1.5 text-xs shadow-2xs hover:bg-muted"
+              >
+                <Download className="size-3.5" />
+                <span>Export CSV</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Search Input Box */}
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
               type="text"
-              placeholder="Search by Name, Phone, Email, ID, City..."
+              placeholder={
+                searchMode === "district"
+                  ? "Search by district or city name (e.g. Dhaka, Gazipur, Chattogram, Sylhet)..."
+                  : searchMode === "order"
+                  ? "Search by Order ID or Order Number (e.g. ORD-1790147394912 or #4)..."
+                  : searchMode === "product"
+                  ? "Search by Product name or SKU (e.g. Acid Black Denim, Panjabi, SKU-4650)..."
+                  : "Search across all fields: name, phone, email, district, order ID, product name/SKU..."
+              }
               className="pl-9 pr-8 h-9 text-xs"
               value={searchQuery}
               onChange={(e) => {
@@ -623,57 +916,149 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
               </button>
             )}
           </div>
+        </div>
 
-          {/* Right Action Tools: Sort By Dropdown & Export Button */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Sorting Preset Dropdown */}
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="shrink-0 hidden sm:inline font-medium">Sort By:</span>
-              <Select
-                value={sortBy}
-                onValueChange={(val) => {
-                  setSortBy(val);
+        {/* Dedicated Targeted Filters Row: District, Order ID, and Product */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t">
+          {/* 1. District Selector */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
+                <MapPin className="size-3 text-emerald-500" />
+                District / Region
+              </Label>
+              {districtFilter !== "all" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDistrictFilter("all");
+                    setPage(1);
+                  }}
+                  className="text-[10px] text-muted-foreground hover:text-foreground underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <Select
+              value={districtFilter}
+              onValueChange={(val) => {
+                setDistrictFilter(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-8 text-xs bg-background">
+                <SelectValue placeholder="All Districts" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72 text-xs">
+                <SelectItem value="all">All Districts & Cities</SelectItem>
+                {availableDistricts.map((d) => (
+                  <SelectItem key={d.district} value={d.district}>
+                    {d.district} {d.count > 0 ? `(${d.count})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 2. Order ID Filter */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
+                <Hash className="size-3 text-blue-500" />
+                Order ID / Order No
+              </Label>
+              {orderIdFilter && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOrderIdFilter("");
+                    setPage(1);
+                  }}
+                  className="text-[10px] text-muted-foreground hover:text-foreground underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                type="text"
+                placeholder="Filter by Order ID (e.g. ORD-... or 4)"
+                className="pl-8 pr-7 h-8 text-xs bg-background font-mono"
+                value={orderIdFilter}
+                onChange={(e) => {
+                  setOrderIdFilter(e.target.value);
                   setPage(1);
                 }}
-              >
-                <SelectTrigger className="h-9 w-[190px] text-xs font-medium">
-                  <SelectValue placeholder="Sort customers by..." />
-                </SelectTrigger>
-                <SelectContent align="end" className="text-xs">
-                  <SelectItem value="spent-desc">Highest Spend (Revenue)</SelectItem>
-                  <SelectItem value="spent-asc">Lowest Spend</SelectItem>
-                  <SelectItem value="orders-desc">Most Orders</SelectItem>
-                  <SelectItem value="orders-asc">Least Orders</SelectItem>
-                  <SelectItem value="success-desc">Highest Delivery Rate (%)</SelectItem>
-                  <SelectItem value="return-desc">Highest Return Rate (%)</SelectItem>
-                  <SelectItem value="recency-desc">Recently Active (Latest Order)</SelectItem>
-                  <SelectItem value="recency-asc">Oldest Last Order</SelectItem>
-                  <SelectItem value="newest">Newest Joined</SelectItem>
-                  <SelectItem value="oldest">Oldest Customer</SelectItem>
-                  <SelectItem value="name-asc">Name (A → Z)</SelectItem>
-                  <SelectItem value="name-desc">Name (Z → A)</SelectItem>
-                  <SelectItem value="id-desc">Customer ID (High → Low)</SelectItem>
-                  <SelectItem value="id-asc">Customer ID (Low → High)</SelectItem>
-                </SelectContent>
-              </Select>
+              />
+              {orderIdFilter && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOrderIdFilter("");
+                    setPage(1);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                >
+                  <X className="size-3" />
+                </button>
+              )}
             </div>
+          </div>
 
-            {/* Export CSV Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleExportCsv(false)}
-              className="h-9 gap-1.5 text-xs shadow-2xs hover:bg-muted"
-            >
-              <Download className="size-3.5" />
-              <span>Export CSV</span>
-            </Button>
+          {/* 3. Product Filter */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
+                <Package className="size-3 text-purple-500" />
+                Product Name / SKU
+              </Label>
+              {productFilter && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProductFilter("");
+                    setPage(1);
+                  }}
+                  className="text-[10px] text-muted-foreground hover:text-foreground underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <Package className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                type="text"
+                placeholder="Filter by Product name or SKU..."
+                className="pl-8 pr-7 h-8 text-xs bg-background"
+                value={productFilter}
+                onChange={(e) => {
+                  setProductFilter(e.target.value);
+                  setPage(1);
+                }}
+              />
+              {productFilter && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProductFilter("");
+                    setPage(1);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                >
+                  <X className="size-3" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Multi-Filter Dropdown Selectors Row */}
+        {/* Secondary Behavioral Filter Selectors Row */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1 text-xs">
-          {/* Filter 1: Segment */}
+          {/* Filter: Segment */}
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Segment</Label>
             <Select
@@ -699,7 +1084,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
             </Select>
           </div>
 
-          {/* Filter 2: Spending Tier */}
+          {/* Filter: Spending Tier */}
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Lifetime Spend</Label>
             <Select
@@ -723,7 +1108,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
             </Select>
           </div>
 
-          {/* Filter 4: Order Count */}
+          {/* Filter: Order Count */}
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Orders Count</Label>
             <Select
@@ -746,7 +1131,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
             </Select>
           </div>
 
-          {/* Filter 5: Delivery Success */}
+          {/* Filter: Delivery Success */}
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Fulfillment Health</Label>
             <Select
@@ -768,7 +1153,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
             </Select>
           </div>
 
-          {/* Filter 6: Recency Activity */}
+          {/* Filter: Recency Activity */}
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Activity Recency</Label>
             <Select
@@ -799,8 +1184,32 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
 
             {searchQuery.trim() && (
               <Badge variant="secondary" className="gap-1 text-[11px] py-0.5 px-2">
-                Search: "{searchQuery}"
+                Search ({searchMode}): "{searchQuery}"
                 <X className="size-3 cursor-pointer" onClick={() => setSearchQuery("")} />
+              </Badge>
+            )}
+
+            {districtFilter !== "all" && (
+              <Badge variant="secondary" className="gap-1 text-[11px] py-0.5 px-2 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20">
+                <MapPin className="size-3 text-emerald-600 dark:text-emerald-400" />
+                District: {districtFilter}
+                <X className="size-3 cursor-pointer" onClick={() => setDistrictFilter("all")} />
+              </Badge>
+            )}
+
+            {orderIdFilter.trim() && (
+              <Badge variant="secondary" className="gap-1 text-[11px] py-0.5 px-2 bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20">
+                <Hash className="size-3 text-blue-600 dark:text-blue-400" />
+                Order: #{orderIdFilter.replace(/^#/, "")}
+                <X className="size-3 cursor-pointer" onClick={() => setOrderIdFilter("")} />
+              </Badge>
+            )}
+
+            {productFilter.trim() && (
+              <Badge variant="secondary" className="gap-1 text-[11px] py-0.5 px-2 bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20">
+                <Package className="size-3 text-purple-600 dark:text-purple-400" />
+                Product: {productFilter}
+                <X className="size-3 cursor-pointer" onClick={() => setProductFilter("")} />
               </Badge>
             )}
 
@@ -1059,14 +1468,17 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                               Registered
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
                             {customer.phone && (
                               <span className="font-mono">{customer.phone}</span>
                             )}
-                            {customer.city && (
+                            {(customer.district || customer.city) && (
                               <>
                                 <span className="opacity-40">•</span>
-                                <span className="truncate">{customer.city}</span>
+                                <span className="inline-flex items-center gap-1 font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]" title={customer.allDistricts?.join(", ") || customer.district || customer.city || ""}>
+                                  <MapPin className="size-2.5 shrink-0" />
+                                  <span className="truncate max-w-[120px]">{customer.district || customer.city}</span>
+                                </span>
                               </>
                             )}
                           </div>
@@ -1095,12 +1507,39 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
 
                     {/* Orders & AOV */}
                     <td className="py-3.5 px-3 align-middle">
-                      <div className="font-bold text-foreground tabular-nums">
-                        {customer.totalOrders} {customer.totalOrders === 1 ? "order" : "orders"}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-foreground tabular-nums">
+                          {customer.totalOrders} {customer.totalOrders === 1 ? "order" : "orders"}
+                        </span>
+                        {customer.recentOrderNo && (
+                          <span
+                            className="inline-flex items-center gap-0.5 text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20"
+                            title={`Recent Order: #${customer.recentOrderNo}`}
+                          >
+                            <Hash className="size-2.5 opacity-70" />
+                            {customer.recentOrderNo.length > 14
+                              ? `${customer.recentOrderNo.slice(0, 12)}…`
+                              : customer.recentOrderNo}
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">
                         {customer.productsCount} items • AOV ৳{customer.aov.toLocaleString()}
                       </div>
+                      {customer.productNames && customer.productNames.length > 0 && (
+                        <div
+                          className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 max-w-[210px] truncate"
+                          title={`Purchased Products: ${customer.productNames.join(", ")}`}
+                        >
+                          <Package className="size-2.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                          <span className="truncate">{customer.productNames[0]}</span>
+                          {customer.productNames.length > 1 && (
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-muted text-muted-foreground shrink-0 font-medium">
+                              +{customer.productNames.length - 1}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     {/* Total Lifetime Spend */}

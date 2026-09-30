@@ -96,6 +96,41 @@ export default function CustomersPage() {
     const status: "Registered" = "Registered";
     const joinDate = c.created_at ? new Date(c.created_at).toISOString().split("T")[0] : "";
 
+    // Extract District, Order IDs, and Product names for searching
+    const districtSet = new Set<string>();
+    if (c.district) districtSet.add(c.district.trim());
+    if (c.city && c.city !== "Inside Dhaka" && c.city !== "Outside Dhaka") districtSet.add(c.city.trim());
+    if (c.primary_address?.district) districtSet.add(c.primary_address.district.trim());
+
+    const orderIds: string[] = [];
+    const orderNos: string[] = [];
+    const productNamesSet = new Set<string>();
+    const productSkusSet = new Set<string>();
+
+    orders.forEach((o: any) => {
+      if (o.district) districtSet.add(o.district.trim());
+      if (o.shipping_area) districtSet.add(o.shipping_area.trim());
+      if (o.id !== undefined && o.id !== null) orderIds.push(String(o.id));
+      if (o.order_no) orderNos.push(String(o.order_no));
+
+      if (o.ordered_products && Array.isArray(o.ordered_products)) {
+        o.ordered_products.forEach((op: any) => {
+          if (op.product_title_snapshot) productNamesSet.add(op.product_title_snapshot.trim());
+          if (op.product?.title) productNamesSet.add(op.product.title.trim());
+          if (op.product?.sku) productSkusSet.add(op.product.sku.trim());
+          if (op.sku_snapshot) productSkusSet.add(op.sku_snapshot.trim());
+        });
+      }
+    });
+
+    const primaryDistrict =
+      c.district ||
+      c.primary_address?.district ||
+      (orders.find((o: any) => o.district)?.district) ||
+      (c.city && c.city !== "Inside Dhaka" && c.city !== "Outside Dhaka" ? c.city : "") ||
+      "";
+    const primaryShippingArea = orders.find((o: any) => o.shipping_area)?.shipping_area || c.city || "";
+
     return {
       id: c.id,
       name: c.full_name || "Unnamed Customer",
@@ -117,6 +152,14 @@ export default function CustomersPage() {
       segmentColor,
       city: c.city || c.state || "",
       address: c.address || "",
+      district: primaryDistrict,
+      shippingArea: primaryShippingArea,
+      allDistricts: Array.from(districtSet).filter(Boolean),
+      orderIds,
+      orderNos,
+      recentOrderNo: orderNos[0] || (orderIds[0] ? `#${orderIds[0]}` : undefined),
+      productNames: Array.from(productNamesSet).filter(Boolean),
+      productSkus: Array.from(productSkusSet).filter(Boolean),
       notesCount: c.notes?.length || 0,
     };
   });
