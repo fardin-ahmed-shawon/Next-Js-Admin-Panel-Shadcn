@@ -92,6 +92,8 @@ export interface PageAccess {
   supplier_report?: number;
   auto_order?: number;
   user_behaviour_logs?: number;
+  packaging_team?: number;
+  pending_returns?: number;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -137,9 +139,7 @@ export function useRoles() {
 }
 
 export const ORDER_CONNECTED_MODULES = [
-  "orders",
   "wholesale_orders",
-  "order_returns",
   "invoices",
   "incomplete_orders",
   "ai_calling_logs",
@@ -173,27 +173,59 @@ export const HRM_MODULE_KEYS: (keyof PageAccess)[] = [
 
 export function hasModuleAccess(user: any, module: string): boolean {
   if (!user || !user.role) return false;
-  if (user.role.role_name === "Admin") return true;
-  if (!user.role.page_access) return false;
 
-  // Exact permission match
-  if (user.role.page_access[module as keyof PageAccess] === 1) return true;
+  const pageAccess = user.role.page_access || user.role.pageAccess;
 
-  // all_orders check for order-connected modules
-  if (user.role.page_access.all_orders === 1 && ORDER_CONNECTED_MODULES.includes(module)) {
+  // 1. If pageAccess exists, explicitly check the module's toggle first
+  if (pageAccess) {
+    // Special alias match for pending returns / order returns
+    if (module === "pending_returns" || module === "order_returns") {
+      const pRet = pageAccess.pending_returns;
+      const oRet = pageAccess.order_returns;
+      if (pRet === 1 || oRet === 1) return true;
+      if (pRet === 0 && (oRet === 0 || oRet === undefined)) return false;
+      if (oRet === 0 && (pRet === 0 || pRet === undefined)) return false;
+    }
+
+    const rawVal = pageAccess[module as keyof PageAccess];
+
+    // If explicitly disabled (0), ALWAYS block access (even if user is Admin or has all_orders)
+    if (rawVal === 0) {
+      return false;
+    }
+
+    // If explicitly enabled (1), grant access
+    if (rawVal === 1) {
+      return true;
+    }
+  }
+
+  // 2. Admin fallback: only if not explicitly set to 0 in pageAccess
+  if (user.role.role_name === "Admin") {
+    if (pageAccess && pageAccess[module as keyof PageAccess] === 0) {
+      return false;
+    }
     return true;
   }
 
-  // Parent HRM menu check: accessible if master 'hrm' is 1 OR any specific HRM sub-module is 1
-  if (module === "hrm") {
-    if (user.role.page_access.hrm === 1) return true;
-    return HRM_MODULE_KEYS.some((key) => user.role.page_access[key] === 1);
+  if (!pageAccess) return false;
+
+  // 3. all_orders check for connected secondary modules (reports, history, invoices, etc.)
+  // Note: "orders", "packaging_team", and "pending_returns" are NOT in ORDER_CONNECTED_MODULES
+  if (pageAccess.all_orders === 1 && ORDER_CONNECTED_MODULES.includes(module)) {
+    return true;
   }
 
-  // If role has All User Access for a submodule, it implies page access as well
+  // 4. Parent HRM menu check: accessible if master 'hrm' is 1 OR any specific HRM sub-module is 1
+  if (module === "hrm") {
+    if (pageAccess.hrm === 1) return true;
+    return HRM_MODULE_KEYS.some((key) => pageAccess[key] === 1);
+  }
+
+  // 5. If role has All User Access for a submodule, it implies page access as well
   if (module.startsWith("hrm_") && !module.startsWith("hrm_all_")) {
     const allKey = `hrm_all_${module.replace("hrm_", "")}` as keyof PageAccess;
-    if (user.role.page_access[allKey] === 1) return true;
+    if (pageAccess[allKey] === 1) return true;
   }
 
   return false;

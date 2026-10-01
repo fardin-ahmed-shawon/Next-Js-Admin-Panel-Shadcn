@@ -217,7 +217,9 @@ export function AppSidebar({ brandName, ...props }: React.ComponentProps<typeof 
           ) {
             return null;
           }
-          return { ...item, subItems: filteredSubItems };
+          const hasParentAccess = !item.module || hasModuleAccess(user, item.module);
+          const safeUrl = hasParentAccess ? item.url : (filteredSubItems?.[0]?.url || "#");
+          return { ...item, url: safeUrl, subItems: filteredSubItems };
         }
         return null;
       })

@@ -103,7 +103,8 @@ export const sidebarItems: NavGroup[] = [
         subItems: [
           { title: "Create Order", url: "/dashboard/orders/create", module: "create_orders" },
           { title: "Assign Orders", url: "/dashboard/orders/assign-orders", module: "assign_orders" },
-          { title: "Pending Returns", url: "/dashboard/orders/pending-return", module: "order_returns" },
+          { title: "Packaging Team", url: "/dashboard/orders/packaging", module: "packaging_team" },
+          { title: "Pending Returns", url: "/dashboard/orders/pending-return", module: "pending_returns" },
           { title: "Order Management", url: "/dashboard/orders", module: "orders" },
           { title: "Invoice", url: "/dashboard/orders/invoice", module: "invoices" },
           { title: "Incomplete Orders", url: "/dashboard/orders/incomplete", module: "incomplete_orders" },

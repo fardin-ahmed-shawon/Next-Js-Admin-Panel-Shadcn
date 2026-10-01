@@ -5,6 +5,7 @@ import * as React from "react";
 import { OrderContext, type TimeRange } from "./_components/order-context";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { CalendarIcon, Ellipsis, FileDown, FileText, Plus, Printer, RefreshCw, ShieldOff } from "lucide-react";
 
@@ -23,7 +24,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/useAuth";
 import { useOrders } from "@/hooks/useOrders";
+import { hasModuleAccess } from "@/hooks/useRoles";
 import { format, subDays, subMonths, startOfYear } from "date-fns";
 import { formatOrderDateTime } from "@/lib/utils";
 
@@ -77,6 +80,22 @@ const rangeLabels: Record<TimeRange, string> = {
 
 
 export default function OrdersPage() {
+  const router = useRouter();
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const hasOrdersAccess = hasModuleAccess(user, "orders");
+  const hasPackagingAccess = hasModuleAccess(user, "packaging_team");
+  const hasPendingReturnsAccess = hasModuleAccess(user, "pending_returns");
+
+  React.useEffect(() => {
+    if (!isAuthLoading && !hasOrdersAccess) {
+      if (hasPackagingAccess) {
+        router.replace("/dashboard/orders/packaging");
+      } else if (hasPendingReturnsAccess) {
+        router.replace("/dashboard/orders/pending-return");
+      }
+    }
+  }, [isAuthLoading, hasOrdersAccess, hasPackagingAccess, hasPendingReturnsAccess, router]);
+
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(false);
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState("");
@@ -236,6 +255,30 @@ export default function OrdersPage() {
         };
       });
   }, [orders, getImageUrl]);
+
+  if (!isAuthLoading && !hasOrdersAccess) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] p-8 text-center">
+        <ShieldOff className="size-16 text-destructive/80 mb-4" />
+        <h2 className="text-2xl font-bold text-foreground">Access Restricted</h2>
+        <p className="text-sm text-muted-foreground mt-1 max-w-md">
+          You do not have permission to access the full Order Management directory.
+        </p>
+        <div className="flex items-center gap-3 mt-6">
+          {hasPackagingAccess && (
+            <Link href="/dashboard/orders/packaging">
+              <Button className="gap-2">Go to Packaging Station</Button>
+            </Link>
+          )}
+          {hasPendingReturnsAccess && (
+            <Link href="/dashboard/orders/pending-return">
+              <Button variant="outline" className="gap-2">Go to Pending Returns</Button>
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading && !orders?.length) {
     return <OrdersSkeleton />;

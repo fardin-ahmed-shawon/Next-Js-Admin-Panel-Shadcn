@@ -121,12 +121,13 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     title: "Sales & Orders",
     icon: ShoppingCart,
     items: [
-      { id: "orders", label: "Order Management", icon: ShoppingCart },
+      { id: "orders", label: "Order Management (Full)", icon: ShoppingCart },
+      { id: "packaging_team", label: "Packaging Team (Confirmed → Ready to Ship → Steadfast)", icon: Package, badge: "Special Access" },
+      { id: "pending_returns", label: "Pending Returns (/dashboard/orders/pending-return)", icon: RotateCcw, badge: "Specific Page" },
       { id: "all_orders", label: "Show All Orders", icon: ShoppingCart },
       { id: "create_orders", label: "Create Order", icon: ShoppingCart },
       { id: "assign_orders", label: "Assign Orders", icon: ShoppingCart },
       { id: "wholesale_orders", label: "Wholesale Orders", icon: Store },
-      { id: "order_returns", label: "Returns & Pending Returns", icon: RotateCcw },
       { id: "invoices", label: "Invoices", icon: Receipt },
       { id: "incomplete_orders", label: "Incomplete Orders", icon: AlertCircle },
       { id: "ai_calling_logs", label: "AI Calling Logs", icon: PhoneCall },
@@ -338,6 +339,10 @@ export default function AddRolePage() {
       );
       if (hasAnyHrm) {
         pageAccessPayload["hrm"] = 1;
+      }
+
+      if (pageAccessPayload["pending_returns"] !== undefined) {
+        pageAccessPayload["order_returns"] = pageAccessPayload["pending_returns"];
       }
 
       const payload = {
