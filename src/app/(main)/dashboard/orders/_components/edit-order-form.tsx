@@ -464,6 +464,8 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
   const [paymentStatus, setPaymentStatus] = React.useState("");
   const [modalOpen, setModalOpen] = React.useState(false);
   const [note, setNote] = React.useState("");
+  const [employeeNote, setEmployeeNote] = React.useState("");
+  const [cancelledNote, setCancelledNote] = React.useState("");
   const [selectedDistrict, setSelectedDistrict] = React.useState("");
   const [shippingChargeInput, setShippingChargeInput] = React.useState<number>(0);
   const [discountAmountInput, setDiscountAmountInput] = React.useState<number>(0);
@@ -689,6 +691,8 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
       setOrderStatus(order.order_status ?? "");
       setPaymentStatus(order.payment_status ?? "");
       setNote(order.order_note ?? "");
+      setEmployeeNote(order.employee_note ?? "");
+      setCancelledNote(order.cancelled_note ?? "");
       setSelectedDistrict(order.district ?? "");
       setShippingChargeInput(Number(order.shipping_charge ?? 0));
       setDiscountAmountInput(Number(order.discount_amount ?? 0));
@@ -881,6 +885,8 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
         order_status: orderStatus,
         payment_status: paymentStatus,
         order_note: note,
+        employee_note: employeeNote,
+        cancelled_note: cancelledNote,
       });
 
       if (paymentStatus === "Full Paid") {
@@ -1531,18 +1537,41 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                 </Card>
               </div>
 
-              {/* Order Note */}
+              {/* Order Notes */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Order note</CardTitle>
+                  <CardTitle className="text-lg">Order notes</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                  <Textarea
-                    placeholder="Add a note for this order…"
-                    className="min-h-[100px] resize-none text-sm"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                  />
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Order Note (Customer)</Label>
+                    <Textarea
+                      placeholder="Add customer note for this order…"
+                      className="min-h-[80px] resize-none text-sm"
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Order Note (Employee)</Label>
+                    <Textarea
+                      placeholder="Add internal employee note for this order…"
+                      className="min-h-[80px] resize-none text-sm"
+                      value={employeeNote}
+                      onChange={(e) => setEmployeeNote(e.target.value)}
+                    />
+                  </div>
+                  {(orderStatus === "Cancelled" || cancelledNote) && (
+                    <div className="space-y-1.5 border border-destructive/30 rounded-lg p-3 bg-destructive/5">
+                      <Label className="text-sm font-medium text-destructive">Cancelled Order Note</Label>
+                      <Textarea
+                        placeholder="Add reason for cancellation…"
+                        className="min-h-[80px] resize-none text-sm border-destructive/40 focus-visible:ring-destructive"
+                        value={cancelledNote}
+                        onChange={(e) => setCancelledNote(e.target.value)}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

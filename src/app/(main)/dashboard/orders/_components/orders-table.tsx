@@ -79,7 +79,9 @@ import { useModularFeatures } from "@/hooks/useModularFeatures";
 import { AssignOrderDialog } from "../assign-orders/_components/assign-order-dialog";
 import { UpdatePaymentModal } from "./update-payment-modal";
 import { EditOrderForm } from "./edit-order-form";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { getRelativeTime } from "@/lib/utils";
 
 /* ---- Data ---- */
@@ -142,6 +144,9 @@ export interface OrderRow {
   source?: string;
   is_ai_called?: boolean;
   invoice_status?: string;
+  order_note?: string | null;
+  employee_note?: string | null;
+  cancelled_note?: string | null;
 }
 
 /* ---- Status badge colors ---- */
@@ -766,6 +771,159 @@ function CustomerFraudSuccessRate({ phone }: { phone: string }) {
   );
 }
 
+function OrderStatusCell({ row, table }: { row: any; table: any }) {
+  const meta = table.options.meta as any;
+  const [status, setStatus] = React.useState(row.original.orderStatus);
+  const [cancelModalOpen, setCancelModalOpen] = React.useState(false);
+  const [cancelledNoteText, setCancelledNoteText] = React.useState(row.original.cancelled_note || "");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    setStatus(row.original.orderStatus);
+    setCancelledNoteText(row.original.cancelled_note || "");
+  }, [row.original.orderStatus, row.original.cancelled_note]);
+
+  const handleConfirmCancel = async () => {
+    setIsSubmitting(true);
+    const toastId = toast.loading("Saving cancellation note...");
+    try {
+      const res = await fetchClient(`${getApiBaseUrl()}orders/${row.original.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order_status: "Cancelled",
+          cancelled_note: cancelledNoteText,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setStatus("Cancelled");
+      setCancelModalOpen(false);
+      toast.success(`Order ${row.original.id} marked as Cancelled`, { id: toastId });
+      invalidateOrders();
+    } catch (e) {
+      toast.error("Failed to cancel order", { id: toastId });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex flex-col items-start gap-1">
+        <Select
+          value={status}
+          onValueChange={async (val) => {
+            if (val === "Cancelled") {
+              setCancelModalOpen(true);
+              return;
+            }
+            const toastId = toast.loading("Updating status...");
+            try {
+              const res = await fetchClient(`${getApiBaseUrl()}orders/${row.original.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ order_status: val }),
+              });
+              if (!res.ok) throw new Error();
+              setStatus(val);
+              toast.success(`Order ${row.original.id} status → ${val}`, { id: toastId });
+              invalidateOrders();
+            } catch (e) {
+              toast.error("Failed to update status", { id: toastId });
+              setStatus(row.original.orderStatus);
+            }
+          }}
+        >
+          <SelectTrigger className="h-7 w-[115px] text-xs border-border/60 rounded-md px-2 gap-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {orderStatuses
+              .filter((s) => s !== "All")
+              .filter((s) => meta?.showIncompleteStatus ? true : s !== "Incomplete")
+              .map((st) => (
+                <SelectItem key={st} value={st} className="text-xs">
+                  {st}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+
+        {status === "Cancelled" && (
+          <button
+            type="button"
+            onClick={() => setCancelModalOpen(true)}
+            className="text-[10px] text-destructive bg-destructive/10 hover:bg-destructive/15 border border-destructive/20 rounded px-1.5 py-0.5 max-w-[120px] truncate transition-colors text-left font-medium"
+            title={row.original.cancelled_note ? `Cancelled Note: ${row.original.cancelled_note}` : "Click to add cancelled note"}
+          >
+            {row.original.cancelled_note ? (
+              <span><span className="font-semibold">Note:</span> {row.original.cancelled_note}</span>
+            ) : (
+              <span>+ Add note</span>
+            )}
+          </button>
+        )}
+      </div>
+
+      <Dialog
+        open={cancelModalOpen}
+        onOpenChange={(open) => {
+          if (!open && !isSubmitting) {
+            setCancelModalOpen(false);
+            if (row.original.orderStatus !== "Cancelled") {
+              setStatus(row.original.orderStatus);
+            }
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancelled Order Note</DialogTitle>
+            <DialogDescription>
+              Order #{row.original.id} — Enter the reason or note for cancelling this order.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label htmlFor={`cancel-note-${row.original.id}`} className="text-sm font-medium">
+              Cancelled Order Note
+            </Label>
+            <Textarea
+              id={`cancel-note-${row.original.id}`}
+              placeholder="e.g. Customer cancelled via call, unreachable phone, duplicated order..."
+              className="min-h-[90px] resize-y text-sm"
+              value={cancelledNoteText}
+              onChange={(e) => setCancelledNoteText(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => {
+                setCancelModalOpen(false);
+                if (row.original.orderStatus !== "Cancelled") {
+                  setStatus(row.original.orderStatus);
+                }
+              }}
+            >
+              Close
+            </Button>
+            <Button
+              variant="destructive"
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleConfirmCancel}
+            >
+              {isSubmitting ? "Saving..." : "Confirm Cancellation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 const columns: ColumnDef<OrderRow>[] = [
   {
     id: "select",
@@ -885,6 +1043,16 @@ const columns: ColumnDef<OrderRow>[] = [
             <AiAutoCallButton orderId={row.original.id} isAiCalled={row.original.is_ai_called} />
           </div>
           <CustomerFraudSuccessRate phone={row.original.phone} />
+          {row.original.order_note && (
+            <div className="mt-1.5 text-[10px] text-amber-800 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5 whitespace-normal break-words max-w-[14ch]" title="Order Note (Customer)">
+              <span className="font-semibold">Cust Note:</span> {row.original.order_note}
+            </div>
+          )}
+          {row.original.employee_note && (
+            <div className="mt-1 text-[10px] text-sky-800 dark:text-sky-300 bg-sky-500/10 border border-sky-500/20 rounded px-1.5 py-0.5 whitespace-normal break-words max-w-[14ch]" title="Order Note (Employee)">
+              <span className="font-semibold">Emp Note:</span> {row.original.employee_note}
+            </div>
+          )}
         </div>
       </div>
     ),
@@ -940,43 +1108,7 @@ const columns: ColumnDef<OrderRow>[] = [
   {
     id: "oStatus",
     header: "Order Status",
-    cell: ({ row, table }) => {
-      const meta = table.options.meta as any;
-      return (
-        <Select
-          defaultValue={row.original.orderStatus}
-          onValueChange={async (val) => {
-            const toastId = toast.loading("Updating status...");
-            try {
-              const res = await fetchClient(`${getApiBaseUrl()}orders/${row.original.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ order_status: val }),
-              });
-              if (!res.ok) throw new Error();
-              toast.success(`Order ${row.original.id} status → ${val}`, { id: toastId });
-              invalidateOrders();
-            } catch (e) {
-              toast.error("Failed to update status", { id: toastId });
-            }
-          }}
-        >
-          <SelectTrigger className="h-7 w-[115px] text-xs border-border/60 rounded-md px-2 gap-1">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {orderStatuses
-              .filter((s) => s !== "All")
-              .filter((s) => meta?.showIncompleteStatus ? true : s !== "Incomplete")
-              .map((status) => (
-                <SelectItem key={status} value={status} className="text-xs">
-                  {status}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
-      )
-    },
+    cell: ({ row, table }) => <OrderStatusCell row={row} table={table} />,
   },
 
   // Payment Status column
@@ -1309,8 +1441,43 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
 
   const hasFilters = statusFilter !== (hideOrderStatusFilter ? "All" : "Pending") || paymentFilter !== "All" || searchQuery;
 
+  const [bulkCancelModalOpen, setBulkCancelModalOpen] = React.useState(false);
+  const [bulkCancelNote, setBulkCancelNote] = React.useState("");
+  const [bulkCancelSubmitting, setBulkCancelSubmitting] = React.useState(false);
+
+  const handleConfirmBulkCancel = async () => {
+    const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
+    setBulkCancelSubmitting(true);
+    const toastId = toast.loading(`Cancelling ${selectedIds.length} orders...`);
+    try {
+      const res = await fetch(`${getApiBaseUrl()}orders/bulk-update-status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order_nos: selectedIds,
+          order_status: "Cancelled",
+          cancelled_note: bulkCancelNote,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`Successfully cancelled ${selectedIds.length} orders.`, { id: toastId });
+      setRowSelection({});
+      setBulkCancelModalOpen(false);
+      invalidateOrders();
+    } catch (err) {
+      toast.error(`Failed to cancel orders.`, { id: toastId });
+    } finally {
+      setBulkCancelSubmitting(false);
+    }
+  };
+
   const handleBulkUpdate = async (type: "status" | "payment", val: string) => {
     const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
+    if (type === "status" && val === "Cancelled") {
+      setBulkCancelNote("");
+      setBulkCancelModalOpen(true);
+      return;
+    }
     const toastId = toast.loading(`Updating ${selectedIds.length} orders...`);
     try {
       const endpoint = type === "status" ? "bulk-update-status" : "bulk-update-payment";
@@ -1683,6 +1850,50 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
           </div>
         </div>
       </CardContent>
+
+      {/* Bulk Cancel Modal */}
+      <Dialog open={bulkCancelModalOpen} onOpenChange={(open) => {
+        if (!open && !bulkCancelSubmitting) setBulkCancelModalOpen(false);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel Selected Orders</DialogTitle>
+            <DialogDescription>
+              Provide a cancelled order note for the {table.getSelectedRowModel().rows.length} selected orders.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label htmlFor="bulk-cancel-note" className="text-sm font-medium">
+              Cancelled Order Note
+            </Label>
+            <Textarea
+              id="bulk-cancel-note"
+              placeholder="e.g. Bulk cancellation: customer unreachable, mass duplicate orders..."
+              className="min-h-[90px] resize-y text-sm"
+              value={bulkCancelNote}
+              onChange={(e) => setBulkCancelNote(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              type="button"
+              disabled={bulkCancelSubmitting}
+              onClick={() => setBulkCancelModalOpen(false)}
+            >
+              Close
+            </Button>
+            <Button
+              variant="destructive"
+              type="button"
+              disabled={bulkCancelSubmitting}
+              onClick={handleConfirmBulkCancel}
+            >
+              {bulkCancelSubmitting ? "Cancelling..." : "Confirm Cancellation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

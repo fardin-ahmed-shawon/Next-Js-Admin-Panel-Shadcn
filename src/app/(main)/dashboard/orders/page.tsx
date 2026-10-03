@@ -252,6 +252,9 @@ export default function OrdersPage() {
           createdAt: order.created_at,
           is_ai_called: order.is_ai_called || false,
           invoice_status: order.invoice_status || "Not Invoiced",
+          order_note: order.order_note || null,
+          employee_note: order.employee_note || null,
+          cancelled_note: order.cancelled_note || null,
         };
       });
   }, [orders, getImageUrl]);

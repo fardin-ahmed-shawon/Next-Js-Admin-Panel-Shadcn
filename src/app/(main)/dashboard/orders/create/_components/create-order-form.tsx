@@ -414,6 +414,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
   const [discountType, setDiscountType] = React.useState("fixed");
   const [discountValue, setDiscountValue] = React.useState("");
   const [orderNote, setOrderNote] = React.useState("");
+  const [employeeNote, setEmployeeNote] = React.useState("");
   const [orderStatus, setOrderStatus] = React.useState("Pending");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -554,6 +555,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
     setDiscountType("fixed");
     setDiscountValue("");
     setOrderNote("");
+    setEmployeeNote("");
     setOrderStatus("Pending");
     toast.info("Form has been reset.");
   }
@@ -607,6 +609,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
       grand_total_amount: total,
       order_status: orderStatus,
       order_note: orderNote,
+      employee_note: employeeNote,
       payment_method:
         paymentMethod === "cod"
           ? "Cash on Delivery"
@@ -1133,14 +1136,26 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
               </Select>
               <div className="space-y-2">
                 <Label htmlFor="order-note" className="text-primary font-medium">
-                  Order Note
+                  Order Note (Customer)
                 </Label>
                 <Textarea
                   id="order-note"
-                  placeholder="Internal notes about this order..."
-                  className="min-h-[80px] resize-y"
+                  placeholder="Customer note or instructions..."
+                  className="min-h-[70px] resize-y"
                   value={orderNote}
                   onChange={(e) => setOrderNote(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="employee-note" className="text-primary font-medium">
+                  Order Note (Employee)
+                </Label>
+                <Textarea
+                  id="employee-note"
+                  placeholder="Internal employee note..."
+                  className="min-h-[70px] resize-y"
+                  value={employeeNote}
+                  onChange={(e) => setEmployeeNote(e.target.value)}
                 />
               </div>
             </CardContent>

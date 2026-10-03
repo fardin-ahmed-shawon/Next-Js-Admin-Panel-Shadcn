@@ -411,6 +411,8 @@ export default function EditOrderPage() {
   const [discountType, setDiscountType] = React.useState("fixed");
   const [discountValue, setDiscountValue] = React.useState("");
   const [orderNote, setOrderNote] = React.useState("");
+  const [employeeNote, setEmployeeNote] = React.useState("");
+  const [cancelledNote, setCancelledNote] = React.useState("");
   const [orderStatus, setOrderStatus] = React.useState("Pending");
 
   const searchRef = React.useRef<HTMLDivElement>(null);
@@ -461,6 +463,8 @@ export default function EditOrderPage() {
 
       setOrderStatus(order.order_status || "Pending");
       setOrderNote(order.order_note || "");
+      setEmployeeNote(order.employee_note || "");
+      setCancelledNote(order.cancelled_note || "");
       setDiscountValue(order.discount_amount?.toString() || "");
       setDiscountType("fixed");
 
@@ -615,6 +619,8 @@ export default function EditOrderPage() {
       grand_total_amount: total,
       order_status: orderStatus,
       order_note: orderNote,
+      employee_note: employeeNote,
+      cancelled_note: cancelledNote,
       payment_method:
         paymentMethod === "cod"
           ? "Cash on Delivery"
@@ -1130,16 +1136,42 @@ export default function EditOrderPage() {
               </Select>
               <div className="space-y-2">
                 <Label htmlFor="order-note" className="text-primary font-medium">
-                  Order Note
+                  Order Note (Customer)
                 </Label>
                 <Textarea
                   id="order-note"
-                  placeholder="Internal notes about this order..."
-                  className="min-h-[80px] resize-y"
+                  placeholder="Customer note or instructions..."
+                  className="min-h-[70px] resize-y"
                   value={orderNote}
                   onChange={(e) => setOrderNote(e.target.value)}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="employee-note" className="text-primary font-medium">
+                  Order Note (Employee)
+                </Label>
+                <Textarea
+                  id="employee-note"
+                  placeholder="Internal notes for employee..."
+                  className="min-h-[70px] resize-y"
+                  value={employeeNote}
+                  onChange={(e) => setEmployeeNote(e.target.value)}
+                />
+              </div>
+              {(orderStatus === "Cancelled" || cancelledNote) && (
+                <div className="space-y-2 border border-destructive/30 rounded-lg p-3 bg-destructive/5">
+                  <Label htmlFor="cancelled-note" className="text-destructive font-medium">
+                    Cancelled Order Note
+                  </Label>
+                  <Textarea
+                    id="cancelled-note"
+                    placeholder="Reason for cancellation..."
+                    className="min-h-[70px] resize-y border-destructive/40 focus-visible:ring-destructive"
+                    value={cancelledNote}
+                    onChange={(e) => setCancelledNote(e.target.value)}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
