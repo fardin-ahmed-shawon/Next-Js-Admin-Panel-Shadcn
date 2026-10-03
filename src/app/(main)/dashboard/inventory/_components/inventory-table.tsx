@@ -31,6 +31,7 @@ import {
   Search,
   Settings2,
   Trash,
+  PackageCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -72,6 +73,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ProductStockAdjustmentModal } from "./product-stock-adjustment-modal";
+import { SetPackedQuantityModal } from "./set-packed-quantity-modal";
 
 import type { InventoryItem, InventoryRecords, InventoryVariant } from "@/hooks/useInventory";
 
@@ -203,12 +205,51 @@ const columns: ColumnDef<any>[] = [
     accessorKey: "stock",
     header: "Stock",
     cell: ({ row }) => {
-      const product = row.depth > 0 ? row.getParentRow()?.original : row.original;
+      const isVariant = row.depth > 0;
+      const product = isVariant ? row.getParentRow()?.original : row.original;
+      const isSharedBulk = product?.inventory_mode === "shared_bulk";
       const inventoryUnit = product?.inventory_unit_code || "piece";
-      const stockUnit = row.depth > 0
-        ? product?.inventory_mode === "shared_bulk" ? "packs" : "Piece"
-        : inventoryUnit === "piece" ? "Piece" : inventoryUnit;
 
+      if (isSharedBulk) {
+        if (!isVariant) {
+          // Parent shared bulk product
+          return (
+            <div className="flex flex-col gap-1 min-w-[170px]">
+              <span className={`tabular-nums font-semibold ${row.original.stock === 0 ? "text-destructive" : ""}`}>
+                {row.original.stock} {inventoryUnit}
+              </span>
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+                <span className="text-emerald-600 font-medium">
+                  Packed: {row.original.total_packed_display ?? 0} {inventoryUnit}
+                </span>
+                <span>·</span>
+                <span className="text-blue-600 font-medium">
+                  Unpacked: {row.original.unpacked_display ?? 0} {inventoryUnit}
+                </span>
+              </div>
+            </div>
+          );
+        } else {
+          // Pack variant
+          return (
+            <div className="flex flex-col gap-1 min-w-[170px]">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[11px] font-semibold px-1.5 py-0 h-5">
+                  Actual: {row.original.packed_qty ?? 0} packs
+                </Badge>
+                <Badge variant="secondary" className="text-[11px] px-1.5 py-0 h-5 font-medium">
+                  Est: {row.original.estimated_packs ?? 0} packs
+                </Badge>
+              </div>
+              <span className="text-[10px] text-muted-foreground">
+                Total potential: {row.original.total_estimated_packs ?? row.original.stock ?? 0} packs
+              </span>
+            </div>
+          );
+        }
+      }
+
+      const stockUnit = isVariant ? "Piece" : inventoryUnit === "piece" ? "Piece" : inventoryUnit;
       return (
         <span className={`tabular-nums ${row.original.stock === 0 ? "text-destructive" : ""}`}>
           {row.original.stock} {stockUnit}
@@ -263,14 +304,35 @@ const columns: ColumnDef<any>[] = [
 
 function RowActions({ row, mutate }: { row: any; mutate?: () => void }) {
   const [adjustmentOpen, setAdjustmentOpen] = React.useState(false);
+  const [packedOpen, setPackedOpen] = React.useState(false);
 
   const isVariant = row.depth > 0;
   const item = row.original;
-  const productId = isVariant ? row.getParentRow()?.original.id : item.id;
+  const parentProduct = isVariant ? row.getParentRow()?.original : null;
+  const productId = isVariant ? parentProduct?.id : item.id;
   const variantId = isVariant ? item.id : undefined;
 
-  if (isVariant && row.getParentRow()?.original.inventory_mode === "shared_bulk") {
-    return <span className="text-xs text-muted-foreground">Uses shared stock</span>;
+  if (isVariant && parentProduct?.inventory_mode === "shared_bulk") {
+    return (
+      <div className="flex w-full justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPackedOpen(true)}
+          className="h-8 text-xs font-medium text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-300"
+        >
+          <PackageCheck className="mr-1.5 size-3.5" />
+          Ready Packs ({item.packed_qty ?? 0})
+        </Button>
+        <SetPackedQuantityModal
+          open={packedOpen}
+          onOpenChange={setPackedOpen}
+          variant={item}
+          parentItem={parentProduct}
+          mutate={mutate}
+        />
+      </div>
+    );
   }
 
   // If this item has variants itself, don't show actions, let them edit per variant or main product elsewhere

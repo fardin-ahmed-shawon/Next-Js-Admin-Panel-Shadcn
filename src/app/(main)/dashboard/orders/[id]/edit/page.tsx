@@ -33,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { PartialPaymentForm } from "../../_components/partial-payment-form";
 import { BulkReturnReceipts } from "../../_components/bulk-return-receipts";
+import { CustomPackSizeSelector } from "../../_components/custom-pack-size-selector";
 import { useOrderDetail } from "@/hooks/useOrderDetail";
 import { districts, divisions, thanas } from "../../create/_components/bd-locations";
 import { fetchClient } from "@/lib/fetch-client";
@@ -143,7 +144,10 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
     return Array.from(map.values());
   }, [variants, allColors]);
 
-  const requiresVariant = (Number(item.product.has_variants) === 1 || Boolean(item.product.has_variant_wise_pricing)) && variants.length > 0;
+  const isSharedBulk = item.product.inventory_mode === "shared_bulk";
+  const requiresVariant =
+    ((Number(item.product.has_variants) === 1 || Boolean(item.product.has_variant_wise_pricing)) && variants.length > 0) ||
+    isSharedBulk;
   const requiresSize = sizes.length > 0;
   const requiresColor = colors.length > 0;
   const isSizeComplete = !requiresSize || Boolean(item.size);
@@ -205,7 +209,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
         (requiresSize ? String(v.size_id) === String(selectedSizeId) : true) &&
         (requiresColor ? String(v.color_id) === String(selectedColorId) : true),
     );
-    isValidVariant = !!selectedVariant;
+    isValidVariant = isSharedBulk ? true : !!selectedVariant;
     if (isValidVariant && selectedVariant) {
       availableStock = selectedVariant.available_stock || 0;
     }
@@ -223,7 +227,11 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium leading-snug">{item.product.title}</p>
-          {item.product.inventory_mode === "shared_bulk" && <p className="text-xs text-muted-foreground">Stock consumed: {Number(resolveCartVariant(item)?.sale_quantity || 0) * item.quantity} {resolveCartVariant(item)?.sale_unit_code}</p>}
+          {isSharedBulk && (
+            <p className="text-xs text-muted-foreground">
+              Pack: {item.size || "Standard"} · Stock consumed: {Number(resolveCartVariant(item)?.sale_quantity || 0) * item.quantity} {resolveCartVariant(item)?.sale_unit_code || item.product.inventory_unit_code}
+            </p>
+          )}
           <p className="text-xs text-muted-foreground">
             {item.product.sku || "N/A"} · ৳{Number(item.unitPrice || 0).toLocaleString()} each
           </p>
@@ -247,7 +255,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
 
       {requiresVariant && (
         <div className="mt-2 flex flex-col gap-2 pl-15">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             {availableColors.length > 1 ? (
               <Select value={item.color} onValueChange={(v) => updateCartItem(item.lineId ?? item.product.id, "color", v)}>
                 <SelectTrigger
@@ -306,7 +314,19 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
               <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">
                 Variant: {availableSizes[0].label}
               </div>
+            ) : isSharedBulk ? (
+              <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0 text-muted-foreground">
+                Pack: {item.size || "Standard"}
+              </div>
             ) : null}
+
+            {isSharedBulk && (
+              <CustomPackSizeSelector
+                item={item}
+                updateCartItem={updateCartItem}
+                updateUnitPrice={updateUnitPrice}
+              />
+            )}
 
             {isValidVariant && availableStock !== null && (
               <div className="h-7 px-3 py-1 bg-muted/50 rounded-md border text-xs flex items-center shrink-0">

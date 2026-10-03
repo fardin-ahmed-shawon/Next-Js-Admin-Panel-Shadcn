@@ -24,6 +24,13 @@ export interface InventoryVariant {
   inventory_mode?: string;
   inventory_unit_code?: string;
   inventory_item_id?: number;
+  packed_qty?: number;
+  packed_weight?: number;
+  estimated_packs?: number;
+  total_estimated_packs?: number;
+  sale_quantity?: number | string;
+  sale_unit_code?: string;
+  base_quantity_per_sale?: number;
   price: {
     selling: number;
     purchase: number;
@@ -46,6 +53,10 @@ export interface InventoryItem {
   inventory_mode?: string;
   inventory_unit_code?: string;
   inventory_item_id?: number;
+  total_packed_base?: string;
+  unpacked_base?: string;
+  total_packed_display?: number;
+  unpacked_display?: number;
   price: {
     selling: number;
     purchase: number;
