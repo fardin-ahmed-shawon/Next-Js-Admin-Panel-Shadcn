@@ -94,6 +94,7 @@ export interface PageAccess {
   user_behaviour_logs?: number;
   packaging_team?: number;
   pending_returns?: number;
+  employee_fines?: number;
   created_at: string | null;
   updated_at: string | null;
 }

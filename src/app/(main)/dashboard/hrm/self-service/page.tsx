@@ -546,6 +546,7 @@ export default function EmployeeSelfServicePortalPage() {
                       <th className="px-4 py-3">Month / Year</th>
                       <th className="px-4 py-3">Gross Salary</th>
                       <th className="px-4 py-3">Advance Deduction</th>
+                      <th className="px-4 py-3 text-rose-600">Fines & Penalties</th>
                       <th className="px-4 py-3">Net Salary</th>
                       <th className="px-4 py-3">Payment Status</th>
                       <th className="px-4 py-3">Payment Date</th>
@@ -554,7 +555,7 @@ export default function EmployeeSelfServicePortalPage() {
                   <tbody className="divide-y divide-border/40">
                     {mySalaries.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="text-center py-8 text-xs text-muted-foreground">
+                        <td colSpan={7} className="text-center py-8 text-xs text-muted-foreground">
                           No payroll slips generated yet.
                         </td>
                       </tr>
@@ -567,6 +568,15 @@ export default function EmployeeSelfServicePortalPage() {
                           <td className="px-4 py-3 text-xs">৳ {Number(sal.gross_salary).toLocaleString()}</td>
                           <td className="px-4 py-3 text-xs text-rose-600">
                             - ৳ {Number(sal.loan_deduction).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-xs">
+                            {Number(sal.fine_deduction || 0) > 0 ? (
+                              <span className="text-rose-600 font-semibold font-mono">
+                                - ৳ {Number(sal.fine_deduction).toLocaleString()}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground/40 font-mono">—</span>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-xs font-bold text-primary">
                             ৳ {Number(sal.net_salary).toLocaleString()}

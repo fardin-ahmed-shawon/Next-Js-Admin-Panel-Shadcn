@@ -29,6 +29,7 @@ import {
   AlertCircle,
   FileCheck,
   RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -469,7 +470,14 @@ export default function SalaryManagementPage() {
                 <div className="text-2xl font-extrabold text-rose-600 tabular-nums">
                   ৳{Number(summary?.total_deductions || 0).toLocaleString()}
                 </div>
-                <p className="text-[11px] text-rose-500 font-medium">Loans & absent penalties</p>
+                <div className="flex items-center justify-between text-[11px] pt-0.5">
+                  <span className="text-rose-500 font-medium">Loans, hours & penalties</span>
+                  {Number(summary?.total_fine_deduction || 0) > 0 && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30">
+                      Fines: -৳{Number(summary?.total_fine_deduction).toLocaleString()}
+                    </Badge>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -549,7 +557,8 @@ export default function SalaryManagementPage() {
                       <th className="py-3 px-4 text-left">Bonus & Extra Hrs</th>
                       <th className="py-3 px-4 text-left">Overtime</th>
                       <th className="py-3 px-4 text-left">Gross Salary</th>
-                      <th className="py-3 px-4 text-left">Deductions</th>
+                      <th className="py-3 px-4 text-left text-rose-600">Fines</th>
+                      <th className="py-3 px-4 text-left">Total Deductions</th>
                       <th className="py-3 px-4 text-left">Net Salary</th>
                       <th className="py-3 px-4 text-left">Payment</th>
                       <th className="py-3 px-4 text-right">Actions</th>
@@ -558,13 +567,13 @@ export default function SalaryManagementPage() {
                   <tbody className="divide-y divide-border/60">
                     {loading ? (
                       <tr>
-                        <td colSpan={11} className="py-12 text-center text-muted-foreground">
+                        <td colSpan={12} className="py-12 text-center text-muted-foreground">
                           Loading monthly payroll records...
                         </td>
                       </tr>
                     ) : filteredSalaries.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="py-12 text-center text-muted-foreground">
+                        <td colSpan={12} className="py-12 text-center text-muted-foreground">
                           No payroll records generated yet for {MONTHS[selectedMonth - 1]} {selectedYear}.
                           <div className="mt-2">
                             <Button
@@ -628,6 +637,27 @@ export default function SalaryManagementPage() {
                           </td>
                           <td className="py-3 px-4 font-mono font-semibold text-foreground">
                             ৳{sal.gross_salary.toLocaleString()}
+                          </td>
+                          {/* Fines Column */}
+                          <td className="py-3 px-4">
+                            {Number(sal.fine_deduction || 0) > 0 ? (
+                              <div className="space-y-0.5">
+                                <span className="font-mono font-bold text-rose-600 block">
+                                  -৳{Number(sal.fine_deduction).toLocaleString()}
+                                </span>
+                                {sal.fines && sal.fines.length > 0 && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[9px] px-1 py-0 bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 max-w-[120px] truncate block"
+                                    title={`${sal.fines[0]?.reason} • Fined by: ${sal.fines[0]?.finedBy?.full_name || sal.fines[0]?.fined_by}`}
+                                  >
+                                    {sal.fines[0]?.reason}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground/30 font-mono text-xs">—</span>
+                            )}
                           </td>
                           <td className="py-3 px-4 font-mono text-rose-600 font-semibold">
                             {sal.total_deduction > 0 ? `-৳${sal.total_deduction.toLocaleString()}` : "৳0"}
@@ -963,6 +993,39 @@ export default function SalaryManagementPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Employee Fines in Breakdown Modal */}
+              {((activeBreakdown?.fines && activeBreakdown.fines.length > 0) || Number(activeBreakdown?.fine_deduction || 0) > 0) && (
+                <div className="space-y-2 border rounded-lg p-3 bg-rose-500/[0.03] border-rose-500/20">
+                  <div className="font-bold text-rose-700 dark:text-rose-400 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <AlertTriangle className="size-3.5 text-rose-600" />
+                      Employee Fines & Penalties ({activeBreakdown.fines?.length || 1})
+                    </span>
+                    <span className="font-mono font-extrabold text-rose-600">
+                      -৳{Number(activeBreakdown.fine_deduction || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  {activeBreakdown.fines && activeBreakdown.fines.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      {activeBreakdown.fines.map((f: any) => (
+                        <div key={f.id} className="p-2 rounded bg-background border flex items-start justify-between gap-2 text-xs">
+                          <div>
+                            <div className="font-semibold text-foreground">{f.reason}</div>
+                            <div className="text-[10px] text-muted-foreground">
+                              Date: {f.fine_date} • Fined by: <strong className="text-foreground">{f.finedBy?.full_name || f.fined_by}</strong>
+                              {f.finedBy?.employee_detail?.designation?.title && ` (${f.finedBy.employee_detail.designation.title})`}
+                            </div>
+                          </div>
+                          <span className="font-mono font-bold text-rose-600 shrink-0">
+                            -৳{Number(f.amount).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1701,6 +1764,17 @@ export default function SalaryManagementPage() {
                         ৳{payslipData.absent_deduction.toLocaleString()}
                       </span>
                     </div>
+                    {Number(payslipData.fine_deduction || 0) > 0 && (
+                      <div className="flex justify-between text-rose-600 font-semibold">
+                        <span className="flex items-center gap-1">
+                          <AlertTriangle className="size-3 text-rose-600" />
+                          Fine / Penalty Deduction:
+                        </span>
+                        <span className="font-mono">
+                          -৳{Number(payslipData.fine_deduction).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Other Deductions:</span>
                       <span className="font-mono font-semibold">৳{payslipData.other_deduction.toLocaleString()}</span>
@@ -1709,6 +1783,32 @@ export default function SalaryManagementPage() {
                       <span>Total Deductions:</span>
                       <span className="font-mono">৳{payslipData.total_deduction.toLocaleString()}</span>
                     </div>
+
+                    {/* Itemized Fines List inside Payslip */}
+                    {payslipData.fines && payslipData.fines.length > 0 && (
+                      <div className="mt-3 p-2.5 rounded-lg border border-rose-500/30 bg-rose-500/5 space-y-2">
+                        <span className="font-bold text-[11px] text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+                          <AlertTriangle className="size-3 text-rose-600" />
+                          Itemized Fines & Disciplinary Details ({payslipData.fines.length})
+                        </span>
+                        <div className="space-y-1.5">
+                          {payslipData.fines.map((f: any) => (
+                            <div key={f.id} className="flex justify-between items-start text-[11px] border-b border-border/40 pb-1 last:border-0 last:pb-0">
+                              <div>
+                                <span className="font-semibold text-foreground">{f.reason}</span>
+                                <div className="text-[10px] text-muted-foreground">
+                                  Date: {f.fine_date} • Fined by: <strong className="text-foreground">{f.finedBy?.full_name || `Staff #${f.fined_by}`}</strong>
+                                  {f.finedBy?.employee_detail?.designation?.title && ` (${f.finedBy.employee_detail.designation.title})`}
+                                </div>
+                              </div>
+                              <span className="font-mono font-bold text-rose-600 shrink-0">
+                                -৳{Number(f.amount).toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

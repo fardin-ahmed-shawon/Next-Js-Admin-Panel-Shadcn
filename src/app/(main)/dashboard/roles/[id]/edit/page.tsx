@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import {
   AlertCircle,
+  AlertTriangle,
   Archive,
   ArrowLeft,
   BarChart,
@@ -229,6 +230,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "hrm_all_exits", label: "All User Exits Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_exits" },
 
       { id: "hrm_self_service", label: "Self-Service Portal", icon: UserCheck, badge: "Attribute Based" },
+      { id: "employee_fines", label: "Employee Fines (Penalize Employee)", icon: AlertTriangle, badge: "Action Based" },
     ],
   },
   {

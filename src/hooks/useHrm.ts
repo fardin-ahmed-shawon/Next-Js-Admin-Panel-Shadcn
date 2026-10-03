@@ -157,6 +157,9 @@ export interface SalaryRecord {
   gross_salary: number;
   loan_deduction: number;
   absent_deduction: number;
+  hour_deficit_deduction?: number;
+  deficit_hours?: number;
+  fine_deduction?: number;
   other_deduction: number;
   total_deduction: number;
   net_salary: number;
@@ -166,6 +169,7 @@ export interface SalaryRecord {
   transaction_ref?: string | null;
   notes?: string | null;
   user?: HrmEmployee;
+  fines?: EmployeeFineItem[];
 }
 
 export interface TaskRecord {
@@ -765,6 +769,7 @@ export interface CashFlowSummary {
   total_hour_deficit_deduction: number;
   total_absent_deduction: number;
   total_loan_deduction: number;
+  total_fine_deduction?: number;
   total_other_deduction: number;
   total_deductions: number;
   total_net_cash_outflow: number;
@@ -775,6 +780,8 @@ export interface CashFlowSummary {
   total_deficit_hours: number;
   employee_count: number;
   records_count: number;
+  total_fines_count?: number;
+  can_issue_fine?: boolean;
 }
 
 export interface CashFlowTimelineItem {
@@ -791,6 +798,22 @@ export interface CashFlowTimelineItem {
   unpaid: number;
   is_current?: boolean;
   records_count?: number;
+}
+
+export interface EmployeeFineItem {
+  id: number;
+  user_id: number;
+  fined_by: number;
+  amount: number;
+  salary_month: number;
+  salary_year: number;
+  fine_date: string;
+  reason: string;
+  status: "active" | "cancelled";
+  created_at: string;
+  user?: HrmEmployee;
+  fined_by_user?: HrmEmployee;
+  finedBy?: HrmEmployee;
 }
 
 export interface CashFlowLedgerRecord {
@@ -812,6 +835,7 @@ export interface CashFlowLedgerRecord {
   loan_deduction: number;
   hour_deficit_deduction: number;
   absent_deduction: number;
+  fine_deduction?: number;
   other_deduction: number;
   total_deduction: number;
   net_salary: number;
@@ -846,7 +870,8 @@ export interface CashFlowLedgerRecord {
 
 export interface CashFlowStatementEntry {
   id: string;
-  salary_id: number;
+  salary_id: number | null;
+  fine_id?: number;
   user_id: number;
   employee_name: string;
   employee_id: string;
@@ -857,6 +882,10 @@ export interface CashFlowStatementEntry {
   category: string;
   category_label: string;
   description: string;
+  reason?: string;
+  fined_by?: string;
+  fined_by_id?: number;
+  fined_by_designation?: string;
   debit: number | null;
   credit: number | null;
   balance: number;
@@ -872,10 +901,12 @@ export interface CashFlowResponseData {
   summary: CashFlowSummary;
   timeline: CashFlowTimelineItem[];
   ledger: CashFlowLedgerRecord[];
+  fines?: EmployeeFineItem[];
   statement_entries: CashFlowStatementEntry[];
   departments: Department[];
   designations: Designation[];
   active_policy: WorkHourPolicy;
+  can_issue_fine?: boolean;
 }
 
 export function useHrmCashFlow(params?: {
@@ -953,6 +984,37 @@ export async function recalculateCashFlow(params: { month: number; year: number;
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.message || "Failed to recalculate cash flow");
+  }
+  return res.json();
+}
+
+export async function issueEmployeeFine(payload: {
+  user_id: number;
+  amount: number;
+  salary_month: number;
+  salary_year: number;
+  reason: string;
+  fine_date?: string;
+}) {
+  const res = await fetchClient(`${HRM_BASE}/employee-fines`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to issue employee fine");
+  }
+  return res.json();
+}
+
+export async function deleteEmployeeFine(id: number) {
+  const res = await fetchClient(`${HRM_BASE}/employee-fines/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to delete fine");
   }
   return res.json();
 }

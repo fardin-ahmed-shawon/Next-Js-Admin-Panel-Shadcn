@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import {
   AlertCircle,
+  AlertTriangle,
   Archive,
   BarChart,
   BarChart3,
@@ -144,6 +145,7 @@ const ALL_PERMISSIONS = [
   { id: "hrm_exits", label: "Resignations & Exit", icon: UserMinus },
   { id: "hrm_all_exits", label: "All User Exits Access", icon: ShieldCheck },
   { id: "hrm_self_service", label: "Self-Service Portal", icon: UserCheck },
+  { id: "employee_fines", label: "Employee Fines", icon: AlertTriangle },
 ] as const;
 
 const TOTAL_PERMISSIONS = ALL_PERMISSIONS.length;

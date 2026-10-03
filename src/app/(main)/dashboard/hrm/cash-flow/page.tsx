@@ -34,6 +34,8 @@ import {
   BookOpen,
   LayoutGrid,
   Filter,
+  AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -94,9 +96,12 @@ import {
   recalculateCashFlow,
   useHrmEmployees,
   fetchPayslip,
+  issueEmployeeFine,
+  deleteEmployeeFine,
   CashFlowLedgerRecord,
   CashFlowStatementEntry,
   WorkHourPolicy,
+  EmployeeFineItem,
 } from "@/hooks/useHrm";
 
 const MONTHS = [
@@ -116,7 +121,9 @@ const WEEKDAYS = [
 
 export default function EmployeeCashFlowPage() {
   const { user } = useAuth();
-  const canAccessAllCashFlow = hasAllUserAccess(user, "cash_flow");
+  const canAccessAllCashFlow =
+    hasAllUserAccess(user, "cash_flow") ||
+    Boolean(user?.role?.page_access?.employee_fines);
 
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth() + 1;
@@ -236,12 +243,83 @@ export default function EmployeeCashFlowPage() {
   const designations = data?.designations || [];
   const activePolicy = data?.active_policy || policy;
 
+  // Fine Dialog State
+  const [fineModalOpen, setFineModalOpen] = React.useState(false);
+  const [fineUserId, setFineUserId] = React.useState<string>("");
+  const [fineAmount, setFineAmount] = React.useState<string>("");
+  const [fineMonth, setFineMonth] = React.useState<number>(selectedMonth);
+  const [fineYear, setFineYear] = React.useState<number>(selectedYear);
+  const [fineDate, setFineDate] = React.useState<string>(new Date().toISOString().split("T")[0]);
+  const [fineReason, setFineReason] = React.useState<string>("");
+  const [isSubmittingFine, setIsSubmittingFine] = React.useState(false);
+
+  const canIssueFine =
+    user?.role?.role_name?.toLowerCase().includes("admin") ||
+    Boolean(user?.role?.page_access?.employee_fines) ||
+    Boolean((data as any)?.can_issue_fine);
+
+  React.useEffect(() => {
+    setFineMonth(selectedMonth);
+    setFineYear(selectedYear);
+  }, [selectedMonth, selectedYear]);
+
+  const handleIssueFine = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fineUserId || !fineAmount || !fineReason.trim()) {
+      toast.error("Please fill in all required fields (Employee, Amount, Reason)");
+      return;
+    }
+
+    const numAmount = parseFloat(fineAmount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      toast.error("Please enter a valid fine amount");
+      return;
+    }
+
+    try {
+      setIsSubmittingFine(true);
+      await issueEmployeeFine({
+        user_id: Number(fineUserId),
+        amount: numAmount,
+        salary_month: fineMonth,
+        salary_year: fineYear,
+        reason: fineReason.trim(),
+        fine_date: fineDate,
+      });
+
+      toast.success("Employee fine issued and deducted from salary successfully");
+      setFineModalOpen(false);
+      setFineUserId("");
+      setFineAmount("");
+      setFineReason("");
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to issue employee fine");
+    } finally {
+      setIsSubmittingFine(false);
+    }
+  };
+
+  const handleDeleteFine = async (fineId: number) => {
+    if (!confirm("Are you sure you want to cancel and remove this fine? The employee's salary deduction will be recalculated.")) {
+      return;
+    }
+    try {
+      await deleteEmployeeFine(fineId);
+      toast.success("Employee fine deleted successfully");
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete fine");
+    }
+  };
+
   // Filtered Statement Entries
   const filteredStatementEntries = React.useMemo(() => {
     return statementEntries.filter((entry) => {
       if (categoryFilter === "credits") return entry.credit !== null && entry.credit > 0;
       if (categoryFilter === "debits") return entry.debit !== null && entry.debit > 0;
       if (categoryFilter === "deficits") return entry.category === "hour_deficit";
+      if (categoryFilter === "fines") return entry.category === "fine_deduction";
       if (categoryFilter === "payments") return entry.category === "salary_payment";
       return true;
     });
@@ -358,6 +436,22 @@ export default function EmployeeCashFlowPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {canIssueFine && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setFineUserId(selectedUserId !== "all" ? selectedUserId : "");
+                setFineMonth(selectedMonth);
+                setFineYear(selectedYear);
+                setFineModalOpen(true);
+              }}
+              className="gap-2 text-xs border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 font-bold"
+            >
+              <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
+              <span>Issue Employee Fine</span>
+            </Button>
+          )}
+
           <Button
             variant="outline"
             onClick={() => setPolicyModalOpen(true)}
@@ -807,21 +901,21 @@ export default function EmployeeCashFlowPage() {
           </CardContent>
         </Card>
 
-        {/* Card 5: Other Deductions */}
+        {/* Card 5: Other Deductions & Fines */}
         <Card className="border shadow-xs bg-card">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Other Deductions</span>
+              <span className="text-xs font-medium text-muted-foreground">Other & Fine Deductions</span>
               <div className="size-8 rounded-lg bg-red-500/10 text-red-600 flex items-center justify-center">
                 <ShieldAlert className="size-4" />
               </div>
             </div>
             <div>
               <div className="text-xl font-bold text-red-600 dark:text-red-400">
-                -{formatCurrency(summary.total_loan_deduction + summary.total_absent_deduction + summary.total_other_deduction)}
+                -{formatCurrency((summary.total_loan_deduction || 0) + (summary.total_absent_deduction || 0) + (summary.total_fine_deduction || 0) + (summary.total_other_deduction || 0))}
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">
-                Loans: {formatCurrency(summary.total_loan_deduction)} • Absences: {formatCurrency(summary.total_absent_deduction)}
+                Fines: {formatCurrency(summary.total_fine_deduction || 0)} • Loans: {formatCurrency(summary.total_loan_deduction || 0)} • Absences: {formatCurrency(summary.total_absent_deduction || 0)}
               </p>
             </div>
           </CardContent>
@@ -894,6 +988,14 @@ export default function EmployeeCashFlowPage() {
                   className="text-xs h-7 px-2.5 text-rose-600"
                 >
                   Deductions (Debit)
+                </Button>
+                <Button
+                  variant={categoryFilter === "fines" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCategoryFilter("fines")}
+                  className="text-xs h-7 px-2.5 text-amber-700 dark:text-amber-400 font-semibold"
+                >
+                  Fines & Penalties ({statementEntries.filter((e) => e.category === "fine_deduction").length})
                 </Button>
                 <Button
                   variant={categoryFilter === "deficits" ? "default" : "outline"}
@@ -975,7 +1077,9 @@ export default function EmployeeCashFlowPage() {
                         <Badge
                           variant="outline"
                           className={`text-[9px] px-1.5 py-0 font-medium whitespace-nowrap ${
-                            entry.category === "hour_deficit"
+                            entry.category === "fine_deduction"
+                              ? "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 font-semibold"
+                              : entry.category === "hour_deficit"
                               ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
                               : entry.category === "incentive"
                               ? "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20"
@@ -988,6 +1092,17 @@ export default function EmployeeCashFlowPage() {
                         >
                           {entry.category_label}
                         </Badge>
+                        {entry.category === "fine_deduction" && canIssueFine && entry.fine_id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteFine(entry.fine_id!)}
+                            className="size-5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                            title="Cancel / Delete Fine"
+                          >
+                            <Trash2 className="size-3" />
+                          </Button>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         {entry.description}
@@ -1072,6 +1187,7 @@ export default function EmployeeCashFlowPage() {
                     <TableHead className="text-xs font-bold text-right">Gross Salary</TableHead>
                     <TableHead className="text-xs font-bold text-center">Work Hours (Act / Exp)</TableHead>
                     <TableHead className="text-xs font-bold text-right text-amber-700 dark:text-amber-400">Hour Deficit Penalty</TableHead>
+                    <TableHead className="text-xs font-bold text-right text-rose-600">Fines & Penalties</TableHead>
                     <TableHead className="text-xs font-bold text-right text-red-600">Other Deductions</TableHead>
                     <TableHead className="text-xs font-bold text-right">Net Cash Outflow</TableHead>
                     <TableHead className="text-xs font-bold text-center">Status</TableHead>
@@ -1082,14 +1198,14 @@ export default function EmployeeCashFlowPage() {
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={13} className="py-12 text-center text-xs text-muted-foreground">
+                      <TableCell colSpan={14} className="py-12 text-center text-xs text-muted-foreground">
                         <RefreshCw className="size-5 animate-spin mx-auto mb-2 text-primary" />
                         Loading employee cash flow ledger...
                       </TableCell>
                     </TableRow>
                   ) : ledger.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={13} className="py-12 text-center text-xs text-muted-foreground">
+                      <TableCell colSpan={14} className="py-12 text-center text-xs text-muted-foreground">
                         No salary or cash flow records found for the selected period.
                       </TableCell>
                     </TableRow>
@@ -1203,10 +1319,40 @@ export default function EmployeeCashFlowPage() {
                             )}
                           </TableCell>
 
-                          {/* Other Deductions */}
+                          {/* Fines & Penalties Column */}
+                          <TableCell className="text-xs text-right">
+                            {Number(record.fine_deduction || 0) > 0 ? (
+                              <div className="space-y-0.5">
+                                <span className="font-mono font-bold text-rose-600 block">
+                                  -{formatCurrency(record.fine_deduction || 0)}
+                                </span>
+                                {(() => {
+                                  const matchingFine = (data?.fines || []).find(
+                                    (f) =>
+                                      f.user_id === record.user_id &&
+                                      f.salary_month === record.month &&
+                                      f.salary_year === record.year
+                                  );
+                                  return matchingFine ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[9px] px-1 py-0 bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20 max-w-[120px] truncate block ml-auto"
+                                      title={`${matchingFine.reason} (Fined by: ${matchingFine.finedBy?.full_name || matchingFine.fined_by})`}
+                                    >
+                                      {matchingFine.reason}
+                                    </Badge>
+                                  ) : null;
+                                })()}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground/30 font-mono text-xs">—</span>
+                            )}
+                          </TableCell>
+
+                          {/* Other Deductions (Loan, Absent, Other) */}
                           <TableCell className="text-xs text-right text-muted-foreground">
-                            {record.loan_deduction + record.absent_deduction + record.other_deduction > 0 ? (
-                              <span className="text-red-600">
+                            {(record.loan_deduction + record.absent_deduction + record.other_deduction) > 0 ? (
+                              <span className="text-red-600 font-medium">
                                 -{formatCurrency(record.loan_deduction + record.absent_deduction + record.other_deduction)}
                               </span>
                             ) : (
@@ -1606,8 +1752,69 @@ export default function EmployeeCashFlowPage() {
                 </div>
               </div>
 
+              {/* Employee Fines Section in Breakdown Modal */}
+              {(() => {
+                const empFines = (data?.fines || []).filter(
+                  (f) =>
+                    f.user_id === activeRecord.user_id &&
+                    f.salary_month === activeRecord.month &&
+                    f.salary_year === activeRecord.year
+                );
+                if (empFines.length === 0) return null;
+
+                return (
+                  <div className="space-y-2 border rounded-lg p-3 bg-rose-500/[0.02] border-rose-500/20">
+                    <div className="font-bold text-rose-700 dark:text-rose-400 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <AlertTriangle className="size-3.5 text-rose-600" />
+                        Employee Fines & Penalties ({empFines.length})
+                      </span>
+                      <span className="font-extrabold">
+                        -{formatCurrency(empFines.reduce((sum, f) => sum + (f.amount || 0), 0))}
+                      </span>
+                    </div>
+                    <Separator />
+                    <div className="space-y-2 pt-1">
+                      {empFines.map((f) => (
+                        <div
+                          key={f.id}
+                          className="p-2 rounded bg-background border flex items-start justify-between gap-3 text-xs"
+                        >
+                          <div className="space-y-0.5 min-w-0">
+                            <div className="font-semibold text-foreground flex items-center gap-1.5 flex-wrap">
+                              <span>{f.reason}</span>
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 bg-rose-500/10 text-rose-700 border-rose-500/30">
+                                {f.fine_date}
+                              </Badge>
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">
+                              Fined by:{" "}
+                              <strong className="text-foreground">
+                                {f.finedBy?.full_name || `Staff #${f.fined_by}`}
+                              </strong>
+                              {f.finedBy?.employee_detail?.designation?.title && (
+                                <span> ({f.finedBy.employee_detail.designation.title})</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="font-mono font-bold text-rose-600 shrink-0">
+                            -{formatCurrency(f.amount)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Deductions & Net Payout */}
               <div className="p-3 bg-primary/5 rounded-lg border border-primary/20 space-y-2">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Fines Deducted:</span>
+                  <span className="text-rose-600 font-semibold">
+                    -{formatCurrency(activeRecord.fine_deduction || 0)}
+                  </span>
+                </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Other Deductions (Loan, Absent):</span>
                   <span>-{formatCurrency(activeRecord.loan_deduction + activeRecord.absent_deduction + activeRecord.other_deduction)}</span>
@@ -1710,6 +1917,12 @@ export default function EmployeeCashFlowPage() {
                     <span>Absent Penalty:</span>
                     <span>-{formatCurrency(payslipData.absent_deduction)}</span>
                   </div>
+                  {Number(payslipData.fine_deduction || 0) > 0 && (
+                    <div className="flex justify-between text-rose-600 font-semibold">
+                      <span>Fine / Penalty:</span>
+                      <span>-{formatCurrency(payslipData.fine_deduction)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-muted-foreground">
                     <span>Other Deductions:</span>
                     <span>-{formatCurrency(payslipData.other_deduction)}</span>
@@ -1720,6 +1933,47 @@ export default function EmployeeCashFlowPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Itemized Fines in Payslip */}
+              {(() => {
+                const empFines = (payslipData.fines || (data?.fines || []).filter(
+                  (f) =>
+                    f.user_id === payslipData.user_id &&
+                    f.salary_month === payslipData.month &&
+                    f.salary_year === payslipData.year
+                ));
+                if (!empFines || empFines.length === 0) return null;
+
+                return (
+                  <div className="p-3 rounded-lg border border-rose-500/20 bg-rose-500/[0.03] space-y-2">
+                    <div className="font-bold text-[11px] text-rose-700 dark:text-rose-400 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <AlertTriangle className="size-3 text-rose-600" />
+                        Disciplinary Fines & Penalties ({empFines.length})
+                      </span>
+                      <span className="font-mono font-extrabold text-rose-600">
+                        -{formatCurrency(empFines.reduce((sum: number, f: any) => sum + (Number(f.amount) || 0), 0))}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {empFines.map((f: any) => (
+                        <div key={f.id} className="p-2 rounded bg-background border flex items-start justify-between gap-2 text-xs">
+                          <div>
+                            <span className="font-semibold text-foreground">{f.reason}</span>
+                            <div className="text-[10px] text-muted-foreground">
+                              Date: {f.fine_date} • Fined by: <strong className="text-foreground">{f.finedBy?.full_name || `Staff #${f.fined_by}`}</strong>
+                              {f.finedBy?.employee_detail?.designation?.title && ` (${f.finedBy.employee_detail.designation.title})`}
+                            </div>
+                          </div>
+                          <span className="font-mono font-bold text-rose-600 shrink-0">
+                            -{formatCurrency(f.amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Net Payout Banner */}
               <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between">
@@ -1752,6 +2006,157 @@ export default function EmployeeCashFlowPage() {
               Close
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 8. Issue Employee Fine Modal */}
+      <Dialog open={fineModalOpen} onOpenChange={setFineModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2 text-rose-600">
+              <AlertTriangle className="size-4" />
+              Issue Employee Fine & Deduction
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Issue a fine with a custom reason. The fine amount will be deducted from the employee&apos;s net salary for the designated salary month and recorded in their cash flow statement.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleIssueFine} className="space-y-4 py-2 text-xs">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Select Employee *</Label>
+              <Select value={fineUserId} onValueChange={setFineUserId}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Choose an employee..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees
+                    .filter((emp) => user?.role?.role_name?.toLowerCase().includes("admin") || emp.id !== user?.id)
+                    .map((emp) => (
+                      <SelectItem key={emp.id} value={String(emp.id)}>
+                        {emp.full_name || emp.name} ({emp.employee_id || `#${emp.id}`}) - {emp.designation?.title || "Staff"}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Fine Amount (BDT) *</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  placeholder="e.g. 500"
+                  value={fineAmount}
+                  onChange={(e) => setFineAmount(e.target.value)}
+                  className="h-8 text-xs font-mono"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Fine / Incident Date *</Label>
+                <Input
+                  type="date"
+                  value={fineDate}
+                  onChange={(e) => setFineDate(e.target.value)}
+                  className="h-8 text-xs"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Salary Month *</Label>
+                <Select
+                  value={String(fineMonth)}
+                  onValueChange={(val) => setFineMonth(Number(val))}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTHS.map((m, idx) => (
+                      <SelectItem key={idx + 1} value={String(idx + 1)}>
+                        {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Salary Year *</Label>
+                <Select
+                  value={String(fineYear)}
+                  onValueChange={(val) => setFineYear(Number(val))}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[2024, 2025, 2026, 2027, 2028].map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Custom Reason / Violation Details *</Label>
+              <Textarea
+                placeholder="Enter detailed reason for the penalty (e.g., Unannounced absence during peak shift, broken merchandise, policy violation)..."
+                rows={3}
+                value={fineReason}
+                onChange={(e) => setFineReason(e.target.value)}
+                className="text-xs resize-none"
+                required
+              />
+            </div>
+
+            <div className="p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] flex items-start gap-2">
+              <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+              <div>
+                <strong>Notice:</strong> This fine will be logged under your account (<strong>{user?.full_name || "You"}</strong>), immediately deducted from the employee&apos;s <strong>{MONTHS[fineMonth - 1]} {fineYear}</strong> salary, and visible on their cash flow ledger and payslip.
+              </div>
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFineModalOpen(false)}
+                className="text-xs"
+                disabled={isSubmittingFine}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="destructive"
+                className="text-xs gap-1.5 bg-rose-600 hover:bg-rose-700"
+                disabled={isSubmittingFine || !fineUserId || !fineAmount || !fineReason.trim()}
+              >
+                {isSubmittingFine ? (
+                  <>
+                    <RefreshCw className="size-3.5 animate-spin" />
+                    <span>Processing Fine...</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="size-3.5" />
+                    <span>Confirm & Deduct Fine</span>
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
