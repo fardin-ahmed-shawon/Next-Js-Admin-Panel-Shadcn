@@ -38,6 +38,7 @@ import {
   Check,
   Filter,
   Layers,
+  AlertCircle,
 } from "lucide-react";
 
 export default function AutoOrderPage() {
@@ -84,7 +85,7 @@ export default function AutoOrderPage() {
   const [dialogSortBy, setDialogSortBy] = useState<"name" | "dept" | "desig">("name");
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<"active" | "inactive">("active");
-  const [selectedCustomerType, setSelectedCustomerType] = useState<"all" | "new" | "old">("all");
+  const [selectedCustomerType, setSelectedCustomerType] = useState<"all" | "new" | "old" | "incomplete">("all");
 
   // Main Page Filters & Sort States
   const [mainSearch, setMainSearch] = useState("");
@@ -260,8 +261,9 @@ export default function AutoOrderPage() {
     const allCount = priorities.filter((p) => !p.customer_type || p.customer_type === "all").length;
     const newCount = priorities.filter((p) => p.customer_type === "new").length;
     const oldCount = priorities.filter((p) => p.customer_type === "old").length;
+    const incompleteCount = priorities.filter((p) => p.customer_type === "incomplete").length;
     const activeCount = priorities.filter((p) => p.status === "active").length;
-    return { total, allCount, newCount, oldCount, activeCount };
+    return { total, allCount, newCount, oldCount, incompleteCount, activeCount };
   }, [priorities]);
 
   const toggleSort = (col: "seq" | "name" | "dept" | "desig" | "type") => {
@@ -282,12 +284,9 @@ export default function AutoOrderPage() {
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
               Auto Order Distribution
             </h1>
-            <Badge variant="outline" className="text-xs bg-primary/5 text-primary border-primary/20">
-              Department & Customer Segment Aware
-            </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Sequence auto order distribution across departments, designations, and customer tiers (New vs. Old).
+            Sequence auto order distribution across departments, designations, and customer tiers (New vs. Old vs. Incomplete).
           </p>
         </div>
         <div className="flex items-center space-x-3 bg-muted/40 border p-2.5 px-4 rounded-xl">
@@ -303,7 +302,7 @@ export default function AutoOrderPage() {
       </div>
 
       {/* Segment Metrics Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div
           onClick={() => setMainCustomerTypeFilter("all_filter")}
           className={`p-3.5 rounded-xl border bg-card hover:bg-muted/20 cursor-pointer transition-all ${
@@ -349,6 +348,20 @@ export default function AutoOrderPage() {
         </div>
 
         <div
+          onClick={() => setMainCustomerTypeFilter("incomplete")}
+          className={`p-3.5 rounded-xl border bg-card hover:bg-muted/20 cursor-pointer transition-all ${
+            mainCustomerTypeFilter === "incomplete" ? "ring-2 ring-amber-500 border-amber-500 shadow-xs" : ""
+          }`}
+        >
+          <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider">Incomplete Orders</span>
+            <AlertCircle className="size-4" />
+          </div>
+          <p className="text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">{stats.incompleteCount}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Assigned to incomplete orders</p>
+        </div>
+
+        <div
           onClick={() => setMainCustomerTypeFilter("all")}
           className={`p-3.5 rounded-xl border bg-card hover:bg-muted/20 cursor-pointer transition-all ${
             mainCustomerTypeFilter === "all" ? "ring-2 ring-slate-500 border-slate-500 shadow-xs" : ""
@@ -356,7 +369,7 @@ export default function AutoOrderPage() {
         >
           <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">All Customers</span>
-            <Sparkles className="size-4" />
+            <Users className="size-4" />
           </div>
           <p className="text-xl font-extrabold text-foreground mt-1">{stats.allCount}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Receives both new & old</p>
@@ -637,6 +650,14 @@ export default function AutoOrderPage() {
                             </span>
                           </div>
                         </SelectItem>
+                        <SelectItem value="incomplete">
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="size-3.5 text-amber-500" />
+                            <span className="font-semibold text-amber-600 dark:text-amber-400">
+                              Incomplete Orders Only
+                            </span>
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -808,6 +829,12 @@ export default function AutoOrderPage() {
                             <div className="flex items-center gap-1.5 font-semibold text-indigo-600 dark:text-indigo-400">
                               <span className="size-2 rounded-full bg-indigo-500 shrink-0" />
                               <span>Old / Repeat Only</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="incomplete">
+                            <div className="flex items-center gap-1.5 font-semibold text-amber-600 dark:text-amber-400">
+                              <span className="size-2 rounded-full bg-amber-500 shrink-0" />
+                              <span>Incomplete Orders</span>
                             </div>
                           </SelectItem>
                         </SelectContent>

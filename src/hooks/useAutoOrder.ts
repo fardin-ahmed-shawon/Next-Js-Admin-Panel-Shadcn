@@ -8,7 +8,7 @@ export interface AutoOrderPriority {
   id: number;
   user_id: number;
   status: "active" | "inactive";
-  customer_type?: "all" | "new" | "old";
+  customer_type?: "all" | "new" | "old" | "incomplete";
   user: {
     id: number;
     full_name: string;
@@ -74,7 +74,7 @@ export function useAutoOrder() {
   const addPriority = async (
     userId: number,
     status: "active" | "inactive",
-    customerType: "all" | "new" | "old" = "all"
+    customerType: "all" | "new" | "old" | "incomplete" = "all"
   ) => {
     try {
       const endpoint = API_BASE_URL.endsWith("/") ? `${API_BASE_URL}auto-order-priorities` : `${API_BASE_URL}/auto-order-priorities`;
@@ -122,7 +122,7 @@ export function useAutoOrder() {
     }
   };
 
-  const updatePriorityCustomerType = async (id: number, customerType: "all" | "new" | "old") => {
+  const updatePriorityCustomerType = async (id: number, customerType: "all" | "new" | "old" | "incomplete") => {
     try {
       const endpoint = API_BASE_URL.endsWith("/") ? `${API_BASE_URL}auto-order-priorities/${id}` : `${API_BASE_URL}/auto-order-priorities/${id}`;
       const res = await fetchClient(endpoint, {
