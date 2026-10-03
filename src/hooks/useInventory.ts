@@ -1,6 +1,17 @@
 import { fetchClient } from "@/lib/fetch-client";
 import useSWR from "swr";
 
+export interface InventoryLowStockRule {
+  id: number;
+  piece_threshold: number;
+  weight_threshold: number;
+  weight_unit: string;
+  weight_threshold_base: number;
+  volume_threshold: number;
+  volume_unit: string;
+  volume_threshold_base: number;
+}
+
 export interface InventorySummary {
   total_products: number;
   total_units: number;
@@ -11,6 +22,7 @@ export interface InventorySummary {
   potential_profit: number;
   low_stock: number;
   out_of_stock: number;
+  low_stock_rule?: InventoryLowStockRule;
   categories?: string[];
   sub_categories?: string[];
 }

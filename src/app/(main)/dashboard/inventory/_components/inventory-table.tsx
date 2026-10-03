@@ -16,6 +16,8 @@ import {
 } from "@tanstack/react-table";
 import {
   Archive,
+  ArrowDown,
+  ArrowUp,
   ArrowUpDown,
   ChevronRight,
   ChevronLeft,
@@ -88,7 +90,25 @@ const getImageUrl = (path: string | null) => {
 type InventoryFilter = "All" | "In Stock" | "Low Stock" | "Out of Stock";
 const inventoryFilters: InventoryFilter[] = ["All", "In Stock", "Low Stock", "Out of Stock"];
 
-/* ---- Columns ---- */
+function SortableHeader({ column, title }: { column: any; title: string }) {
+  const isSorted = column.getIsSorted();
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1 font-normal text-foreground text-sm cursor-pointer select-none transition-colors hover:text-primary"
+      onClick={() => column.toggleSorting(isSorted === "asc")}
+    >
+      <span>{title}</span>
+      {isSorted === "asc" ? (
+        <ArrowUp className="size-3.5 text-foreground" />
+      ) : isSorted === "desc" ? (
+        <ArrowDown className="size-3.5 text-foreground" />
+      ) : (
+        <ArrowUpDown className="size-3 text-muted-foreground/60 hover:text-foreground" />
+      )}
+    </button>
+  );
+}
 
 // We use 'any' for the column generic to accommodate both InventoryItem and InventoryVariant easily
 const columns: ColumnDef<any>[] = [
@@ -131,7 +151,7 @@ const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: "id",
-    header: "#",
+    header: ({ column }) => <SortableHeader column={column} title="#" />,
     cell: ({ row }) => {
       if (row.depth > 0) return null;
       return <span className="font-medium text-muted-foreground">{row.original.id}</span>;
@@ -140,7 +160,7 @@ const columns: ColumnDef<any>[] = [
   {
     id: "name",
     accessorFn: (row) => row.title || row.name,
-    header: "Product",
+    header: ({ column }) => <SortableHeader column={column} title="Product" />,
     cell: ({ row }) => {
       const isVariant = row.depth > 0;
       if (isVariant) {
@@ -178,7 +198,7 @@ const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: "sku",
-    header: "SKU",
+    header: ({ column }) => <SortableHeader column={column} title="SKU" />,
     cell: ({ row }) => {
       return row.original.sku ? (
         <span className="text-sm">{row.original.sku}</span>
@@ -190,7 +210,7 @@ const columns: ColumnDef<any>[] = [
   {
     id: "category",
     accessorFn: (row) => row.category?.main,
-    header: "Category",
+    header: ({ column }) => <SortableHeader column={column} title="Category" />,
     cell: ({ row }) => {
       if (row.depth > 0) return <span className="text-muted-foreground">-</span>;
       return (
@@ -203,7 +223,7 @@ const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: "stock",
-    header: "Stock",
+    header: ({ column }) => <SortableHeader column={column} title="Stock" />,
     cell: ({ row }) => {
       const isVariant = row.depth > 0;
       const product = isVariant ? row.getParentRow()?.original : row.original;
@@ -260,7 +280,7 @@ const columns: ColumnDef<any>[] = [
   {
     id: "sellingPrice",
     accessorFn: (row) => row.price?.selling,
-    header: "Price",
+    header: ({ column }) => <SortableHeader column={column} title="Price" />,
     cell: ({ row }) => {
       if (!row.original.price?.selling) return <span className="text-muted-foreground">-</span>;
       return (
@@ -275,7 +295,7 @@ const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: "profit",
-    header: "Profit",
+    header: ({ column }) => <SortableHeader column={column} title="Profit" />,
     cell: ({ row }) => {
       if (!row.original.profit) return null;
       return <span className="tabular-nums">৳{row.original.profit.toLocaleString()}</span>;
@@ -283,7 +303,7 @@ const columns: ColumnDef<any>[] = [
   },
   {
     id: "statusBadge",
-    header: "Status",
+    header: ({ column }) => <SortableHeader column={column} title="Status" />,
     cell: ({ row }) => {
       const s = row.original.status;
       return (
@@ -432,6 +452,20 @@ export function InventoryTable({
       subRows: item.variants || [], // For expander to work properly
     }));
   }, [records]);
+
+  React.useEffect(() => {
+    if (statusFilter !== "All" && tableData.length > 0) {
+      const newExpanded: ExpandedState = {};
+      tableData.forEach((row) => {
+        if (row.subRows && row.subRows.length > 0) {
+          newExpanded[String(row.id)] = true;
+        }
+      });
+      setExpanded(newExpanded);
+    } else if (statusFilter === "All") {
+      setExpanded({});
+    }
+  }, [statusFilter, tableData]);
 
   const table = useReactTable({
     data: tableData,
