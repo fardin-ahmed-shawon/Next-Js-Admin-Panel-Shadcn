@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import useInventoryReport from "@/hooks/useInventoryReport";
+import { formatInventoryQuantity } from "./inventory-formatters";
 import { ReportProductImage, type ReportProductSelection } from "./report-product-search";
 
 export function ProductReportPreview({
@@ -103,8 +104,24 @@ export function ProductReportPreview({
                           <div className="text-muted-foreground">{row.sku}</div>
                         </td>
                         <td className={`p-2 font-medium ${row.quantity < 0 ? "text-red-600" : "text-emerald-600"}`}>
-                          {row.quantity > 0 ? "+" : ""}
-                          {row.quantity}
+                          {(() => {
+                            const q = formatInventoryQuantity(
+                              row.quantity,
+                              row.base_unit_code,
+                              row.inventory_unit_code,
+                              row.inventory_mode
+                            );
+                            return (
+                              <div className="flex flex-col">
+                                <span>{q.primary}</span>
+                                {q.secondary && (
+                                  <span className="text-[10px] text-muted-foreground font-normal">
+                                    ({q.secondary})
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="whitespace-nowrap p-2">
                           {row.purchase_price == null ? "Unknown" : `৳${Number(row.purchase_price).toLocaleString()}`}

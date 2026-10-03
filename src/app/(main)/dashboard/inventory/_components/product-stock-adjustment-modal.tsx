@@ -48,9 +48,88 @@ interface ProductStockAdjustmentModalProps {
 interface AdjustmentState {
   addQty: string;
   reduceQty: string;
+  adjustUnit: string;
   purchasePrice: string;
   sourceType: string;
   comment: string;
+}
+
+const getProductDimension = (itemUnit?: string, baseUnitCode?: string) => {
+  const u = (itemUnit || baseUnitCode || "").toLowerCase();
+  if (["kg", "g", "gm"].includes(u)) return "mass" as const;
+  if (["l", "ml"].includes(u)) return "volume" as const;
+  return "count" as const;
+};
+
+const getLotUnits = (lot: any = {}, item: any = {}) => {
+  const lotBase = lot?.base_unit_code || "";
+  const lotReceived = lot?.received_unit_code || "";
+  const itemInvUnit = item?.inventory_unit_code || item?.stock_unit || "";
+  const dimension = getProductDimension(lotReceived || lotBase || itemInvUnit);
+
+  if (dimension === "mass") {
+    return {
+      type: "mass" as const,
+      baseUnit: "g",
+      majorUnit: "kg",
+      minorUnit: "g",
+      majorLabel: "kg",
+      minorLabel: "gm",
+      factor: 1000,
+    };
+  }
+  if (dimension === "volume") {
+    return {
+      type: "volume" as const,
+      baseUnit: "ml",
+      majorUnit: "l",
+      minorUnit: "ml",
+      majorLabel: "L",
+      minorLabel: "ml",
+      factor: 1000,
+    };
+  }
+  return {
+    type: "count" as const,
+    baseUnit: "piece",
+    majorUnit: "piece",
+    minorUnit: "piece",
+    majorLabel: "piece",
+    minorLabel: "piece",
+    factor: 1,
+  };
+};
+
+const isLotBulk = (lot: any = {}, item: any = {}) => {
+  return (
+    item?.inventory_mode === "shared_bulk" ||
+    !!lot?.inventory_item_id ||
+    !!lot?.received_unit_code ||
+    ["g", "gm", "kg", "ml", "l"].includes(lot?.base_unit_code?.toLowerCase())
+  );
+};
+
+function formatUnitPair(valueBase: number, units: ReturnType<typeof getLotUnits>) {
+  if (units.type === "count") {
+    return {
+      primary: `${Math.round(valueBase).toLocaleString()} piece`,
+      secondary: null,
+      fullText: `${Math.round(valueBase).toLocaleString()} piece`,
+    };
+  }
+
+  const majorVal = valueBase / units.factor;
+  const majorFormatted = Number(majorVal.toFixed(3)).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  });
+  const minorFormatted = Math.round(valueBase).toLocaleString();
+
+  return {
+    primary: `${majorFormatted} ${units.majorLabel}`,
+    secondary: `${minorFormatted} ${units.minorLabel}`,
+    fullText: `${majorFormatted} ${units.majorLabel} (${minorFormatted} ${units.minorLabel})`,
+  };
 }
 
 interface SupplierOption {
@@ -68,14 +147,16 @@ export function ProductStockAdjustmentModal({
 }: ProductStockAdjustmentModalProps) {
   const { features } = useModularFeatures();
   const isBulk = item?.inventory_mode === "shared_bulk";
-  const receiptUnit = item?.inventory_unit_code || item?.stock_unit || "piece";
-  const baseUnit = ["kg", "g"].includes(receiptUnit) ? "g" : "ml";
+  const itemUnits = React.useMemo(() => getLotUnits({}, item), [item]);
+  const receiptUnit = item?.inventory_unit_code || item?.stock_unit || itemUnits.majorUnit;
+  const baseUnit = itemUnits.baseUnit;
   const allowMultipleLot =
     features?.inventory_multiple_lot !== false && String(features?.inventory_multiple_lot) !== "0";
 
   const [activeTab, setActiveTab] = React.useState(allowMultipleLot ? "new-lot" : "adjust-lots");
 
   // New Lot State
+  const [procureUnit, setProcureUnit] = React.useState(receiptUnit);
   const [newPurchasePrice, setNewPurchasePrice] = React.useState("");
   const [newQuantity, setNewQuantity] = React.useState("");
   const [newPurchaseDate, setNewPurchaseDate] = React.useState(() => {
@@ -118,6 +199,12 @@ export function ProductStockAdjustmentModal({
   const [submitting, setSubmitting] = React.useState(false);
 
   React.useEffect(() => {
+    if (open) {
+      setProcureUnit(receiptUnit);
+    }
+  }, [open, receiptUnit]);
+
+  React.useEffect(() => {
     if (open && productId) {
       setActiveTab(allowMultipleLot ? "new-lot" : "adjust-lots");
       resetNewLotForm();
@@ -155,10 +242,12 @@ export function ProductStockAdjustmentModal({
             // Initialize adjustments state
             const initialAdj: Record<string, AdjustmentState> = {};
             fetchedLots.forEach((lot: any) => {
+              const lotUnits = getLotUnits(lot, item);
               initialAdj[lot.id] = {
                 addQty: "",
                 reduceQty: "",
-                purchasePrice: lot.purchase_price.toString(),
+                adjustUnit: lotUnits.majorUnit,
+                purchasePrice: (lot.purchase_price ?? lot.acquisition_unit_price ?? "").toString(),
                 sourceType:
                   lot.source_type === "return" || lot.source_type === "adjustment" ? lot.source_type : "adjustment",
                 comment: lot.comment || "",
@@ -181,6 +270,7 @@ export function ProductStockAdjustmentModal({
 
   const resetNewLotForm = () => {
     receiptAttempt.current = null;
+    setProcureUnit(receiptUnit);
     setNewPurchasePrice("");
     setNewQuantity("");
     const d = new Date();
@@ -212,11 +302,20 @@ export function ProductStockAdjustmentModal({
     try {
       const paidVal = Number(newPaidAmount) || 0;
       const paymentStatus = dueLotAmount === 0 && totalLotAmount > 0 ? "paid" : paidVal > 0 ? "partial" : "due";
+      const procCode = procureUnit === "gm" ? "g" : procureUnit;
 
       const operationKey = inventoryOperationKey(receiptAttempt, {
-        productId, variantId, quantity: newQuantity, unit: receiptUnit, purchasePrice: newPurchasePrice,
-        date: newPurchaseDate, source: newSourceType, supplier: newSupplierId, invoice: newInvoiceNo,
-        paidAmount: newPaidAmount, comment: newComment,
+        productId,
+        variantId,
+        quantity: newQuantity,
+        unit: procCode,
+        purchasePrice: newPurchasePrice,
+        date: newPurchaseDate,
+        source: newSourceType,
+        supplier: newSupplierId,
+        invoice: newInvoiceNo,
+        paidAmount: newPaidAmount,
+        comment: newComment,
         memo: newMemoImage ? [newMemoImage.name, newMemoImage.size, newMemoImage.lastModified] : null,
       });
       let options: RequestInit;
@@ -228,7 +327,10 @@ export function ProductStockAdjustmentModal({
         formData.append("purchase_price", newPurchasePrice);
         formData.append("initial_qty", newQuantity);
         if (isBulk) formData.append("operation_key", operationKey);
-        if(isBulk) {formData.append("received_quantity", newQuantity);formData.append("received_unit_code", receiptUnit);}
+        if (isBulk) {
+          formData.append("received_quantity", newQuantity);
+          formData.append("received_unit_code", procCode);
+        }
         if (newPurchaseDate) {
           formData.append("purchase_date", newPurchaseDate);
           formData.append("date", newPurchaseDate);
@@ -252,10 +354,10 @@ export function ProductStockAdjustmentModal({
         const payload = {
           product_id: Number(productId),
           product_variant_id: !isBulk && variantId ? Number(variantId) : null,
-          ...(isBulk ? {received_quantity: newQuantity, received_unit_code: receiptUnit} : {}),
+          ...(isBulk ? { received_quantity: newQuantity, received_unit_code: procCode } : {}),
           purchase_price: Number(newPurchasePrice),
           initial_qty: Number(newQuantity),
-          ...(isBulk ? {operation_key: operationKey} : {}),
+          ...(isBulk ? { operation_key: operationKey } : {}),
           purchase_date: newPurchaseDate || null,
           date: newPurchaseDate || null,
           created_at: newPurchaseDate ? `${newPurchaseDate} 00:00:00` : undefined,
@@ -303,6 +405,41 @@ export function ProductStockAdjustmentModal({
     }));
   };
 
+  const handleLotUnitToggle = (lotId: number | string, newUnit: string) => {
+    setAdjustments((prev) => {
+      const current = prev[lotId];
+      if (!current || current.adjustUnit === newUnit) return prev;
+
+      const lot = lots.find((l) => l.id.toString() === lotId.toString());
+      const units = getLotUnits(lot, item);
+
+      let newAdd = current.addQty;
+      let newReduce = current.reduceQty;
+
+      if (units.factor > 1) {
+        if (newUnit === units.minorUnit && current.adjustUnit === units.majorUnit) {
+          // From major (kg/L) to minor (gm/ml)
+          if (newAdd) newAdd = String(Math.round(Number(newAdd) * units.factor));
+          if (newReduce) newReduce = String(Math.round(Number(newReduce) * units.factor));
+        } else if (newUnit === units.majorUnit && current.adjustUnit === units.minorUnit) {
+          // From minor (gm/ml) to major (kg/L)
+          if (newAdd) newAdd = String(Number((Number(newAdd) / units.factor).toFixed(3)));
+          if (newReduce) newReduce = String(Number((Number(newReduce) / units.factor).toFixed(3)));
+        }
+      }
+
+      return {
+        ...prev,
+        [lotId]: {
+          ...current,
+          adjustUnit: newUnit,
+          addQty: newAdd,
+          reduceQty: newReduce,
+        },
+      };
+    });
+  };
+
   const handleSaveAdjustments = async () => {
     // Find all lots that actually have an adjustment (add or reduce is not empty)
     const modifiedLotIds = Object.keys(adjustments).filter(
@@ -319,6 +456,8 @@ export function ProductStockAdjustmentModal({
       const promises = modifiedLotIds.map(async (lotId) => {
         const lot = lots.find((l) => l.id.toString() === lotId);
         const adj = adjustments[lotId];
+        const lotUnits = getLotUnits(lot, item);
+        const isMajor = adj.adjustUnit === lotUnits.majorUnit && lotUnits.factor > 1;
 
         const added = Number(adj.addQty) || 0;
         const reduced = Number(adj.reduceQty) || 0;
@@ -327,16 +466,27 @@ export function ProductStockAdjustmentModal({
           throw new Error(`Lot #${lotId}: Cannot add and reduce stock simultaneously.`);
         }
 
-        const delta = added - reduced;
+        const addedBase = isMajor ? Math.round(added * lotUnits.factor) : added;
+        const reducedBase = isMajor ? Math.round(reduced * lotUnits.factor) : reduced;
+        const deltaBase = addedBase - reducedBase;
 
-        if (lot.remaining_qty + delta < 0) {
+        if (lot.remaining_qty + deltaBase < 0) {
           throw new Error(`Lot #${lotId}: Cannot reduce more than the remaining quantity.`);
         }
 
+        const isBulkLot = isLotBulk(lot, item);
+        const rawDelta = added - reduced;
+        const unitCode = adj.adjustUnit === "gm" ? "g" : (adj.adjustUnit || lotUnits.baseUnit);
+
         const payload = {
-          ...(!isBulk ? {purchase_price: Number(adj.purchasePrice)} : {}),
-          adjust_qty: delta,
-          ...(isBulk ? {adjust_unit_code: baseUnit} : {}),
+          ...(!isBulkLot ? { purchase_price: Number(adj.purchasePrice) } : {}),
+          adjust_qty: isBulkLot ? rawDelta : deltaBase,
+          ...(isBulkLot
+            ? {
+                adjustment_unit_code: unitCode,
+                adjust_unit_code: unitCode,
+              }
+            : {}),
           source_type: adj.sourceType,
           comment: adj.comment || null,
         };
@@ -388,13 +538,47 @@ export function ProductStockAdjustmentModal({
               <form onSubmit={handleAddNewLot} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label>
-                      Quantity ({receiptUnit}) <span className="text-destructive">*</span>
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label>
+                        Quantity ({procureUnit === itemUnits.minorUnit ? itemUnits.minorLabel : itemUnits.majorLabel}) <span className="text-destructive">*</span>
+                      </Label>
+                      {itemUnits.factor > 1 && (
+                        <div className="inline-flex items-center gap-1 bg-muted p-0.5 rounded border text-xs">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (procureUnit === itemUnits.minorUnit && newQuantity) {
+                                setNewQuantity(String(Number((Number(newQuantity) / itemUnits.factor).toFixed(3))));
+                              }
+                              setProcureUnit(itemUnits.majorUnit);
+                            }}
+                            className={`px-1.5 py-0.5 text-[11px] font-semibold rounded ${
+                              procureUnit === itemUnits.majorUnit ? "bg-background text-primary shadow-xs" : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {itemUnits.majorLabel}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (procureUnit === itemUnits.majorUnit && newQuantity) {
+                                setNewQuantity(String(Math.round(Number(newQuantity) * itemUnits.factor)));
+                              }
+                              setProcureUnit(itemUnits.minorUnit);
+                            }}
+                            className={`px-1.5 py-0.5 text-[11px] font-semibold rounded ${
+                              procureUnit === itemUnits.minorUnit ? "bg-background text-primary shadow-xs" : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {itemUnits.minorLabel}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <Input
                       type="number"
-                      min={isBulk ? "0.001" : "1"}
-                      step={isBulk ? "any" : "1"}
+                      min={isBulk && procureUnit === itemUnits.majorUnit ? "0.001" : "1"}
+                      step={isBulk && procureUnit === itemUnits.majorUnit ? "any" : "1"}
                       value={newQuantity}
                       onChange={(e) => setNewQuantity(e.target.value)}
                       disabled={submitting}
@@ -402,7 +586,7 @@ export function ProductStockAdjustmentModal({
                   </div>
                   <div className="space-y-1.5">
                     <Label>
-                      Purchase Price (per {receiptUnit}) <span className="text-destructive">*</span>
+                      Purchase Price (per {procureUnit === itemUnits.minorUnit ? itemUnits.minorLabel : itemUnits.majorLabel}) <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       type="number"
@@ -676,10 +860,21 @@ export function ProductStockAdjustmentModal({
                   const adj = adjustments[lot.id];
                   if (!adj) return null;
 
+                  const lotUnits = getLotUnits(lot, item);
+                  const isMajor = adj.adjustUnit === lotUnits.majorUnit && lotUnits.factor > 1;
+
                   const consumed = lot.initial_qty - lot.remaining_qty;
-                  const added = Number(adj.addQty) || 0;
-                  const reduced = Number(adj.reduceQty) || 0;
-                  const afterAdjustment = lot.remaining_qty + added - reduced;
+                  const rawAdded = Number(adj.addQty) || 0;
+                  const rawReduced = Number(adj.reduceQty) || 0;
+
+                  const addedBase = isMajor ? Math.round(rawAdded * lotUnits.factor) : rawAdded;
+                  const reducedBase = isMajor ? Math.round(rawReduced * lotUnits.factor) : rawReduced;
+                  const afterAdjustment = lot.remaining_qty + addedBase - reducedBase;
+
+                  const consumedFmt = formatUnitPair(consumed, lotUnits);
+                  const remainingFmt = formatUnitPair(lot.remaining_qty, lotUnits);
+                  const afterFmt = formatUnitPair(afterAdjustment, lotUnits);
+                  const activeUnitLabel = adj.adjustUnit === lotUnits.minorUnit ? lotUnits.minorLabel : lotUnits.majorLabel;
 
                   return (
                     <div key={lot.id} className="rounded-lg border bg-card text-card-foreground shadow-sm">
@@ -701,32 +896,85 @@ export function ProductStockAdjustmentModal({
                       </div>
                       <div className="p-4 grid gap-4">
                         <div className="flex justify-between items-center rounded-md bg-muted/50 p-3">
-                          <div className="text-center">
-                            <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Consumed</div>
-                            <div className="font-medium text-lg">{consumed}</div>
+                          <div className="text-center flex-1">
+                            <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1 font-semibold">Consumed</div>
+                            <div className="font-medium text-base sm:text-lg tabular-nums text-foreground">{consumedFmt.primary}</div>
+                            {consumedFmt.secondary && (
+                              <div className="text-xs text-muted-foreground font-medium tabular-nums mt-0.5">({consumedFmt.secondary})</div>
+                            )}
                           </div>
-                          <div className="text-center">
-                            <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Remaining</div>
-                            <div className="font-medium text-lg">{lot.remaining_qty} {lot.base_unit_code || (isBulk ? baseUnit : "piece")}</div>
+                          <div className="h-8 w-px bg-border/60" />
+                          <div className="text-center flex-1">
+                            <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1 font-semibold">Remaining</div>
+                            <div className="font-medium text-base sm:text-lg tabular-nums text-foreground">{remainingFmt.primary}</div>
+                            {remainingFmt.secondary && (
+                              <div className="text-xs text-muted-foreground font-medium tabular-nums mt-0.5">({remainingFmt.secondary})</div>
+                            )}
                           </div>
-                          <div className="text-center">
+                          <div className="h-8 w-px bg-border/60" />
+                          <div className="text-center flex-1">
                             <div className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">
                               After Adj.
                             </div>
                             <div
-                              className={`font-bold text-lg ${afterAdjustment < 0 ? "text-destructive" : "text-primary"}`}
+                              className={`font-bold text-base sm:text-lg tabular-nums ${afterAdjustment < 0 ? "text-destructive" : "text-primary"}`}
                             >
-                              {afterAdjustment}
+                              {afterFmt.primary}
                             </div>
+                            {afterFmt.secondary && (
+                              <div className={`text-xs font-medium tabular-nums mt-0.5 ${afterAdjustment < 0 ? "text-destructive/80" : "text-muted-foreground"}`}>
+                                ({afterFmt.secondary})
+                              </div>
+                            )}
                           </div>
                         </div>
 
+                        {lotUnits.factor > 1 && (
+                          <div className="flex items-center justify-between pt-1 pb-1 border-b">
+                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                              Adjustment Unit
+                            </span>
+                            <div className="inline-flex items-center gap-1 bg-muted p-0.5 rounded-lg border text-xs">
+                              <button
+                                type="button"
+                                onClick={() => handleLotUnitToggle(lot.id, lotUnits.majorUnit)}
+                                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                                  adj.adjustUnit === lotUnits.majorUnit
+                                    ? "bg-background text-primary shadow-sm border border-primary/20"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                              >
+                                {lotUnits.majorLabel.toUpperCase()} ({lotUnits.majorLabel})
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleLotUnitToggle(lot.id, lotUnits.minorUnit)}
+                                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                                  adj.adjustUnit === lotUnits.minorUnit
+                                    ? "bg-background text-primary shadow-sm border border-primary/20"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                              >
+                                {lotUnits.minorLabel === "g" || lotUnits.minorLabel === "gm" ? "GM" : lotUnits.minorLabel.toUpperCase()} ({lotUnits.minorLabel})
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Add Stock ({isBulk ? baseUnit : "piece"})</Label>
+                            <div className="flex items-center justify-between">
+                              <Label>Add Stock ({activeUnitLabel})</Label>
+                              {rawAdded > 0 && lotUnits.factor > 1 && (
+                                <span className="text-[11px] text-muted-foreground tabular-nums">
+                                  = {isMajor ? `${(rawAdded * lotUnits.factor).toLocaleString()} ${lotUnits.minorLabel}` : `${(rawAdded / lotUnits.factor).toLocaleString(undefined, { maximumFractionDigits: 3 })} ${lotUnits.majorLabel}`}
+                                </span>
+                              )}
+                            </div>
                             <Input
                               type="number"
-                              min="1"
+                              min={isMajor ? "0.001" : "1"}
+                              step={isMajor ? "any" : "1"}
                               placeholder="0"
                               value={adj.addQty}
                               onChange={(e) => {
@@ -737,11 +985,19 @@ export function ProductStockAdjustmentModal({
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Reduce Stock ({isBulk ? baseUnit : "piece"})</Label>
+                            <div className="flex items-center justify-between">
+                              <Label>Reduce Stock ({activeUnitLabel})</Label>
+                              {rawReduced > 0 && lotUnits.factor > 1 && (
+                                <span className="text-[11px] text-muted-foreground tabular-nums">
+                                  = {isMajor ? `${(rawReduced * lotUnits.factor).toLocaleString()} ${lotUnits.minorLabel}` : `${(rawReduced / lotUnits.factor).toLocaleString(undefined, { maximumFractionDigits: 3 })} ${lotUnits.majorLabel}`}
+                                </span>
+                              )}
+                            </div>
                             <Input
                               type="number"
-                              min="1"
-                              max={lot.remaining_qty.toString()}
+                              min={isMajor ? "0.001" : "1"}
+                              max={isMajor ? (lot.remaining_qty / lotUnits.factor).toString() : lot.remaining_qty.toString()}
+                              step={isMajor ? "any" : "1"}
                               placeholder="0"
                               value={adj.reduceQty}
                               onChange={(e) => {

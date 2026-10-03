@@ -29,12 +29,15 @@ export interface InventoryMovement {
   occurred_at: string;
   is_historical: boolean;
   metadata: Record<string, unknown> | null;
+  base_unit_code?: string | null;
+  inventory_unit_code?: string | null;
+  inventory_mode?: string | null;
 }
 
 export interface InventoryReportData {
   records: { data: InventoryMovement[]; current_page: number; last_page: number; total: number };
   summary: Record<string, number | string>;
-  daily: { date: string; movements: number; units_in: number; units_out: number; net_units: number }[];
+  daily: { date: string; movements: number; units_in: number; units_out: number; net_units: number; base_unit_code?: string }[];
   options: {
     sources: string[];
     suppliers: { supplier_id: number; supplier_name: string }[];

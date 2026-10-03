@@ -95,6 +95,8 @@ export function CustomPackSizeSelector({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          sale_quantity: q,
+          sale_unit_code: customUnit,
           quantity: q,
           unit: customUnit,
         }),
@@ -106,19 +108,23 @@ export function CustomPackSizeSelector({
       }
 
       const resData = await response.json();
-      if (resData.variant) {
+      const variant = resData.variant || resData.data;
+      if (variant) {
         if (!item.product.variants) item.product.variants = [];
-        const exists = item.product.variants.some((v: any) => v.id === resData.variant.id);
+        const exists = item.product.variants.some((v: any) => v.id === variant.id);
         if (!exists) {
-          item.product.variants.push(resData.variant);
+          item.product.variants.push(variant);
         }
       }
 
-      const itemId = item.lineId ?? item.product.id;
-      updateCartItem(itemId, "size", resData.size_label);
-      updateUnitPrice(itemId, Number(resData.price));
+      const sizeLabel = resData.size_label || variant?.size?.label || variant?.option_label || `${q} ${customUnit}`;
+      const price = resData.price !== undefined ? Number(resData.price) : Number(variant?.variant_pricing?.selling_price || variant?.selling_price || livePrice);
 
-      toast.success(`Custom pack size (${resData.size_label}) applied at ৳${Number(resData.price).toFixed(2)}`);
+      const itemId = item.lineId ?? item.product.id;
+      updateCartItem(itemId, "size", sizeLabel);
+      updateUnitPrice(itemId, price);
+
+      toast.success(`Custom pack size (${sizeLabel}) applied at ৳${price.toFixed(2)}`);
       setIsCustomMode(false);
       setCustomQty("");
     } catch (err: any) {

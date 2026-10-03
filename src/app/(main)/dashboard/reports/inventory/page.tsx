@@ -23,6 +23,7 @@ import {
   type ReportProductSelection,
 } from "./_components/report-product-search";
 import { ProductReportPreview } from "./_components/product-report-preview";
+import { formatInventoryQuantity, formatInventoryBalance } from "./_components/inventory-formatters";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useModularFeatures } from "@/hooks/useModularFeatures";
@@ -471,11 +472,45 @@ export default function InventoryReportPage() {
                     <td
                       className={`p-3 font-semibold tabular-nums ${row.quantity > 0 ? "text-emerald-600" : row.quantity < 0 ? "text-red-600" : ""}`}
                     >
-                      {row.quantity > 0 ? "+" : ""}
-                      {number(row.quantity)}
+                      {(() => {
+                        const q = formatInventoryQuantity(
+                          row.quantity,
+                          row.base_unit_code,
+                          row.inventory_unit_code,
+                          row.inventory_mode
+                        );
+                        return (
+                          <div className="flex flex-col">
+                            <span>{q.primary}</span>
+                            {q.secondary && (
+                              <span className="text-[11px] text-muted-foreground font-normal">
+                                ({q.secondary})
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="whitespace-nowrap p-3 tabular-nums">
-                      {row.stock_before ?? "?"} → {row.stock_after ?? "?"}
+                      {(() => {
+                        const b = formatInventoryBalance(
+                          row.stock_before,
+                          row.stock_after,
+                          row.base_unit_code,
+                          row.inventory_unit_code,
+                          row.inventory_mode
+                        );
+                        return (
+                          <div className="flex flex-col">
+                            <span>{b.primary}</span>
+                            {b.secondary && (
+                              <span className="text-[11px] text-muted-foreground font-normal">
+                                ({b.secondary})
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="whitespace-nowrap p-3">
                       {money(row.purchase_price)}
@@ -517,9 +552,39 @@ export default function InventoryReportPage() {
                 <tr key={day.date} className="border-t">
                   <td className="p-3">{day.date}</td>
                   <td className="p-3">{number(day.movements)}</td>
-                  <td className="p-3 text-emerald-600">+{number(day.units_in)}</td>
-                  <td className="p-3 text-red-600">−{number(day.units_out)}</td>
-                  <td className="p-3">{number(day.net_units)}</td>
+                  <td className="p-3 text-emerald-600">
+                    {(() => {
+                      const q = formatInventoryQuantity(Number(day.units_in), day.base_unit_code, day.base_unit_code === "g" ? "kg" : day.base_unit_code, day.base_unit_code === "g" ? "shared_bulk" : "independent");
+                      return (
+                        <div className="flex flex-col">
+                          <span>{q.primary}</span>
+                          {q.secondary && <span className="text-[11px] text-muted-foreground font-normal">({q.secondary})</span>}
+                        </div>
+                      );
+                    })()}
+                  </td>
+                  <td className="p-3 text-red-600">
+                    {(() => {
+                      const q = formatInventoryQuantity(-Number(day.units_out), day.base_unit_code, day.base_unit_code === "g" ? "kg" : day.base_unit_code, day.base_unit_code === "g" ? "shared_bulk" : "independent");
+                      return (
+                        <div className="flex flex-col">
+                          <span>{q.primary}</span>
+                          {q.secondary && <span className="text-[11px] text-muted-foreground font-normal">({q.secondary})</span>}
+                        </div>
+                      );
+                    })()}
+                  </td>
+                  <td className="p-3">
+                    {(() => {
+                      const q = formatInventoryQuantity(Number(day.net_units), day.base_unit_code, day.base_unit_code === "g" ? "kg" : day.base_unit_code, day.base_unit_code === "g" ? "shared_bulk" : "independent");
+                      return (
+                        <div className="flex flex-col">
+                          <span>{q.primary}</span>
+                          {q.secondary && <span className="text-[11px] text-muted-foreground font-normal">({q.secondary})</span>}
+                        </div>
+                      );
+                    })()}
+                  </td>
                 </tr>
               ))}
               {!data?.daily.length && (
@@ -650,9 +715,25 @@ export default function InventoryReportPage() {
                 {[
                   ["Recorded time", timestamp(selected.occurred_at)],
                   ["Lot", selected.inventory_lot_id],
-                  ["Vendor", selected.supplier_name],
-                  ["Invoice", selected.invoice_no],
-                  ["Quantity change", selected.quantity],
+                  [
+                    "Quantity change",
+                    formatInventoryQuantity(
+                      selected.quantity,
+                      selected.base_unit_code,
+                      selected.inventory_unit_code,
+                      selected.inventory_mode
+                    ).fullText,
+                  ],
+                  [
+                    "Lot balance",
+                    formatInventoryBalance(
+                      selected.stock_before,
+                      selected.stock_after,
+                      selected.base_unit_code,
+                      selected.inventory_unit_code,
+                      selected.inventory_mode
+                    ).fullText,
+                  ],
                   ["Unit purchase cost", money(selected.purchase_price)],
                   ["Invoice total", money(selected.total_amount)],
                   ["Paid", money(selected.paid_amount)],
