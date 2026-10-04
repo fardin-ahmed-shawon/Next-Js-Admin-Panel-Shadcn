@@ -1,5 +1,5 @@
 import { formatStockQuantity } from "@/lib/stock-quantity";
-import { AlertCircle, Banknote, Layers, Package, SlidersHorizontal, TrendingUp, XCircle } from "lucide-react";
+import { AlertCircle, Banknote, Layers, Package, SlidersHorizontal, TrendingUp, XCircle, PackageCheck } from "lucide-react";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { InventorySummary } from "@/hooks/useInventory";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,9 +29,25 @@ export function InventoryStats({
     },
     {
       title: "Stock by unit",
-      value: Object.entries(summary?.quantities_by_unit || {piece: summary?.total_units || 0}).map(([unit, quantity]) => <span key={unit} className="block text-base leading-normal">{formatStockQuantity(quantity, unit)}</span>),
+      value: Object.entries(summary?.quantities_by_unit || { piece: summary?.total_units || 0 }).map(([unit, quantity]) => (
+        <span key={unit} className="block text-base leading-normal font-semibold">
+          {formatStockQuantity(quantity, unit)}
+        </span>
+      )),
       icon: Layers,
-      subtitle: "Shared bulk stock counted once",
+      subtitle: "Remaining / Current on-hand",
+    },
+    {
+      title: "Total Stock",
+      value: Object.entries(summary?.total_quantities_by_unit || { piece: summary?.total_stock ?? summary?.total_units ?? 0 }).map(([unit, quantity]) => (
+        <span key={unit} className="block text-base leading-normal font-bold text-primary">
+          {formatStockQuantity(quantity, unit)}
+        </span>
+      )),
+      icon: PackageCheck,
+      subtitle: Number(summary?.total_reserved_units || 0) > 0
+        ? `Incl. ${summary?.total_reserved_units} reserved in orders`
+        : "Remaining + Reserved stock",
     },
     {
       title: "Inventory Value",
@@ -43,7 +59,7 @@ export function InventoryStats({
       title: "Potential Profit",
       value: `৳${(summary?.potential_profit || 0).toLocaleString()}`,
       icon: TrendingUp,
-      subtitle: summary?.potential_profit_excludes_bulk ? "Independent stock only; bulk margin depends on pack sales" : "Expected margin",
+      subtitle: summary?.potential_profit_excludes_bulk ? "Independent stock margin" : "Expected margin",
     },
     {
       title: "Low Stock",
@@ -76,7 +92,7 @@ export function InventoryStats({
 
   return (
     <div className="overflow-hidden rounded-xl bg-card shadow-xs ring-1 ring-foreground/10">
-      <div className="grid grid-cols-2 *:data-[slot=card]:rounded-none *:data-[slot=card]:ring-0 [&>*]:border-b [&>*:nth-child(odd)]:border-r md:grid-cols-3 xl:grid-cols-6 xl:[&>*]:border-b-0 xl:[&>*:not(:last-child)]:border-r xl:[&>*:last-child]:border-r-0">
+      <div className="grid grid-cols-2 *:data-[slot=card]:rounded-none *:data-[slot=card]:ring-0 [&>*]:border-b [&>*:nth-child(odd)]:border-r md:grid-cols-3 xl:grid-cols-7 xl:[&>*]:border-b-0 xl:[&>*:not(:last-child)]:border-r xl:[&>*:last-child]:border-r-0">
         {stats.map((stat, i) => {
           const isClickable = !!stat.filter && !!onSelectStatusFilter;
           const isActive = stat.filter && statusFilter === stat.filter;

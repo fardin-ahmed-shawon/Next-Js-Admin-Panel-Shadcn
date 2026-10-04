@@ -223,7 +223,7 @@ const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: "stock",
-    header: ({ column }) => <SortableHeader column={column} title="Stock" />,
+    header: ({ column }) => <SortableHeader column={column} title="Current Stock" />,
     cell: ({ row }) => {
       const isVariant = row.depth > 0;
       const product = isVariant ? row.getParentRow()?.original : row.original;
@@ -236,7 +236,7 @@ const columns: ColumnDef<any>[] = [
           return (
             <div className="flex flex-col gap-1 min-w-[170px]">
               <span className={`tabular-nums font-semibold ${row.original.stock === 0 ? "text-destructive" : ""}`}>
-                {row.original.stock} {inventoryUnit}
+                {row.original.current_stock ?? row.original.stock} {inventoryUnit}
               </span>
               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
                 <span className="text-emerald-600 font-medium">
@@ -262,7 +262,7 @@ const columns: ColumnDef<any>[] = [
                 </Badge>
               </div>
               <span className="text-[10px] text-muted-foreground">
-                Total potential: {row.original.total_estimated_packs ?? row.original.stock ?? 0} packs
+                Remaining: {row.original.current_stock ?? row.original.stock ?? 0} packs
               </span>
             </div>
           );
@@ -270,10 +270,133 @@ const columns: ColumnDef<any>[] = [
       }
 
       const stockUnit = isVariant ? "Piece" : inventoryUnit === "piece" ? "Piece" : inventoryUnit;
+      const currentStock = row.original.current_stock ?? row.original.stock ?? 0;
       return (
-        <span className={`tabular-nums ${row.original.stock === 0 ? "text-destructive" : ""}`}>
-          {row.original.stock} {stockUnit}
-        </span>
+        <div className="flex flex-col">
+          <span className={`tabular-nums font-semibold ${currentStock === 0 ? "text-destructive" : ""}`}>
+            {currentStock} {stockUnit}
+          </span>
+          <span className="text-[10px] text-muted-foreground">Current on-hand</span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "reserved_stock",
+    header: ({ column }) => <SortableHeader column={column} title="Reserved" />,
+    cell: ({ row }) => {
+      const isVariant = row.depth > 0;
+      const product = isVariant ? row.getParentRow()?.original : row.original;
+      const isSharedBulk = product?.inventory_mode === "shared_bulk";
+      const inventoryUnit = product?.inventory_unit_code || "piece";
+      const reserved = row.original.reserved_stock ?? 0;
+
+      if (isSharedBulk) {
+        if (!isVariant) {
+          return (
+            <div className="flex flex-col">
+              <span className={`tabular-nums font-medium ${reserved > 0 ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-muted-foreground"}`}>
+                {reserved} {inventoryUnit}
+              </span>
+              {reserved > 0 ? (
+                <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80">Pending/RTS</span>
+              ) : (
+                <span className="text-[10px] text-muted-foreground/60">-</span>
+              )}
+            </div>
+          );
+        } else {
+          return (
+            <div className="flex flex-col">
+              <span className={`tabular-nums text-sm ${reserved > 0 ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-muted-foreground"}`}>
+                {reserved > 0 ? `${reserved} packs` : "0"}
+              </span>
+              {reserved > 0 && (
+                <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80">In orders</span>
+              )}
+            </div>
+          );
+        }
+      }
+
+      const stockUnit = isVariant ? "Piece" : inventoryUnit === "piece" ? "Piece" : inventoryUnit;
+      return (
+        <div className="flex flex-col">
+          <span className={`tabular-nums font-medium ${reserved > 0 ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-muted-foreground"}`}>
+            {reserved > 0 ? `${reserved} ${stockUnit}` : "0"}
+          </span>
+          {reserved > 0 ? (
+            <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80">Pending/RTS</span>
+          ) : (
+            <span className="text-[10px] text-muted-foreground/60">None</span>
+          )}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "total_stock",
+    header: ({ column }) => <SortableHeader column={column} title="Total Stock" />,
+    cell: ({ row }) => {
+      const isVariant = row.depth > 0;
+      const product = isVariant ? row.getParentRow()?.original : row.original;
+      const isSharedBulk = product?.inventory_mode === "shared_bulk";
+      const inventoryUnit = product?.inventory_unit_code || "piece";
+
+      if (isSharedBulk) {
+        if (!isVariant) {
+          const totalStock = row.original.total_stock ?? row.original.stock;
+          const reservedStock = row.original.reserved_stock ?? 0;
+          return (
+            <div className="flex flex-col gap-0.5 min-w-[150px]">
+              <span className="tabular-nums font-bold text-foreground">
+                {totalStock} {inventoryUnit}
+              </span>
+              {reservedStock > 0 ? (
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                  {row.original.stock} rem + {reservedStock} res
+                </span>
+              ) : (
+                <span className="text-[10px] text-muted-foreground">All remaining</span>
+              )}
+            </div>
+          );
+        } else {
+          const totalStock = row.original.total_stock ?? row.original.total_estimated_packs ?? row.original.stock ?? 0;
+          const reservedStock = row.original.reserved_stock ?? 0;
+          return (
+            <div className="flex flex-col gap-0.5">
+              <span className="tabular-nums font-bold text-foreground">
+                {totalStock} packs
+              </span>
+              {reservedStock > 0 && (
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                  ({reservedStock} res)
+                </span>
+              )}
+            </div>
+          );
+        }
+      }
+
+      const stockUnit = isVariant ? "Piece" : inventoryUnit === "piece" ? "Piece" : inventoryUnit;
+      const totalStock = row.original.total_stock ?? row.original.stock ?? 0;
+      const reservedStock = row.original.reserved_stock ?? 0;
+      const currentStock = row.original.current_stock ?? row.original.stock ?? 0;
+
+      return (
+        <div className="flex flex-col gap-0.5 min-w-[130px]">
+          <span className="tabular-nums font-bold text-foreground">
+            {totalStock} {stockUnit}
+          </span>
+          {reservedStock > 0 ? (
+            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+              {currentStock} rem + {reservedStock} res
+            </span>
+          ) : (
+            <span className="text-[10px] text-muted-foreground">Remaining only</span>
+          )}
+        </div>
       );
     },
   },
@@ -389,7 +512,7 @@ function RowActions({ row, mutate }: { row: any; mutate?: () => void }) {
 /* ---- CSV Export ---- */
 
 function exportToExcel(data: any[]) {
-  const headers = ["ID", "Name", "SKU", "Main Category", "Sub Category", "Stock", "Status"];
+  const headers = ["ID", "Name", "SKU", "Main Category", "Sub Category", "Current Stock", "Reserved Stock", "Total Stock", "Status"];
   const csvRows = [
     headers.join(","),
     ...data.map((row) =>
@@ -399,7 +522,9 @@ function exportToExcel(data: any[]) {
         row.sku || "",
         `"${row.category?.main || ""}"`,
         `"${row.category?.sub || ""}"`,
-        row.stock,
+        row.current_stock ?? row.stock ?? 0,
+        row.reserved_stock ?? 0,
+        row.total_stock ?? row.stock ?? 0,
         row.status,
       ].join(","),
     ),
@@ -444,6 +569,39 @@ export function InventoryTable({
 }: InventoryTableProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [expanded, setExpanded] = React.useState<ExpandedState>({});
+  const [viewMode, setViewMode] = React.useState<"all" | "total_stock" | "current">("all");
+
+  const columnVisibility = React.useMemo(() => {
+    const base = { status: false, categoryFilter: false, subCategoryFilter: false };
+    if (viewMode === "total_stock") {
+      return {
+        ...base,
+        sellingPrice: false,
+        profit: false,
+        reserved_stock: true,
+        total_stock: true,
+        stock: true,
+      };
+    }
+    if (viewMode === "current") {
+      return {
+        ...base,
+        reserved_stock: false,
+        total_stock: false,
+        stock: true,
+        sellingPrice: true,
+        profit: true,
+      };
+    }
+    return {
+      ...base,
+      reserved_stock: true,
+      total_stock: true,
+      stock: true,
+      sellingPrice: true,
+      profit: true,
+    };
+  }, [viewMode]);
 
   const tableData = React.useMemo(() => {
     if (!records?.data) return [];
@@ -474,7 +632,7 @@ export function InventoryTable({
       columnFilters,
       sorting,
       expanded,
-      columnVisibility: { status: false, categoryFilter: false, subCategoryFilter: false },
+      columnVisibility,
     },
     getRowId: (row) => String(row.id),
     onColumnFiltersChange: setColumnFilters,
@@ -547,6 +705,30 @@ export function InventoryTable({
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
+
+            <div className="flex items-center gap-1.5 border-l pl-3">
+              <span className="text-xs text-muted-foreground font-medium hidden sm:inline">View:</span>
+              <ToggleGroup
+                type="single"
+                size="sm"
+                value={viewMode}
+                onValueChange={(val) => {
+                  if (val) setViewMode(val as any);
+                }}
+                className="bg-muted p-0.75 text-muted-foreground **:data-[slot=toggle-group-item]:rounded-md **:data-[slot=toggle-group-item]:border **:data-[slot=toggle-group-item]:border-transparent **:data-[slot=toggle-group-item]:text-foreground/60 **:data-[slot=toggle-group-item]:hover:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:bg-background [&_[data-slot=toggle-group-item][data-state=on]]:text-foreground [&_[data-slot=toggle-group-item][data-state=on]]:shadow-sm dark:[&_[data-slot=toggle-group-item][data-state=on]]:border-input dark:[&_[data-slot=toggle-group-item][data-state=on]]:bg-input/30"
+              >
+                <ToggleGroupItem value="all" className="text-xs h-7 px-2.5">
+                  All Columns
+                </ToggleGroupItem>
+                <ToggleGroupItem value="total_stock" className="text-xs h-7 px-2.5 flex items-center gap-1">
+                  <PackageCheck className="size-3.5 text-primary" />
+                  <span>Total Stock View</span>
+                </ToggleGroupItem>
+                <ToggleGroupItem value="current" className="text-xs h-7 px-2.5">
+                  Remaining Stock
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -559,6 +741,20 @@ export function InventoryTable({
             </Button>
           </div>
         </div>
+
+        {viewMode === "total_stock" && (
+          <div className="mx-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 rounded-lg bg-primary/5 border border-primary/20 px-3.5 py-2 text-xs text-primary">
+            <div className="flex items-center gap-2">
+              <PackageCheck className="size-4 shrink-0 text-primary" />
+              <span>
+                <strong>Total Stock Formula:</strong> Total Stock = Current/Remaining Stock + Reserved Stock
+              </span>
+            </div>
+            <span className="text-muted-foreground text-[11px]">
+              Reserved includes orders in <strong>Pending</strong>, <strong>Confirmed</strong>, and <strong>Ready To Ship</strong>
+            </span>
+          </div>
+        )}
 
         {/* Data Table */}
         <div className="overflow-hidden">

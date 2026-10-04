@@ -14,9 +14,13 @@ export interface InventoryLowStockRule {
 
 export interface InventorySummary {
   total_products: number;
-  total_units: number;
+  total_units: number; // Remaining / Current Stock (pieces)
+  total_reserved_units?: number; // Reserved Stock (pieces)
+  total_stock?: number; // Total Stock (pieces: Remaining + Reserved)
   total_units_scope?: string;
-  quantities_by_unit?: Record<string, number | string>;
+  quantities_by_unit?: Record<string, number | string>; // Remaining / Current Stock by unit
+  reserved_quantities_by_unit?: Record<string, number | string>; // Reserved Stock by unit
+  total_quantities_by_unit?: Record<string, number | string>; // Total Stock by unit
   potential_profit_excludes_bulk?: boolean;
   inventory_value: number;
   potential_profit: number;
@@ -31,7 +35,10 @@ export interface InventoryVariant {
   id: number | string;
   name: string;
   sku: string;
-  stock: number;
+  stock: number; // Remaining / Current Stock
+  current_stock?: number;
+  reserved_stock?: number;
+  total_stock?: number;
   stock_unit?: string;
   inventory_mode?: string;
   inventory_unit_code?: string;
@@ -60,7 +67,10 @@ export interface InventoryItem {
     main: string | null;
     sub: string | null;
   };
-  stock: number;
+  stock: number; // Remaining / Current Stock
+  current_stock?: number;
+  reserved_stock?: number;
+  total_stock?: number;
   stock_unit?: string;
   inventory_mode?: string;
   inventory_unit_code?: string;
