@@ -44,6 +44,7 @@ import {
   UserPlus,
   UserX,
   Bot,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { mutate } from "swr";
@@ -82,7 +83,7 @@ import { EditOrderForm } from "./edit-order-form";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { getRelativeTime } from "@/lib/utils";
+import { getRelativeTime, formatOrderDateTime } from "@/lib/utils";
 
 /* ---- Data ---- */
 
@@ -142,6 +143,10 @@ export interface OrderRow {
   redx_parcel?: any;
   courier_details?: any;
   source?: string;
+  incompleteCompletedAt?: string | null;
+  durationToComplete?: string | null;
+  incomplete_completed_at?: string | null;
+  duration_to_complete?: string | null;
   is_ai_called?: boolean;
   invoice_status?: string;
   order_note?: string | null;
@@ -956,20 +961,19 @@ const columns: ColumnDef<OrderRow>[] = [
     header: "Orders",
     cell: ({ row }) => {
       return (
-        <div className="flex flex-col gap-0.5 text-left w-full max-w-[14ch]">
-          <p className="font-mono text-sm font-semibold whitespace-normal break-words">{row.original.id}</p>
-          <p className="text-[11px] text-muted-foreground">
-            {row.original.date} · {row.original.time}
-          </p>
-          <p className="text-[11px] text-muted-foreground/80 font-mono">IP: {row.original.ipAddress || "—"}</p>
-          {(row.original.createdAt || row.original.source) && (
-            <div className="flex items-center justify-between gap-2 mt-1">
-              {row.original.createdAt ? (
-                <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+        <div className="flex flex-col gap-1 text-left min-w-[170px] max-w-[210px]">
+          <p className="font-mono text-sm font-bold tracking-tight whitespace-nowrap text-foreground">{row.original.id}</p>
+          <div className="flex flex-col text-[11px] text-muted-foreground leading-tight">
+            <span className="whitespace-nowrap">{row.original.date} · {row.original.time}</span>
+            <span className="text-[10px] text-muted-foreground/75 font-mono">IP: {row.original.ipAddress || "—"}</span>
+          </div>
+
+          {(row.original.createdAt || row.original.source || row.original.invoice_status) && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+              {row.original.createdAt && (
+                <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                   {getRelativeTime(row.original.createdAt)}
-                </p>
-              ) : (
-                <div />
+                </span>
               )}
               {row.original.source && (
                 <Badge
@@ -982,20 +986,37 @@ const columns: ColumnDef<OrderRow>[] = [
                   {row.original.source === "Incomplete" ? "From Incomplete" : row.original.source}
                 </Badge>
               )}
+              {row.original.invoice_status && (
+                <Badge
+                  variant="outline"
+                  className={`text-[9px] font-bold px-1.5 py-0 h-4 border leading-none shrink-0 ${
+                    row.original.invoice_status === "Invoiced"
+                      ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20"
+                      : "bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border-neutral-500/20"
+                  }`}
+                >
+                  {row.original.invoice_status}
+                </Badge>
+              )}
             </div>
           )}
-          {row.original.invoice_status && (
-            <div className="mt-1">
-              <Badge
-                variant="outline"
-                className={`text-[9px] font-bold px-1.5 py-0 h-4 border leading-none w-fit ${
-                  row.original.invoice_status === "Invoiced"
-                    ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20"
-                    : "bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border-neutral-500/20"
-                }`}
-              >
-                {row.original.invoice_status}
-              </Badge>
+
+          {(row.original.incompleteCompletedAt || row.original.incomplete_completed_at) && (
+            <div
+              className="mt-1 flex items-center justify-between gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+              title="Converted from Incomplete to Complete Timestamp"
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="font-mono text-[10px] whitespace-nowrap">
+                  {formatOrderDateTime(row.original.incompleteCompletedAt || row.original.incomplete_completed_at).date} {formatOrderDateTime(row.original.incompleteCompletedAt || row.original.incomplete_completed_at).time}
+                </span>
+              </div>
+              {(row.original.durationToComplete || row.original.duration_to_complete) && (
+                <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-300 shrink-0 bg-emerald-100 dark:bg-emerald-900/50 px-1 py-0.2 rounded">
+                  {row.original.durationToComplete || row.original.duration_to_complete}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -1009,7 +1030,7 @@ const columns: ColumnDef<OrderRow>[] = [
     header: "Customer",
     cell: ({ row }) => (
       <div className="flex items-center gap-2.5">
-        <div className="min-w-0 max-w-[11ch]">
+        <div className="min-w-[130px] max-w-[170px]">
           <p className="text-sm font-medium leading-tight whitespace-normal break-words">{row.original.customer}</p>
           <p className="text-[11px] text-muted-foreground whitespace-normal break-words">{row.original.phone}</p>
           {row.original.shippingAddress && (

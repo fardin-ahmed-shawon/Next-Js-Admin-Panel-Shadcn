@@ -1,20 +1,13 @@
 "use client";
-import {orderDisplayLines} from "@/lib/order-combos";
+import { orderDisplayLines } from "@/lib/order-combos";
 
 import * as React from "react";
-import Link from "next/link";
-import { CalendarIcon, Ellipsis, FileDown, FileText, Plus, Printer, RefreshCw, ShieldOff } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  CalendarIcon,
+  Clock,
+  CheckCircle2,
+  BarChart3,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,6 +21,7 @@ import { formatOrderDateTime } from "@/lib/utils";
 import { OrderStats } from "../_components/order-stats";
 import { OrdersTable } from "../_components/orders-table";
 import { OrderContext } from "../_components/order-context";
+import { IncompleteReportView } from "../../reports/incomplete/_components/incomplete-report-view";
 
 /* ---- Time range helpers ---- */
 type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
@@ -58,7 +52,14 @@ export default function IncompleteOrdersPage() {
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState<string>("");
   const [customTo, setCustomTo] = React.useState<string>("");
-  const [activeTab, setActiveTab] = React.useState<"Incomplete" | "Complete">("Incomplete");
+  const [activeTab, setActiveTab] = React.useState<"Incomplete" | "Complete" | "Report">("Incomplete");
+
+  // Sorting state: order_time or completed_time
+  const [sortBy, setSortBy] = React.useState<string>("order_time");
+  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
+
+  // Date filtering basis: completed_at (Actual) vs created_at (Order creation)
+  const [dateType, setDateType] = React.useState<"completed_at" | "created_at">("completed_at");
 
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(100);
@@ -66,6 +67,25 @@ export default function IncompleteOrdersPage() {
   
   const [statusFilter, setStatusFilter] = React.useState("All");
   const [paymentFilter, setPaymentFilter] = React.useState("All");
+
+  // Update default sort when tab changes
+  const handleTabChange = (newTab: "Incomplete" | "Complete" | "Report") => {
+    setActiveTab(newTab);
+    setPage(1);
+    if (newTab === "Report") {
+      setDateType("completed_at");
+      setSortBy("completed_time");
+      setSortDir("desc");
+    } else if (newTab === "Complete") {
+      setDateType("completed_at");
+      setSortBy("completed_time");
+      setSortDir("desc");
+    } else if (newTab === "Incomplete") {
+      setDateType("created_at");
+      setSortBy("order_time");
+      setSortDir("desc");
+    }
+  };
 
   const handleSetStatusFilter = React.useCallback((status: string) => {
     setStatusFilter(status);
@@ -77,8 +97,6 @@ export default function IncompleteOrdersPage() {
     setPage(1);
   }, []);
 
-  // Convert timeRange to actual dates for the API if needed, 
-  // though for now we pass it as start_date / end_date
   const startDate = React.useMemo(() => {
     if (timeRange === "alltime") return undefined;
     if (timeRange === "custom") return customFrom || undefined;
@@ -99,9 +117,9 @@ export default function IncompleteOrdersPage() {
     return new Date().toISOString().slice(0, 10); // today
   }, [timeRange, customTo]);
 
-  // Fetch paginated data from the new endpoint
+  // Fetch paginated data from endpoint
   const { orders, pagination, summary, isLoading } = useIncompleteOrders({
-    tab: activeTab === "Incomplete" ? "incomplete" : "complete",
+    tab: activeTab === "Complete" ? "complete" : "incomplete",
     page,
     per_page: perPage,
     search: searchQuery,
@@ -110,6 +128,9 @@ export default function IncompleteOrdersPage() {
     end_date: endDate,
     status: statusFilter,
     payment_status: paymentFilter,
+    sort_by: sortBy,
+    sort_dir: sortDir,
+    date_type: dateType,
   });
 
   if (features?.orders_incomplete === false || String(features?.orders_incomplete) === "0") {
@@ -198,6 +219,10 @@ export default function IncompleteOrdersPage() {
         previousOrdersCountByPhone: order.previous_orders_count_by_phone || 0,
         ipAddress: order.customer_ip_address || "—",
         createdAt: order.created_at,
+        incompleteCompletedAt: order.incomplete_completed_at || null,
+        incomplete_completed_at: order.incomplete_completed_at || null,
+        durationToComplete: order.duration_to_complete || null,
+        duration_to_complete: order.duration_to_complete || null,
         is_ai_called: order.is_ai_called || false,
         invoice_status: order.invoice_status || "Not Invoiced",
         order_note: order.order_note || null,
@@ -211,11 +236,11 @@ export default function IncompleteOrdersPage() {
   const totalCompletedOrdersCount = summary?.total_completed_orders_count || 0;
   const extraEarnedValue = summary?.extra_earned_value || 0;
 
-  if (isLoading && !orders.length) {
+  if (isLoading && !orders.length && activeTab !== "Report") {
     return <OrdersSkeleton />;
   }
 
-  // Create mock context to satisfy OrdersTable server pagination
+  // Create context to satisfy OrdersTable server pagination
   const contextValue = {
     params: {},
     searchQuery, setSearchQuery,
@@ -233,87 +258,85 @@ export default function IncompleteOrdersPage() {
 
   return (
     <OrderContext.Provider value={contextValue}>
-      <div className="flex flex-col gap-6 w-full">
+      <div className="flex flex-col gap-3.5 w-full">
         {/* Header + Toolbar */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1 hidden sm:block">
-            <h1 className="text-3xl tracking-tight">Incomplete Orders</h1>
-            <p className="text-muted-foreground text-sm">Track, manage, and fulfill incomplete customer orders.</p>
-            <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 rounded-md border border-emerald-100 dark:border-emerald-900/50 w-fit">
-              Total Incomplete Orders <span className="font-bold">{totalIncompleteOrdersCount}</span>, You have Completed <span className="font-bold">{totalCompletedOrdersCount}</span> Orders & earned extra <span className="font-bold">{extraEarnedValue.toLocaleString()} Tk</span> order value from incomplete orders.
-            </div>
-          </div>
-
-          <div className="space-y-1 sm:hidden">
-            <h1 className="text-2xl tracking-tight">Incomplete Orders</h1>
-            <p className="text-muted-foreground text-sm">Track, manage, and fulfill incomplete customer orders.</p>
-            <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 rounded-md border border-emerald-100 dark:border-emerald-900/50">
-              Total Incomplete Orders <span className="font-bold">{totalIncompleteOrdersCount}</span>, You have Completed <span className="font-bold">{totalCompletedOrdersCount}</span> Orders & earned extra <span className="font-bold">{extraEarnedValue.toLocaleString()} Tk</span> order value from incomplete orders.
+          <div className="space-y-1">
+            <h1 className="text-3xl tracking-tight font-bold">Incomplete Orders</h1>
+            <p className="text-muted-foreground text-sm">Track, manage, recover, and analyze customer incomplete orders.</p>
+            <div className="text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 rounded-md border border-emerald-100 dark:border-emerald-900/50 w-fit">
+              Total Incomplete Orders <span className="font-bold">{totalIncompleteOrdersCount}</span>
+              {summary?.still_incomplete_orders_count !== undefined && (
+                <span className="font-medium text-muted-foreground"> ({summary.still_incomplete_orders_count} Still Incomplete)</span>
+              )}
+              , You have Completed <span className="font-bold">{totalCompletedOrdersCount}</span> Orders & earned extra <span className="font-bold">{extraEarnedValue.toLocaleString()} Tk</span> order value from incomplete orders.
             </div>
           </div>
 
           <div className="flex flex-col gap-2 sm:items-end">
-            <div className="flex items-center justify-between gap-2 sm:justify-end">
-              <Button size="sm" asChild>
-                <Link href="/dashboard/orders/create">
-                  <Plus className="mr-2 size-4" />
-                  Create Order
-                </Link>
-              </Button>
-
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {/* All Orders toggle - only for first 2 tabs (Incomplete and Complete) */}
+              {activeTab !== "Report" && (
                 <div className="flex items-center gap-2 border rounded-[min(var(--radius-md),12px)] px-3 h-9 bg-background select-none">
                   <Switch id="all-orders-toggle" checked={allOrdersToggle} onCheckedChange={setAllOrdersToggle} />
                   <Label htmlFor="all-orders-toggle" className="text-xs font-semibold cursor-pointer whitespace-nowrap">
                     All Orders
                   </Label>
                 </div>
+              )}
 
-                <Select value={timeRange} onValueChange={(v) => { setTimeRange(v as TimeRange); setPage(1); }}>
-                  <SelectTrigger className="w-32 sm:w-36">
-                    <SelectValue placeholder="Select period" />
+              {/* Time Period Selector - visible for all tabs */}
+              <Select value={timeRange} onValueChange={(v) => { setTimeRange(v as TimeRange); setPage(1); }}>
+                <SelectTrigger className="w-32 sm:w-36 h-9">
+                  <SelectValue placeholder="Select period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {(Object.keys(rangeLabels) as TimeRange[]).filter(r => r !== "custom").map(r => (
+                      <SelectItem key={r} value={r}>{rangeLabels[r]}</SelectItem>
+                    ))}
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
+              {/* Date Filter basis (When on Complete tab only; Report always works in Completed Date Actual) */}
+              {activeTab === "Complete" && (
+                <Select
+                  value={dateType}
+                  onValueChange={(v: "completed_at" | "created_at") => {
+                    setDateType(v);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-44 h-9 text-xs">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectGroup>
-                      {(Object.keys(rangeLabels) as TimeRange[]).filter(r => r !== "custom").map(r => (
-                        <SelectItem key={r} value={r}>{rangeLabels[r]}</SelectItem>
-                      ))}
-                      <SelectItem value="custom">Custom Range</SelectItem>
-                    </SelectGroup>
+                    <SelectItem value="completed_at">
+                      <span className="flex items-center gap-1 font-medium">
+                        <CheckCircle2 className="size-3 text-emerald-600" />
+                        Completed Date (Actual)
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="created_at">
+                      <span className="flex items-center gap-1">
+                        <Clock className="size-3 text-muted-foreground" />
+                        Order Creation Time
+                      </span>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+              )}
 
-                {timeRange === "custom" && (
-                  <div className="hidden sm:flex items-center gap-2">
-                    <CalendarIcon className="size-4 text-muted-foreground" />
-                    <Input type="date" className="h-8 w-36 text-xs" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
-                    <span className="text-xs text-muted-foreground">to</span>
-                    <Input type="date" className="h-8 w-36 text-xs" value={customTo} onChange={e => setCustomTo(e.target.value)} />
-                  </div>
-                )}
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="icon" variant="outline" aria-label="More order actions">
-                      <Ellipsis />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel>Bulk Invoice</DropdownMenuLabel>
-                      <DropdownMenuItem><FileText className="mr-2 size-4" /> All Invoice A4</DropdownMenuItem>
-                      <DropdownMenuItem><Printer className="mr-2 size-4" /> All Parcel Invoice</DropdownMenuItem>
-                    </DropdownMenuGroup>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel>Management</DropdownMenuLabel>
-                      <DropdownMenuItem><ShieldOff className="mr-2 size-4" /> Block List</DropdownMenuItem>
-                      <DropdownMenuItem><RefreshCw className="mr-2 size-4" /> Refresh</DropdownMenuItem>
-                      <DropdownMenuItem><FileDown className="mr-2 size-4" /> Export Report</DropdownMenuItem>
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              {timeRange === "custom" && (
+                <div className="hidden sm:flex items-center gap-2">
+                  <CalendarIcon className="size-4 text-muted-foreground" />
+                  <Input type="date" className="h-8 w-36 text-xs" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+                  <span className="text-xs text-muted-foreground">to</span>
+                  <Input type="date" className="h-8 w-36 text-xs" value={customTo} onChange={e => setCustomTo(e.target.value)} />
+                </div>
+              )}
             </div>
 
             {timeRange === "custom" && (
@@ -327,30 +350,55 @@ export default function IncompleteOrdersPage() {
           </div>
         </div>
 
-        <div className="flex w-full items-center justify-start border-b border-border/40 pb-4">
-          <Tabs value={activeTab} onValueChange={(v: any) => { setActiveTab(v); setPage(1); }}>
+        {/* Tab Navigation */}
+        <div className="flex w-full items-center justify-start border-b border-border/40 pb-2">
+          <Tabs value={activeTab} onValueChange={(v: any) => handleTabChange(v)}>
             <TabsList>
-              <TabsTrigger value="Incomplete" className="text-xs">Incomplete</TabsTrigger>
-              <TabsTrigger value="Complete" className="text-xs">Complete</TabsTrigger>
+              <TabsTrigger value="Incomplete" className="text-xs font-medium">
+                Incomplete Orders
+              </TabsTrigger>
+              <TabsTrigger value="Complete" className="text-xs font-medium">
+                Complete (Recovered Orders)
+              </TabsTrigger>
+              <TabsTrigger value="Report" className="text-xs font-medium gap-1.5">
+                <BarChart3 className="size-3.5" />
+                Actual Conversion Report
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
-        <OrderStats data={mappedOrders} />
-
-        <div className="w-full min-w-0">
-          <OrdersTable
-            data={mappedOrders}
-            hideOrderStatusFilter={activeTab === "Incomplete"}
-            hidePaymentStatusFilter={activeTab === "Incomplete"}
-            hidePaymentStatusColumn={true}
-            simplifiedPaymentColumn={true}
-            showIncompleteStatus={true}
-            incompleteOrdersMode={activeTab === "Incomplete"}
-            hideActionsColumn={activeTab === "Complete"}
-            useServerPagination={true}
+        {/* Tab Content */}
+        {activeTab === "Report" ? (
+          <IncompleteReportView
+            embedded={true}
+            timeRange={timeRange === "alltime" ? "all_time" : (timeRange as any)}
+            dateType="completed_at"
+            sortBy={sortBy}
+            sortDir={sortDir}
+            customFrom={customFrom}
+            customTo={customTo}
+            allOrders={allOrdersToggle}
           />
-        </div>
+        ) : (
+          <>
+            <OrderStats data={mappedOrders} />
+
+            <div className="w-full min-w-0">
+              <OrdersTable
+                data={mappedOrders}
+                hideOrderStatusFilter={activeTab === "Incomplete"}
+                hidePaymentStatusFilter={activeTab === "Incomplete"}
+                hidePaymentStatusColumn={true}
+                simplifiedPaymentColumn={true}
+                showIncompleteStatus={true}
+                incompleteOrdersMode={activeTab === "Incomplete"}
+                hideActionsColumn={activeTab === "Complete"}
+                useServerPagination={true}
+              />
+            </div>
+          </>
+        )}
       </div>
     </OrderContext.Provider>
   );

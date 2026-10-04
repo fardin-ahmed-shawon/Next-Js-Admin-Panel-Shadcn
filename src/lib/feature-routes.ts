@@ -19,6 +19,7 @@ const routes: Record<string, string[]> = {
   "/dashboard/orders/wholesale-create": ["orders_wholesale_create"],
   "/dashboard/orders/wholesale": ["orders_wholesale_create"],
   "/dashboard/orders/incomplete": ["orders_incomplete"],
+  "/dashboard/reports/incomplete": ["orders_incomplete"],
   "/dashboard/orders/invoice": ["orders_invoice_manage"],
   "/dashboard/ai-calling-logs": ["ai_auto_calling"],
   "/dashboard/orders/assign-orders": ["employee_management"],
