@@ -63,6 +63,7 @@ export interface PageAccess {
   hrm_employees?: number;
   hrm_attendance?: number;
   hrm_all_attendance?: number;
+  hrm_manage_attendance?: number;
   hrm_salaries?: number;
   hrm_cash_flow?: number;
   hrm_all_cash_flow?: number;
@@ -73,6 +74,7 @@ export interface PageAccess {
   hrm_exits?: number;
   hrm_all_exits?: number;
   hrm_self_service?: number;
+  hrm_self_attendance?: number;
   procurement?: number;
   suppliers?: number;
   product_bundles?: number;
@@ -170,6 +172,7 @@ export const HRM_MODULE_KEYS: (keyof PageAccess)[] = [
   "hrm_documents",
   "hrm_exits",
   "hrm_self_service",
+  "hrm_self_attendance",
 ];
 
 export function hasModuleAccess(user: any, module: string): boolean {
@@ -246,3 +249,28 @@ export function hasAllUserAccess(user: any, module: string): boolean {
 
   return pageAccess[key as keyof PageAccess] === 1;
 }
+
+export function hasManageAttendanceAccess(user: any): boolean {
+  if (!user || !user.role) return false;
+  if (user.role.role_name === "Admin") {
+    const pageAccess = user.role.page_access || user.role.pageAccess;
+    if (pageAccess && pageAccess.hrm_manage_attendance === 0) return false;
+    return true;
+  }
+  const pageAccess = user.role.page_access || user.role.pageAccess;
+  if (!pageAccess) return false;
+  return pageAccess.hrm_manage_attendance === 1;
+}
+
+export function hasSelfAttendanceAccess(user: any): boolean {
+  if (!user || !user.role) return false;
+  if (user.role.role_name === "Admin") {
+    const pageAccess = user.role.page_access || user.role.pageAccess;
+    if (pageAccess && pageAccess.hrm_self_attendance === 0) return false;
+    return true;
+  }
+  const pageAccess = user.role.page_access || user.role.pageAccess;
+  if (!pageAccess) return false;
+  return pageAccess.hrm_self_attendance === 1;
+}
+

@@ -99,6 +99,7 @@ export interface AttendanceRecord {
   overtime_hours: number;
   late_minutes: number;
   early_leave_minutes: number;
+  deficit_hours?: number;
   status: "Present" | "Absent" | "Late" | "Half Day" | "On Leave" | "Holiday";
   notes?: string | null;
   ip_address?: string | null;
@@ -366,18 +367,59 @@ export function useHrmEmployees(query = "") {
   return { employees: (data as HrmEmployee[]) || [], loading: isLoading, error, refetch: mutate };
 }
 
-export function useHrmAttendances(params?: { date?: string; month?: number; year?: number; user_id?: number }) {
+export interface HrmWorkHourPolicySummary {
+  id: number;
+  policy_name: string;
+  expected_daily_hours: number;
+  working_days: string[];
+  enable_deficit_deduction: boolean;
+}
+
+export function useHrmAttendances(params?: {
+  date?: string;
+  month?: number;
+  year?: number;
+  user_id?: number;
+  time_range?: string;
+  start_date?: string;
+  end_date?: string;
+  sort_by?: string;
+  sort_order?: string;
+  department_id?: number | string;
+  status?: string;
+  search?: string;
+}) {
   const searchParams = new URLSearchParams();
   if (params?.date) searchParams.set("date", params.date);
   if (params?.month) searchParams.set("month", String(params.month));
   if (params?.year) searchParams.set("year", String(params.year));
   if (params?.user_id) searchParams.set("user_id", String(params.user_id));
+  if (params?.time_range) searchParams.set("time_range", params.time_range);
+  if (params?.start_date) searchParams.set("start_date", params.start_date);
+  if (params?.end_date) searchParams.set("end_date", params.end_date);
+  if (params?.sort_by) searchParams.set("sort_by", params.sort_by);
+  if (params?.sort_order) searchParams.set("sort_order", params.sort_order);
+  if (params?.department_id && params.department_id !== "all") searchParams.set("department_id", String(params.department_id));
+  if (params?.status && params.status !== "all") searchParams.set("status", params.status);
+  if (params?.search) searchParams.set("search", params.search);
 
   const url = `${HRM_BASE}/attendances?${searchParams.toString()}`;
   const { data, error, isLoading, mutate } = useSWR(url, fetcher);
   return {
     attendances: (data?.attendances as AttendanceRecord[]) || [],
-    summary: data?.summary,
+    summary: data?.summary as {
+      total: number;
+      present: number;
+      late: number;
+      absent: number;
+      total_working_hours: number;
+      overtime_hours: number;
+      deficit_hours: number;
+    } | undefined,
+    policy: data?.policy as HrmWorkHourPolicySummary | undefined,
+    time_range: data?.time_range as string | undefined,
+    start_date: data?.start_date as string | undefined,
+    end_date: data?.end_date as string | undefined,
     loading: isLoading,
     error,
     refetch: mutate,
@@ -490,6 +532,34 @@ export async function recordAttendance(data: any) {
   return hrmApiRequest("attendances", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+export async function importAttendances(data: { rows?: any[]; file?: File }) {
+  if (data.rows && data.rows.length > 0) {
+    return hrmApiRequest("attendances/import", {
+      method: "POST",
+      body: JSON.stringify({ rows: data.rows }),
+    });
+  }
+
+  if (data.file) {
+    const formData = new FormData();
+    formData.append("file", data.file);
+    const res = await fetchClient(`${HRM_BASE}/attendances/import`, {
+      method: "POST",
+      body: formData,
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to import attendances");
+    }
+    return json;
+  }
+
+  return hrmApiRequest("attendances/import", {
+    method: "POST",
+    body: JSON.stringify({ rows: data.rows || [] }),
   });
 }
 

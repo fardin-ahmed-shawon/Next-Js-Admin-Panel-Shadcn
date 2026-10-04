@@ -136,6 +136,7 @@ const ALL_PERMISSIONS = [
   { id: "hrm_all_tasks", label: "All User Tasks Access", icon: ShieldCheck },
   { id: "hrm_attendance", label: "Attendance", icon: Clock },
   { id: "hrm_all_attendance", label: "All User Attendance Access", icon: ShieldCheck },
+  { id: "hrm_manage_attendance", label: "Manage Attendance (Manual Entry & Import)", icon: ShieldAlert },
   { id: "hrm_cash_flow", label: "Employee Cash Flow", icon: Receipt },
   { id: "hrm_all_cash_flow", label: "All User Cash Flow Access", icon: ShieldCheck },
   { id: "hrm_loans", label: "Loans & Advance", icon: Landmark },
@@ -145,6 +146,7 @@ const ALL_PERMISSIONS = [
   { id: "hrm_exits", label: "Resignations & Exit", icon: UserMinus },
   { id: "hrm_all_exits", label: "All User Exits Access", icon: ShieldCheck },
   { id: "hrm_self_service", label: "Self-Service Portal", icon: UserCheck },
+  { id: "hrm_self_attendance", label: "Self Check-In / Check-Out (Punch In/Out)", icon: Clock },
   { id: "employee_fines", label: "Employee Fines", icon: AlertTriangle },
 ] as const;
 

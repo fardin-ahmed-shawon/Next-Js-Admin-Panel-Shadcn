@@ -202,6 +202,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
 
       { id: "hrm_attendance", label: "Attendance", icon: Clock, badge: "Access Based" },
       { id: "hrm_all_attendance", label: "All User Attendance Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_attendance" },
+      { id: "hrm_manage_attendance", label: "Manage Attendance (Manual Entry & Import)", icon: ShieldAlert, isSubToggle: true, dependsOn: "hrm_attendance" },
 
       { id: "hrm_cash_flow", label: "Employee Cash Flow", icon: Receipt, badge: "Access Based" },
       { id: "hrm_all_cash_flow", label: "All User Cash Flow Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_cash_flow" },
@@ -216,6 +217,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "hrm_all_exits", label: "All User Exits Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_exits" },
 
       { id: "hrm_self_service", label: "Self-Service Portal", icon: UserCheck, badge: "Attribute Based" },
+      { id: "hrm_self_attendance", label: "Self Check-In / Check-Out (Punch In/Out)", icon: Clock, isSubToggle: true, dependsOn: "hrm_self_service" },
       { id: "employee_fines", label: "Employee Fines (Penalize Employee)", icon: AlertTriangle, badge: "Action Based" },
     ],
   },

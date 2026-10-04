@@ -16,6 +16,11 @@ import {
   CheckCircle,
   ArrowRight,
   Sparkles,
+  LayoutGrid,
+  Table as TableIcon,
+  ArrowDown,
+  Send,
+  UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -53,6 +58,7 @@ import {
 
 export default function PeerTasksPage() {
   const [scope, setScope] = React.useState<"all" | "assigned_to_me" | "assigned_by_me">("all");
+  const [viewMode, setViewMode] = React.useState<"grid" | "table">("grid");
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
   const [priorityFilter, setPriorityFilter] = React.useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = React.useState<string>("all");
@@ -235,14 +241,40 @@ export default function PeerTasksPage() {
               </TabsList>
             </Tabs>
 
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search tasks, colleagues..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 text-sm"
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search tasks, delegators, performers..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 text-sm h-9"
+                />
+              </div>
+
+              {/* Grid / Table View Toggle */}
+              <div className="flex items-center border rounded-lg p-0.5 bg-muted/30 shrink-0">
+                <Button
+                  variant={viewMode === "grid" ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-8 px-2.5 gap-1.5 text-xs shadow-none"
+                  onClick={() => setViewMode("grid")}
+                  title="Card View"
+                >
+                  <LayoutGrid className="size-3.5" />
+                  <span className="hidden sm:inline">Cards</span>
+                </Button>
+                <Button
+                  variant={viewMode === "table" ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-8 px-2.5 gap-1.5 text-xs shadow-none"
+                  onClick={() => setViewMode("table")}
+                  title="Table View"
+                >
+                  <TableIcon className="size-3.5" />
+                  <span className="hidden sm:inline">Table</span>
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -301,7 +333,7 @@ export default function PeerTasksPage() {
         </CardContent>
       </Card>
 
-      {/* Task List / Cards */}
+      {/* Task List / Cards or Table */}
       {loading ? (
         <div className="py-16 text-center text-muted-foreground">
           <Clock className="h-8 w-8 animate-spin mx-auto text-primary mb-2" />
@@ -319,12 +351,157 @@ export default function PeerTasksPage() {
             Assign a Task
           </Button>
         </Card>
+      ) : viewMode === "table" ? (
+        /* TABLE VIEW */
+        <Card className="border shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/40 border-b text-muted-foreground font-semibold">
+                <tr>
+                  <th className="py-3 px-4 text-left">Task</th>
+                  <th className="py-3 px-4 text-left">Priority</th>
+                  <th className="py-3 px-4 text-left">Given By (Creator)</th>
+                  <th className="py-3 px-4 text-left">Assigned To (Performer)</th>
+                  <th className="py-3 px-4 text-left">Due Date</th>
+                  <th className="py-3 px-4 text-left">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {tasks.map((task) => {
+                  const isCompleted = task.status === "completed";
+                  return (
+                    <tr key={task.id} className="hover:bg-muted/30 transition-colors">
+                      {/* Task Info */}
+                      <td className="py-3 px-4 max-w-[280px]">
+                        <span
+                          className={`font-semibold text-sm block ${
+                            isCompleted ? "line-through text-muted-foreground" : "text-foreground"
+                          }`}
+                        >
+                          {task.title}
+                        </span>
+                        {task.description && (
+                          <span className="text-[11px] text-muted-foreground truncate block max-w-xs mt-0.5">
+                            {task.description}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Priority */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {getPriorityBadge(task.priority)}
+                      </td>
+
+                      {/* Given By (Creator) */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="size-7 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold text-[10px] shrink-0">
+                            {task.creator?.full_name?.slice(0, 2).toUpperCase() || "AD"}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-foreground block">
+                                {task.creator?.full_name || "Management / Admin"}
+                              </span>
+                              <Badge variant="outline" className="text-[9px] py-0 h-3.5 bg-blue-500/5 text-blue-700 dark:text-blue-300 border-blue-500/20">
+                                Creator
+                              </Badge>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground block">
+                              {task.creator?.employee_detail?.designation?.title || task.creator?.employee_detail?.department?.name || "Zymerce"}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Assigned To (Performer) */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="size-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-[10px] shrink-0">
+                            {task.assignee?.full_name?.slice(0, 2).toUpperCase() || "AS"}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-foreground block">
+                                {task.assignee?.full_name || "Unassigned"}
+                              </span>
+                              <Badge variant="outline" className="text-[9px] py-0 h-3.5 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300 border-emerald-500/20">
+                                Assignee
+                              </Badge>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground block">
+                              {task.assignee?.employee_detail?.designation?.title || task.assignee?.employee_detail?.department?.name || "Zymerce"}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Due Date */}
+                      <td className="py-3 px-4 whitespace-nowrap text-muted-foreground font-mono">
+                        {task.due_date ? (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="size-3 text-muted-foreground" />
+                            {task.due_date}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+
+                      {/* Status Selector */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <Select
+                          value={task.status}
+                          onValueChange={(val) => handleStatusChange(task.id, val)}
+                        >
+                          <SelectTrigger className="h-7 text-xs w-[125px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">
+                              <span className="flex items-center gap-1.5 text-amber-600">
+                                <Clock className="size-3" /> Pending
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="in_progress">
+                              <span className="flex items-center gap-1.5 text-blue-600">
+                                <AlertCircle className="size-3" /> In Progress
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="completed">
+                              <span className="flex items-center gap-1.5 text-emerald-600">
+                                <CheckCircle2 className="size-3" /> Completed
+                              </span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeleteTask(task.id)}
+                          title="Delete Task"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       ) : (
+        /* GRID / CARDS VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {tasks.map((task) => {
             const isCompleted = task.status === "completed";
-            const isInProgress = task.status === "in_progress";
-            const isPending = task.status === "pending";
 
             return (
               <Card
@@ -373,38 +550,73 @@ export default function PeerTasksPage() {
                 </CardHeader>
 
                 <CardContent className="pt-0 space-y-3">
-                  {/* Assignee & Creator Info */}
-                  <div className="text-xs space-y-1.5 p-2 rounded-md bg-muted/40 border border-border/50">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        Assigned To:
-                      </span>
-                      <span className="font-medium text-foreground">
-                        {task.assignee?.full_name || "Unknown"}
-                      </span>
+                  {/* High Visibility Delegation Flow Box */}
+                  <div className="rounded-lg border bg-card divide-y divide-border/60 text-xs overflow-hidden shadow-2xs">
+                    {/* Given By (Creator) */}
+                    <div className="p-2.5 bg-blue-500/[0.04]">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                          <Send className="size-3" />
+                          Given By (Task Delegator)
+                        </span>
+                        {task.creator?.employee_detail?.department && (
+                          <Badge variant="outline" className="text-[9px] py-0 h-4 border-blue-500/20 text-blue-700 dark:text-blue-300 bg-background">
+                            {task.creator.employee_detail.department.name}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="size-6 rounded-full bg-blue-600/10 text-blue-600 flex items-center justify-center font-bold text-[10px] shrink-0">
+                          {task.creator?.full_name?.slice(0, 2).toUpperCase() || "AD"}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-semibold text-foreground truncate block text-xs">
+                            {task.creator?.full_name || "Management / Admin"}
+                          </span>
+                          {task.creator?.employee_detail?.designation?.title && (
+                            <span className="text-[10px] text-muted-foreground block truncate">
+                              {task.creator.employee_detail.designation.title}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
-                    {task.assignee?.employee_detail?.department && (
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-muted-foreground flex items-center gap-1">
-                          <Building2 className="h-2.5 w-2.5" />
-                          Department:
-                        </span>
-                        <Badge variant="outline" className="text-[10px] py-0 h-4">
-                          {task.assignee.employee_detail.department.name}
-                        </Badge>
-                      </div>
-                    )}
+                    {/* Flow Connector Arrow */}
+                    <div className="px-2.5 py-1 bg-muted/40 flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium">
+                      <ArrowDown className="size-3 text-primary" />
+                      <span>Assigned to colleague</span>
+                    </div>
 
-                    {task.creator && (
-                      <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border/40">
-                        <span className="text-muted-foreground">Assigned By:</span>
-                        <span className="text-muted-foreground font-normal">
-                          {task.creator.full_name}
+                    {/* Assigned To (Performer) */}
+                    <div className="p-2.5 bg-emerald-500/[0.04]">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <UserCheck className="size-3" />
+                          Assigned To (Task Performer)
                         </span>
+                        {task.assignee?.employee_detail?.department && (
+                          <Badge variant="outline" className="text-[9px] py-0 h-4 border-emerald-500/20 text-emerald-700 dark:text-emerald-300 bg-background">
+                            {task.assignee.employee_detail.department.name}
+                          </Badge>
+                        )}
                       </div>
-                    )}
+                      <div className="flex items-center gap-2">
+                        <div className="size-6 rounded-full bg-emerald-600/10 text-emerald-600 flex items-center justify-center font-bold text-[10px] shrink-0">
+                          {task.assignee?.full_name?.slice(0, 2).toUpperCase() || "AS"}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-bold text-foreground truncate block text-xs">
+                            {task.assignee?.full_name || "Unassigned"}
+                          </span>
+                          {task.assignee?.employee_detail?.designation?.title && (
+                            <span className="text-[10px] text-muted-foreground block truncate">
+                              {task.assignee.employee_detail.designation.title}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Status Switcher */}

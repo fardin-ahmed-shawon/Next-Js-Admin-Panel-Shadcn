@@ -36,6 +36,7 @@ import {
   essRequestAdvance,
   updateTaskStatus,
 } from "@/hooks/useHrm";
+import { hasSelfAttendanceAccess } from "@/hooks/useRoles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -187,6 +188,10 @@ export default function EmployeeSelfServicePortalPage() {
   const myWarnings = portalData?.my_warnings || [];
   const myTasks = portalData?.my_tasks || [];
 
+  const canSelfCheckInOut = portalData?.can_self_check_in_out !== undefined 
+    ? Boolean(portalData.can_self_check_in_out) 
+    : hasSelfAttendanceAccess(user);
+
   return (
     <div className="space-y-6">
       {/* Top Banner / User Header */}
@@ -230,7 +235,12 @@ export default function EmployeeSelfServicePortalPage() {
               {currentTime || "09:00:00 AM"}
             </div>
             <div className="flex items-center gap-2 w-full">
-              {!todayAtt?.check_in ? (
+              {!canSelfCheckInOut ? (
+                <div className="w-full py-2 px-3 text-center bg-muted/60 text-muted-foreground text-xs rounded-lg border border-border flex items-center justify-center gap-1.5 font-medium">
+                  <ShieldAlert className="h-4 w-4 text-amber-500 shrink-0" />
+                  <span>Self Punch Disabled</span>
+                </div>
+              ) : !todayAtt?.check_in ? (
                 <Button
                   onClick={handleCheckIn}
                   disabled={isPunching}
@@ -258,7 +268,9 @@ export default function EmployeeSelfServicePortalPage() {
             <div className="text-[11px] text-muted-foreground mt-2 text-center">
               {todayAtt?.check_in
                 ? `In: ${todayAtt.check_in} ${todayAtt.check_out ? `• Out: ${todayAtt.check_out}` : "(Active)"}`
-                : "Not checked in yet today"}
+                : canSelfCheckInOut
+                ? "Not checked in yet today"
+                : "Attendance managed by HR / Biometrics"}
             </div>
           </div>
         </div>
@@ -733,7 +745,18 @@ export default function EmployeeSelfServicePortalPage() {
                           {t.description && (
                             <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
                           )}
-                          <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-1">
+                          <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-muted-foreground mt-1.5">
+                            <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 px-2 py-0.5 rounded-md text-[11px] font-medium">
+                              <span className="text-[10px] uppercase font-bold text-blue-600/80">Given By:</span>
+                              <span className="font-semibold text-foreground">
+                                {t.creator?.full_name || "Management / Admin"}
+                              </span>
+                              {t.creator?.employee_detail?.designation?.title && (
+                                <span className="text-muted-foreground font-normal text-[10px]">
+                                  ({t.creator.employee_detail.designation.title})
+                                </span>
+                              )}
+                            </div>
                             {t.due_date && <span>Due: {t.due_date}</span>}
                             <span>•</span>
                             <span className="capitalize">Priority: {t.priority || "Medium"}</span>
