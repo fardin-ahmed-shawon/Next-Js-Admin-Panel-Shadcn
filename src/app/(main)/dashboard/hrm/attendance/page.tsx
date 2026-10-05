@@ -28,7 +28,6 @@ import {
   Info,
 } from "lucide-react";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -257,11 +256,91 @@ export default function AttendanceManagementPage() {
       },
     ];
 
-    const worksheet = XLSX.utils.json_to_sheet(templateData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance_Template");
-    XLSX.writeFile(workbook, `attendance_bulk_import_template.xlsx`);
-    toast.success("Excel template downloaded successfully!");
+    const headers = ["employee_id", "employee_name", "date", "check_in", "check_out", "status", "notes"];
+    const rows = [
+      headers.join(","),
+      `"EMP-001","Mr John (Reference Only)","${todayStr}","09:00:00","18:00:00","Present","Biometric on-time entry"`,
+      `"EMP-002","Ms Sarah (Reference Only)","${todayStr}","09:25:00","18:00:00","Late","Traffic congestion"`,
+      `"EMP-003","Alex Smith (Reference Only)","${todayStr}","","","Absent","Unexcused absence"`,
+    ];
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `attendance_bulk_import_template.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("Attendance template (.csv) downloaded! Ready to open & edit in Microsoft Excel.");
+  };
+
+  // Zero-dependency pure CSV parser
+  const parseCSV = (text: string): any[] => {
+    const lines = text.split(/\r\n|\n|\r/).filter((l) => l.trim().length > 0);
+    if (lines.length === 0) return [];
+
+    const parseLine = (line: string): string[] => {
+      const result: string[] = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === "," && !inQuotes) {
+          result.push(current.trim());
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    };
+
+    const rawHeaders = parseLine(lines[0]);
+    const headers = rawHeaders.map((h) =>
+      h.toLowerCase().replace(/[\s_-]+/g, "_").replace(/^"|"$/g, "")
+    );
+    const data: any[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseLine(lines[i]);
+      if (values.every((v) => v === "")) continue;
+      const row: any = {};
+      headers.forEach((h, idx) => {
+        row[h] = (values[idx] ?? "").replace(/^"|"$/g, "");
+      });
+      data.push(row);
+    }
+
+    return data;
+  };
+
+  // Helper to dynamically load XLSX parser on-demand if user uploads an Excel file (.xlsx / .xls)
+  const loadXLSX = async (): Promise<any> => {
+    if (typeof window === "undefined") return null;
+    if ((window as any).XLSX) return (window as any).XLSX;
+
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[src*="xlsx"]');
+      if (existing) {
+        existing.addEventListener("load", () => resolve((window as any).XLSX));
+        existing.addEventListener("error", () => reject(new Error("Failed to load Excel library")));
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+      script.async = true;
+      script.onload = () => resolve((window as any).XLSX);
+      script.onerror = () => reject(new Error("Unable to load Excel parser from CDN. Please upload in .csv format."));
+      document.head.appendChild(script);
+    });
   };
 
   // Helper to normalize dates from Excel serial numbers, CSV text, etc.
@@ -297,45 +376,63 @@ export default function AttendanceManagementPage() {
   };
 
   // Handle file selection and parsing
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setImportFile(file);
     setImportResult(null);
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
+    const processRawData = (rawData: any[]) => {
+      if (!rawData || rawData.length === 0) {
+        toast.error("The selected file is empty or contains no readable rows.");
+        setParsedRows([]);
+        return;
+      }
+
+      const normalizedRows = rawData.map((row) => {
+        const rawDate = row.date ?? row.attendance_date ?? "";
+        const dateStr = normalizeDateString(rawDate);
+        return {
+          ...row,
+          date: dateStr || rawDate,
+        };
+      });
+
+      setParsedRows(normalizedRows);
+      toast.success(`Loaded ${normalizedRows.length} records from ${file.name}`);
+    };
+
+    const isCSV = file.name.endsWith(".csv") || file.name.endsWith(".txt") || file.type.includes("csv");
+
+    if (isCSV) {
       try {
-        const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: "binary" });
+        const text = await file.text();
+        const rawData = parseCSV(text);
+        processRawData(rawData);
+      } catch (err: any) {
+        toast.error("Error reading CSV file: " + (err.message || "Invalid file format"));
+        setParsedRows([]);
+      }
+    } else {
+      // For .xlsx / .xls, dynamically load XLSX parser
+      try {
+        toast.info("Loading Excel parser...");
+        const XLSX = await loadXLSX();
+        if (!XLSX) {
+          throw new Error("Excel parser could not be initialized. Please upload as .csv format.");
+        }
+        const buffer = await file.arrayBuffer();
+        const wb = XLSX.read(buffer, { type: "array" });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
         const rawData: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
-        if (!rawData || rawData.length === 0) {
-          toast.error("The selected file is empty or contains no readable rows.");
-          setParsedRows([]);
-          return;
-        }
-
-        const normalizedRows = rawData.map((row) => {
-          const rawDate = row.date ?? row.attendance_date ?? "";
-          const dateStr = normalizeDateString(rawDate);
-          return {
-            ...row,
-            date: dateStr || rawDate,
-          };
-        });
-
-        setParsedRows(normalizedRows);
-        toast.success(`Loaded ${normalizedRows.length} records from ${file.name}`);
+        processRawData(rawData);
       } catch (err: any) {
-        toast.error("Error reading file: " + (err.message || "Invalid file format"));
+        toast.error("Error reading Excel file: " + (err.message || "Please upload as .csv format"));
         setParsedRows([]);
       }
-    };
-    reader.readAsBinaryString(file);
+    }
   };
 
   const handleConfirmImport = async () => {
