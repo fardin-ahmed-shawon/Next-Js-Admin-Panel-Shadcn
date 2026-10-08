@@ -301,6 +301,11 @@ export default function CustomerDetailsPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-4 rounded-lg border p-3 text-sm">
+        <span>CRM handler: <strong>{customer.crm_assignee?.full_name || "Unassigned"}</strong></span>
+        <span>Department head / team lead: <strong>{customer.crm_manager?.full_name || "Unassigned"}</strong></span>
+      </div>
+
       {/* KPI Metric Cards (6 Cards: Purchases, Total Paid, Orders, Delivered, Cancelled, Returned) */}
       <div className="grid gap-3.5 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
         {/* Lifetime Purchases */}

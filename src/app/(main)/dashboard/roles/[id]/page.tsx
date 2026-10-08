@@ -144,6 +144,8 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     icon: Users,
     items: [
       { id: "customers", label: "Customers Directory", icon: Users },
+      { id: "all_customers", label: "All Customers / Management (view all and bulk handover)", icon: Users },
+      { id: "crm_manage_team", label: "Manage CRM Team (view and distribute within HR team)", icon: Users },
       { id: "customer_followups", label: "Customer Follow-Ups", icon: PhoneCall },
       { id: "customer_segmentation", label: "Customer Segmentation", icon: PieChart },
       { id: "messages", label: "Messages", icon: MessageCircle },

@@ -1,5 +1,7 @@
 "use client";
 
+import { fetchClient } from "@/lib/fetch-client";
+
 import * as React from "react";
 
 import Link from "next/link";
@@ -112,6 +114,8 @@ const ALL_PERMISSIONS = [
   { id: "capital", label: "Capital Cash Flow", icon: DollarSign },
   { id: "history", label: "Purchase History", icon: History },
   { id: "customers", label: "Customers", icon: Users },
+      { id: "all_customers", label: "All Customers / Management (view all and bulk handover)", icon: Users },
+      { id: "crm_manage_team", label: "Manage CRM Team (view and distribute within HR team)", icon: Users },
   { id: "customer_followups", label: "Follow-Ups", icon: PhoneCall },
   { id: "customer_segmentation", label: "Segmentation", icon: PieChart },
   { id: "messages", label: "Messages", icon: MessageCircle },
@@ -160,7 +164,7 @@ export function RolesGrid() {
   const handleDelete = async (id: number) => {
     try {
       const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ROLES || ""}/${id}`;
-      const response = await fetch(API_URL, {
+      const response = await fetchClient(API_URL, {
         method: "DELETE",
         headers: {
           Accept: "application/json",

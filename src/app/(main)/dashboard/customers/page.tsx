@@ -2,16 +2,22 @@
 
 import * as React from "react";
 import { useCustomers } from "@/hooks/useCustomers";
-import { Loader2, RefreshCw, Users } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 import { CustomersStats } from "./_components/customers-stats";
 import { CustomerRow, CustomersTable } from "./_components/customers-table";
 
 export default function CustomersPage() {
-  const { data: response, isLoading, error, mutate } = useCustomers();
+  const [orderDateFrom, setOrderDateFrom] = React.useState("");
+  const [orderDateTo, setOrderDateTo] = React.useState("");
+  const [dateFilters, setDateFilters] = React.useState<{ order_date_from?: string; order_date_to?: string }>({});
+  const { data: response, isLoading, error, mutate } = useCustomers(false, dateFilters);
+  const invalidRange = Boolean(orderDateFrom && orderDateTo && orderDateFrom > orderDateTo);
 
-  if (isLoading) {
+  if (isLoading && !response) {
     return (
       <div className="flex h-[450px] w-full flex-col items-center justify-center gap-3">
         <Loader2 className="size-8 animate-spin text-primary" />
@@ -20,7 +26,7 @@ export default function CustomersPage() {
     );
   }
 
-  if (error) {
+  if (error && !response) {
     return (
       <div className="flex h-[400px] w-full flex-col items-center justify-center gap-3">
         <p className="text-destructive font-medium">Failed to load customer directory.</p>
@@ -133,6 +139,8 @@ export default function CustomersPage() {
 
     return {
       id: c.id,
+      crmAssignee: c.crm_assignee?.full_name || null,
+      crmManager: c.crm_manager?.full_name || null,
       name: c.full_name || "Unnamed Customer",
       email: c.email || "",
       phone: c.phone || "",
@@ -165,38 +173,49 @@ export default function CustomersPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1680px] mx-auto w-full">
+    <div className="flex flex-col gap-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Customers Directory
-            </h1>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Data-driven customer intelligence, behavioral segmentation, spending lifetime value, and courier delivery reliability.
-          </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl tracking-tight">All Customers</h1>
+          <p className="text-muted-foreground text-sm">Manage your customers and CRM assignments.</p>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => mutate()}
-            className="gap-1.5 shadow-2xs"
-          >
-            <RefreshCw className="size-3.5" />
+          <Button variant="outline" size="sm" onClick={() => mutate()}>
+            <RefreshCw className="mr-2 size-4" />
             Refresh
           </Button>
         </div>
       </div>
 
+      <form className="flex flex-wrap items-end gap-3 rounded-lg border p-4" onSubmit={(event) => {
+        event.preventDefault();
+        if (!invalidRange) setDateFilters({ order_date_from: orderDateFrom, order_date_to: orderDateTo });
+      }}>
+        <div className="space-y-2">
+          <Label htmlFor="order-date-from">Order date from</Label>
+          <Input id="order-date-from" type="date" value={orderDateFrom} max={orderDateTo || undefined} onChange={(event) => setOrderDateFrom(event.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="order-date-to">Order date to</Label>
+          <Input id="order-date-to" type="date" value={orderDateTo} min={orderDateFrom || undefined} onChange={(event) => setOrderDateTo(event.target.value)} />
+        </div>
+        <Button type="submit" disabled={invalidRange || isLoading}>Apply order dates</Button>
+        <Button type="button" variant="outline" onClick={() => {
+          setOrderDateFrom(""); setOrderDateTo(""); setDateFilters({});
+        }}>Clear dates</Button>
+        <p className="w-full text-xs text-muted-foreground">Includes customers with any order placed in this range. Both dates are included; customer totals show lifetime activity.</p>
+        {invalidRange && <p role="alert" className="text-sm text-destructive">The end date must be on or after the start date.</p>}
+        {error && <p role="alert" className="text-sm text-destructive">Could not apply the date filter. Please try again.</p>}
+      </form>
+
       {/* Top 4 Modern KPI Cards */}
       <CustomersStats data={mappedData} />
 
       {/* Advanced Data-Driven Customers Table */}
-      <CustomersTable data={mappedData} onRefresh={() => mutate()} />
+      {isLoading ? <p className="text-sm text-muted-foreground">Loading customers for the selected order dates...</p>
+        : !error && <CustomersTable data={mappedData} onRefresh={() => mutate()} />}
     </div>
   );
 }

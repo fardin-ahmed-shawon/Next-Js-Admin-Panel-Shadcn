@@ -1,3 +1,4 @@
+import { fetchClient } from "@/lib/fetch-client";
 import * as React from "react";
 import { UserCog } from "lucide-react";
 import { toast } from "sonner";
@@ -43,7 +44,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
     }
 
     try {
-      const response = await fetch(`${API_URL}/${user.id}`, {
+      const response = await fetchClient(`${API_URL}/${user.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

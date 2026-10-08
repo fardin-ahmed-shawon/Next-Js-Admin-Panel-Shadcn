@@ -74,6 +74,7 @@ import {
 } from "@/components/ui/select";
 import { sendCustomerSms, sendBulkSms } from "@/hooks/useCustomers";
 import { cn, getInitials } from "@/lib/utils";
+import { useCrmAssignments, assignCrmCustomers } from "@/hooks/useCrmAssignments";
 
 export const BANGLADESH_DISTRICTS = [
   "Dhaka",
@@ -172,6 +173,8 @@ export interface CustomerRow {
   productNames?: string[];
   productSkus?: string[];
   notesCount?: number;
+  crmAssignee?: string | null;
+  crmManager?: string | null;
 }
 
 interface CustomersTableProps {
@@ -180,6 +183,30 @@ interface CustomersTableProps {
 }
 
 export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
+  const { options: assignmentOptions } = useCrmAssignments();
+  const [assignmentIds, setAssignmentIds] = React.useState<(string | number)[]>([]);
+  const [assignmentMode, setAssignmentMode] = React.useState<"handover" | "assign">("assign");
+  const [recipientId, setRecipientId] = React.useState("");
+  const [isAssigning, setIsAssigning] = React.useState(false);
+  const [assignmentError, setAssignmentError] = React.useState("");
+  const recipients = (assignmentOptions?.data || []).filter((recipient) =>
+    assignmentMode !== "handover" || recipient.can_manage_team);
+  const openAssignment = (ids: (string | number)[]) => {
+    setAssignmentIds(ids); setRecipientId(""); setAssignmentMode("assign"); setAssignmentError("");
+  };
+  const handleAssignment = async () => {
+    setIsAssigning(true); setAssignmentError("");
+    try {
+      await assignCrmCustomers(assignmentIds, recipientId === "unassigned" ? null : Number(recipientId), assignmentMode);
+      toast.success("CRM customer assignments updated");
+      setAssignmentIds([]); setSelectedRowIds(new Set()); onRefresh?.();
+    } catch (error) {
+      setAssignmentError(error instanceof Error ? error.message : "Unable to assign customers");
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
   // --- Filter states ---
   const [activeTab, setActiveTab] = React.useState<string>("all");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
@@ -482,6 +509,11 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
     setSelectedRowIds(next);
   };
 
+  React.useEffect(() => {
+    setSelectedRowIds(new Set());
+    setPage(1);
+  }, [filteredData]);
+
   // --- Reset All Filters ---
   const hasActiveFilters =
     activeTab !== "all" ||
@@ -678,7 +710,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   };
 
   return (
-    <Card className="border shadow-xs overflow-hidden bg-card">
+    <Card className="gap-0 py-0">
       {/* 1. Header Toolbar with Quick Segment Filter Tabs */}
       <div className="border-b bg-muted/20 px-3 sm:px-4 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
         <button
@@ -1271,6 +1303,15 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
         )}
       </div>
 
+      {assignmentOptions?.can_assign && (
+        <div className="flex flex-wrap items-center gap-3 border-b p-4 text-xs">
+          <Button size="sm" variant="outline" disabled={!filteredData.length} onClick={() => setSelectedRowIds(new Set(filteredData.map((customer) => customer.id)))}>
+            Select all {filteredData.length} matching customers
+          </Button>
+          <span className="text-muted-foreground">Management hands customers to heads; heads distribute within their HR team. CRM assignments are separate from order handlers.</span>
+        </div>
+      )}
+
       {/* 3. Bulk Selection Action Floating / Info Bar */}
       {selectedRowIds.size > 0 && (
         <div className="bg-primary/10 border-b border-primary/20 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2 text-xs">
@@ -1294,6 +1335,11 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
               <Download className="size-3" />
               Export Selected ({selectedRowIds.size})
             </Button>
+            {assignmentOptions?.can_assign && (
+              <Button size="sm" variant="outline" onClick={() => openAssignment(Array.from(selectedRowIds))}>
+                Assign CRM customers ({selectedRowIds.size})
+              </Button>
+            )}
 
             <Button
               size="sm"
@@ -1469,6 +1515,10 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                             </Badge>
                           </div>
                           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+                            <span className="w-full">CRM handler: <strong>{customer.crmAssignee || "Unassigned"}</strong>
+                              {customer.crmManager && <span> · Head: {customer.crmManager}</span>}
+                              {assignmentOptions?.can_assign && <Button size="sm" variant="link" className="h-auto px-2 py-0 text-xs" onClick={() => openAssignment([customer.id])}>Assign</Button>}
+                            </span>
                             {customer.phone && (
                               <span className="font-mono">{customer.phone}</span>
                             )}
@@ -1882,6 +1932,42 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={assignmentIds.length > 0} onOpenChange={(open) => { if (!open && !isAssigning) setAssignmentIds([]); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign {assignmentIds.length} CRM customer{assignmentIds.length === 1 ? "" : "s"}</DialogTitle>
+            <DialogDescription>Assign a customer handler or hand customers to a department head for distribution. Order assignments stay separate.</DialogDescription>
+          </DialogHeader>
+          {assignmentOptions?.all_customers && (
+            <div className="space-y-2">
+              <Label>Assignment type</Label>
+              <Select value={assignmentMode} onValueChange={(value: "handover" | "assign") => { setAssignmentMode(value); setRecipientId(""); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="handover">Handover to department head / team lead</SelectItem>
+                  <SelectItem value="assign">Assign customer handler directly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label>CRM {assignmentMode === "handover" ? "department head / team lead" : "customer handler"}</Label>
+            <Select value={recipientId} onValueChange={setRecipientId}>
+              <SelectTrigger><SelectValue placeholder="Choose employee" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {recipients.map((recipient) => <SelectItem key={recipient.id} value={String(recipient.id)}>{recipient.full_name}{recipient.department ? ` — ${recipient.department}` : ""}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {recipients.length === 0 && <p className="text-sm text-muted-foreground">No eligible employees. Check their CRM permissions and HR department/reporting setup.</p>}
+          {assignmentError && <p role="alert" className="text-sm text-destructive">{assignmentError}</p>}
+          <DialogFooter>
+            <Button variant="outline" disabled={isAssigning} onClick={() => setAssignmentIds([])}>Cancel</Button>
+            <Button disabled={isAssigning || !recipientId} onClick={handleAssignment}>{isAssigning ? "Assigning..." : "Save assignments"}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>

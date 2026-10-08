@@ -1,5 +1,7 @@
 "use client";
 
+import { fetchClient } from "@/lib/fetch-client";
+
 import * as React from "react";
 
 import {
@@ -72,7 +74,7 @@ export function UsersTable({ users, loading, refetch }: UsersTableProps) {
 
   const handleDelete = async (id: number) => {
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
+      const response = await fetchClient(`${API_URL}/${id}`, {
         method: "DELETE",
         headers: { Accept: "application/json" },
       });

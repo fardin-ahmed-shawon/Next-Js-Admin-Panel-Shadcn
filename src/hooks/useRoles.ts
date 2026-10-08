@@ -24,6 +24,8 @@ export interface PageAccess {
   discounts: number;
   coupons: number;
   customers: number;
+  all_customers?: number;
+  crm_manage_team?: number;
   orders: number;
   all_orders: number;
   create_orders: number;
@@ -179,6 +181,11 @@ export function hasModuleAccess(user: any, module: string): boolean {
   if (!user || !user.role) return false;
 
   const pageAccess = user.role.page_access || user.role.pageAccess;
+
+  if (["customers", "customer_followups"].includes(module)
+    && (pageAccess?.all_customers === 1 || pageAccess?.crm_manage_team === 1)) {
+    return true;
+  }
 
   // 1. If pageAccess exists, explicitly check the module's toggle first
   if (pageAccess) {

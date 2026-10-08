@@ -657,26 +657,20 @@ function CustomerSegmentationContent() {
   const currentActiveRule = rules.find((r) => r.key === selectedSegment);
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1680px] mx-auto w-full">
+    <div className="flex flex-col gap-6">
       {/* Header section */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Customer Segmentation
-            </h1>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Segment and analyze customer behaviors automatically based on Order Value, Product Volume, and Purchase Recency.
-          </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl tracking-tight">Customer Segmentation</h1>
+          <p className="text-muted-foreground text-sm">Manage customer segments and classification rules.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Configure Rules Modal */}
           <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gap-2 bg-primary text-primary-foreground font-medium shadow-xs hover:bg-primary/90">
-                <SlidersHorizontal className="w-4 h-4" />
+              <Button size="sm">
+                <SlidersHorizontal className="mr-2 size-4" />
                 Configure Rules
               </Button>
             </DialogTrigger>
@@ -1239,7 +1233,7 @@ function CustomerSegmentationContent() {
       </div>
 
       {/* Customer Segmentation Cohorts Card Container */}
-      <Card className="border shadow-xs">
+      <Card>
         <CardHeader className="pb-3 border-b">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -1269,7 +1263,7 @@ function CustomerSegmentationContent() {
           </div>
         </CardHeader>
 
-        <CardContent className="p-4 sm:p-5">
+        <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-3.5">
             {/* All Customers Card */}
             <div
@@ -1394,7 +1388,7 @@ function CustomerSegmentationContent() {
       </Card>
 
       {/* Main Table Card with Sleek Tab Navigation System */}
-      <Card className="border shadow-xs overflow-hidden">
+      <Card className="gap-0 py-0">
         {/* Dedicated Modern Tab System Navigation Strip */}
         <div className="border-b bg-card/60 backdrop-blur-xs px-3 sm:px-4 py-2.5 flex items-center gap-2">
           {/* Scroll Left Chevron */}
@@ -1518,7 +1512,7 @@ function CustomerSegmentationContent() {
         </div>
 
         {/* Sub-Toolbar: Filter Info, Active Pill, Search & Sort */}
-        <div className="p-4 sm:p-5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 border-b bg-card/40">
+        <div className="p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-b bg-card/40">
           {/* Left: Active cohort status & filter reset */}
           <div className="flex flex-wrap items-center gap-2.5">
             {selectedSegment === "all" ? (

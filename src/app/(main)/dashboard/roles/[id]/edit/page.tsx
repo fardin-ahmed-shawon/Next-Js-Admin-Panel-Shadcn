@@ -1,5 +1,7 @@
 "use client";
 
+import { fetchClient } from "@/lib/fetch-client";
+
 import * as React from "react";
 
 import Link from "next/link";
@@ -159,6 +161,8 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     icon: Users,
     items: [
       { id: "customers", label: "Customers Directory", icon: Users },
+      { id: "all_customers", label: "All Customers / Management (view all and bulk handover)", icon: Users },
+      { id: "crm_manage_team", label: "Manage CRM Team (view and distribute within HR team)", icon: Users },
       { id: "customer_followups", label: "Customer Follow-Ups", icon: PhoneCall },
       { id: "customer_segmentation", label: "Customer Segmentation", icon: PieChart },
       { id: "messages", label: "Messages", icon: MessageCircle },
@@ -423,7 +427,7 @@ export default function EditRolePage() {
 
       const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ROLES || ""}/${roleId}`;
 
-      const response = await fetch(API_URL, {
+      const response = await fetchClient(API_URL, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -456,7 +460,7 @@ export default function EditRolePage() {
   const handleDelete = async () => {
     try {
       const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ROLES || ""}/${roleId}`;
-      const response = await fetch(API_URL, {
+      const response = await fetchClient(API_URL, {
         method: "DELETE",
         headers: {
           Accept: "application/json",

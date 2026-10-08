@@ -1,3 +1,4 @@
+import { fetchClient } from "@/lib/fetch-client";
 import * as React from "react";
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
@@ -36,7 +37,7 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
     };
 
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetchClient(API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

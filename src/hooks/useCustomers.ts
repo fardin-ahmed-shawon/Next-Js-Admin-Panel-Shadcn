@@ -27,14 +27,16 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
-export function useCustomers(report = false) {
+export function useCustomers(report = false, filters?: { order_date_from?: string; order_date_to?: string }) {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const customersEndpoint = report ? "reports/customers" : process.env.NEXT_PUBLIC_API_WEB_CUSTOMERS || "customers";
 
-  const url = `${baseUrl}${customersEndpoint}`;
+  const query = new URLSearchParams(Object.entries(filters || {}).filter(([, value]) => Boolean(value)));
+  const url = `${baseUrl}${customersEndpoint}${query.size ? `?${query}` : ""}`;
 
   const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
     revalidateOnFocus: false,
+    keepPreviousData: true,
   });
 
   return {

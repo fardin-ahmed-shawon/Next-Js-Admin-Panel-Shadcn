@@ -383,21 +383,15 @@ export default function FollowUpsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1680px] mx-auto w-full">
+    <div className="flex flex-col gap-6">
       {/* Header section */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Customer Follow-Up Management
-            </h1>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Organize scheduled customer follow-up dates, next actions, multi-channel outreach, and instant single/bulk SMS notifications.
-          </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl tracking-tight">Customer Follow-Ups</h1>
+          <p className="text-muted-foreground text-sm">Manage follow-ups, customer outreach, and reminders.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 self-stretch sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -412,8 +406,8 @@ export default function FollowUpsPage() {
           {/* Schedule Follow-up Dialog */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gap-2 bg-primary font-semibold shadow-xs">
-                <Plus className="w-4 h-4" />
+              <Button size="sm">
+                <Plus className="mr-2 size-4" />
                 Schedule Follow-Up
               </Button>
             </DialogTrigger>
@@ -657,7 +651,7 @@ export default function FollowUpsPage() {
       )}
 
       {/* Main Table Card with Sleek Tab Navigation */}
-      <Card className="border shadow-xs overflow-hidden">
+      <Card className="gap-0 py-0">
         {/* Dedicated Modern Tab Strip */}
         <div className="border-b bg-card/60 backdrop-blur-xs px-3 sm:px-4 py-2.5 flex items-center justify-between gap-3 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex items-center gap-2 shrink-0">
@@ -804,7 +798,7 @@ export default function FollowUpsPage() {
         </div>
 
         {/* Filter and Search controls */}
-        <div className="p-4 sm:p-5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 border-b bg-card/40">
+        <div className="p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-b bg-card/40">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium text-muted-foreground mr-1">Channel Filter:</span>
             <Select
