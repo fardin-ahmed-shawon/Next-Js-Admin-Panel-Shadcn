@@ -1317,8 +1317,16 @@ const AiAutoCallButton = ({ orderId, isAiCalled }: { orderId: string; isAiCalled
   };
 
   return (
-    <>
-    </>
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-6 w-full gap-1 text-[10px] px-2 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 transition-colors"
+      onClick={handleAiCall}
+      disabled={isCalling}
+    >
+      {isCalling ? <Loader2 className="size-3 animate-spin" /> : <Bot className="size-3" />}
+      AI Auto Call
+    </Button>
   );
 };
 
