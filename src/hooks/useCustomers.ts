@@ -341,3 +341,20 @@ export async function resetSegmentationRules() {
   }
   return res.json();
 }
+
+export async function addBulkCustomerFollowUps(payload: {
+  customer_ids: number[];
+  note: string;
+  action_note?: string;
+  channel: string;
+  priority: string;
+  next_follow_up_date?: string;
+}) {
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+  const response = await fetchClient(`${base}crm/follow-ups/bulk`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(Object.values(result.errors || {}).flat().join(" ") || result.message || "Could not schedule follow-ups.");
+  return result;
+}

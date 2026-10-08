@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/useAuth";
+import { canUseAllOrdersToggle } from "@/hooks/useRoles";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useModularFeatures } from "@/hooks/useModularFeatures";
@@ -47,6 +49,7 @@ const rangeLabels: Record<TimeRange, string> = {
 };
 
 export default function IncompleteOrdersPage() {
+  const { user } = useAuth();
   const { features } = useModularFeatures();
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(true);
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
@@ -123,7 +126,7 @@ export default function IncompleteOrdersPage() {
     page,
     per_page: perPage,
     search: searchQuery,
-    all_orders: allOrdersToggle,
+    all_orders: allOrdersToggle && canUseAllOrdersToggle(user),
     start_date: startDate,
     end_date: endDate,
     status: statusFilter,
@@ -276,9 +279,8 @@ export default function IncompleteOrdersPage() {
           <div className="flex flex-col gap-2 sm:items-end">
             <div className="flex flex-wrap items-center justify-end gap-2">
               {/* All Orders toggle - only for first 2 tabs (Incomplete and Complete) */}
-              {activeTab !== "Report" && (
-                <div className="flex items-center gap-2 border rounded-[min(var(--radius-md),12px)] px-3 h-9 bg-background select-none">
-                  <Switch id="all-orders-toggle" checked={allOrdersToggle} onCheckedChange={setAllOrdersToggle} />
+              {activeTab !== "Report" && canUseAllOrdersToggle(user) && (<div className="flex items-center gap-2 border rounded-[min(var(--radius-md),12px)] px-3 h-9 bg-background select-none">
+                  <Switch id="all-orders-toggle" checked={allOrdersToggle} onCheckedChange={(checked) => { setAllOrdersToggle(checked); setPage(1); }} />
                   <Label htmlFor="all-orders-toggle" className="text-xs font-semibold cursor-pointer whitespace-nowrap">
                     All Orders
                   </Label>

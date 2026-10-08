@@ -1,4 +1,5 @@
 "use client";
+import { ExcelExportButton } from "@/components/excel-export-button";
 
 import * as React from "react";
 
@@ -174,45 +175,6 @@ const columns: ColumnDef<DueItem>[] = [
   },
 ];
 
-/* ---- CSV Export ---- */
-
-function exportToExcel(data: DueItem[]) {
-  const headers = [
-    "Order ID",
-    "Date",
-    "Customer Name",
-    "Customer Phone",
-    "Total Amount",
-    "Paid Amount",
-    "Due Amount",
-    "Status",
-  ];
-  const csvRows = [
-    headers.join(","),
-    ...data.map((row) =>
-      [
-        row.order_id,
-        row.date,
-        `"${row.customer_name}"`,
-        row.customer_phone,
-        row.total_amount,
-        row.paid_amount,
-        row.due_amount,
-        row.status,
-      ].join(","),
-    ),
-  ];
-  const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "due_report.csv";
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-/* ---- Main Table Component ---- */
-
 export function DueTable({ source }: { source?: string }) {
   const { dues, isLoading } = useDueCollection({ source });
 
@@ -265,14 +227,7 @@ export function DueTable({ source }: { source?: string }) {
           {countDescription}
         </CardDescription>
         <CardAction>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportToExcel(table.getFilteredRowModel().rows.map((r) => r.original))}
-          >
-            <Download className="mr-2 size-4" />
-            Export
-          </Button>
+          <ExcelExportButton module="orders" title="Due orders" />
         </CardAction>
       </CardHeader>
 

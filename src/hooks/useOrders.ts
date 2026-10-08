@@ -1,3 +1,4 @@
+import { canUseAllOrdersToggle } from "@/hooks/useRoles";
 import { fetchClient } from "@/lib/fetch-client";
 import { useAuth } from "@/hooks/useAuth";
 import useSWR from "swr";
@@ -67,7 +68,7 @@ export function useOrders(params?: UseOrdersParams) {
   if (params?.status && params.status !== "All") searchParams.append("status", params.status);
   if (params?.payment_status && params.payment_status !== "All")
     searchParams.append("payment_status", params.payment_status);
-  if (params?.all_orders) searchParams.append("all_orders", "1");
+  if (params?.all_orders && canUseAllOrdersToggle(user)) searchParams.append("all_orders", "1");
   if (params?.all_records) searchParams.append("all_records", "1");
   if (params?.start_date) searchParams.append("start_date", params.start_date);
   if (params?.end_date) searchParams.append("end_date", params.end_date);

@@ -1,4 +1,5 @@
 "use client";
+import { ExcelExportButton } from "@/components/excel-export-button";
 
 import * as React from "react";
 import { format } from "date-fns";
@@ -268,6 +269,7 @@ export default function InvoiceDashboardPage() {
           <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
             {countDescription}
           </CardDescription>
+          <ExcelExportButton module="orders" title="Invoices" />
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4 px-0">

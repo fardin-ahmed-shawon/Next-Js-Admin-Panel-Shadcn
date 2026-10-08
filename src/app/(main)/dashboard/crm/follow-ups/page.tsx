@@ -1,5 +1,7 @@
 "use client";
 
+import { ExcelExportButton } from "@/components/excel-export-button";
+
 import * as React from "react";
 import Link from "next/link";
 import {
@@ -76,7 +78,7 @@ import {
 import {
   useFollowUps,
   useCustomers,
-  addCustomerNote,
+  addBulkCustomerFollowUps,
   updateCustomerNote,
   deleteCustomerNote,
   sendCustomerSms,
@@ -119,7 +121,8 @@ export default function FollowUpsPage() {
   // New follow-up dialog state
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [selectedCustomerId, setSelectedCustomerId] = React.useState<string>("");
+  const [followUpCustomerIds, setFollowUpCustomerIds] = React.useState<number[]>([]);
+  const [customerSearch, setCustomerSearch] = React.useState("");
   const [followUpChannel, setFollowUpChannel] = React.useState<string>("phone");
   const [followUpPriority, setFollowUpPriority] = React.useState<string>("medium");
   const [nextFollowUpDate, setNextFollowUpDate] = React.useState<string>("");
@@ -162,6 +165,7 @@ export default function FollowUpsPage() {
 
   const { data: customersResponse } = useCustomers();
   const customerList: any[] = customersResponse?.data || [];
+  const matchingCustomers = customerList.filter(c => [c.full_name, c.phone, c.id].join(" ").toLowerCase().includes(customerSearch.trim().toLowerCase()));
 
   // Reset selection on page or tab change
   React.useEffect(() => {
@@ -187,8 +191,8 @@ export default function FollowUpsPage() {
   // Schedule new follow-up
   const handleCreateFollowUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomerId) {
-      toast.error("Please select a customer");
+    if (!followUpCustomerIds.length) {
+      toast.error("Please select at least one customer");
       return;
     }
     if (!followUpNote.trim()) {
@@ -198,19 +202,19 @@ export default function FollowUpsPage() {
 
     try {
       setIsSubmitting(true);
-      await addCustomerNote(selectedCustomerId, {
+      await addBulkCustomerFollowUps({
+        customer_ids: followUpCustomerIds,
         note: followUpNote.trim(),
         action_note: actionNote.trim() || undefined,
         channel: followUpChannel,
-        type: "followup",
         priority: followUpPriority,
-        status: "pending",
         next_follow_up_date: nextFollowUpDate ? new Date(nextFollowUpDate).toISOString() : undefined,
       });
 
-      toast.success("Follow-up task scheduled successfully");
+      toast.success(`Follow-ups scheduled for ${followUpCustomerIds.length} customers.`);
       setIsDialogOpen(false);
-      setSelectedCustomerId("");
+      setFollowUpCustomerIds([]);
+      setCustomerSearch("");
       setFollowUpNote("");
       setActionNote("");
       setNextFollowUpDate("");
@@ -411,11 +415,10 @@ export default function FollowUpsPage() {
                 Schedule Follow-Up
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[580px] p-6">
+            <DialogContent className="sm:max-w-[580px] max-h-[90vh] overflow-y-auto p-6">
               <form onSubmit={handleCreateFollowUp} className="space-y-4">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2 text-lg font-bold text-foreground">
-                    <CalendarClock className="w-5 h-5 text-primary" />
                     Schedule Customer Follow-Up
                   </DialogTitle>
                   <DialogDescription className="text-xs">
@@ -424,26 +427,26 @@ export default function FollowUpsPage() {
                 </DialogHeader>
 
                 <div className="space-y-3.5 pt-2">
-                  {/* Select Customer */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="customer-select" className="text-xs font-semibold">
-                      Select Customer <span className="text-destructive">*</span>
-                    </Label>
-                    <Select
-                      value={selectedCustomerId}
-                      onValueChange={setSelectedCustomerId}
-                    >
-                      <SelectTrigger id="customer-select" className="text-xs h-9">
-                        <SelectValue placeholder="Search or select a customer..." />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60 text-xs">
-                        {customerList.map((c) => (
-                          <SelectItem key={c.id} value={String(c.id)}>
-                            {c.full_name || "Customer"} • {c.phone} (#{c.id})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-2">
+                    <Label htmlFor="customer-select">Select Customers *</Label>
+                    <Input id="customer-select" placeholder="Search name, phone or customer ID" value={customerSearch} onChange={e => setCustomerSearch(e.target.value)} />
+                    <div className="flex items-center justify-between text-xs">
+                      <span>{followUpCustomerIds.length} selected</span>
+                      <div className="flex gap-2">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setFollowUpCustomerIds(prev => Array.from(new Set([...prev, ...matchingCustomers.map(c => Number(c.id))])))}>Select all matches</Button>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setFollowUpCustomerIds([])}>Clear</Button>
+                      </div>
+                    </div>
+                    <div className="max-h-40 overflow-y-auto rounded-md border p-2 space-y-2">
+                      {matchingCustomers.map(c => (
+                        <label key={c.id} className="flex items-center gap-2 cursor-pointer text-xs">
+                          <Checkbox checked={followUpCustomerIds.includes(Number(c.id))} onCheckedChange={checked => setFollowUpCustomerIds(prev => checked === true ? [...prev, Number(c.id)] : prev.filter(id => id !== Number(c.id)))} />
+                          <span>{c.full_name || "Customer"} · {c.phone} (#{c.id})</span>
+                        </label>
+                      ))}
+                      {!matchingCustomers.length && <p className="text-xs text-muted-foreground">No matching customers.</p>}
+                    </div>
+                    <p className="text-xs text-muted-foreground">The date, action text and reason below apply to every selected customer.</p>
                   </div>
 
                   {/* Channel & Priority */}
@@ -457,11 +460,11 @@ export default function FollowUpsPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="text-xs">
-                          <SelectItem value="phone">📞 Phone Call</SelectItem>
-                          <SelectItem value="whatsapp">💬 WhatsApp Message</SelectItem>
-                          <SelectItem value="sms">📱 SMS Text</SelectItem>
-                          <SelectItem value="email">✉️ Email Outreach</SelectItem>
-                          <SelectItem value="in_person">🏬 In-Person / Store</SelectItem>
+                          <SelectItem value="phone">Phone Call</SelectItem>
+                          <SelectItem value="whatsapp">WhatsApp Message</SelectItem>
+                          <SelectItem value="sms">SMS Text</SelectItem>
+                          <SelectItem value="email">Email Outreach</SelectItem>
+                          <SelectItem value="in_person">In-Person / Store</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -478,7 +481,7 @@ export default function FollowUpsPage() {
                           <SelectItem value="low">Low Priority</SelectItem>
                           <SelectItem value="medium">Medium Priority</SelectItem>
                           <SelectItem value="high">High Priority</SelectItem>
-                          <SelectItem value="urgent">🚨 Urgent (Immediate)</SelectItem>
+                          <SelectItem value="urgent">Urgent (Immediate)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -505,7 +508,9 @@ export default function FollowUpsPage() {
                       <span>Next Action Note</span>
                       <span className="text-muted-foreground font-normal text-[11px]">Specific next step</span>
                     </Label>
-                    <Input
+                    <Textarea
+                      rows={2}
+                      maxLength={2000}
                       id="action-note"
                       placeholder="e.g. Call to confirm delivery address, Send discount coupon, Follow-up on complaint..."
                       className="text-xs h-9"
@@ -520,6 +525,7 @@ export default function FollowUpsPage() {
                       Follow-Up Reason / History Note <span className="text-destructive">*</span>
                     </Label>
                     <Textarea
+                      maxLength={2000}
                       id="followup-note"
                       placeholder="Detailed context of customer conversation, pending issue, or re-engagement plan..."
                       rows={3}
@@ -813,11 +819,11 @@ export default function FollowUpsPage() {
               </SelectTrigger>
               <SelectContent className="text-xs">
                 <SelectItem value="all">All Channels</SelectItem>
-                <SelectItem value="phone">📞 Phone Call</SelectItem>
-                <SelectItem value="whatsapp">💬 WhatsApp</SelectItem>
-                <SelectItem value="sms">📱 SMS Text</SelectItem>
-                <SelectItem value="email">✉️ Email</SelectItem>
-                <SelectItem value="in_person">🏬 Store Visit</SelectItem>
+                <SelectItem value="phone">Phone Call</SelectItem>
+                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                <SelectItem value="sms">SMS Text</SelectItem>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="in_person">Store Visit</SelectItem>
               </SelectContent>
             </Select>
 
@@ -857,6 +863,7 @@ export default function FollowUpsPage() {
         </div>
 
         {/* Table Content */}
+        <div className="flex justify-end px-4 py-2"><ExcelExportButton module="crm" title="Follow-ups" /></div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>

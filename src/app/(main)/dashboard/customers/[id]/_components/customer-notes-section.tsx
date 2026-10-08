@@ -398,13 +398,13 @@ export function CustomerNotesSection({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="phone">📞 Phone Call</SelectItem>
-                    <SelectItem value="whatsapp">💬 WhatsApp Message</SelectItem>
-                    <SelectItem value="sms">✉️ SMS Text</SelectItem>
-                    <SelectItem value="email">📧 Email Message</SelectItem>
-                    <SelectItem value="in_person">🏪 Store Visit / In-Person</SelectItem>
-                    <SelectItem value="note">📝 Internal Note</SelectItem>
-                    <SelectItem value="complaint">⚠️ Customer Complaint</SelectItem>
+                    <SelectItem value="phone">Phone Call</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp Message</SelectItem>
+                    <SelectItem value="sms">SMS Text</SelectItem>
+                    <SelectItem value="email">Email Message</SelectItem>
+                    <SelectItem value="in_person">Store Visit / In-Person</SelectItem>
+                    <SelectItem value="note">Internal Note</SelectItem>
+                    <SelectItem value="complaint">Customer Complaint</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -433,8 +433,8 @@ export function CustomerNotesSection({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">⏳ Pending Action</SelectItem>
-                    <SelectItem value="completed">✅ Completed / Resolved</SelectItem>
+                    <SelectItem value="pending">Pending Action</SelectItem>
+                    <SelectItem value="completed">Completed / Resolved</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { ExcelExportButton } from "@/components/excel-export-button";
+
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -1621,6 +1623,7 @@ function CustomerSegmentationContent() {
         </div>
 
         {/* Table Content */}
+        <div className="flex justify-end px-4 py-2"><ExcelExportButton module="crm" title="Customer segmentation" /></div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>

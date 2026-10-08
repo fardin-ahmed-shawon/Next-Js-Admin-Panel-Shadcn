@@ -21,6 +21,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/useAuth";
+import { canUseAllOrdersToggle } from "@/hooks/useRoles";
 import { Switch } from "@/components/ui/switch";
 import { useOrders } from "@/hooks/useOrders";
 import { format, subDays, subMonths, startOfYear } from "date-fns";
@@ -77,6 +79,7 @@ const rangeLabels: Record<TimeRange, string> = {
 
 
 export default function WholesaleOrdersPage() {
+  const { user } = useAuth();
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(false);
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState("");
@@ -112,7 +115,7 @@ export default function WholesaleOrdersPage() {
       status: statusFilter,
       payment_status: paymentFilter,
       courier: courierFilter,
-      all_orders: allOrdersToggle,
+      all_orders: allOrdersToggle && canUseAllOrdersToggle(user),
       isWholesale: true,
     };
 
@@ -275,12 +278,12 @@ export default function WholesaleOrdersPage() {
 
               {/* Period select + 3-dot */}
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 border rounded-[min(var(--radius-md),12px)] px-3 h-9 bg-background select-none">
-                  <Switch id="all-orders-toggle" checked={allOrdersToggle} onCheckedChange={setAllOrdersToggle} />
+                {canUseAllOrdersToggle(user) && (<div className="flex items-center gap-2 border rounded-[min(var(--radius-md),12px)] px-3 h-9 bg-background select-none">
+                  <Switch id="all-orders-toggle" checked={allOrdersToggle} onCheckedChange={(checked) => { setAllOrdersToggle(checked); setPage(1); }} />
                   <Label htmlFor="all-orders-toggle" className="text-xs font-semibold cursor-pointer whitespace-nowrap">
                     All Orders
                   </Label>
-                </div>
+                </div>)}
 
                 <Select value={timeRange} onValueChange={(v) => { setTimeRange(v as TimeRange); setPage(1); }}>
                   <SelectTrigger className="w-32 sm:w-36">
@@ -349,10 +352,6 @@ export default function WholesaleOrdersPage() {
                       <DropdownMenuItem onClick={() => { }}>
                         <RefreshCw className="mr-2 size-4" />
                         Refresh
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { }}>
-                        <FileDown className="mr-2 size-4" />
-                        Export Report
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                   </DropdownMenuContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import { ExcelExportButton } from "@/components/excel-export-button";
 import * as React from "react";
 import Link from "next/link";
 import {
@@ -543,77 +544,14 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
     setPage(1);
   };
 
-  // --- CSV Export Logic ---
-  const handleExportCsv = (selectedOnly = false) => {
-    const rowsToExport = selectedOnly
-      ? data.filter((c) => selectedRowIds.has(c.id))
-      : sortedData;
-
-    if (rowsToExport.length === 0) {
-      toast.error("No customer records to export.");
-      return;
-    }
-
-    const headers = [
-      "ID",
-      "Full Name",
-      "Phone",
-      "Email",
-      "Account Status",
-      "Segment",
-      "Total Orders",
-      "Products Ordered",
-      "Lifetime Spend (BDT)",
-      "AOV (BDT)",
-      "Delivery Success Rate (%)",
-      "Return Rate (%)",
-      "Last Order Date",
-      "Joined Date",
-      "District",
-      "City/Shipping Area",
-      "Address",
-      "Order IDs",
-      "Recent Order",
-      "Purchased Products",
-    ];
-
-    const csvLines = [
-      headers.join(","),
-      ...rowsToExport.map((c) =>
-        [
-          c.id,
-          `"${(c.name || "").replace(/"/g, '""')}"`,
-          `"${c.phone || ""}"`,
-          `"${c.email || ""}"`,
-          c.status,
-          `"${c.segmentName || ""}"`,
-          c.totalOrders,
-          c.productsCount,
-          c.totalSpent,
-          c.aov,
-          `${c.successRate}%`,
-          `${c.returnRate}%`,
-          c.lastOrderDate || "Never",
-          c.joinDate || "",
-          `"${(c.district || "").replace(/"/g, '""')}"`,
-          `"${(c.city || "").replace(/"/g, '""')}"`,
-          `"${(c.address || "").replace(/"/g, '""')}"`,
-          `"${(c.orderNos || c.orderIds || []).join(" | ")}"`,
-          `"${c.recentOrderNo || ""}"`,
-          `"${(c.productNames || []).join(" | ").replace(/"/g, '""')}"`,
-        ].join(",")
-      ),
-    ];
-
-    const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `customers_directory_${new Date().toISOString().split("T")[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success(`Exported ${rowsToExport.length} customer records to CSV.`);
-  };
+  const customerExcelData = (selectedOnly = false) => ({
+    headers: ["ID", "Full Name", "Phone", "Email", "Account Status", "Segment", "Total Orders", "Products Ordered", "Lifetime Spend (BDT)", "AOV (BDT)", "Delivery Success Rate (%)", "Return Rate (%)", "Last Order Date", "Joined Date", "District", "City/Shipping Area", "Address", "Order IDs", "Recent Order", "Purchased Products"],
+    rows: (selectedOnly ? data.filter(c => selectedRowIds.has(c.id)) : sortedData).map(c => [
+      c.id, c.name, c.phone, c.email, c.status, c.segmentName, c.totalOrders, c.productsCount,
+      c.totalSpent, c.aov, c.successRate, c.returnRate, c.lastOrderDate || "Never", c.joinDate,
+      c.district, c.city, c.address, (c.orderNos || c.orderIds || []).join(" | "), c.recentOrderNo, (c.productNames || []).join(" | "),
+    ]),
+  });
 
   // --- SMS Handlers ---
   const openSingleSmsModal = (customer: CustomerRow) => {
@@ -903,16 +841,8 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                 </Select>
               </div>
 
-              {/* Export CSV Button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExportCsv(false)}
-                className="h-9 gap-1.5 text-xs shadow-2xs hover:bg-muted"
-              >
-                <Download className="size-3.5" />
-                <span>Export CSV</span>
-              </Button>
+              {/* Export Excel Button */}
+              <ExcelExportButton module="crm" title="Customers" getData={() => customerExcelData()} />
             </div>
           </div>
 
@@ -1326,15 +1256,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleExportCsv(true)}
-              className="h-7 text-xs gap-1.5 bg-background shadow-2xs"
-            >
-              <Download className="size-3" />
-              Export Selected ({selectedRowIds.size})
-            </Button>
+            <ExcelExportButton module="crm" title="Selected customers" label={`Export selected (${selectedRowIds.size})`} getData={() => customerExcelData(true)} />
             {assignmentOptions?.can_assign && (
               <Button size="sm" variant="outline" onClick={() => openAssignment(Array.from(selectedRowIds))}>
                 Assign CRM customers ({selectedRowIds.size})

@@ -32,7 +32,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIncompleteReport } from "@/hooks/useIncompleteReport";
-import { downloadCSV } from "@/lib/csv-export";
+import { ExcelExportButton } from "@/components/excel-export-button";
 import { formatOrderDateTime } from "@/lib/utils";
 
 export type TimeRange =
@@ -100,7 +100,6 @@ export function IncompleteReportView({
   const [page, setPage] = React.useState<number>(1);
   const [perPage, setPerPage] = React.useState<number>(20);
   const [searchQuery, setSearchQuery] = React.useState<string>("");
-  const [isExporting, setIsExporting] = React.useState(false);
 
   const queryParams = React.useMemo(() => {
     const p: Record<string, any> = {
@@ -133,37 +132,6 @@ export function IncompleteReportView({
     );
   }, [orders, searchQuery]);
 
-  const handleExportCSV = () => {
-    try {
-      setIsExporting(true);
-      if (!orders || orders.length === 0) {
-        toast.info("No converted orders to export in this period.");
-        return;
-      }
-
-      const rows = orders.map((o: any, idx: number) => ({
-        "SL": idx + 1,
-        "Order No": o.order_no,
-        "Customer Name": o.customer_full_name || "—",
-        "Phone": o.customer_phone || "—",
-        "Order Status": o.order_status,
-        "Grand Total (Tk)": o.grand_total_amount || 0,
-        "Order Time": o.created_at,
-        "Incomplete to Complete Timestamp": o.incomplete_completed_at || o.updated_at || "—",
-        "Duration to Convert": o.duration_to_complete || "—",
-        "Assigned Employee": o.employee_orders?.[0]?.user?.full_name || "—",
-        "Shipping Address": o.customer_shipping_address || "—",
-      }));
-
-      const dateSuffix = new Date().toISOString().slice(0, 10);
-      downloadCSV(rows, `actual_incomplete_to_complete_report_${timeRange}_${dateSuffix}.csv`);
-      toast.success("Incomplete to Complete Report exported successfully!");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to export report");
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   return (
     <div className="flex flex-col gap-3 w-full">
@@ -202,15 +170,7 @@ export function IncompleteReportView({
               <RefreshCw className="size-4" />
               Refresh
             </Button>
-            <Button
-              size="sm"
-              onClick={handleExportCSV}
-              disabled={isExporting || !orders?.length}
-              className="h-9 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              <Download className="size-4" />
-              {isExporting ? "Exporting..." : "Export CSV"}
-            </Button>
+
           </div>
         </div>
       )}
@@ -350,7 +310,8 @@ export function IncompleteReportView({
                 </Badge>
               )}
             </div>
-          </CardHeader>
+          <ExcelExportButton module="orders" title="Conversion breakdown" />
+</CardHeader>
           <CardContent className="p-0 flex-1 flex flex-col">
             {breakdown && breakdown.length > 0 ? (
               <div className="overflow-x-auto flex-1">
@@ -438,7 +399,8 @@ export function IncompleteReportView({
                 </Badge>
               )}
             </div>
-          </CardHeader>
+          <ExcelExportButton module="orders" title="Employee conversion performance" />
+</CardHeader>
           <CardContent className="p-0 flex-1 flex flex-col">
             {employeeBreakdown && employeeBreakdown.length > 0 ? (
               <div className="overflow-x-auto flex-1">
@@ -509,7 +471,8 @@ export function IncompleteReportView({
               />
             </div>
           </div>
-        </CardHeader>
+        <ExcelExportButton module="orders" title="Converted orders" />
+</CardHeader>
         <CardContent className="p-0">
           {isLoading && !orders?.length ? (
             <div className="p-8 text-center space-y-3">

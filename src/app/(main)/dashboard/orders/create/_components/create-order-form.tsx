@@ -1,4 +1,5 @@
 "use client";
+import { fetchClient } from "@/lib/fetch-client";
 
 import * as React from "react";
 
@@ -34,7 +35,7 @@ interface CartItem {
 
 const fetcher = async (url: string) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const res = await fetch(url, {
+  const res = await fetchClient(url, {
     headers: {
       Accept: "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -381,7 +382,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
     async function fetchCustomers() {
       try {
         const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_CUSTOMERS || "customers"}`;
-        const res = await fetch(url);
+        const res = await fetchClient(url);
         const json = await res.json();
         if (json.success && json.data) {
           setCustomersData(json.data);
@@ -414,7 +415,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
     async function fetchWebSettings() {
       try {
         const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SETTINGS || "web-settings"}`;
-        const res = await fetch(url);
+        const res = await fetchClient(url);
         const json = await res.json();
         if (json.success && json.data) {
           setInsideShippingCharge(Number(json.data.inside_shipping_charge) || 70);
@@ -657,12 +658,11 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
 
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}orders`, {
+      const res = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}`,
         },
         body: JSON.stringify(payload),
       });

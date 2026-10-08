@@ -1,5 +1,7 @@
 "use client";
 
+import { ExcelExportButton } from "@/components/excel-export-button";
+
 import * as React from "react";
 import {
   type ColumnDef,
@@ -109,6 +111,7 @@ export function AssignOrdersTable({ data, onEdit, onDelete }: AssignOrdersTableP
       <CardHeader>
         <CardTitle>Assigned Orders</CardTitle>
         <CardDescription>Manage which orders are assigned to which employees.</CardDescription>
+      <ExcelExportButton module="orders" title="Assigned orders" />
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex items-center gap-2">

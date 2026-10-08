@@ -1,4 +1,5 @@
 "use client";
+import { ExcelExportButton } from "@/components/excel-export-button";
 
 import * as React from "react";
 import Link from "next/link";
@@ -497,6 +498,7 @@ export default function PackagingTeamPage() {
 
           {/* Table Container */}
           <div className="rounded-xl border bg-card shadow-2xs overflow-hidden">
+            <div className="flex justify-end p-3"><ExcelExportButton module="orders" title="Packaging orders" /></div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-muted/60 text-muted-foreground font-semibold border-b">
@@ -751,6 +753,7 @@ export default function PackagingTeamPage() {
 
           {/* Table Container */}
           <div className="rounded-xl border bg-card shadow-2xs overflow-hidden">
+            <div className="flex justify-end p-3"><ExcelExportButton module="orders" title="Packaging orders" /></div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-muted/60 text-muted-foreground font-semibold border-b">

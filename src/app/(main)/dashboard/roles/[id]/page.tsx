@@ -126,6 +126,8 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "packaging_team", label: "Packaging Team (Confirmed → Ready to Ship → Steadfast)", icon: Package, badge: "Special Access" },
       { id: "pending_returns", label: "Pending Returns (/dashboard/orders/pending-return)", icon: RotateCcw, badge: "Specific Page" },
       { id: "all_orders", label: "Show All Orders", icon: ShoppingCart },
+      { id: "all_orders_toggle", label: "Allow All Orders Toggle", icon: ShoppingCart },
+      { id: "orders_excel_export", label: "Orders Excel Export", icon: ShoppingCart },
       { id: "create_orders", label: "Create Order", icon: ShoppingCart },
       { id: "assign_orders", label: "Assign Orders", icon: ShoppingCart },
       { id: "wholesale_orders", label: "Wholesale Orders", icon: Store },
@@ -145,6 +147,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     items: [
       { id: "customers", label: "Customers Directory", icon: Users },
       { id: "all_customers", label: "All Customers / Management (view all and bulk handover)", icon: Users },
+      { id: "crm_excel_export", label: "Customers / CRM Excel Export", icon: Users },
       { id: "crm_manage_team", label: "Manage CRM Team (view and distribute within HR team)", icon: Users },
       { id: "customer_followups", label: "Customer Follow-Ups", icon: PhoneCall },
       { id: "customer_segmentation", label: "Customer Segmentation", icon: PieChart },

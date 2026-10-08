@@ -1,4 +1,5 @@
 "use client";
+import { ExcelExportButton } from "@/components/excel-export-button";
 
 import * as React from "react";
 
@@ -128,20 +129,6 @@ const columns: ColumnDef<BestCustomerRow>[] = [
 
 /* ---- CSV Export ---- */
 
-function exportBestCustomers(data: BestCustomerRow[]) {
-  const headers = ["Rank", "Name", "Email", "Orders", "Total Spent"];
-  const csvRows = [
-    headers.join(","),
-    ...data.map((row) => [row.rank, `"${row.name}"`, `"${row.email}"`, row.orders, row.spent].join(",")),
-  ];
-  const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "best-customers.csv";
-  link.click();
-  URL.revokeObjectURL(url);
-}
 
 /* ---- Main Component ---- */
 
@@ -181,14 +168,7 @@ export function BestCustomersTable({ data }: { data: BestCustomerRow[] }) {
         </CardTitle>
         <CardDescription>Top customers ranked by total spent &middot; {totalCount} customers</CardDescription>
         <CardAction>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportBestCustomers(table.getFilteredRowModel().rows.map((r) => r.original))}
-          >
-            <Download className="mr-2 size-4" />
-            Export
-          </Button>
+          <ExcelExportButton module="crm" title="Best customers" getData={() => ({ headers: ["Rank", "Name", "Email", "Orders", "Total Spent"], rows: table.getFilteredRowModel().rows.map(({ original: r }) => [r.rank, r.name, r.email, r.orders, r.spent]) })} />
         </CardAction>
       </CardHeader>
 

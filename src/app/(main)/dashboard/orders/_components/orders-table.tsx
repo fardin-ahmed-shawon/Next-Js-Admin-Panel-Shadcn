@@ -1,5 +1,6 @@
 "use client";
 
+import { ExcelExportButton } from "@/components/excel-export-button";
 import * as React from "react";
 
 import Link from "next/link";
@@ -1225,45 +1226,11 @@ const columns: ColumnDef<OrderRow>[] = [
 
 /* ---- Export ---- */
 
-function exportOrders(data: OrderRow[]) {
-  const h = [
-    "Order ID",
-    "Customer",
-    "Phone",
-    "Items",
-    "Total",
-    "Paid",
-    "Due",
-    "Order Status",
-    "Payment Status",
-    "Payment Method",
-    "Date",
-  ];
-  const rows = [
-    h.join(","),
-    ...data.map((r) =>
-      [
-        r.id,
-        `"${r.customer}"`,
-        `"${r.phone}"`,
-        r.items,
-        r.total,
-        r.paid,
-        r.due,
-        r.orderStatus,
-        r.paymentStatus,
-        r.paymentMethod,
-        r.date,
-      ].join(","),
-    ),
-  ];
-  const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "orders.csv";
-  a.click();
-  URL.revokeObjectURL(url);
+export function orderExcelData(data: OrderRow[]) {
+  return {
+    headers: ["Order ID", "Customer", "Phone", "Items", "Total", "Paid", "Due", "Order Status", "Payment Status", "Payment Method", "Date"],
+    rows: data.map(r => [r.id, r.customer, r.phone, r.items, r.total, r.paid, r.due, r.orderStatus, r.paymentStatus, r.paymentMethod, r.date]),
+  };
 }
 
 /* ---- Component ---- */
@@ -1470,16 +1437,18 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
 
   const hasFilters = statusFilter !== (hideOrderStatusFilter ? "All" : "Pending") || paymentFilter !== "All" || searchQuery;
 
+  const [bulkUpdating, setBulkUpdating] = React.useState(false);
   const [bulkCancelModalOpen, setBulkCancelModalOpen] = React.useState(false);
   const [bulkCancelNote, setBulkCancelNote] = React.useState("");
   const [bulkCancelSubmitting, setBulkCancelSubmitting] = React.useState(false);
 
   const handleConfirmBulkCancel = async () => {
     const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
+    if (!selectedIds.length || bulkUpdating || bulkCancelSubmitting) return;
     setBulkCancelSubmitting(true);
     const toastId = toast.loading(`Cancelling ${selectedIds.length} orders...`);
     try {
-      const res = await fetch(`${getApiBaseUrl()}orders/bulk-update-status`, {
+      const res = await fetchClient(`${getApiBaseUrl()}orders/bulk-update-status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1488,13 +1457,16 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
           cancelled_note: bulkCancelNote,
         }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(Object.values(error.errors || {}).flat().join(" ") || error.message || "Bulk update failed.");
+      }
       toast.success(`Successfully cancelled ${selectedIds.length} orders.`, { id: toastId });
       setRowSelection({});
       setBulkCancelModalOpen(false);
       invalidateOrders();
     } catch (err) {
-      toast.error(`Failed to cancel orders.`, { id: toastId });
+      toast.error(err instanceof Error ? err.message : "Failed to cancel orders.", { id: toastId });
     } finally {
       setBulkCancelSubmitting(false);
     }
@@ -1502,27 +1474,34 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
 
   const handleBulkUpdate = async (type: "status" | "payment", val: string) => {
     const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
+    if (!selectedIds.length || bulkUpdating || bulkCancelSubmitting) return;
     if (type === "status" && val === "Cancelled") {
       setBulkCancelNote("");
       setBulkCancelModalOpen(true);
       return;
     }
+    setBulkUpdating(true);
     const toastId = toast.loading(`Updating ${selectedIds.length} orders...`);
     try {
       const endpoint = type === "status" ? "bulk-update-status" : "bulk-update-payment";
       const bodyKey = type === "status" ? "order_status" : "payment_status";
 
-      const res = await fetch(`${getApiBaseUrl()}orders/${endpoint}`, {
+      const res = await fetchClient(`${getApiBaseUrl()}orders/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ order_nos: selectedIds, [bodyKey]: val }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(Object.values(error.errors || {}).flat().join(" ") || error.message || "Bulk update failed.");
+      }
       toast.success(`Successfully updated ${selectedIds.length} orders.`, { id: toastId });
       setRowSelection({});
       invalidateOrders();
     } catch (err) {
-      toast.error(`Failed to bulk update orders.`, { id: toastId });
+      toast.error(err instanceof Error ? err.message : "Failed to bulk update orders.", { id: toastId });
+    } finally {
+      setBulkUpdating(false);
     }
   };
 
@@ -1534,15 +1513,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
           {selectedCount > 0 ? `${selectedCount} of ${totalCount} selected` : `${totalCount} orders`}
         </CardDescription>
         <CardAction>
-          {/* Export button — always visible */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportOrders(table.getFilteredRowModel().rows.map((r) => r.original))}
-          >
-            <Download className="mr-2 size-4" />
-            Export
-          </Button>
+          <ExcelExportButton module="orders" title="Orders" label={selectedCount ? "Export selected" : useServerPagination ? "Export Excel (page)" : "Export Excel"} getData={() => orderExcelData((selectedCount ? table.getSelectedRowModel() : table.getFilteredRowModel()).rows.map(r => r.original))} />
         </CardAction>
       </CardHeader>
 
@@ -1737,7 +1708,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                       {orderStatuses
                         .filter((s) => s !== "All")
                         .map((s) => (
-                          <DropdownMenuItem key={s} onClick={() => handleBulkUpdate("status", s)}>
+                          <DropdownMenuItem key={s} disabled={bulkUpdating || bulkCancelSubmitting} onClick={() => handleBulkUpdate("status", s)}>
                             {s}
                           </DropdownMenuItem>
                         ))}
@@ -1752,7 +1723,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                       {paymentStatuses
                         .filter((s) => s !== "All")
                         .map((s) => (
-                          <DropdownMenuItem key={s} onClick={() => handleBulkUpdate("payment", s)}>
+                          <DropdownMenuItem key={s} disabled={bulkUpdating || bulkCancelSubmitting} onClick={() => handleBulkUpdate("payment", s)}>
                             {s}
                           </DropdownMenuItem>
                         ))}

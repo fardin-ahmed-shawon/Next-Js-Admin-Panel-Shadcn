@@ -1,4 +1,5 @@
 "use client";
+import { ExcelExportButton } from "@/components/excel-export-button";
 
 import * as React from "react";
 
@@ -83,20 +84,6 @@ const statusConfig: Record<
   },
 };
 
-function exportCustomers(data: EngagementCustomer[]) {
-  const headers = ["Name", "Phone", "Status", "Orders", "Total Spent", "Details"];
-  const csvRows = [
-    headers.join(","),
-    ...data.map((r) => [`"${r.name}"`, `"${r.phone}"`, r.status, r.orders, r.spent, `"${r.meta}"`].join(",")),
-  ];
-  const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "customer-engagement.csv";
-  link.click();
-  URL.revokeObjectURL(url);
-}
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -163,10 +150,7 @@ export function CustomerEngagementGrid({ data }: { data: EngagementCustomer[] })
         </CardTitle>
         <CardDescription>Active, inactive, and banned customers &middot; {sorted.length} total</CardDescription>
         <CardAction>
-          <Button variant="outline" size="sm" onClick={() => exportCustomers(sorted)}>
-            <Download className="mr-2 size-4" />
-            Export
-          </Button>
+          <ExcelExportButton module="crm" title="Customer engagement" getData={() => ({ headers: ["Name", "Phone", "Status", "Orders", "Total Spent", "Details"], rows: sorted.map(r => [r.name, r.phone, r.status, r.orders, r.spent, r.meta]) })} />
         </CardAction>
       </CardHeader>
 

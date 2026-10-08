@@ -28,6 +28,9 @@ export interface PageAccess {
   crm_manage_team?: number;
   orders: number;
   all_orders: number;
+  all_orders_toggle?: number;
+  orders_excel_export?: number;
+  crm_excel_export?: number;
   create_orders: number;
   assign_orders: number;
   accounts: number;
@@ -281,3 +284,13 @@ export function hasSelfAttendanceAccess(user: any): boolean {
   return pageAccess.hrm_self_attendance === 1;
 }
 
+
+export function canUseAllOrdersToggle(user: any): boolean {
+  const access = user?.role?.page_access || user?.role?.pageAccess;
+  return !!user && (user.role?.role_name === "Admin" || Number(access?.all_orders) === 1 || Number(access?.all_orders_toggle) === 1);
+}
+
+export function hasExcelExportAccess(user: any, module: "orders" | "crm"): boolean {
+  const access = user?.role?.page_access || user?.role?.pageAccess;
+  return !!user && user.status === "active" && (user.role?.role_name === "Admin" || Number(access?.[module === "orders" ? "orders_excel_export" : "crm_excel_export"]) === 1);
+}

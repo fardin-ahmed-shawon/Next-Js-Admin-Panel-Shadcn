@@ -1,5 +1,7 @@
 "use client";
 
+import { ExcelExportButton } from "@/components/excel-export-button";
+
 import * as React from "react";
 import Link from "next/link";
 import {
@@ -290,6 +292,7 @@ export function CustomerProductOrdersTable({
             )}
           </div>
         </div>
+      <ExcelExportButton module="crm" title="Customer product-orders" />
       </CardHeader>
 
       <CardContent className="p-0">

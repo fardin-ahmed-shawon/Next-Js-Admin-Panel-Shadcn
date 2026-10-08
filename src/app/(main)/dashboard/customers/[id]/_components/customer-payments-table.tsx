@@ -1,5 +1,7 @@
 "use client";
 
+import { ExcelExportButton } from "@/components/excel-export-button";
+
 import * as React from "react";
 import Link from "next/link";
 import {
@@ -155,6 +157,7 @@ export function CustomerPaymentsTable({ payments = [], customerId }: CustomerPay
             </SelectContent>
           </Select>
         </div>
+      <ExcelExportButton module="crm" title="Customer payments" />
       </CardHeader>
 
       <CardContent className="p-0">
