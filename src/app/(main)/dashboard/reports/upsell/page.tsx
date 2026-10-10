@@ -63,7 +63,7 @@ import {
 import { getImageUrl } from "@/lib/utils";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { hasAllUserAccess } from "@/hooks/useRoles";
+import { hasAllUserAccess, canObserveHrmTeam, hasReportingTeamAccess } from "@/hooks/useRoles";
 
 type TimePreset = "today" | "this_week" | "this_month" | "last_month" | "all_time" | "custom";
 type ViewMode = "orders" | "products" | "employees";
@@ -99,7 +99,7 @@ function getDateRange(preset: TimePreset): { start?: string; end?: string } {
 
 export default function UpsellReportPage() {
   const { user } = useAuth();
-  const canAccessAllUpsells = hasAllUserAccess(user, "upsells");
+  const canAccessAllUpsells = canObserveHrmTeam(user, "upsells");
 
   const [viewMode, setViewMode] = React.useState<ViewMode>("orders");
   const [timePreset, setTimePreset] = React.useState<TimePreset>("all_time");

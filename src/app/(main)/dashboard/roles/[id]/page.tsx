@@ -196,35 +196,44 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "hrm_overview", label: "Overview", icon: LayoutDashboard, badge: "Access Based" },
       { id: "hrm_leaderboard", label: "Leaderboard", icon: Trophy, badge: "Access Based" },
       { id: "hrm_department_performance", label: "Dept Performance", icon: BarChart3, badge: "Access Based" },
+      { id: "hrm_own_department_performance", label: "Only Own Dept Performance", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_department_performance" },
       { id: "hrm_org_tree", label: "Organization Tree", icon: Network, badge: "Access Based" },
       { id: "hrm_employees", label: "Employees Directory", icon: Users, badge: "Access Based" },
       { id: "hrm_salaries", label: "Salary & Payroll", icon: DollarSign, badge: "Access Based" },
 
       { id: "hrm_upsells", label: "Upsell Tracking", icon: TrendingUp, badge: "Access Based" },
       { id: "hrm_all_upsells", label: "All User Upsell Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_upsells" },
+      { id: "hrm_team_upsells", label: "Reporting Team Upsells Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_upsells" },
 
       { id: "hrm_tasks", label: "Peer Tasks", icon: CheckSquare, badge: "Access Based" },
       { id: "hrm_all_tasks", label: "All User Tasks Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_tasks" },
+      { id: "hrm_team_tasks", label: "Reporting Team Tasks Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_tasks" },
 
       { id: "hrm_attendance", label: "Attendance", icon: Clock, badge: "Access Based" },
       { id: "hrm_all_attendance", label: "All User Attendance Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_attendance" },
+      { id: "hrm_team_attendance", label: "Reporting Team Attendance Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_attendance" },
       { id: "hrm_manage_attendance", label: "Manage Attendance (Manual Entry & Import)", icon: ShieldAlert, isSubToggle: true, dependsOn: "hrm_attendance" },
 
       { id: "hrm_cash_flow", label: "Employee Cash Flow", icon: Receipt, badge: "Access Based" },
       { id: "hrm_all_cash_flow", label: "All User Cash Flow Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_cash_flow" },
+      { id: "hrm_team_cash_flow", label: "Reporting Team Cash Flow Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_cash_flow" },
 
       { id: "hrm_loans", label: "Loans & Advance", icon: Landmark, badge: "Access Based" },
       { id: "hrm_all_loans", label: "All User Loans Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_loans" },
+      { id: "hrm_team_loans", label: "Reporting Team Loans Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_loans" },
 
       { id: "hrm_documents", label: "Documents", icon: FolderGit2, badge: "Access Based" },
       { id: "hrm_all_documents", label: "All User Documents Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_documents" },
+      { id: "hrm_team_documents", label: "Reporting Team Documents Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_documents" },
 
       { id: "hrm_exits", label: "Resignations & Exit", icon: UserMinus, badge: "Access Based" },
       { id: "hrm_all_exits", label: "All User Exits Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_exits" },
+      { id: "hrm_team_exits", label: "Reporting Team Exits Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_exits" },
 
       { id: "hrm_self_service", label: "Self-Service Portal", icon: UserCheck, badge: "Attribute Based" },
       { id: "hrm_self_attendance", label: "Self Check-In / Check-Out (Punch In/Out)", icon: Clock, isSubToggle: true, dependsOn: "hrm_self_service" },
       { id: "employee_fines", label: "Employee Fines (Penalize Employee)", icon: AlertTriangle, badge: "Action Based" },
+      { id: "hrm_team_employee_fines", label: "Reporting Team Fines Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_cash_flow" },
     ],
   },
   {
@@ -385,13 +394,15 @@ export default function ViewRolePage() {
                               <item.icon className="h-3.5 w-3.5 text-primary shrink-0" />
                               <span className="text-xs font-semibold truncate">{item.label}</span>
                               <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">
-                                All User Access
+                                {item.id.startsWith("hrm_team_") ? "Reporting Team" : item.id === "hrm_own_department_performance" ? "Own Department" : "All User Access"}
                               </Badge>
                             </div>
                             <span className="text-[10px] text-muted-foreground ml-5">
-                              {selected[item.id]
-                                ? "Full Access: Can see all employees' data"
-                                : "Attribute-Based: Strictly sees own data"}
+                              {item.id.startsWith("hrm_team_")
+                                ? "View own data and direct/indirect reports. Existing All User Access takes precedence."
+                                : item.id === "hrm_own_department_performance"
+                                  ? "Restrict the report and totals to the user's assigned department."
+                                  : selected[item.id] ? "Full Access: Can see all employees' data" : "Attribute-Based: Strictly sees own data"}
                             </span>
                           </div>
                           <Switch className="shrink-0 scale-90" checked={!!selected[item.id]} disabled={true} />

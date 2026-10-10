@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "@/hooks/useAuth";
+import { hasAllUserAccess } from "@/hooks/useRoles";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -50,6 +52,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 export default function ResignationExitManagementPage() {
+  const { user } = useAuth();
+  const canManageEmployee = (id: number | null | undefined) => hasAllUserAccess(user, "exits") || Number(id) === Number(user?.id);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -80,7 +84,7 @@ export default function ResignationExitManagementPage() {
   const [editFeedback, setEditFeedback] = useState("");
 
   const { exits, loading, refetch } = useHrmExits();
-  const { employees } = useHrmEmployees();
+  const { employees } = useHrmEmployees("", "exits");
 
   const handleOpenEdit = (exit: ExitRecord) => {
     setSelectedExit(exit);
@@ -439,6 +443,7 @@ export default function ResignationExitManagementPage() {
                             variant="outline"
                             size="sm"
                             className="h-8 gap-1 text-xs"
+                            disabled={!canManageEmployee(item.user_id)}
                             onClick={() => handleOpenEdit(item)}
                           >
                             <SlidersHorizontal className="h-3.5 w-3.5" /> Settle & Update
@@ -477,10 +482,9 @@ export default function ResignationExitManagementPage() {
                     <SelectValue placeholder="Select Employee" />
                   </SelectTrigger>
                   <SelectContent>
-                    {employees.map((emp) => (
+                    {employees.filter((employee) => canManageEmployee(employee.id)).map((emp) => (
                       <SelectItem key={emp.id} value={String(emp.id)}>
-                        {emp.full_name} ({emp.employee_detail?.designation?.title || emp.employee_detail?.designation?.name || "Staff"}) - Basic: ৳
-                        {emp.employee_detail?.basic_salary || 0}
+                        {emp.full_name} ({emp.employee_detail?.employee_id || "Employee"})
                       </SelectItem>
                     ))}
                   </SelectContent>

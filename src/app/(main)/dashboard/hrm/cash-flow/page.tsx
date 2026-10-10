@@ -47,7 +47,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
-import { hasAllUserAccess } from "@/hooks/useRoles";
+import { hasAllUserAccess, canObserveHrmTeam, hasReportingTeamAccess, hasModuleAccess } from "@/hooks/useRoles";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -121,8 +121,9 @@ const WEEKDAYS = [
 
 export default function EmployeeCashFlowPage() {
   const { user } = useAuth();
+  const canManagePayroll = hasAllUserAccess(user, "cash_flow") || hasModuleAccess(user, "hrm_salaries");
   const canAccessAllCashFlow =
-    hasAllUserAccess(user, "cash_flow") ||
+    canObserveHrmTeam(user, "cash_flow") || hasReportingTeamAccess(user, "employee_fines") ||
     Boolean(user?.role?.page_access?.employee_fines);
 
   const currentDate = new Date();
@@ -163,7 +164,7 @@ export default function EmployeeCashFlowPage() {
     search: searchTerm,
   });
 
-  const { employees } = useHrmEmployees();
+  const { employees } = useHrmEmployees("", "cash_flow");
   const { policy, refetch: refetchPolicy } = useWorkHourPolicy(selectedDeptId);
 
   // Policy Settings Modal State
@@ -254,7 +255,7 @@ export default function EmployeeCashFlowPage() {
   const [isSubmittingFine, setIsSubmittingFine] = React.useState(false);
 
   const canIssueFine =
-    user?.role?.role_name?.toLowerCase().includes("admin") ||
+    user?.role?.role_name === "Admin" ||
     Boolean(user?.role?.page_access?.employee_fines) ||
     Boolean((data as any)?.can_issue_fine);
 
@@ -454,6 +455,7 @@ export default function EmployeeCashFlowPage() {
 
           <Button
             variant="outline"
+            disabled={!canManagePayroll}
             onClick={() => setPolicyModalOpen(true)}
             className="gap-2 text-xs"
           >
@@ -464,7 +466,7 @@ export default function EmployeeCashFlowPage() {
           <Button
             variant="outline"
             onClick={handleRecalculate}
-            disabled={isRecalculating}
+            disabled={!canManagePayroll || isRecalculating}
             className="gap-2 text-xs"
           >
             <RefreshCw className={`size-4 ${isRecalculating ? "animate-spin" : ""}`} />
@@ -608,7 +610,7 @@ export default function EmployeeCashFlowPage() {
                   {canAccessAllCashFlow ? (
                     <>
                       <SelectItem value="all" className="text-xs font-semibold">
-                        All Employees ({employees.length})
+                        Visible Employees ({employees.length})
                       </SelectItem>
                       {employees.map((emp) => (
                         <SelectItem key={emp.id} value={String(emp.id)} className="text-xs">
@@ -808,7 +810,8 @@ export default function EmployeeCashFlowPage() {
             <Button
               variant="link"
               size="sm"
-              onClick={() => setPolicyModalOpen(true)}
+              disabled={!canManagePayroll}
+            onClick={() => setPolicyModalOpen(true)}
               className="h-auto p-0 text-xs text-primary"
             >
               Configure Policy Rules

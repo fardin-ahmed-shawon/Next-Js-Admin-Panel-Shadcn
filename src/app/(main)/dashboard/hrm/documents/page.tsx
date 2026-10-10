@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "@/hooks/useAuth";
+import { hasAllUserAccess } from "@/hooks/useRoles";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -63,6 +65,8 @@ const DOCUMENT_CATEGORIES = [
 ];
 
 export default function EmployeeDocumentsPage() {
+  const { user } = useAuth();
+  const canManageEmployee = (id: number | null | undefined) => hasAllUserAccess(user, "documents") || Number(id) === Number(user?.id);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedUserId, setSelectedUserId] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -83,7 +87,7 @@ export default function EmployeeDocumentsPage() {
     document_type: selectedCategory !== "all" ? selectedCategory : undefined,
   });
 
-  const { employees } = useHrmEmployees();
+  const { employees } = useHrmEmployees("", "documents");
 
   const filteredDocs = documents.filter((doc) => {
     const q = searchQuery.toLowerCase();
@@ -371,6 +375,7 @@ export default function EmployeeDocumentsPage() {
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    disabled={!canManageEmployee(doc.user_id)}
                     onClick={() => handleDelete(doc)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -405,7 +410,7 @@ export default function EmployeeDocumentsPage() {
                     <SelectValue placeholder="Select Employee" />
                   </SelectTrigger>
                   <SelectContent>
-                    {employees.map((emp) => (
+                    {employees.filter((employee) => canManageEmployee(employee.id)).map((emp) => (
                       <SelectItem key={emp.id} value={String(emp.id)}>
                         {emp.full_name} ({emp.employee_detail?.designation?.title || emp.employee_detail?.designation?.name || "Employee"})
                       </SelectItem>

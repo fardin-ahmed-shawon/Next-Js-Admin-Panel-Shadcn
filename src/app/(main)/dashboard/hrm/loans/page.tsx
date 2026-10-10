@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { hasAllUserAccess } from "@/hooks/useRoles";
 import {
   CreditCard,
   DollarSign,
@@ -49,13 +51,15 @@ import {
 } from "@/hooks/useHrm";
 
 export default function LoansAdvancesPage() {
+  const { user } = useAuth();
+  const canManageEmployee = (id: number | null | undefined) => hasAllUserAccess(user, "loans") || Number(id) === Number(user?.id);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("all");
 
   const { loans, summary, loading, refetch } = useHrmLoans({
     status: statusFilter === "all" ? undefined : statusFilter,
   });
-  const { employees } = useHrmEmployees();
+  const { employees } = useHrmEmployees("", "loans");
 
   // Create Loan Modal
   const [createModalOpen, setCreateModalOpen] = React.useState(false);
@@ -162,7 +166,7 @@ export default function LoansAdvancesPage() {
           <Button
             onClick={() => {
               setLoanForm({
-                user_id: employees[0]?.id ? String(employees[0].id) : "",
+                user_id: employees.find((employee) => canManageEmployee(employee.id))?.id?.toString() || "",
                 loan_type: "salary_advance",
                 amount: 10000,
                 disbursement_date: new Date().toISOString().split("T")[0],
@@ -359,7 +363,7 @@ export default function LoansAdvancesPage() {
                               <Receipt className="size-3" />
                               <span>History</span>
                             </Button>
-                            {loan.remaining_amount > 0 && (
+                            {canManageEmployee(loan.user_id) && loan.remaining_amount > 0 && (
                               <Button
                                 size="sm"
                                 className="h-7 text-xs gap-1 px-2.5"
@@ -403,7 +407,7 @@ export default function LoansAdvancesPage() {
                     <SelectValue placeholder="Select Employee" />
                   </SelectTrigger>
                   <SelectContent className="text-xs">
-                    {employees.map((e) => (
+                    {employees.filter((employee) => canManageEmployee(employee.id)).map((e) => (
                       <SelectItem key={e.id} value={String(e.id)}>
                         {e.full_name} ({e.employee_detail?.employee_id || `EMP-${e.id}`})
                       </SelectItem>

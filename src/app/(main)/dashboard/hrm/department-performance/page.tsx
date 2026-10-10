@@ -96,6 +96,7 @@ export default function DepartmentPerformancePage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             Department Performance Report
+            {data?.own_department_only && <Badge variant="outline" className="ml-3 text-xs">My Department Only</Badge>}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Aggregated operational KPIs, order fulfillment efficiency, upsell revenue, and peer task completion rate per department.

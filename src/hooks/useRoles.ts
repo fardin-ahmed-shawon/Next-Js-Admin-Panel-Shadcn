@@ -57,6 +57,15 @@ export interface PageAccess {
   history: number;
   settings: number;
   hrm?: number;
+  hrm_team_upsells?: number;
+  hrm_team_tasks?: number;
+  hrm_team_attendance?: number;
+  hrm_team_cash_flow?: number;
+  hrm_team_loans?: number;
+  hrm_team_documents?: number;
+  hrm_team_exits?: number;
+  hrm_team_employee_fines?: number;
+  hrm_own_department_performance?: number;
   hrm_overview?: number;
   hrm_leaderboard?: number;
   hrm_department_performance?: number;
@@ -293,4 +302,13 @@ export function canUseAllOrdersToggle(user: any): boolean {
 export function hasExcelExportAccess(user: any, module: "orders" | "crm"): boolean {
   const access = user?.role?.page_access || user?.role?.pageAccess;
   return !!user && user.status === "active" && (user.role?.role_name === "Admin" || Number(access?.[module === "orders" ? "orders_excel_export" : "crm_excel_export"]) === 1);
+}
+
+export function hasReportingTeamAccess(user: any, module: string): boolean {
+  const access = user?.role?.page_access || user?.role?.pageAccess;
+  return Number(access?.[`hrm_team_${module.replace(/^hrm_/, "")}`]) === 1;
+}
+
+export function canObserveHrmTeam(user: any, module: string): boolean {
+  return hasAllUserAccess(user, module) || hasReportingTeamAccess(user, module);
 }

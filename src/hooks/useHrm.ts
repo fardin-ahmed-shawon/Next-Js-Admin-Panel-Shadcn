@@ -189,6 +189,7 @@ export interface TaskRecord {
 }
 
 export interface DepartmentPerformanceData {
+  own_department_only?: boolean;
   summary: {
     total_employees: number;
     total_orders: number;
@@ -361,10 +362,10 @@ export function useHrmDesignations() {
   return { designations: (data as Designation[]) || [], loading: isLoading, error, refetch: mutate };
 }
 
-export function useHrmEmployees(query = "") {
-  const url = `${HRM_BASE}/employees${query ? `?${query}` : ""}`;
+export function useHrmEmployees(query = "", visibilityFor?: string) {
+  const url = visibilityFor ? `${HRM_BASE}/visibility/${visibilityFor}` : `${HRM_BASE}/employees${query ? `?${query}` : ""}`;
   const { data, error, isLoading, mutate } = useSWR(url, fetcher);
-  return { employees: (data as HrmEmployee[]) || [], loading: isLoading, error, refetch: mutate };
+  return { employees: (visibilityFor ? data?.employees : data) as HrmEmployee[] || [], loading: isLoading, error, refetch: mutate };
 }
 
 export interface HrmWorkHourPolicySummary {

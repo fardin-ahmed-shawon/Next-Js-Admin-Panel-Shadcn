@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { hasAllUserAccess } from "@/hooks/useRoles";
 import {
   CheckCircle2,
   Clock,
@@ -57,6 +59,8 @@ import {
 } from "@/hooks/useHrm";
 
 export default function PeerTasksPage() {
+  const { user } = useAuth();
+  const canManageEmployee = (id: number | null | undefined) => hasAllUserAccess(user, "tasks") || Number(id) === Number(user?.id);
   const [scope, setScope] = React.useState<"all" | "assigned_to_me" | "assigned_by_me">("all");
   const [viewMode, setViewMode] = React.useState<"grid" | "table">("grid");
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
@@ -452,6 +456,7 @@ export default function PeerTasksPage() {
                       {/* Status Selector */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         <Select
+                          disabled={!(canManageEmployee(task.assigned_to) || canManageEmployee(task.assigned_by))}
                           value={task.status}
                           onValueChange={(val) => handleStatusChange(task.id, val)}
                         >
@@ -484,6 +489,7 @@ export default function PeerTasksPage() {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          disabled={!(canManageEmployee(task.assigned_to) || canManageEmployee(task.assigned_by))}
                           onClick={() => handleDeleteTask(task.id)}
                           title="Delete Task"
                         >
@@ -535,7 +541,8 @@ export default function PeerTasksPage() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
-                      onClick={() => handleDeleteTask(task.id)}
+                      disabled={!(canManageEmployee(task.assigned_to) || canManageEmployee(task.assigned_by))}
+                          onClick={() => handleDeleteTask(task.id)}
                       title="Delete Task"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -623,7 +630,8 @@ export default function PeerTasksPage() {
                   <div className="flex items-center justify-between gap-2 pt-1">
                     <span className="text-xs text-muted-foreground font-medium">Status:</span>
                     <Select
-                      value={task.status}
+                      disabled={!(canManageEmployee(task.assigned_to) || canManageEmployee(task.assigned_by))}
+                          value={task.status}
                       onValueChange={(val) => handleStatusChange(task.id, val)}
                     >
                       <SelectTrigger className="h-8 text-xs w-[130px]">
