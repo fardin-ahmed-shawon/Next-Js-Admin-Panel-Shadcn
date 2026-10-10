@@ -190,10 +190,27 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   const [recipientId, setRecipientId] = React.useState("");
   const [isAssigning, setIsAssigning] = React.useState(false);
   const [assignmentError, setAssignmentError] = React.useState("");
-  const recipients = (assignmentOptions?.data || []).filter((recipient) =>
+  const [assignmentDepartment, setAssignmentDepartment] = React.useState("all");
+  const [assignmentDesignation, setAssignmentDesignation] = React.useState("all");
+  const [assignmentSearch, setAssignmentSearch] = React.useState("");
+  const [assignmentSort, setAssignmentSort] = React.useState("name");
+  const eligibleRecipients = (assignmentOptions?.data || []).filter((recipient) =>
     assignmentMode !== "handover" || recipient.can_manage_team);
+  const departments = Array.from(new Map(eligibleRecipients.filter((r) => r.department_id)
+    .map((r) => [String(r.department_id), r.department || "Department"])).entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  const designations = Array.from(new Map(eligibleRecipients.filter((r) => r.designation_id
+    && (assignmentDepartment === "all" || String(r.department_id) === assignmentDepartment))
+    .map((r) => [String(r.designation_id), r.designation || "Designation"])).entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  const recipients = eligibleRecipients.filter((r) =>
+    (assignmentDepartment === "all" || String(r.department_id) === assignmentDepartment)
+    && (assignmentDesignation === "all" || String(r.designation_id) === assignmentDesignation)
+    && [r.full_name, r.department, r.designation].some((text) => text?.toLowerCase().includes(assignmentSearch.toLowerCase())))
+    .sort((a, b) => (assignmentSort === "department" ? (a.department || "").localeCompare(b.department || "")
+      : assignmentSort === "designation" ? (a.designation || "").localeCompare(b.designation || "") : 0)
+      || a.full_name.localeCompare(b.full_name));
   const openAssignment = (ids: (string | number)[]) => {
-    setAssignmentIds(ids); setRecipientId(""); setAssignmentMode("assign"); setAssignmentError("");
+    setAssignmentIds(ids); setRecipientId(""); setAssignmentMode(assignmentOptions?.all_customers ? "handover" : "assign"); setAssignmentError("");
+    setAssignmentDepartment("all"); setAssignmentDesignation("all"); setAssignmentSearch(""); setAssignmentSort("name");
   };
   const handleAssignment = async () => {
     setIsAssigning(true); setAssignmentError("");
@@ -1238,7 +1255,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
           <Button size="sm" variant="outline" disabled={!filteredData.length} onClick={() => setSelectedRowIds(new Set(filteredData.map((customer) => customer.id)))}>
             Select all {filteredData.length} matching customers
           </Button>
-          <span className="text-muted-foreground">Management hands customers to heads; heads distribute within their HR team. CRM assignments are separate from order handlers.</span>
+          <span className="text-muted-foreground">Assign customers to a Customer Relationship Manager, who distributes them to Customer Relationship Agents.</span>
         </div>
       )}
 
@@ -1437,8 +1454,8 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                             </Badge>
                           </div>
                           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
-                            <span className="w-full">CRM handler: <strong>{customer.crmAssignee || "Unassigned"}</strong>
-                              {customer.crmManager && <span> · Head: {customer.crmManager}</span>}
+                            <span className="w-full">Relationship Agent: <strong>{customer.crmAssignee || "Unassigned"}</strong>
+                              {customer.crmManager && <span> · Relationship Manager: {customer.crmManager}</span>}
                               {assignmentOptions?.can_assign && <Button size="sm" variant="link" className="h-auto px-2 py-0 text-xs" onClick={() => openAssignment([customer.id])}>Assign</Button>}
                             </span>
                             {customer.phone && (
@@ -1860,27 +1877,47 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Assign {assignmentIds.length} CRM customer{assignmentIds.length === 1 ? "" : "s"}</DialogTitle>
-            <DialogDescription>Assign a customer handler or hand customers to a department head for distribution. Order assignments stay separate.</DialogDescription>
+            <DialogDescription>Choose a Customer Relationship Manager for the first handover, or a Customer Relationship Agent for customer follow-ups.</DialogDescription>
           </DialogHeader>
           {assignmentOptions?.all_customers && (
             <div className="space-y-2">
               <Label>Assignment type</Label>
-              <Select value={assignmentMode} onValueChange={(value: "handover" | "assign") => { setAssignmentMode(value); setRecipientId(""); }}>
+              <Select value={assignmentMode} onValueChange={(value: "handover" | "assign") => { setAssignmentMode(value); setRecipientId(""); setAssignmentDepartment("all"); setAssignmentDesignation("all"); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="handover">Handover to department head / team lead</SelectItem>
-                  <SelectItem value="assign">Assign customer handler directly</SelectItem>
+                  <SelectItem value="handover">Customer Relationship Manager</SelectItem>
+                  <SelectItem value="assign">Customer Relationship Agent</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           )}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Department</Label>
+              <Select value={assignmentDepartment} onValueChange={(value) => { setAssignmentDepartment(value); setAssignmentDesignation("all"); setRecipientId(""); }}>
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">All departments</SelectItem>{departments.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Designation</Label>
+              <Select value={assignmentDesignation} onValueChange={(value) => { setAssignmentDesignation(value); setRecipientId(""); }}>
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">All designations</SelectItem>{designations.map(([id, title]) => <SelectItem key={id} value={id}>{title}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2"><Label htmlFor="crm-employee-search">Find employee</Label><Input id="crm-employee-search" placeholder="Search employees…" value={assignmentSearch} onChange={(event) => { setAssignmentSearch(event.target.value); setRecipientId(""); }} /></div>
+            <div className="space-y-2"><Label>Sort employees by</Label><Select value={assignmentSort} onValueChange={setAssignmentSort}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="name">Name</SelectItem><SelectItem value="department">Department</SelectItem><SelectItem value="designation">Designation</SelectItem></SelectContent></Select></div>
+          </div>
           <div className="space-y-2">
-            <Label>CRM {assignmentMode === "handover" ? "department head / team lead" : "customer handler"}</Label>
+            <Label>Customer Relationship {assignmentMode === "handover" ? "Manager" : "Agent"}</Label>
             <Select value={recipientId} onValueChange={setRecipientId}>
               <SelectTrigger><SelectValue placeholder="Choose employee" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
-                {recipients.map((recipient) => <SelectItem key={recipient.id} value={String(recipient.id)}>{recipient.full_name}{recipient.department ? ` — ${recipient.department}` : ""}</SelectItem>)}
+                {recipients.map((recipient) => <SelectItem key={recipient.id} value={String(recipient.id)}>{recipient.full_name}{[recipient.department, recipient.designation].filter(Boolean).length > 0 ? ` — ${[recipient.department, recipient.designation].filter(Boolean).join(" / ")}` : ""}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

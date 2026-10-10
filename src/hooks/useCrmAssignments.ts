@@ -5,6 +5,9 @@ export interface CrmRecipient {
   id: number;
   full_name: string;
   department: string | null;
+  department_id: number | null;
+  designation: string | null;
+  designation_id: number | null;
   can_manage_team: boolean;
 }
 

@@ -58,7 +58,7 @@ export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit, prefil
     setError("");
     try {
       if (assignmentToEdit) {
-        await updateAssignment(assignmentToEdit.id, { order_no: orderNo.trim() });
+        await updateAssignment(assignmentToEdit.id, { user_id: Number(userId), order_no: orderNo.trim() });
       } else {
         await createAssignment({ user_id: parseInt(userId), order_no: orderNo.trim() });
       }
@@ -81,7 +81,7 @@ export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit, prefil
             <DialogTitle>{isEdit ? "Edit Assignment" : "Assign Order"}</DialogTitle>
             <DialogDescription>
               {isEdit
-                ? "Update the order assigned to this employee."
+                ? "Choose the employee responsible for this order."
                 : "Assign an order to an employee for fulfillment."}
             </DialogDescription>
           </DialogHeader>
@@ -91,7 +91,7 @@ export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit, prefil
 
             <div className="grid gap-2">
               <Label htmlFor="employee">Employee</Label>
-              <Select value={userId} onValueChange={setUserId} disabled={isEdit}>
+              <Select value={userId} onValueChange={setUserId} disabled={loadingUsers || isSubmitting}>
                 <SelectTrigger id="employee">
                   <SelectValue placeholder={loadingUsers ? "Loading employees..." : "Select an employee"} />
                 </SelectTrigger>
@@ -105,7 +105,7 @@ export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit, prefil
               </Select>
               {isEdit && (
                 <p className="text-xs text-muted-foreground">
-                  You cannot change the employee for an existing assignment.
+                  Saving replaces the current order handler.
                 </p>
               )}
             </div>
@@ -114,6 +114,7 @@ export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit, prefil
               <Label htmlFor="orderNo">Order Number</Label>
               <Input
                 id="orderNo"
+                disabled={isEdit || !!prefilledOrderNo}
                 placeholder="e.g. ORD-12345"
                 value={orderNo}
                 onChange={(e) => setOrderNo(e.target.value)}

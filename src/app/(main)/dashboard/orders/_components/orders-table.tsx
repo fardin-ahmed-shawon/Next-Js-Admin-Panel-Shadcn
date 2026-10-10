@@ -508,6 +508,7 @@ function AssignedEmployeeCell({ row }: { row: any }) {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         prefilledOrderNo={row.original.id}
+        assignmentToEdit={row.original.employeeAssignment}
         onSuccess={invalidateOrders}
       />
     </>

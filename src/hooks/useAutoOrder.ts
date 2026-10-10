@@ -35,16 +35,20 @@ export function useAutoOrder() {
     try {
       const endpoint = API_BASE_URL.endsWith("/") ? `${API_BASE_URL}auto-order-priorities` : `${API_BASE_URL}/auto-order-priorities`;
       const res = await fetchClient(endpoint);
+      if (!res.ok) {
+        const failure = await res.json();
+        throw new Error(failure.errors ? Object.values(failure.errors).flat().join(" ") : failure.message || "Auto Order request failed");
+      }
       if (res.ok) {
         const response = await res.json();
         if (response.success) {
           setPriorities(response.data);
-          setIsAutoOrderEnabled(response.auto_order === "1");
+          setIsAutoOrderEnabled(Number(response.auto_order) === 1);
         }
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to load auto order priorities");
+      toast.error(error instanceof Error ? error.message : "Failed to load auto order priorities");
     } finally {
       setIsLoading(false);
     }
@@ -58,6 +62,10 @@ export function useAutoOrder() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ auto_order: enabled ? "1" : "0" }),
       });
+      if (!res.ok) {
+        const failure = await res.json();
+        throw new Error(failure.errors ? Object.values(failure.errors).flat().join(" ") : failure.message || "Auto Order request failed");
+      }
       if (res.ok) {
         const response = await res.json();
         if (response.success) {
@@ -67,7 +75,7 @@ export function useAutoOrder() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to toggle auto order");
+      toast.error(error instanceof Error ? error.message : "Failed to toggle auto order");
     }
   };
 
@@ -83,6 +91,10 @@ export function useAutoOrder() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, status, customer_type: customerType }),
       });
+      if (!res.ok) {
+        const failure = await res.json();
+        throw new Error(failure.errors ? Object.values(failure.errors).flat().join(" ") : failure.message || "Auto Order request failed");
+      }
       if (res.ok) {
         const response = await res.json();
         if (response.success) {
@@ -94,7 +106,7 @@ export function useAutoOrder() {
       return false;
     } catch (error) {
       console.error(error);
-      toast.error("Failed to add user to auto order priorities");
+      toast.error(error instanceof Error ? error.message : "Failed to add user to auto order priorities");
       return false;
     }
   };
@@ -107,6 +119,10 @@ export function useAutoOrder() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
+      if (!res.ok) {
+        const failure = await res.json();
+        throw new Error(failure.errors ? Object.values(failure.errors).flat().join(" ") : failure.message || "Auto Order request failed");
+      }
       if (res.ok) {
         const response = await res.json();
         if (response.success) {
@@ -118,7 +134,7 @@ export function useAutoOrder() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to update status");
+      toast.error(error instanceof Error ? error.message : "Failed to update status");
     }
   };
 
@@ -130,6 +146,10 @@ export function useAutoOrder() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ customer_type: customerType }),
       });
+      if (!res.ok) {
+        const failure = await res.json();
+        throw new Error(failure.errors ? Object.values(failure.errors).flat().join(" ") : failure.message || "Auto Order request failed");
+      }
       if (res.ok) {
         const response = await res.json();
         if (response.success) {
@@ -141,7 +161,7 @@ export function useAutoOrder() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to update customer segment");
+      toast.error(error instanceof Error ? error.message : "Failed to update customer segment");
     }
   };
 
@@ -151,6 +171,10 @@ export function useAutoOrder() {
       const res = await fetchClient(endpoint, {
         method: "DELETE",
       });
+      if (!res.ok) {
+        const failure = await res.json();
+        throw new Error(failure.errors ? Object.values(failure.errors).flat().join(" ") : failure.message || "Auto Order request failed");
+      }
       if (res.ok) {
         const response = await res.json();
         if (response.success) {
@@ -160,7 +184,7 @@ export function useAutoOrder() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete user");
+      toast.error(error instanceof Error ? error.message : "Failed to delete user");
     }
   };
 

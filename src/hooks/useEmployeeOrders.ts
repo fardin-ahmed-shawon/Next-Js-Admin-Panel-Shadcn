@@ -40,7 +40,7 @@ export function useEmployeeOrders() {
     return res.json();
   };
 
-  const updateAssignment = async (id: number, payload: { order_no: string }) => {
+  const updateAssignment = async (id: number, payload: { user_id: number; order_no: string }) => {
     const res = await fetchClient(`${API_URL}/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

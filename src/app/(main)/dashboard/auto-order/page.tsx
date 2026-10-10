@@ -383,7 +383,7 @@ export default function AutoOrderPage() {
           <div>
             <h2 className="text-base font-bold text-foreground">Priority Sequence List</h2>
             <p className="text-xs text-muted-foreground">
-              Filter by department/designation and manage order assignment rules.
+              Orders rotate between active employees matching the customer segment. Without a matching employee, orders stay unassigned.
             </p>
           </div>
 

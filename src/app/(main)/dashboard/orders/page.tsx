@@ -242,6 +242,7 @@ export default function OrdersPage() {
           redx_parcel: order.redx_parcel || order.redxParcel || null,
           courier_details: order.courier_details || null,
           assignedEmployee: assignedEmployee,
+          employeeAssignment: order.employee_orders?.[0] || order.employeeOrders?.[0] || null,
           parcelHistory: {
             total: order.customer?.parcel_history?.total || 0,
             delivered: order.customer?.parcel_history?.delivered || 0,
