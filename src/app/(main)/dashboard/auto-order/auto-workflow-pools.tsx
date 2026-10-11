@@ -5,8 +5,7 @@ import useSWR from "swr";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EmployeeAssignmentPicker, type AssignmentEmployee } from "../orders/_components/employee-assignment-picker";
 import {
   Dialog,
   DialogContent,
@@ -17,12 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { fetchClient } from "@/lib/fetch-client";
 
-type Employee = {
-  id: number;
-  full_name: string;
-  status?: string;
-  employee_detail?: { department?: { name: string }; designation?: { title: string } };
-};
+type Employee = AssignmentEmployee & { status?: string };
 type Pool = {
   enabled: boolean;
   employees: Employee[];
@@ -41,19 +35,12 @@ function WorkflowPool({ workflow }: { workflow: "packing" | "returns" }) {
   const { data, error, isLoading, mutate } = useSWR<{ data: Pool }>(endpoint, request);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const [selected, setSelected] = useState("");
   const label = workflow === "packing" ? "Packing By" : "Return Confirmed By";
   const pool = data?.data;
   const eligible = new Set(pool?.employees.map((employee) => employee.id));
   const available = (pool?.employees || []).filter(
-    (employee) =>
-      !pool?.priorities.some((priority) => priority.user_id === employee.id) &&
-      [
-        employee.full_name,
-        employee.employee_detail?.department?.name,
-        employee.employee_detail?.designation?.title,
-      ].some((value) => value?.toLowerCase().includes(search.toLowerCase())),
+    (employee) => !pool?.priorities.some((priority) => priority.user_id === employee.id),
   );
   const activeCount =
     pool?.priorities.filter((priority) => !!Number(priority.active) && eligible.has(priority.user_id)).length || 0;
@@ -159,7 +146,6 @@ function WorkflowPool({ workflow }: { workflow: "packing" | "returns" }) {
         size="sm"
         disabled={!pool || saving}
         onClick={() => {
-          setSearch("");
           setSelected("");
           setOpen(true);
         }}
@@ -179,25 +165,7 @@ function WorkflowPool({ workflow }: { workflow: "packing" | "returns" }) {
               Choose an active employee with access to this section. Each pool rotates independently.
             </DialogDescription>
           </DialogHeader>
-          <Input
-            placeholder="Search employee, department or designation"
-            aria-label={"Search " + label + " employees"}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <Select value={selected} onValueChange={setSelected}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choose employee" />
-            </SelectTrigger>
-            <SelectContent>
-              {available.map((employee) => (
-                <SelectItem key={employee.id} value={String(employee.id)}>
-                  {employee.full_name}
-                  {employee.employee_detail?.department?.name ? " — " + employee.employee_detail.department.name : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <EmployeeAssignmentPicker employees={available} value={selected} onChange={setSelected} disabled={saving} />
           {available.length === 0 && (
             <p className="text-sm text-muted-foreground">No matching eligible employees outside this pool.</p>
           )}

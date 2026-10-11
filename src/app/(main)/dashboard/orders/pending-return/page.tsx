@@ -91,6 +91,7 @@ export default function PendingReturns() {
                 workflow="returns"
                 orderNos={[order.order_no]}
                 name={order.return_user?.full_name}
+                currentUserId={order.return_confirmed_by}
                 onSaved={() => mutate()}
               />
             </div>

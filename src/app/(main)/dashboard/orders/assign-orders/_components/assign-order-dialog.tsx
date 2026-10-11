@@ -12,9 +12,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { useUsers } from "@/hooks/useUsers";
+import useSWR from "swr";
+import { fetchClient } from "@/lib/fetch-client";
+import { EmployeeAssignmentPicker } from "../../_components/employee-assignment-picker";
 import { useEmployeeOrders, EmployeeOrder } from "@/hooks/useEmployeeOrders";
 
 interface AssignOrderDialogProps {
@@ -25,8 +26,29 @@ interface AssignOrderDialogProps {
   onSuccess?: () => void;
 }
 
-export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit, prefilledOrderNo, onSuccess }: AssignOrderDialogProps) {
-  const { users, loading: loadingUsers } = useUsers();
+export function AssignOrderDialog({
+  open,
+  onOpenChange,
+  assignmentToEdit,
+  prefilledOrderNo,
+  onSuccess,
+}: AssignOrderDialogProps) {
+  const {
+    data,
+    error: loadError,
+    isLoading: loadingUsers,
+  } = useSWR(
+    open
+      ? (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/") +
+          "order-assignments/recipients?assignment_type=agent"
+      : null,
+    async (url: string) => {
+      const response = await fetchClient(url);
+      if (!response.ok) throw new Error("Unable to load eligible employees");
+      return response.json();
+    },
+  );
+  const users = data?.data || [];
   const { createAssignment, updateAssignment } = useEmployeeOrders();
 
   const [userId, setUserId] = React.useState<string>("");
@@ -75,10 +97,10 @@ export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit, prefil
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{isEdit ? "Edit Assignment" : "Assign Order"}</DialogTitle>
+            <DialogTitle>{isEdit ? "Change Order Agent" : "Assign Order Agent"}</DialogTitle>
             <DialogDescription>
               {isEdit
                 ? "Choose the employee responsible for this order."
@@ -89,26 +111,18 @@ export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit, prefil
           <div className="grid gap-4 py-4">
             {error && <div className="text-sm text-destructive">{error}</div>}
 
-            <div className="grid gap-2">
-              <Label htmlFor="employee">Employee</Label>
-              <Select value={userId} onValueChange={setUserId} disabled={loadingUsers || isSubmitting}>
-                <SelectTrigger id="employee">
-                  <SelectValue placeholder={loadingUsers ? "Loading employees..." : "Select an employee"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id.toString()}>
-                      {u.full_name} ({u.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {isEdit && (
-                <p className="text-xs text-muted-foreground">
-                  Saving replaces the current order handler.
-                </p>
-              )}
-            </div>
+            {loadError && (
+              <p role="alert" className="text-sm text-destructive">
+                {loadError.message}
+              </p>
+            )}
+            <EmployeeAssignmentPicker
+              employees={users}
+              value={userId}
+              onChange={setUserId}
+              loading={loadingUsers}
+              disabled={isSubmitting || !!loadError}
+            />
 
             <div className="grid gap-2">
               <Label htmlFor="orderNo">Order Number</Label>
@@ -126,7 +140,15 @@ export function AssignOrderDialog({ open, onOpenChange, assignmentToEdit, prefil
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              disabled={
+                isSubmitting ||
+                loadingUsers ||
+                !!loadError ||
+                !users.some((employee: { id: number }) => String(employee.id) === userId)
+              }
+            >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? "Save changes" : "Assign"}
             </Button>

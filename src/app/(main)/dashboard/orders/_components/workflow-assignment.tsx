@@ -12,10 +12,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+import { EmployeeAssignmentPicker } from "./employee-assignment-picker";
 import { useAuth } from "@/hooks/useAuth";
-import { canAssignWorkflow, hasModuleAccess } from "@/hooks/useRoles";
+import { canAssignWorkflow, canChangeOrderAssignment } from "@/hooks/useRoles";
 import { fetchClient } from "@/lib/fetch-client";
 
 const base = () => process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
@@ -27,9 +26,13 @@ export function WorkflowAssignment({
   onSaved,
   editable = true,
   management = false,
+  rowAction = false,
+  currentUserId,
 }: {
   workflow: "agent" | "packing" | "returns";
   management?: boolean;
+  rowAction?: boolean;
+  currentUserId?: number | null;
   orderNos: string[];
   name?: string | null;
   onSaved?: () => void;
@@ -38,10 +41,9 @@ export function WorkflowAssignment({
   const { user } = useAuth();
   const allowed =
     editable &&
-    (management ? hasModuleAccess(user, "assign_orders") : workflow !== "agent" && canAssignWorkflow(user, workflow));
+    (management ? canChangeOrderAssignment(user, workflow) : workflow !== "agent" && canAssignWorkflow(user, workflow));
   const [open, setOpen] = React.useState(false);
   const [recipient, setRecipient] = React.useState("");
-  const [search, setSearch] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const label = workflow === "agent" ? "Order Agent" : workflow === "packing" ? "Packing By" : "Return Confirmed By";
   const { data, error, isLoading } = useSWR(
@@ -57,11 +59,7 @@ export function WorkflowAssignment({
       return response.json();
     },
   );
-  const employees = (data?.data || []).filter((employee: any) =>
-    [employee.full_name, employee.employee_detail?.department?.name, employee.employee_detail?.designation?.title].some(
-      (value) => value?.toLowerCase().includes(search.toLowerCase()),
-    ),
-  );
+  const employees = data?.data || [];
   async function save() {
     setSaving(true);
     try {
@@ -94,19 +92,20 @@ export function WorkflowAssignment({
   }
   return (
     <div className="min-w-[130px] text-xs">
-      {!management && orderNos.length === 1 && <span className="block font-medium">{name || "Unassigned"}</span>}
+      {(!management || rowAction) && orderNos.length === 1 && (
+        <span className="block font-medium">{name || "Unassigned"}</span>
+      )}
       {allowed && (
         <Button
           variant="link"
           size="sm"
           className="h-auto px-0 py-0 text-xs"
           onClick={() => {
-            setRecipient("");
-            setSearch("");
+            setRecipient(currentUserId ? String(currentUserId) : "");
             setOpen(true);
           }}
         >
-          {management
+          {management && !rowAction
             ? `Change ${label} (${orderNos.length})`
             : orderNos.length > 1
               ? `Assign ${label} (${orderNos.length})`
@@ -123,42 +122,42 @@ export function WorkflowAssignment({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Assign {label}</DialogTitle>
+            <DialogTitle>
+              {currentUserId ? "Change" : "Assign"} {label}
+            </DialogTitle>
             <DialogDescription>
               Update {orderNos.length} selected order{orderNos.length === 1 ? "" : "s"}. Other order assignments stay
               unchanged.
             </DialogDescription>
           </DialogHeader>
-          <Input
-            aria-label="Find workflow employee"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search name, department or designation"
+          <EmployeeAssignmentPicker
+            employees={employees}
+            value={recipient}
+            onChange={setRecipient}
+            loading={isLoading}
+            disabled={saving || !!error}
+            allowUnassigned
           />
           {error && (
             <p role="alert" className="text-sm text-destructive">
               {error.message}
             </p>
           )}
-          <Select value={recipient} onValueChange={setRecipient} disabled={isLoading || !!error || saving}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={isLoading ? "Loading employees..." : "Choose employee"} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unassigned">Unassigned</SelectItem>
-              {employees.map((employee: any) => (
-                <SelectItem key={employee.id} value={String(employee.id)}>
-                  {employee.full_name}
-                  {employee.employee_detail?.department?.name ? ` — ${employee.employee_detail.department.name}` : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <DialogFooter>
             <Button variant="outline" disabled={saving} onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button disabled={saving || !recipient || !!error} onClick={save}>
+            <Button
+              disabled={
+                saving ||
+                isLoading ||
+                !recipient ||
+                !!error ||
+                (recipient !== "unassigned" &&
+                  !employees.some((employee: { id: number }) => String(employee.id) === recipient))
+              }
+              onClick={save}
+            >
               {saving ? "Saving..." : "Save assignment"}
             </Button>
           </DialogFooter>

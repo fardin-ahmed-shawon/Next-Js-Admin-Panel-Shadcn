@@ -151,7 +151,9 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "orders_reporting_team", label: "Reporting Team Order Management Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "orders" },
       { id: "orders_excel_export", label: "Orders Excel Export", icon: ShoppingCart },
       { id: "create_orders", label: "Create Order", icon: ShoppingCart },
-      { id: "assign_orders", label: "Assign Orders", icon: ShoppingCart },
+      { id: "assign_orders", label: "Assign Order Agent", icon: ShoppingCart },
+      { id: "assign_packing", label: "Assign Packing By", icon: ShoppingCart },
+      { id: "assign_returns", label: "Assign Return Confirmed By", icon: ShoppingCart },
       { id: "wholesale_orders", label: "Wholesale Orders", icon: Store },
       { id: "invoices", label: "Invoices", icon: Receipt },
       { id: "incomplete_orders", label: "Incomplete Orders", icon: AlertCircle },
@@ -607,8 +609,8 @@ export default function EditRolePage() {
                             <span className="text-[10px] text-muted-foreground ml-5">
                               {item.id.startsWith("confirmed_orders_") || item.id.startsWith("pending_returns_")
                                 ? item.id.endsWith("_reporting_team")
-                                  ? "View and assign only orders assigned to employees reporting to you. All workflow access takes precedence."
-                                  : "View and assign all orders in this workflow, including unassigned orders."
+                                  ? "View only orders assigned to employees reporting to you. Changing assignments requires the separate assignment permission."
+                                  : "View all orders in this workflow, including unassigned orders. Changing assignments requires the separate assignment permission."
                                 : item.id.startsWith("hrm_team_")
                                 ? "View own data and direct/indirect reports. Existing All User Access takes precedence."
                                 : item.id === "hrm_own_department_performance"

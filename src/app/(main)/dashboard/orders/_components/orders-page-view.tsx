@@ -264,6 +264,8 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
           courier_details: order.courier_details || null,
           assignedEmployee: assignedEmployee,
           packingBy: order.packing_user?.full_name || null,
+          packingById: order.packing_by ?? null,
+          returnConfirmedById: order.return_confirmed_by ?? null,
           returnConfirmedBy: order.return_user?.full_name || null,
           workflow,
           employeeAssignment: order.employee_orders?.[0] || order.employeeOrders?.[0] || null,

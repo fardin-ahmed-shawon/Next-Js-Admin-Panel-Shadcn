@@ -73,7 +73,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { usePathaoSetup } from "@/hooks/usePathaoSetup";
 import { useRedxSetup } from "@/hooks/useRedxSetup";
-import { hasModuleAccess } from "@/hooks/useRoles";
+import { hasModuleAccess, canChangeOrderAssignment } from "@/hooks/useRoles";
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
 import { OrderContext } from "./order-context";
 import { fetchClient } from "@/lib/fetch-client";
@@ -123,6 +123,8 @@ export interface OrderRow {
   orderStatus: string;
   assignedEmployee?: string | null;
   packingBy?: string | null;
+  packingById?: number | null;
+  returnConfirmedById?: number | null;
   returnConfirmedBy?: string | null;
   workflow?: "packing";
   paymentStatus: string;
@@ -482,7 +484,7 @@ function AssignedEmployeeCell({ row }: { row: any }) {
   const { user } = useAuth();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const employeeName = row.original.assignedEmployee;
-  const hasAssignAccess = hasModuleAccess(user, "assign_orders");
+  const hasAssignAccess = canChangeOrderAssignment(user, "agent");
 
   if (!hasAssignAccess) {
     return <div className="w-[100px] text-xs font-semibold text-neutral-600 pl-1">{employeeName || "—"}</div>;
@@ -1161,11 +1163,11 @@ const columns: ColumnDef<OrderRow>[] = [
   {
     id: "assignedEmployee",
     header: "Order Agent",
-    cell: ({ row, table }) => (table.options.meta as any)?.packingMode ? <span className="text-xs">{row.original.assignedEmployee || "Unassigned"}</span> : <AssignedEmployeeCell row={row} />,
+    cell: ({ row }) => <AssignedEmployeeCell row={row} />,
   },
 
-  { id: "packingBy", header: "Packing By", cell: ({ row }) => <WorkflowAssignment workflow="packing" orderNos={[row.original.id]} name={row.original.packingBy} editable={["Confirmed", "Ready To Ship"].includes(row.original.orderStatus)} /> },
-  { id: "returnConfirmedBy", header: "Return Confirmed By", cell: ({ row }) => <WorkflowAssignment workflow="returns" orderNos={[row.original.id]} name={row.original.returnConfirmedBy} editable={["Pending-Return", "Partial"].includes(row.original.orderStatus)} /> },
+  { id: "packingBy", header: "Packing By", cell: ({ row, table }) => <WorkflowAssignment rowAction management={!(table.options.meta as any)?.packingMode} workflow="packing" orderNos={[row.original.id]} name={row.original.packingBy} currentUserId={row.original.packingById} /> },
+  { id: "returnConfirmedBy", header: "Return Confirmed By", cell: ({ row, table }) => <WorkflowAssignment rowAction management={!(table.options.meta as any)?.packingMode} workflow="returns" orderNos={[row.original.id]} name={row.original.returnConfirmedBy} currentUserId={row.original.returnConfirmedById} editable={!(table.options.meta as any)?.packingMode} /> },
 
   // Courier column
   {

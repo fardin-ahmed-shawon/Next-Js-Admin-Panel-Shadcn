@@ -35,6 +35,8 @@ export interface PageAccess {
   crm_excel_export?: number;
   create_orders: number;
   assign_orders: number;
+  assign_packing?: number;
+  assign_returns?: number;
   accounts: number;
   revenue: number;
   expense_category: number;
@@ -327,11 +329,15 @@ export function orderVisibilityLabel(user: any, allOrders: boolean, incomplete =
   return Number(access?.[permission]) === 1 ? "Your orders and reporting team's orders" : "Your assigned orders";
 }
 
+export function canChangeOrderAssignment(user: any, type: "agent" | "packing" | "returns"): boolean {
+  const access = user?.role?.page_access || user?.role?.pageAccess;
+  const permission = type === "agent" ? "assign_orders" : type === "packing" ? "assign_packing" : "assign_returns";
+  return !!user && user.status === "active" && (user.role?.role_name === "Admin" || Number(access?.[permission]) === 1);
+}
+
 export function canAssignWorkflow(user: any, workflow: "packing" | "returns"): boolean {
   if (!hasModuleAccess(user, workflow === "packing" ? "packaging_team" : "pending_returns")) return false;
-  const access = user?.role?.page_access || user?.role?.pageAccess;
-  const prefix = workflow === "packing" ? "confirmed_orders" : "pending_returns";
-  return user?.role?.role_name === "Admin" || Number(access?.[prefix + "_all"]) === 1 || Number(access?.[prefix + "_reporting_team"]) === 1;
+  return canChangeOrderAssignment(user, workflow);
 }
 
 export function workflowVisibilityLabel(user: any, workflow: "packing" | "returns"): string {
