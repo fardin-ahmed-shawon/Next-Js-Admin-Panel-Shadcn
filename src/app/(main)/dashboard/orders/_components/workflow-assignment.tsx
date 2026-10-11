@@ -16,8 +16,7 @@ import { EmployeeAssignmentPicker } from "./employee-assignment-picker";
 import { useAuth } from "@/hooks/useAuth";
 import { canAssignWorkflow, canChangeOrderAssignment } from "@/hooks/useRoles";
 import { fetchClient } from "@/lib/fetch-client";
-
-const base = () => process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+import { adminApiUrl, readAdminApiResponse } from "@/lib/admin-api";
 
 export function WorkflowAssignment({
   workflow,
@@ -46,17 +45,22 @@ export function WorkflowAssignment({
   const [recipient, setRecipient] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const label = workflow === "agent" ? "Order Agent" : workflow === "packing" ? "Packing By" : "Return Confirmed By";
-  const { data, error, isLoading } = useSWR(
+  const {
+    data,
+    error,
+    isLoading,
+    mutate: retryEmployees,
+  } = useSWR(
     open && allowed
-      ? base() +
-          (management
+      ? adminApiUrl(
+          management
             ? "order-assignments/recipients?assignment_type=" + workflow
-            : "order-workflows/" + workflow + "/recipients")
+            : "order-workflows/" + workflow + "/recipients",
+        )
       : null,
     async (url) => {
       const response = await fetchClient(url);
-      if (!response.ok) throw new Error("Unable to load eligible employees");
-      return response.json();
+      return readAdminApiResponse(response);
     },
   );
   const employees = data?.data || [];
@@ -64,7 +68,7 @@ export function WorkflowAssignment({
     setSaving(true);
     try {
       const response = await fetchClient(
-        base() + (management ? "orders/bulk-assign" : "order-workflows/" + workflow + "/assign"),
+        adminApiUrl(management ? "orders/bulk-assign" : "order-workflows/" + workflow + "/assign"),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -75,8 +79,7 @@ export function WorkflowAssignment({
           }),
         },
       );
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "Unable to update assignments");
+      await readAdminApiResponse(response);
       toast.success(label + " updated");
       setOpen(false);
       await mutate((key) => {
@@ -135,12 +138,16 @@ export function WorkflowAssignment({
             value={recipient}
             onChange={setRecipient}
             loading={isLoading}
+            loadFailed={!!error}
             disabled={saving || !!error}
             allowUnassigned
           />
           {error && (
             <p role="alert" className="text-sm text-destructive">
               {error.message}
+              <Button type="button" variant="link" onClick={() => retryEmployees()}>
+                Retry
+              </Button>
             </p>
           )}
           <DialogFooter>

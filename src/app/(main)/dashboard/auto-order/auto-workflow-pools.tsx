@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { fetchClient } from "@/lib/fetch-client";
+import { adminApiUrl, readAdminApiResponse } from "@/lib/admin-api";
 
 type Employee = AssignmentEmployee & { status?: string };
 type Pool = {
@@ -22,16 +23,13 @@ type Pool = {
   employees: Employee[];
   priorities: { id: number; user_id: number; active: boolean | number; user?: Employee }[];
 };
-const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
 async function request(url: string, options?: RequestInit) {
   const response = await fetchClient(url, options);
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.message || "Unable to save automatic assignment settings");
-  return result;
+  return readAdminApiResponse(response);
 }
 
 function WorkflowPool({ workflow }: { workflow: "packing" | "returns" }) {
-  const endpoint = base + "auto-order-workflows/" + workflow;
+  const endpoint = adminApiUrl("auto-order-workflows/" + workflow);
   const { data, error, isLoading, mutate } = useSWR<{ data: Pool }>(endpoint, request);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
@@ -74,7 +72,7 @@ function WorkflowPool({ workflow }: { workflow: "packing" | "returns" }) {
         <Switch
           aria-label={"Enable auto " + label}
           checked={!!pool?.enabled}
-          disabled={!pool || saving}
+          disabled={!pool || saving || !!error}
           onCheckedChange={(enabled) => save("", "PUT", { enabled })}
         />
       </div>
@@ -87,7 +85,7 @@ function WorkflowPool({ workflow }: { workflow: "packing" | "returns" }) {
       {isLoading && <p className="text-sm">Loading pool…</p>}
       {error && (
         <p role="alert" className="text-sm text-destructive">
-          Could not load settings.{" "}
+          Could not load settings. {error.message}{" "}
           <Button variant="link" onClick={() => mutate()}>
             Retry
           </Button>
@@ -144,7 +142,7 @@ function WorkflowPool({ workflow }: { workflow: "packing" | "returns" }) {
       <Button
         variant="outline"
         size="sm"
-        disabled={!pool || saving}
+        disabled={!pool || saving || !!error}
         onClick={() => {
           setSelected("");
           setOpen(true);

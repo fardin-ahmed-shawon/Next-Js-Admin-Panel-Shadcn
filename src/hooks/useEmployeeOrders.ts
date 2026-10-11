@@ -1,7 +1,8 @@
 import { fetchClient } from "@/lib/fetch-client";
+import { adminApiUrl, readAdminApiResponse } from "@/lib/admin-api";
 import useSWR from "swr";
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/"}employee-orders`;
+const API_URL = adminApiUrl("employee-orders");
 
 export interface EmployeeOrder {
   id: number;
@@ -17,11 +18,7 @@ export interface EmployeeOrder {
 
 const fetcher = async (url: string) => {
   const res = await fetchClient(url);
-  if (!res.ok) {
-    const error = new Error("An error occurred while fetching the data.");
-    throw error;
-  }
-  return res.json();
+  return readAdminApiResponse(res);
 };
 
 export function useEmployeeOrders() {
@@ -35,9 +32,9 @@ export function useEmployeeOrders() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Failed to assign order");
+    const result = await readAdminApiResponse(res);
     mutate();
-    return res.json();
+    return result;
   };
 
   const updateAssignment = async (id: number, payload: { user_id: number; order_no: string }) => {
@@ -46,18 +43,18 @@ export function useEmployeeOrders() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Failed to update assignment");
+    const result = await readAdminApiResponse(res);
     mutate();
-    return res.json();
+    return result;
   };
 
   const deleteAssignment = async (id: number) => {
     const res = await fetchClient(`${API_URL}/${id}`, {
       method: "DELETE",
     });
-    if (!res.ok) throw new Error("Failed to delete assignment");
+    const result = await readAdminApiResponse(res);
     mutate();
-    return res.json();
+    return result;
   };
 
   return {

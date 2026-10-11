@@ -22,6 +22,7 @@ export function EmployeeAssignmentPicker({
   value,
   onChange,
   loading,
+  loadFailed = false,
   disabled,
   allowUnassigned = false,
 }: {
@@ -29,6 +30,7 @@ export function EmployeeAssignmentPicker({
   value: string;
   onChange: (value: string) => void;
   loading?: boolean;
+  loadFailed?: boolean;
   disabled?: boolean;
   allowUnassigned?: boolean;
 }) {
@@ -83,7 +85,7 @@ export function EmployeeAssignmentPicker({
     });
   const selected = employees.find((employee) => String(employee.id) === value);
   const filteredSelection = selected && !filtered.some((employee) => employee.id === selected.id);
-  const unavailableSelection = value && value !== "unassigned" && !loading && !selected;
+  const unavailableSelection = value && value !== "unassigned" && !loading && !loadFailed && !selected;
   return (
     <div className="space-y-3">
       <div className="space-y-1.5">
@@ -150,7 +152,11 @@ export function EmployeeAssignmentPicker({
       </div>
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          {loading ? "Loading employees…" : filtered.length + " matching employees"}
+          {loadFailed
+            ? "Employee list unavailable"
+            : loading
+              ? "Loading employees…"
+              : filtered.length + " matching employees"}
         </p>
         <Select value={sort} onValueChange={setSort} disabled={disabled}>
           <SelectTrigger aria-label="Sort employees" className="w-44">
@@ -191,7 +197,7 @@ export function EmployeeAssignmentPicker({
           </SelectContent>
         </Select>
       </div>
-      {!loading && filtered.length === 0 && (
+      {!loading && !loadFailed && filtered.length === 0 && (
         <p className="text-xs text-muted-foreground">No employees match these filters.</p>
       )}
       {(search || department !== "all" || designation !== "all") && (

@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import useSWR from "swr";
 import { fetchClient } from "@/lib/fetch-client";
+import { adminApiUrl, readAdminApiResponse } from "@/lib/admin-api";
 import { EmployeeAssignmentPicker } from "../../_components/employee-assignment-picker";
 import { useEmployeeOrders, EmployeeOrder } from "@/hooks/useEmployeeOrders";
 
@@ -37,17 +38,11 @@ export function AssignOrderDialog({
     data,
     error: loadError,
     isLoading: loadingUsers,
-  } = useSWR(
-    open
-      ? (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/") +
-          "order-assignments/recipients?assignment_type=agent"
-      : null,
-    async (url: string) => {
-      const response = await fetchClient(url);
-      if (!response.ok) throw new Error("Unable to load eligible employees");
-      return response.json();
-    },
-  );
+    mutate: retryEmployees,
+  } = useSWR(open ? adminApiUrl("order-assignments/recipients?assignment_type=agent") : null, async (url: string) => {
+    const response = await fetchClient(url);
+    return readAdminApiResponse(response);
+  });
   const users = data?.data || [];
   const { createAssignment, updateAssignment } = useEmployeeOrders();
 
@@ -114,6 +109,9 @@ export function AssignOrderDialog({
             {loadError && (
               <p role="alert" className="text-sm text-destructive">
                 {loadError.message}
+                <Button type="button" variant="link" onClick={() => retryEmployees()}>
+                  Retry
+                </Button>
               </p>
             )}
             <EmployeeAssignmentPicker
@@ -121,6 +119,7 @@ export function AssignOrderDialog({
               value={userId}
               onChange={setUserId}
               loading={loadingUsers}
+              loadFailed={!!loadError}
               disabled={isSubmitting || !!loadError}
             />
 
