@@ -5,11 +5,13 @@ interface PrintModalState {
   orderIds: string | string[] | null;
   type: "a4" | "pos" | "label" | null;
   onSuccess?: () => void;
+  workflow?: "packing";
   openModal: (
     orderIds: string | string[],
     type: "a4" | "pos" | "label",
     url: string,
-    onSuccess?: () => void
+    onSuccess?: () => void,
+    workflow?: "packing",
   ) => void;
   closeModal: () => void;
 }
@@ -19,9 +21,9 @@ export const usePrintModal = create<PrintModalState>((set) => ({
   orderIds: null,
   type: null,
   onSuccess: undefined,
-  openModal: (orderIds, type, url, onSuccess) => {
+  openModal: (orderIds, type, url, onSuccess, workflow) => {
     window.open(url, "_blank", "noopener,noreferrer");
-    set({ open: true, orderIds, type, onSuccess });
+    set({ open: true, orderIds, type, onSuccess, workflow });
   },
-  closeModal: () => set({ open: false, orderIds: null, type: null, onSuccess: undefined }),
+  closeModal: () => set({ open: false, orderIds: null, type: null, onSuccess: undefined, workflow: undefined }),
 }));

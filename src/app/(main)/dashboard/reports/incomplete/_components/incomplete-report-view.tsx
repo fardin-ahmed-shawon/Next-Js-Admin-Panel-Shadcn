@@ -504,7 +504,7 @@ export function IncompleteReportView({
                     <TableHead className="font-semibold text-xs">Time Taken</TableHead>
                     <TableHead className="font-semibold text-xs">Status</TableHead>
                     <TableHead className="text-right font-semibold text-xs">Grand Total</TableHead>
-                    <TableHead className="font-semibold text-xs">Assigned To</TableHead>
+                    <TableHead className="font-semibold text-xs">Order Agent</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

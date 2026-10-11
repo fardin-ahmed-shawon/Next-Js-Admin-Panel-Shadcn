@@ -140,8 +140,12 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     icon: ShoppingCart,
     items: [
       { id: "orders", label: "Order Management (Full)", icon: ShoppingCart },
-      { id: "packaging_team", label: "Packaging Team (Confirmed → Ready to Ship → Steadfast)", icon: Package, badge: "Special Access" },
-      { id: "pending_returns", label: "Pending Returns (/dashboard/orders/pending-return)", icon: RotateCcw, badge: "Specific Page" },
+      { id: "packaging_team", label: "Confirmed Orders", icon: Package, badge: "Special Access" },
+      { id: "confirmed_orders_reporting_team", label: "Confirmed Orders — Reporting Team", icon: ShieldCheck, isSubToggle: true, dependsOn: "packaging_team" },
+      { id: "confirmed_orders_all", label: "All Confirmed Orders", icon: ShieldCheck, isSubToggle: true, dependsOn: "packaging_team" },
+      { id: "pending_returns", label: "Pending Returns", icon: RotateCcw, badge: "Specific Page" },
+      { id: "pending_returns_reporting_team", label: "Pending Returns — Reporting Team", icon: ShieldCheck, isSubToggle: true, dependsOn: "pending_returns" },
+      { id: "pending_returns_all", label: "All Pending Returns", icon: ShieldCheck, isSubToggle: true, dependsOn: "pending_returns" },
       { id: "all_orders", label: "Show All Orders", icon: ShoppingCart },
       { id: "all_orders_toggle", label: "Allow All Orders Toggle", icon: ShoppingCart },
       { id: "orders_reporting_team", label: "Reporting Team Order Management Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "orders" },
@@ -597,11 +601,15 @@ export default function EditRolePage() {
                               <item.icon className="h-3.5 w-3.5 text-primary shrink-0" />
                               <span className="text-xs font-semibold truncate">{item.label}</span>
                               <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">
-                                {item.id.startsWith("hrm_team_") ? "Reporting Team" : item.id === "hrm_own_department_performance" ? "Own Department" : "All User Access"}
+                                {(item.id.startsWith("hrm_team_") || item.id.endsWith("_reporting_team")) ? "Reporting Team" : item.id === "hrm_own_department_performance" ? "Own Department" : "All User Access"}
                               </Badge>
                             </div>
                             <span className="text-[10px] text-muted-foreground ml-5">
-                              {item.id.startsWith("hrm_team_")
+                              {item.id.startsWith("confirmed_orders_") || item.id.startsWith("pending_returns_")
+                                ? item.id.endsWith("_reporting_team")
+                                  ? "View and assign only orders assigned to employees reporting to you. All workflow access takes precedence."
+                                  : "View and assign all orders in this workflow, including unassigned orders."
+                                : item.id.startsWith("hrm_team_")
                                 ? "View own data and direct/indirect reports. Existing All User Access takes precedence."
                                 : item.id === "hrm_own_department_performance"
                                   ? "Restrict the report and totals to the user's assigned department."

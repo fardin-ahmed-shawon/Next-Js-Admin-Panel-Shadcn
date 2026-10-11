@@ -38,6 +38,7 @@ const fetcher = async (key: string | [string, number | undefined]) => {
 
 interface UseOrdersParams {
   report?: boolean;
+  workflow?: "packing";
   page?: number;
   per_page?: number;
   search?: string;
@@ -62,6 +63,7 @@ export function useOrders(params?: UseOrdersParams) {
       : process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders";
 
   const searchParams = new URLSearchParams();
+  if (params?.workflow) searchParams.append("workflow", params.workflow);
   if (params?.page) searchParams.append("page", params.page.toString());
   if (params?.per_page) searchParams.append("per_page", params.per_page.toString());
   if (params?.search) searchParams.append("search", params.search);

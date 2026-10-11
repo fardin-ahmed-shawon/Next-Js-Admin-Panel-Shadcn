@@ -1,5 +1,6 @@
 "use client";
 
+import { WorkflowAssignment } from "./workflow-assignment";
 import { ExcelExportButton } from "@/components/excel-export-button";
 import * as React from "react";
 
@@ -120,6 +121,10 @@ export interface OrderRow {
   items: number;
   total: number;
   orderStatus: string;
+  assignedEmployee?: string | null;
+  packingBy?: string | null;
+  returnConfirmedBy?: string | null;
+  workflow?: "packing";
   paymentStatus: string;
   date: string;
   avatar: string;
@@ -386,7 +391,7 @@ export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolea
               const endpoint = process.env.NEXT_PUBLIC_API_STEADFAST_PARCELS_URL || "steadfast-parcels";
               const res = await fetchClient(`${getApiBaseUrl()}${endpoint}/${row.original.id}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", "X-Order-Workflow": row.original.workflow || "" },
               });
               if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
@@ -411,7 +416,7 @@ export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolea
             try {
               const res = await fetchClient(`${getApiBaseUrl()}pathao-parcels/${row.original.id}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", "X-Order-Workflow": row.original.workflow || "" },
               });
               if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
@@ -436,7 +441,7 @@ export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolea
             try {
               const res = await fetchClient(`${getApiBaseUrl()}redx-parcels/${row.original.id}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", "X-Order-Workflow": row.original.workflow || "" },
               });
               if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
@@ -444,17 +449,19 @@ export function SendCourierCell({ row, readOnly }: { row: any; readOnly?: boolea
               }
               toast.success(`Order ${row.original.id} sent to RedX`, { id: toastId });
 
-              // Automation: Update order status to "Ready To Ship"
+              // Preserve the existing general-order action outside the packing workflow.
+              if (row.original.workflow !== "packing") {
               try {
                 await fetchClient(`${getApiBaseUrl()}orders/bulk-update-status`, {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
+                  headers: { "Content-Type": "application/json", "X-Order-Workflow": row.original.workflow || "" },
                   body: JSON.stringify({ order_nos: [row.original.id], order_status: "Ready To Ship" }),
                 });
               } catch (e) {
                 console.warn("Failed to update status to Ready To Ship", e);
               }
 
+              }
               invalidateOrders();
             } catch (err: any) {
               toast.error(err?.message || "Something went wrong.", { id: toastId });
@@ -789,6 +796,19 @@ function OrderStatusCell({ row, table }: { row: any; table: any }) {
     setStatus(row.original.orderStatus);
     setCancelledNoteText(row.original.cancelled_note || "");
   }, [row.original.orderStatus, row.original.cancelled_note]);
+
+  if (meta?.packingMode) {
+    return <div className="space-y-1"><Badge variant="outline">{status}</Badge>{status === "Confirmed" && <Button size="sm" className="h-7 text-xs" disabled={isSubmitting} onClick={async () => {
+      setIsSubmitting(true);
+      try {
+        const response = await fetchClient(`${getApiBaseUrl()}order-workflows/packing/ready`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_nos: [row.original.id] }) });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || "Unable to update status");
+        toast.success("Order ready to ship"); invalidateOrders();
+      } catch (error) { toast.error(error instanceof Error ? error.message : "Unable to update status"); }
+      finally { setIsSubmitting(false); }
+    }}>Mark Ready to Ship</Button>}</div>;
+  }
 
   const handleConfirmCancel = async () => {
     setIsSubmitting(true);
@@ -1135,20 +1155,23 @@ const columns: ColumnDef<OrderRow>[] = [
   },
 
   // Payment Status column
-  { id: "pStatus", header: "Payment Status", cell: ({ row }) => <PaymentStatusCell row={row} /> },
+  { id: "pStatus", header: "Payment Status", cell: ({ row, table }) => (table.options.meta as any)?.packingMode ? <Badge variant="outline">{row.original.paymentStatus}</Badge> : <PaymentStatusCell row={row} /> },
 
   // Assigned Employee column
   {
     id: "assignedEmployee",
-    header: "Assigned To",
-    cell: ({ row }) => <AssignedEmployeeCell row={row} />,
+    header: "Order Agent",
+    cell: ({ row, table }) => (table.options.meta as any)?.packingMode ? <span className="text-xs">{row.original.assignedEmployee || "Unassigned"}</span> : <AssignedEmployeeCell row={row} />,
   },
+
+  { id: "packingBy", header: "Packing By", cell: ({ row }) => <WorkflowAssignment workflow="packing" orderNos={[row.original.id]} name={row.original.packingBy} editable={["Confirmed", "Ready To Ship"].includes(row.original.orderStatus)} /> },
+  { id: "returnConfirmedBy", header: "Return Confirmed By", cell: ({ row }) => <WorkflowAssignment workflow="returns" orderNos={[row.original.id]} name={row.original.returnConfirmedBy} editable={["Pending-Return", "Partial"].includes(row.original.orderStatus)} /> },
 
   // Courier column
   {
     id: "sendCourier",
     header: "Courier",
-    cell: ({ row }) => <SendCourierCell row={row} />,
+    cell: ({ row, table }) => (table.options.meta as any)?.packingMode && row.original.orderStatus !== "Ready To Ship" ? <span className="text-xs text-muted-foreground">Mark Ready to Ship first</span> : <SendCourierCell row={row} />,
   },
 
   // Actions column
@@ -1156,6 +1179,11 @@ const columns: ColumnDef<OrderRow>[] = [
     id: "actions",
     header: () => <div className="text-right">Actions</div>,
     cell: ({ row, table }) => {
+      if ((table.options.meta as any)?.packingMode) {
+        return <div className="flex gap-1">{(["a4", "pos", "label"] as const).map(type =>
+          <Button key={type} variant="outline" size="sm" className="text-xs" onClick={() => usePrintModal.getState().openModal(row.original.id, type, `/invoice/${row.original.id}${type === "a4" ? "" : "/" + type}`, undefined, "packing")}>{type === "a4" ? "Invoice" : type === "pos" ? "POS" : "Label"}</Button>
+        )}</div>;
+      }
       const incompleteMode = (table.options.meta as any)?.incompleteOrdersMode;
 
       if (incompleteMode) {
@@ -1229,8 +1257,8 @@ const columns: ColumnDef<OrderRow>[] = [
 
 export function orderExcelData(data: OrderRow[]) {
   return {
-    headers: ["Order ID", "Customer", "Phone", "Items", "Total", "Paid", "Due", "Order Status", "Payment Status", "Payment Method", "Date"],
-    rows: data.map(r => [r.id, r.customer, r.phone, r.items, r.total, r.paid, r.due, r.orderStatus, r.paymentStatus, r.paymentMethod, r.date]),
+    headers: ["Order ID", "Customer", "Phone", "Items", "Total", "Paid", "Due", "Order Status", "Payment Status", "Payment Method", "Date", "Order Agent", "Packing By", "Return Confirmed By"],
+    rows: data.map(r => [r.id, r.customer, r.phone, r.items, r.total, r.paid, r.due, r.orderStatus, r.paymentStatus, r.paymentMethod, r.date, r.assignedEmployee, r.packingBy, r.returnConfirmedBy]),
   };
 }
 
@@ -1246,6 +1274,7 @@ export interface OrdersTableProps {
   incompleteOrdersMode?: boolean;
   hideActionsColumn?: boolean;
   useServerPagination?: boolean;
+  packingMode?: boolean;
 }
 
 const AiAutoCallButton = ({ orderId, isAiCalled }: { orderId: string; isAiCalled?: boolean }) => {
@@ -1298,7 +1327,7 @@ const AiAutoCallButton = ({ orderId, isAiCalled }: { orderId: string; isAiCalled
   );
 };
 
-export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus, incompleteOrdersMode, hideActionsColumn, useServerPagination }: OrdersTableProps) {
+export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus, incompleteOrdersMode, hideActionsColumn, useServerPagination, packingMode }: OrdersTableProps) {
   const { features } = useModularFeatures();
   const context = React.useContext(OrderContext);
 
@@ -1387,6 +1416,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
       },
     },
     meta: {
+      packingMode,
       simplifiedPaymentColumn,
       showIncompleteStatus,
       incompleteOrdersMode,
@@ -1487,7 +1517,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
       const endpoint = type === "status" ? "bulk-update-status" : "bulk-update-payment";
       const bodyKey = type === "status" ? "order_status" : "payment_status";
 
-      const res = await fetchClient(`${getApiBaseUrl()}orders/${endpoint}`, {
+      const res = await fetchClient(packingMode ? `${getApiBaseUrl()}order-workflows/packing/ready` : `${getApiBaseUrl()}orders/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ order_nos: selectedIds, [bodyKey]: val }),
@@ -1619,7 +1649,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
               </div>
               {showStatusFilter && (
                 <div className="flex flex-wrap gap-2">
-                  {orderStatuses
+                  {(packingMode ? ["All", "Confirmed", "Ready To Ship"] : orderStatuses)
                     .filter((s) => showIncompleteStatus ? true : s !== "Incomplete")
                     .map((s) => (
                       <Button
@@ -1677,6 +1707,8 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
         {selectedCount > 0 && (
           <div className="flex items-center gap-2 px-4 animate-in fade-in slide-in-from-top-1 duration-200">
             <span className="text-xs font-medium text-muted-foreground shrink-0">{selectedCount} selected:</span>
+            <WorkflowAssignment workflow="packing" orderNos={table.getSelectedRowModel().rows.map(row => row.original.id)} editable={table.getSelectedRowModel().rows.every(row => ["Confirmed", "Ready To Ship"].includes(row.original.orderStatus))} />
+            {!packingMode && <WorkflowAssignment workflow="returns" orderNos={table.getSelectedRowModel().rows.map(row => row.original.id)} editable={table.getSelectedRowModel().rows.every(row => ["Pending-Return", "Partial"].includes(row.original.orderStatus))} />}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="default" size="sm" className="h-7 gap-1.5 text-xs relative">
@@ -1706,8 +1738,8 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                       Order Status
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent className="w-44">
-                      {orderStatuses
-                        .filter((s) => s !== "All")
+                      {(packingMode ? ["All", "Confirmed", "Ready To Ship"] : orderStatuses)
+                        .filter((s) => s !== "All" && (!packingMode || s === "Ready To Ship"))
                         .map((s) => (
                           <DropdownMenuItem key={s} disabled={bulkUpdating || bulkCancelSubmitting} onClick={() => handleBulkUpdate("status", s)}>
                             {s}
@@ -1715,7 +1747,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                         ))}
                     </DropdownMenuSubContent>
                   </DropdownMenuSub>
-                  <DropdownMenuSub>
+{!packingMode && (                  <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                       <ChevronDown className="mr-2 size-4" />
                       Payment Status
@@ -1729,21 +1761,21 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                           </DropdownMenuItem>
                         ))}
                     </DropdownMenuSubContent>
-                  </DropdownMenuSub>
+                  </DropdownMenuSub>)}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Bulk Print</DropdownMenuLabel>
                   <DropdownMenuItem onClick={() => {
                     const ids = table.getSelectedRowModel().rows.map((r) => r.original.id);
-                    usePrintModal.getState().openModal(ids, "a4", `/invoice/bulk?ids=${ids.join(",")}`);
+                    usePrintModal.getState().openModal(ids, "a4", `/invoice/bulk?ids=${ids.join(",")}`, undefined, packingMode ? "packing" : undefined);
                   }}>
                     <FileText className="mr-2 size-4" />
                     Print A4 Invoice
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     const ids = table.getSelectedRowModel().rows.map((r) => r.original.id);
-                    usePrintModal.getState().openModal(ids, "pos", `/invoice/bulk/pos?ids=${ids.join(",")}`);
+                    usePrintModal.getState().openModal(ids, "pos", `/invoice/bulk/pos?ids=${ids.join(",")}`, undefined, packingMode ? "packing" : undefined);
                   }}>
                     <Printer className="mr-2 size-4" />
                     Print Parcel Invoice

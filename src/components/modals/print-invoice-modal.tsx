@@ -25,15 +25,10 @@ interface PrintInvoiceModalProps {
   orderIds: string | string[] | null;
   type: "a4" | "pos" | "label" | null;
   onSuccess?: () => void;
+  workflow?: "packing";
 }
 
-export function PrintInvoiceModal({
-  open,
-  onOpenChange,
-  orderIds,
-  type,
-  onSuccess,
-}: PrintInvoiceModalProps) {
+export function PrintInvoiceModal({ open, onOpenChange, orderIds, type, onSuccess, workflow }: PrintInvoiceModalProps) {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const handleConfirm = async () => {
@@ -41,9 +36,7 @@ export function PrintInvoiceModal({
 
     setIsLoading(true);
     try {
-      const payload = Array.isArray(orderIds)
-        ? { order_nos: orderIds, type }
-        : { order_no: orderIds, type };
+      const payload = Array.isArray(orderIds) ? { order_nos: orderIds, type } : { order_no: orderIds, type };
 
       const res = await fetchClient(`${getApiBaseUrl()}invoices`, {
         method: "POST",
@@ -59,11 +52,19 @@ export function PrintInvoiceModal({
       // Automation: Update order status to "Ready To Ship"
       try {
         const selectedIds = Array.isArray(orderIds) ? orderIds : [orderIds];
-        await fetchClient(`${getApiBaseUrl()}orders/bulk-update-status`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ order_nos: selectedIds, order_status: "Ready To Ship" }),
-        });
+        const statusResponse = await fetchClient(
+          `${getApiBaseUrl()}${workflow === "packing" ? "order-workflows/packing/ready" : "orders/bulk-update-status"}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ order_nos: selectedIds, order_status: "Ready To Ship" }),
+          },
+        );
+
+        if (!statusResponse.ok) {
+          const error = await statusResponse.json().catch(() => ({}));
+          throw new Error(error.message || "Invoice saved, but the order status could not be updated.");
+        }
 
         // Auto-refresh the orders table data globally
         const ordersEndpoint = process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders";
@@ -74,10 +75,10 @@ export function PrintInvoiceModal({
             return false;
           },
           undefined,
-          { revalidate: true }
+          { revalidate: true },
         );
       } catch (statusErr) {
-        console.warn("Failed to automatically update order status", statusErr);
+        throw statusErr;
       }
 
       toast.success("Invoice print status saved successfully");
@@ -95,16 +96,18 @@ export function PrintInvoiceModal({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            All invoiced Printed !
-          </AlertDialogDescription>
+          <AlertDialogDescription>All invoiced Printed !</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={(e) => {
-            e.preventDefault();
-            handleConfirm();
-          }} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              handleConfirm();
+            }}
+            disabled={isLoading}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
             {isLoading && <Loader2 className="mr-2 size-4 animate-spin" />}
             Yes, Invoiced Printed!
           </AlertDialogAction>

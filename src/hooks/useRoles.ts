@@ -111,6 +111,10 @@ export interface PageAccess {
   auto_order?: number;
   user_behaviour_logs?: number;
   packaging_team?: number;
+  confirmed_orders_all?: number;
+  confirmed_orders_reporting_team?: number;
+  pending_returns_all?: number;
+  pending_returns_reporting_team?: number;
   pending_returns?: number;
   employee_fines?: number;
   created_at: string | null;
@@ -321,4 +325,18 @@ export function orderVisibilityLabel(user: any, allOrders: boolean, incomplete =
     || (allOrders && canUseAllOrdersToggle(user))) return "All orders";
   const permission = incomplete ? "incomplete_orders_reporting_team" : "orders_reporting_team";
   return Number(access?.[permission]) === 1 ? "Your orders and reporting team's orders" : "Your assigned orders";
+}
+
+export function canAssignWorkflow(user: any, workflow: "packing" | "returns"): boolean {
+  if (!hasModuleAccess(user, workflow === "packing" ? "packaging_team" : "pending_returns")) return false;
+  const access = user?.role?.page_access || user?.role?.pageAccess;
+  const prefix = workflow === "packing" ? "confirmed_orders" : "pending_returns";
+  return user?.role?.role_name === "Admin" || Number(access?.[prefix + "_all"]) === 1 || Number(access?.[prefix + "_reporting_team"]) === 1;
+}
+
+export function workflowVisibilityLabel(user: any, workflow: "packing" | "returns"): string {
+  const access = user?.role?.page_access || user?.role?.pageAccess;
+  const prefix = workflow === "packing" ? "confirmed_orders" : "pending_returns";
+  if (user?.role?.role_name === "Admin" || Number(access?.[prefix + "_all"]) === 1) return workflow === "packing" ? "All Confirmed and Ready to Ship orders" : "All pending returns";
+  return Number(access?.[prefix + "_reporting_team"]) === 1 ? "Orders assigned to employees reporting to you" : "Your assigned orders";
 }
