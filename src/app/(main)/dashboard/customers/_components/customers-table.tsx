@@ -208,15 +208,15 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
     .sort((a, b) => (assignmentSort === "department" ? (a.department || "").localeCompare(b.department || "")
       : assignmentSort === "designation" ? (a.designation || "").localeCompare(b.designation || "") : 0)
       || a.full_name.localeCompare(b.full_name));
-  const openAssignment = (ids: (string | number)[]) => {
-    setAssignmentIds(ids); setRecipientId(""); setAssignmentMode(assignmentOptions?.all_customers ? "handover" : "assign"); setAssignmentError("");
+  const openAssignment = (ids: (string | number)[], mode: "handover" | "assign") => {
+    setAssignmentIds(ids); setRecipientId(""); setAssignmentMode(mode); setAssignmentError("");
     setAssignmentDepartment("all"); setAssignmentDesignation("all"); setAssignmentSearch(""); setAssignmentSort("name");
   };
   const handleAssignment = async () => {
     setIsAssigning(true); setAssignmentError("");
     try {
       await assignCrmCustomers(assignmentIds, recipientId === "unassigned" ? null : Number(recipientId), assignmentMode);
-      toast.success("CRM customer assignments updated");
+      toast.success(`Customer Relationship ${assignmentMode === "handover" ? "Manager" : "Agent"} updated`);
       setAssignmentIds([]); setSelectedRowIds(new Set()); onRefresh?.();
     } catch (error) {
       setAssignmentError(error instanceof Error ? error.message : "Unable to assign customers");
@@ -484,6 +484,20 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
           return a.name.localeCompare(b.name);
         case "name-desc":
           return b.name.localeCompare(a.name);
+        case "agent-asc":
+        case "agent-desc":
+        case "manager-asc":
+        case "manager-desc": {
+          const isAgent = sortBy.startsWith("agent-");
+          const aName = (isAgent ? a.crmAssignee : a.crmManager)?.trim() || "";
+          const bName = (isAgent ? b.crmAssignee : b.crmManager)?.trim() || "";
+          // Keep unassigned customers last in either direction.
+          if (!aName && bName) return 1;
+          if (aName && !bName) return -1;
+          const direction = sortBy.endsWith("-desc") ? -1 : 1;
+          return direction * aName.localeCompare(bName, undefined, { sensitivity: "base" })
+            || a.name.localeCompare(b.name);
+        }
         case "id-desc":
           return Number(b.id) - Number(a.id);
         case "id-asc":
@@ -562,9 +576,9 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   };
 
   const customerExcelData = (selectedOnly = false) => ({
-    headers: ["ID", "Full Name", "Phone", "Email", "Account Status", "Segment", "Total Orders", "Products Ordered", "Lifetime Spend (BDT)", "AOV (BDT)", "Delivery Success Rate (%)", "Return Rate (%)", "Last Order Date", "Joined Date", "District", "City/Shipping Area", "Address", "Order IDs", "Recent Order", "Purchased Products"],
+    headers: ["ID", "Full Name", "Customer Relationship Manager", "Customer Relationship Agent", "Phone", "Email", "Account Status", "Segment", "Total Orders", "Products Ordered", "Lifetime Spend (BDT)", "AOV (BDT)", "Delivery Success Rate (%)", "Return Rate (%)", "Last Order Date", "Joined Date", "District", "City/Shipping Area", "Address", "Order IDs", "Recent Order", "Purchased Products"],
     rows: (selectedOnly ? data.filter(c => selectedRowIds.has(c.id)) : sortedData).map(c => [
-      c.id, c.name, c.phone, c.email, c.status, c.segmentName, c.totalOrders, c.productsCount,
+      c.id, c.name, c.crmManager?.trim() || "Unassigned", c.crmAssignee?.trim() || "Unassigned", c.phone, c.email, c.status, c.segmentName, c.totalOrders, c.productsCount,
       c.totalSpent, c.aov, c.successRate, c.returnRate, c.lastOrderDate || "Never", c.joinDate,
       c.district, c.city, c.address, (c.orderNos || c.orderIds || []).join(" | "), c.recentOrderNo, (c.productNames || []).join(" | "),
     ]),
@@ -649,9 +663,12 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   const toggleColumnSort = (field: string) => {
     if (sortBy === `${field}-desc`) {
       setSortBy(`${field}-asc`);
-    } else {
+    } else if (sortBy === `${field}-asc`) {
       setSortBy(`${field}-desc`);
+    } else {
+      setSortBy(`${field}-${field === "agent" || field === "manager" ? "asc" : "desc"}`);
     }
+    setPage(1);
   };
 
   const getSortIcon = (field: string) => {
@@ -836,7 +853,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                     setPage(1);
                   }}
                 >
-                  <SelectTrigger className="h-9 w-[180px] text-xs font-medium">
+                  <SelectTrigger className="h-9 w-[230px] text-xs font-medium">
                     <SelectValue placeholder="Sort customers by..." />
                   </SelectTrigger>
                   <SelectContent align="end" className="text-xs">
@@ -852,6 +869,10 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                     <SelectItem value="oldest">Oldest Customer</SelectItem>
                     <SelectItem value="name-asc">Name (A → Z)</SelectItem>
                     <SelectItem value="name-desc">Name (Z → A)</SelectItem>
+                    <SelectItem value="manager-asc">Relationship Manager (A → Z)</SelectItem>
+                    <SelectItem value="manager-desc">Relationship Manager (Z → A)</SelectItem>
+                    <SelectItem value="agent-asc">Relationship Agent (A → Z)</SelectItem>
+                    <SelectItem value="agent-desc">Relationship Agent (Z → A)</SelectItem>
                     <SelectItem value="id-desc">Customer ID (High → Low)</SelectItem>
                     <SelectItem value="id-asc">Customer ID (Low → High)</SelectItem>
                   </SelectContent>
@@ -1274,9 +1295,14 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
 
           <div className="flex items-center gap-2">
             <ExcelExportButton module="crm" title="Selected customers" label={`Export selected (${selectedRowIds.size})`} getData={() => customerExcelData(true)} />
+            {assignmentOptions?.all_customers && (
+              <Button size="sm" variant="outline" onClick={() => openAssignment(Array.from(selectedRowIds), "handover")}>
+                Assign Manager ({selectedRowIds.size})
+              </Button>
+            )}
             {assignmentOptions?.can_assign && (
-              <Button size="sm" variant="outline" onClick={() => openAssignment(Array.from(selectedRowIds))}>
-                Assign CRM customers ({selectedRowIds.size})
+              <Button size="sm" variant="outline" onClick={() => openAssignment(Array.from(selectedRowIds), "assign")}>
+                Assign Agent ({selectedRowIds.size})
               </Button>
             )}
 
@@ -1336,6 +1362,28 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                 {getSortIcon("name")}
               </th>
 
+              {/* CRM Ownership */}
+              {[
+                { field: "manager", label: "Manager" },
+                { field: "agent", label: "Agent" },
+              ].map(({ field, label }) => (
+                <th
+                  key={field}
+                  scope="col"
+                  aria-sort={sortBy === `${field}-asc` ? "ascending" : sortBy === `${field}-desc` ? "descending" : "none"}
+                  className="py-3 px-4 text-left min-w-[180px]"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleColumnSort(field)}
+                    className="group flex items-center text-left hover:text-foreground transition-colors rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
+                  >
+                    <span>Customer Relationship<br /><span className="text-foreground">{label}</span></span>
+                    {getSortIcon(field)}
+                  </button>
+                </th>
+              ))}
+
               {/* Dynamic Segment */}
               <th className="py-3 px-3 text-left min-w-[130px]">
                 <span>Segment</span>
@@ -1387,7 +1435,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
           <tbody className="divide-y divide-border/60">
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={9} className="py-14 text-center text-muted-foreground">
+                <td colSpan={11} className="py-14 text-center text-muted-foreground">
                   <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
                     <div className="size-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                       <Users className="size-6" />
@@ -1454,10 +1502,6 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                             </Badge>
                           </div>
                           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
-                            <span className="w-full">Relationship Agent: <strong>{customer.crmAssignee || "Unassigned"}</strong>
-                              {customer.crmManager && <span> · Relationship Manager: {customer.crmManager}</span>}
-                              {assignmentOptions?.can_assign && <Button size="sm" variant="link" className="h-auto px-2 py-0 text-xs" onClick={() => openAssignment([customer.id])}>Assign</Button>}
-                            </span>
                             {customer.phone && (
                               <span className="font-mono">{customer.phone}</span>
                             )}
@@ -1473,6 +1517,42 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                           </div>
                         </div>
                       </div>
+                    </td>
+
+                    {/* Customer Relationship Manager */}
+                    <td className="py-3.5 px-4 align-middle">
+                      <span className={cn("block max-w-[220px] break-words", customer.crmManager?.trim() ? "font-semibold text-foreground" : "text-muted-foreground")}>
+                        {customer.crmManager?.trim() || "Unassigned"}
+                      </span>
+                      {assignmentOptions?.all_customers && (
+                        <Button
+                          size="sm"
+                          variant="link"
+                          className="h-auto px-0 py-0 text-xs"
+                          onClick={() => openAssignment([customer.id], "handover")}
+                          aria-label={`Assign Customer Relationship Manager for ${customer.name}`}
+                        >
+                          {customer.crmManager?.trim() ? "Change Manager" : "Assign Manager"}
+                        </Button>
+                      )}
+                    </td>
+
+                    {/* Customer Relationship Agent */}
+                    <td className="py-3.5 px-4 align-middle">
+                      <span className={cn("block max-w-[220px] break-words", customer.crmAssignee?.trim() ? "font-semibold text-foreground" : "text-muted-foreground")}>
+                        {customer.crmAssignee?.trim() || "Unassigned"}
+                      </span>
+                      {assignmentOptions?.can_assign && (
+                        <Button
+                          size="sm"
+                          variant="link"
+                          className="h-auto px-0 py-0 text-xs"
+                          onClick={() => openAssignment([customer.id], "assign")}
+                          aria-label={`Assign Customer Relationship Agent for ${customer.name}`}
+                        >
+                          {customer.crmAssignee?.trim() ? "Change Agent" : "Assign Agent"}
+                        </Button>
+                      )}
                     </td>
 
                     {/* Dynamic Segment Badge */}
@@ -1876,21 +1956,12 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
       <Dialog open={assignmentIds.length > 0} onOpenChange={(open) => { if (!open && !isAssigning) setAssignmentIds([]); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Assign {assignmentIds.length} CRM customer{assignmentIds.length === 1 ? "" : "s"}</DialogTitle>
-            <DialogDescription>Choose a Customer Relationship Manager for the first handover, or a Customer Relationship Agent for customer follow-ups.</DialogDescription>
+            <DialogTitle>Assign Customer Relationship {assignmentMode === "handover" ? "Manager" : "Agent"}</DialogTitle>
+            <DialogDescription>
+              Update the {assignmentMode === "handover" ? "Manager" : "Agent"} for {assignmentIds.length} selected customer{assignmentIds.length === 1 ? "" : "s"}.
+              {" "}The current {assignmentMode === "handover" ? "Agent" : "Manager"} assignment will stay unchanged.
+            </DialogDescription>
           </DialogHeader>
-          {assignmentOptions?.all_customers && (
-            <div className="space-y-2">
-              <Label>Assignment type</Label>
-              <Select value={assignmentMode} onValueChange={(value: "handover" | "assign") => { setAssignmentMode(value); setRecipientId(""); setAssignmentDepartment("all"); setAssignmentDesignation("all"); }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="handover">Customer Relationship Manager</SelectItem>
-                  <SelectItem value="assign">Customer Relationship Agent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Department</Label>
@@ -1916,7 +1987,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
             <Select value={recipientId} onValueChange={setRecipientId}>
               <SelectTrigger><SelectValue placeholder="Choose employee" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
+                <SelectItem value="unassigned">Remove {assignmentMode === "handover" ? "Manager" : "Agent"} assignment</SelectItem>
                 {recipients.map((recipient) => <SelectItem key={recipient.id} value={String(recipient.id)}>{recipient.full_name}{[recipient.department, recipient.designation].filter(Boolean).length > 0 ? ` — ${[recipient.department, recipient.designation].filter(Boolean).join(" / ")}` : ""}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -1925,7 +1996,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
           {assignmentError && <p role="alert" className="text-sm text-destructive">{assignmentError}</p>}
           <DialogFooter>
             <Button variant="outline" disabled={isAssigning} onClick={() => setAssignmentIds([])}>Cancel</Button>
-            <Button disabled={isAssigning || !recipientId} onClick={handleAssignment}>{isAssigning ? "Assigning..." : "Save assignments"}</Button>
+            <Button disabled={isAssigning || !recipientId} onClick={handleAssignment}>{isAssigning ? "Saving..." : `Save ${assignmentMode === "handover" ? "Manager" : "Agent"}`}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
