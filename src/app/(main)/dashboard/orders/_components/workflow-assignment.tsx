@@ -15,7 +15,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
-import { canAssignWorkflow } from "@/hooks/useRoles";
+import { canAssignWorkflow, hasModuleAccess } from "@/hooks/useRoles";
 import { fetchClient } from "@/lib/fetch-client";
 
 const base = () => process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
@@ -26,22 +26,31 @@ export function WorkflowAssignment({
   name,
   onSaved,
   editable = true,
+  management = false,
 }: {
-  workflow: "packing" | "returns";
+  workflow: "agent" | "packing" | "returns";
+  management?: boolean;
   orderNos: string[];
   name?: string | null;
   onSaved?: () => void;
   editable?: boolean;
 }) {
   const { user } = useAuth();
-  const allowed = editable && canAssignWorkflow(user, workflow);
+  const allowed =
+    editable &&
+    (management ? hasModuleAccess(user, "assign_orders") : workflow !== "agent" && canAssignWorkflow(user, workflow));
   const [open, setOpen] = React.useState(false);
   const [recipient, setRecipient] = React.useState("");
   const [search, setSearch] = React.useState("");
   const [saving, setSaving] = React.useState(false);
-  const label = workflow === "packing" ? "Packing By" : "Return Confirmed By";
+  const label = workflow === "agent" ? "Order Agent" : workflow === "packing" ? "Packing By" : "Return Confirmed By";
   const { data, error, isLoading } = useSWR(
-    open && allowed ? base() + "order-workflows/" + workflow + "/recipients" : null,
+    open && allowed
+      ? base() +
+          (management
+            ? "order-assignments/recipients?assignment_type=" + workflow
+            : "order-workflows/" + workflow + "/recipients")
+      : null,
     async (url) => {
       const response = await fetchClient(url);
       if (!response.ok) throw new Error("Unable to load eligible employees");
@@ -56,11 +65,18 @@ export function WorkflowAssignment({
   async function save() {
     setSaving(true);
     try {
-      const response = await fetchClient(base() + "order-workflows/" + workflow + "/assign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order_nos: orderNos, user_id: recipient === "unassigned" ? null : Number(recipient) }),
-      });
+      const response = await fetchClient(
+        base() + (management ? "orders/bulk-assign" : "order-workflows/" + workflow + "/assign"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            assignment_type: workflow,
+            order_nos: orderNos,
+            user_id: recipient === "unassigned" ? null : Number(recipient),
+          }),
+        },
+      );
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || "Unable to update assignments");
       toast.success(label + " updated");
@@ -78,7 +94,7 @@ export function WorkflowAssignment({
   }
   return (
     <div className="min-w-[130px] text-xs">
-      {orderNos.length === 1 && <span className="block font-medium">{name || "Unassigned"}</span>}
+      {!management && orderNos.length === 1 && <span className="block font-medium">{name || "Unassigned"}</span>}
       {allowed && (
         <Button
           variant="link"
@@ -90,7 +106,13 @@ export function WorkflowAssignment({
             setOpen(true);
           }}
         >
-          {orderNos.length > 1 ? `Assign ${label} (${orderNos.length})` : name ? "Change" : "Assign"}
+          {management
+            ? `Change ${label} (${orderNos.length})`
+            : orderNos.length > 1
+              ? `Assign ${label} (${orderNos.length})`
+              : name
+                ? "Change"
+                : "Assign"}
         </Button>
       )}
       <Dialog

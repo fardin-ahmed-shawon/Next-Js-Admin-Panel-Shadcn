@@ -1705,10 +1705,13 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
 
         {/* Bulk action row — appears below pay filter when rows selected */}
         {selectedCount > 0 && (
-          <div className="flex items-center gap-2 px-4 animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="flex flex-wrap items-center gap-3 px-4 animate-in fade-in slide-in-from-top-1 duration-200">
             <span className="text-xs font-medium text-muted-foreground shrink-0">{selectedCount} selected:</span>
-            <WorkflowAssignment workflow="packing" orderNos={table.getSelectedRowModel().rows.map(row => row.original.id)} editable={table.getSelectedRowModel().rows.every(row => ["Confirmed", "Ready To Ship"].includes(row.original.orderStatus))} />
-            {!packingMode && <WorkflowAssignment workflow="returns" orderNos={table.getSelectedRowModel().rows.map(row => row.original.id)} editable={table.getSelectedRowModel().rows.every(row => ["Pending-Return", "Partial"].includes(row.original.orderStatus))} />}
+            {packingMode ? <WorkflowAssignment workflow="packing" orderNos={table.getSelectedRowModel().rows.map(row => row.original.id)} /> : (<>
+              <WorkflowAssignment management workflow="agent" orderNos={table.getSelectedRowModel().rows.map(row => row.original.id)} onSaved={() => setRowSelection({})} />
+              <WorkflowAssignment management workflow="packing" orderNos={table.getSelectedRowModel().rows.map(row => row.original.id)} onSaved={() => setRowSelection({})} />
+              <WorkflowAssignment management workflow="returns" orderNos={table.getSelectedRowModel().rows.map(row => row.original.id)} onSaved={() => setRowSelection({})} />
+            </>)}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="default" size="sm" className="h-7 gap-1.5 text-xs relative">

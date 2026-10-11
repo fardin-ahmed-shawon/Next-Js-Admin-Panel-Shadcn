@@ -1,5 +1,7 @@
 "use client";
 
+import { AutoWorkflowPools } from "./auto-workflow-pools";
+
 import React, { useEffect, useState, useMemo } from "react";
 import { useModularFeatures } from "@/hooks/useModularFeatures";
 import { useAutoOrder, AutoOrderPriority } from "@/hooks/useAutoOrder";
@@ -59,6 +61,10 @@ export default function AutoOrderPage() {
     );
   }
 
+  return <AutoOrderContent />;
+}
+
+function AutoOrderContent() {
   const {
     priorities,
     isAutoOrderEnabled,
@@ -286,12 +292,12 @@ export default function AutoOrderPage() {
             </h1>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Sequence auto order distribution across departments, designations, and customer tiers (New vs. Old vs. Incomplete).
+            Manage independent employee rotations for Order Agent, Packing By, and Return Confirmed By.
           </p>
         </div>
         <div className="flex items-center space-x-3 bg-muted/40 border p-2.5 px-4 rounded-xl">
           <span className="font-semibold text-xs text-foreground">
-            System {isAutoOrderEnabled ? "Enabled" : "Disabled"}
+            Order Agent {isAutoOrderEnabled ? "Enabled" : "Disabled"}
           </span>
           <Switch
             checked={isAutoOrderEnabled}
@@ -301,6 +307,8 @@ export default function AutoOrderPage() {
         </div>
       </div>
 
+      <AutoWorkflowPools />
+      <h2 className="text-lg font-semibold">Auto Order Agent — Customer Segments</h2>
       {/* Segment Metrics Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div
