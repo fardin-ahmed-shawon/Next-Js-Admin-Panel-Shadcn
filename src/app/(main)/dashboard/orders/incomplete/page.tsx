@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { canUseAllOrdersToggle } from "@/hooks/useRoles";
+import { canUseAllOrdersToggle, orderVisibilityLabel } from "@/hooks/useRoles";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useModularFeatures } from "@/hooks/useModularFeatures";
@@ -51,7 +51,7 @@ const rangeLabels: Record<TimeRange, string> = {
 export default function IncompleteOrdersPage() {
   const { user } = useAuth();
   const { features } = useModularFeatures();
-  const [allOrdersToggle, setAllOrdersToggle] = React.useState(true);
+  const [allOrdersToggle, setAllOrdersToggle] = React.useState(false);
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState<string>("");
   const [customTo, setCustomTo] = React.useState<string>("");
@@ -267,6 +267,7 @@ export default function IncompleteOrdersPage() {
           <div className="space-y-1">
             <h1 className="text-3xl tracking-tight font-bold">Incomplete Orders</h1>
             <p className="text-muted-foreground text-sm">Track, manage, recover, and analyze customer incomplete orders.</p>
+            <p className="text-xs text-muted-foreground">{orderVisibilityLabel(user, allOrdersToggle, true)}</p>
             <div className="text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 rounded-md border border-emerald-100 dark:border-emerald-900/50 w-fit">
               Total Incomplete Orders <span className="font-bold">{totalIncompleteOrdersCount}</span>
               {summary?.still_incomplete_orders_count !== undefined && (

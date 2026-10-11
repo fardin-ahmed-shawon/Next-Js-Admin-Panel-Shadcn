@@ -141,6 +141,7 @@ export default function CustomersPage() {
       id: c.id,
       crmAssignee: c.crm_assignee?.full_name || null,
       crmManager: c.crm_manager?.full_name || null,
+      crmManagerId: c.crm_manager_id || null,
       name: c.full_name || "Unnamed Customer",
       email: c.email || "",
       phone: c.phone || "",

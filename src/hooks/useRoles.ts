@@ -29,6 +29,8 @@ export interface PageAccess {
   orders: number;
   all_orders: number;
   all_orders_toggle?: number;
+  orders_reporting_team?: number;
+  incomplete_orders_reporting_team?: number;
   orders_excel_export?: number;
   crm_excel_export?: number;
   create_orders: number;
@@ -311,4 +313,12 @@ export function hasReportingTeamAccess(user: any, module: string): boolean {
 
 export function canObserveHrmTeam(user: any, module: string): boolean {
   return hasAllUserAccess(user, module) || hasReportingTeamAccess(user, module);
+}
+
+export function orderVisibilityLabel(user: any, allOrders: boolean, incomplete = false): string {
+  const access = user?.role?.page_access || user?.role?.pageAccess;
+  if (user?.role?.role_name === "Admin" || Number(access?.all_orders) === 1
+    || (allOrders && canUseAllOrdersToggle(user))) return "All orders";
+  const permission = incomplete ? "incomplete_orders_reporting_team" : "orders_reporting_team";
+  return Number(access?.[permission]) === 1 ? "Your orders and reporting team's orders" : "Your assigned orders";
 }

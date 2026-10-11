@@ -176,6 +176,7 @@ export interface CustomerRow {
   notesCount?: number;
   crmAssignee?: string | null;
   crmManager?: string | null;
+  crmManagerId?: number | null;
 }
 
 interface CustomersTableProps {
@@ -195,7 +196,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   const [assignmentSearch, setAssignmentSearch] = React.useState("");
   const [assignmentSort, setAssignmentSort] = React.useState("name");
   const eligibleRecipients = (assignmentOptions?.data || []).filter((recipient) =>
-    assignmentMode !== "handover" || recipient.can_manage_team);
+    assignmentMode === "handover" ? recipient.can_manage_team : recipient.can_receive_agent);
   const departments = Array.from(new Map(eligibleRecipients.filter((r) => r.department_id)
     .map((r) => [String(r.department_id), r.department || "Department"])).entries()).sort((a, b) => a[1].localeCompare(b[1]));
   const designations = Array.from(new Map(eligibleRecipients.filter((r) => r.designation_id
@@ -208,6 +209,8 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
     .sort((a, b) => (assignmentSort === "department" ? (a.department || "").localeCompare(b.department || "")
       : assignmentSort === "designation" ? (a.designation || "").localeCompare(b.designation || "") : 0)
       || a.full_name.localeCompare(b.full_name));
+  const canAssignAgent = (customer: CustomerRow) => !!assignmentOptions?.can_assign
+    && Number(customer.crmManagerId) === assignmentOptions.current_user_id;
   const openAssignment = (ids: (string | number)[], mode: "handover" | "assign") => {
     setAssignmentIds(ids); setRecipientId(""); setAssignmentMode(mode); setAssignmentError("");
     setAssignmentDepartment("all"); setAssignmentDesignation("all"); setAssignmentSearch(""); setAssignmentSort("name");
@@ -1300,7 +1303,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                 Assign Manager ({selectedRowIds.size})
               </Button>
             )}
-            {assignmentOptions?.can_assign && (
+            {assignmentOptions?.can_assign && data.filter((customer) => selectedRowIds.has(customer.id)).every(canAssignAgent) && (
               <Button size="sm" variant="outline" onClick={() => openAssignment(Array.from(selectedRowIds), "assign")}>
                 Assign Agent ({selectedRowIds.size})
               </Button>
@@ -1542,7 +1545,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                       <span className={cn("block max-w-[220px] break-words", customer.crmAssignee?.trim() ? "font-semibold text-foreground" : "text-muted-foreground")}>
                         {customer.crmAssignee?.trim() || "Unassigned"}
                       </span>
-                      {assignmentOptions?.can_assign && (
+                      {canAssignAgent(customer) && (
                         <Button
                           size="sm"
                           variant="link"

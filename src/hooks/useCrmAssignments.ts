@@ -9,9 +9,11 @@ export interface CrmRecipient {
   designation: string | null;
   designation_id: number | null;
   can_manage_team: boolean;
+  can_receive_agent: boolean;
 }
 
 interface AssignmentOptions {
+  current_user_id: number;
   can_assign: boolean;
   all_customers: boolean;
   data: CrmRecipient[];

@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { canUseAllOrdersToggle } from "@/hooks/useRoles";
+import { canUseAllOrdersToggle, orderVisibilityLabel } from "@/hooks/useRoles";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrders } from "@/hooks/useOrders";
@@ -297,13 +297,13 @@ export default function OrdersPage() {
           {/* Left: Title + description (hidden on mobile, shown on sm+) */}
           <div className="space-y-1 hidden sm:block">
             <h1 className="text-3xl tracking-tight">Order Management</h1>
-            <p className="text-muted-foreground text-sm">Track, manage, and fulfill all customer orders.</p>
+            <p className="text-muted-foreground text-sm">{orderVisibilityLabel(user, allOrdersToggle)}</p>
           </div>
 
           {/* Mobile: Title shown above */}
           <div className="space-y-1 sm:hidden">
             <h1 className="text-2xl tracking-tight">Order Management</h1>
-            <p className="text-muted-foreground text-sm">Track, manage, and fulfill all customer orders.</p>
+            <p className="text-muted-foreground text-sm">{orderVisibilityLabel(user, allOrdersToggle)}</p>
           </div>
 
           {/* Controls: on mobile = full-width row (Create Order left, period+3dot right). On desktop = stacked column on right */}
