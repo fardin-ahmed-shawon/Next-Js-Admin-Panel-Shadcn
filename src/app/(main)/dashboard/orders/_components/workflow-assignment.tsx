@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmployeeAssignmentPicker } from "./employee-assignment-picker";
+import { OrderAssignmentCell } from "./order-assignment-cell";
 import { useAuth } from "@/hooks/useAuth";
 import { canAssignWorkflow, canChangeOrderAssignment } from "@/hooks/useRoles";
 import { fetchClient } from "@/lib/fetch-client";
@@ -27,8 +28,16 @@ export function WorkflowAssignment({
   management = false,
   rowAction = false,
   currentUserId,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
+  onCloseAutoFocus,
 }: {
   workflow: "agent" | "packing" | "returns";
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+  onCloseAutoFocus?: React.ComponentProps<typeof DialogContent>["onCloseAutoFocus"];
   management?: boolean;
   rowAction?: boolean;
   currentUserId?: number | null;
@@ -41,7 +50,12 @@ export function WorkflowAssignment({
   const allowed =
     editable &&
     (management ? canChangeOrderAssignment(user, workflow) : workflow !== "agent" && canAssignWorkflow(user, workflow));
-  const [open, setOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (value: boolean) => {
+    setInternalOpen(value);
+    onOpenChange?.(value);
+  };
   const [recipient, setRecipient] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const label = workflow === "agent" ? "Order Agent" : workflow === "packing" ? "Packing By" : "Return Confirmed By";
@@ -93,37 +107,38 @@ export function WorkflowAssignment({
       setSaving(false);
     }
   }
+  const openAssignment = () => {
+    setRecipient(currentUserId ? String(currentUserId) : "");
+    setOpen(true);
+  };
   return (
-    <div className="min-w-[130px] text-xs">
-      {(!management || rowAction) && orderNos.length === 1 && (
-        <span className="block font-medium">{name || "Unassigned"}</span>
-      )}
-      {allowed && (
-        <Button
-          variant="link"
-          size="sm"
-          className="h-auto px-0 py-0 text-xs"
-          onClick={() => {
-            setRecipient(currentUserId ? String(currentUserId) : "");
-            setOpen(true);
-          }}
-        >
-          {management && !rowAction
-            ? `Change ${label} (${orderNos.length})`
-            : orderNos.length > 1
-              ? `Assign ${label} (${orderNos.length})`
-              : name
-                ? "Change"
-                : "Assign"}
-        </Button>
-      )}
+    <>
+      {!hideTrigger &&
+        (rowAction ? (
+          <OrderAssignmentCell name={name} label={label} editable={allowed} onAssign={openAssignment} />
+        ) : (
+          <div className="min-w-[130px] text-xs">
+            {!management && orderNos.length === 1 && <span className="block font-medium">{name || "Unassigned"}</span>}
+            {allowed && (
+              <Button variant="link" size="sm" className="h-auto px-0 py-0 text-xs" onClick={openAssignment}>
+                {management
+                  ? `Change ${label} (${orderNos.length})`
+                  : orderNos.length > 1
+                    ? `Assign ${label} (${orderNos.length})`
+                    : name
+                      ? "Change"
+                      : "Assign"}
+              </Button>
+            )}
+          </div>
+        ))}
       <Dialog
-        open={open}
+        open={open && allowed}
         onOpenChange={(value) => {
           if (!saving) setOpen(value);
         }}
       >
-        <DialogContent>
+        <DialogContent onCloseAutoFocus={onCloseAutoFocus}>
           <DialogHeader>
             <DialogTitle>
               {currentUserId ? "Change" : "Assign"} {label}
@@ -170,6 +185,6 @@ export function WorkflowAssignment({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

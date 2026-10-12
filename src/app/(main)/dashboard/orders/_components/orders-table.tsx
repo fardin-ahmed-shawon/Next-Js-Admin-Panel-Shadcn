@@ -1,6 +1,7 @@
 "use client";
 
 import { WorkflowAssignment } from "./workflow-assignment";
+import { OrderAssignmentCell } from "./order-assignment-cell";
 import { ExcelExportButton } from "@/components/excel-export-button";
 import * as React from "react";
 
@@ -73,7 +74,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { usePathaoSetup } from "@/hooks/usePathaoSetup";
 import { useRedxSetup } from "@/hooks/useRedxSetup";
-import { hasModuleAccess, canChangeOrderAssignment } from "@/hooks/useRoles";
+import { hasModuleAccess, canChangeOrderAssignment, canAssignWorkflow } from "@/hooks/useRoles";
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
 import { OrderContext } from "./order-context";
 import { fetchClient } from "@/lib/fetch-client";
@@ -486,40 +487,24 @@ function AssignedEmployeeCell({ row }: { row: any }) {
   const employeeName = row.original.assignedEmployee;
   const hasAssignAccess = canChangeOrderAssignment(user, "agent");
 
-  if (!hasAssignAccess) {
-    return <div className="w-[100px] text-xs font-semibold text-neutral-600 pl-1">{employeeName || "—"}</div>;
-  }
-
   return (
     <>
-      <div className="flex flex-col gap-1 w-[100px]">
-        {employeeName ? (
-          <div
-            className="flex items-center gap-1 text-[11px] font-semibold text-neutral-800 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 px-2 py-1 rounded-md justify-between cursor-pointer transition-colors"
-            onClick={() => setDialogOpen(true)}
-          >
-            <span className="truncate">{employeeName}</span>
-            <Edit className="size-3 shrink-0 text-muted-foreground" />
-          </div>
-        ) : (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-[10px] px-2 text-muted-foreground border-dashed border-muted-foreground/40 hover:text-foreground justify-center font-medium"
-            onClick={() => setDialogOpen(true)}
-          >
-            <UserPlus className="mr-1 size-3" /> Assign
-          </Button>
-        )}
-      </div>
-
-      <AssignOrderDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        prefilledOrderNo={row.original.id}
-        assignmentToEdit={row.original.employeeAssignment}
-        onSuccess={invalidateOrders}
+      <OrderAssignmentCell
+        name={employeeName}
+        label="Order Agent"
+        editable={hasAssignAccess}
+        onAssign={() => setDialogOpen(true)}
       />
+
+      {hasAssignAccess && (
+        <AssignOrderDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          prefilledOrderNo={row.original.id}
+          assignmentToEdit={row.original.employeeAssignment}
+          onSuccess={invalidateOrders}
+        />
+      )}
     </>
   );
 }
@@ -597,10 +582,12 @@ function PaymentStatusCell({ row }: { row: any }) {
 }
 
 function ProductsCell({ row }: { row: any }) {
+  const [expanded, setExpanded] = React.useState(false);
   const products = row.original.orderedProducts || [];
+  const visibleProducts = expanded ? products : products.slice(0, 2);
   return (
     <div className="flex flex-col gap-2 w-full">
-      {products.map((prod: any, idx: number) => (
+      {visibleProducts.map((prod: any, idx: number) => (
         <div key={idx} className="flex items-center gap-2">
           <div className="size-8 shrink-0 overflow-hidden rounded border bg-muted border-border/50">
             <img src={prod.image} alt="" className="size-full object-cover" />
@@ -624,6 +611,21 @@ function ProductsCell({ row }: { row: any }) {
           </div>
         </div>
       ))}
+      {products.length > 2 && (
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          className="h-auto self-start p-0 text-[11px]"
+          aria-expanded={expanded}
+          aria-label={expanded
+            ? `See fewer products for order ${row.original.id}`
+            : `See all ${products.length} products for order ${row.original.id}`}
+          onClick={() => setExpanded(current => !current)}
+        >
+          {expanded ? "See Less" : `See All (${products.length})`}
+        </Button>
+      )}
     </div>
   );
 }
@@ -1159,15 +1161,51 @@ const columns: ColumnDef<OrderRow>[] = [
   // Payment Status column
   { id: "pStatus", header: "Payment Status", cell: ({ row, table }) => (table.options.meta as any)?.packingMode ? <Badge variant="outline">{row.original.paymentStatus}</Badge> : <PaymentStatusCell row={row} /> },
 
-  // Assigned Employee column
+  // Order staff assignments
   {
-    id: "assignedEmployee",
-    header: "Order Agent",
-    cell: ({ row }) => <AssignedEmployeeCell row={row} />,
+    id: "assignments",
+    header: "Assignments",
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as any;
+      return (
+        <dl className="min-w-[150px] space-y-2 py-1">
+          {meta?.employeeManagementEnabled && (
+            <div className="space-y-1">
+              <dt className="text-[10px] font-medium text-muted-foreground">Order Agent</dt>
+              <dd><AssignedEmployeeCell row={row} /></dd>
+            </div>
+          )}
+          <div className="space-y-1">
+            <dt className="text-[10px] font-medium text-muted-foreground">Packing By</dt>
+            <dd>
+              <WorkflowAssignment
+                rowAction
+                management={!meta?.packingMode}
+                workflow="packing"
+                orderNos={[row.original.id]}
+                name={row.original.packingBy}
+                currentUserId={row.original.packingById}
+              />
+            </dd>
+          </div>
+          <div className="space-y-1">
+            <dt className="text-[10px] font-medium text-muted-foreground">Return Confirmed By</dt>
+            <dd>
+              <WorkflowAssignment
+                rowAction
+                management={!meta?.packingMode}
+                workflow="returns"
+                orderNos={[row.original.id]}
+                name={row.original.returnConfirmedBy}
+                currentUserId={row.original.returnConfirmedById}
+                editable={!meta?.packingMode}
+              />
+            </dd>
+          </div>
+        </dl>
+      );
+    },
   },
-
-  { id: "packingBy", header: "Packing By", cell: ({ row, table }) => <WorkflowAssignment rowAction management={!(table.options.meta as any)?.packingMode} workflow="packing" orderNos={[row.original.id]} name={row.original.packingBy} currentUserId={row.original.packingById} /> },
-  { id: "returnConfirmedBy", header: "Return Confirmed By", cell: ({ row, table }) => <WorkflowAssignment rowAction management={!(table.options.meta as any)?.packingMode} workflow="returns" orderNos={[row.original.id]} name={row.original.returnConfirmedBy} currentUserId={row.original.returnConfirmedById} editable={!(table.options.meta as any)?.packingMode} /> },
 
   // Courier column
   {
@@ -1331,6 +1369,7 @@ const AiAutoCallButton = ({ orderId, isAiCalled }: { orderId: string; isAiCalled
 
 export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilter, hidePaymentStatusColumn, simplifiedPaymentColumn, showIncompleteStatus, incompleteOrdersMode, hideActionsColumn, useServerPagination, packingMode }: OrdersTableProps) {
   const { features } = useModularFeatures();
+  const { user } = useAuth();
   const context = React.useContext(OrderContext);
 
   const [localPage, setLocalPage] = React.useState(1);
@@ -1388,6 +1427,18 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
   const [showStatusFilter, setShowStatusFilter] = React.useState(true);
   const [showPaymentFilter, setShowPaymentFilter] = React.useState(true);
   const [rowSelection, setRowSelection] = React.useState({});
+  const [bulkAssignment, setBulkAssignment] = React.useState<{
+    workflow: "agent" | "packing" | "returns";
+    orderNos: string[];
+  } | null>(null);
+  const bulkActionsRef = React.useRef<HTMLButtonElement>(null);
+  const assignmentOptions = ([
+    { workflow: "agent", label: "Order Agent" },
+    { workflow: "packing", label: "Packing By" },
+    { workflow: "returns", label: "Return Confirmed By" },
+  ] as const).filter(({ workflow }) => packingMode
+    ? workflow === "packing" && canAssignWorkflow(user, "packing")
+    : canChangeOrderAssignment(user, workflow));
 
   // Default sorting
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -1414,10 +1465,10 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
         sendCourier: !incompleteOrdersMode,
         oStatus: !incompleteOrdersMode,
         actions: !hideActionsColumn,
-        assignedEmployee: features?.employee_management !== false && String(features?.employee_management) !== "0",
       },
     },
     meta: {
+      employeeManagementEnabled: features?.employee_management !== false && String(features?.employee_management) !== "0",
       packingMode,
       simplifiedPaymentColumn,
       showIncompleteStatus,
@@ -1709,14 +1760,9 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
         {selectedCount > 0 && (
           <div className="flex flex-wrap items-center gap-3 px-4 animate-in fade-in slide-in-from-top-1 duration-200">
             <span className="text-xs font-medium text-muted-foreground shrink-0">{selectedCount} selected:</span>
-            {packingMode ? <WorkflowAssignment workflow="packing" orderNos={table.getSelectedRowModel().rows.map(row => row.original.id)} /> : (<>
-              <WorkflowAssignment management workflow="agent" orderNos={table.getSelectedRowModel().rows.map(row => row.original.id)} onSaved={() => setRowSelection({})} />
-              <WorkflowAssignment management workflow="packing" orderNos={table.getSelectedRowModel().rows.map(row => row.original.id)} onSaved={() => setRowSelection({})} />
-              <WorkflowAssignment management workflow="returns" orderNos={table.getSelectedRowModel().rows.map(row => row.original.id)} onSaved={() => setRowSelection({})} />
-            </>)}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="default" size="sm" className="h-7 gap-1.5 text-xs relative">
+                <Button ref={bulkActionsRef} variant="default" size="sm" className="h-7 gap-1.5 text-xs relative">
                   <Ellipsis className="size-3.5" />
                   Bulk Actions
                   <span className="ml-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">
@@ -1724,7 +1770,11 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                   </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuContent
+                align="start"
+                className="w-64"
+                onCloseAutoFocus={(event) => { if (bulkAssignment) event.preventDefault(); }}
+              >
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className="text-xs text-muted-foreground">
                     {selectedCount} order{selectedCount > 1 ? "s" : ""} selected
@@ -1737,6 +1787,20 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Bulk Update</DropdownMenuLabel>
+                  {assignmentOptions.map(({ workflow, label }) => (
+                    <DropdownMenuItem
+                      key={workflow}
+                      disabled={bulkUpdating || bulkCancelSubmitting}
+                      onSelect={() => setBulkAssignment({
+                        workflow,
+                        orderNos: table.getSelectedRowModel().rows.map(row => row.original.id),
+                      })}
+                    >
+                      <UserPlus className="mr-2 size-4" />
+                      Change {label}
+                    </DropdownMenuItem>
+                  ))}
+                  {assignmentOptions.length > 0 && <DropdownMenuSeparator />}
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                       <ChevronDown className="mr-2 size-4" />
@@ -1888,6 +1952,23 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
           </div>
         </div>
       </CardContent>
+
+      {bulkAssignment && (
+        <WorkflowAssignment
+          key={bulkAssignment.workflow}
+          management={!packingMode}
+          workflow={bulkAssignment.workflow}
+          orderNos={bulkAssignment.orderNos}
+          open
+          hideTrigger
+          onOpenChange={(open) => { if (!open) setBulkAssignment(null); }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            bulkActionsRef.current?.focus();
+          }}
+          onSaved={() => setRowSelection({})}
+        />
+      )}
 
       {/* Bulk Cancel Modal */}
       <Dialog open={bulkCancelModalOpen} onOpenChange={(open) => {
