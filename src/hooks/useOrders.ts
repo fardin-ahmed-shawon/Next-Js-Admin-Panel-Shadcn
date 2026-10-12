@@ -79,7 +79,7 @@ export function useOrders(params?: UseOrdersParams) {
   if (params?.courier && params.courier !== "All") searchParams.append("courier", params.courier);
   if (params?.include_incomplete) searchParams.append("include_incomplete", "1");
 
-  for (const key of ["order_agent", "packing_by", "return_confirmed_by", "customer_type", "invoice_status", "source"] as const) {
+  for (const key of ["order_agent", "packing_by", "return_confirmed_by", "customer_type", "invoice_status", "source", "next_action_date"] as const) {
     const value = params?.[key];
     if (value && value !== "All") searchParams.append(key, value);
   }

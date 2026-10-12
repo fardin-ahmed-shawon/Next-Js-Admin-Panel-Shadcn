@@ -1,6 +1,7 @@
 "use client";
 
 import { emptyOrderListFilters } from "@/lib/order-list-filters";
+import { HoldOrderDialog } from "./hold-order-dialog";
 import { OrderListFilterControls } from "./order-list-filter-controls";
 import { WorkflowAssignment } from "./workflow-assignment";
 import { OrderAssignmentCell } from "./order-assignment-cell";
@@ -163,6 +164,8 @@ export interface OrderRow {
   order_note?: string | null;
   employee_note?: string | null;
   cancelled_note?: string | null;
+  hold_note?: string | null;
+  next_action_date?: string | null;
 }
 
 /* ---- Status badge colors ---- */
@@ -795,6 +798,7 @@ function OrderStatusCell({ row, table }: { row: any; table: any }) {
   const meta = table.options.meta as any;
   const [status, setStatus] = React.useState(row.original.orderStatus);
   const [cancelModalOpen, setCancelModalOpen] = React.useState(false);
+  const [holdModalOpen, setHoldModalOpen] = React.useState(false);
   const [cancelledNoteText, setCancelledNoteText] = React.useState(row.original.cancelled_note || "");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -846,6 +850,10 @@ function OrderStatusCell({ row, table }: { row: any; table: any }) {
         <Select
           value={status}
           onValueChange={async (val) => {
+            if (val === "Hold") {
+              setHoldModalOpen(true);
+              return;
+            }
             if (val === "Cancelled") {
               setCancelModalOpen(true);
               return;
@@ -882,6 +890,14 @@ function OrderStatusCell({ row, table }: { row: any; table: any }) {
           </SelectContent>
         </Select>
 
+        {status === "Hold" && (
+          <button type="button" onClick={() => setHoldModalOpen(true)}
+            className="max-w-[160px] space-y-0.5 rounded border border-amber-500/30 bg-amber-50/50 px-2 py-1 text-left text-[11px] dark:bg-amber-950/20"
+            title={row.original.hold_note || "Edit Hold details"}>
+            {row.original.hold_note && <span className="block truncate">{row.original.hold_note}</span>}
+            <span className="block">{row.original.next_action_date ? "Next action: " + row.original.next_action_date.slice(0, 10) : "Add note / next action"}</span>
+          </button>
+        )}
         {status === "Cancelled" && (
           <button
             type="button"
@@ -898,6 +914,9 @@ function OrderStatusCell({ row, table }: { row: any; table: any }) {
         )}
       </div>
 
+      <HoldOrderDialog open={holdModalOpen} onOpenChange={setHoldModalOpen} orderNos={[row.original.id]}
+        initialNote={row.original.hold_note || ""} initialDate={row.original.next_action_date?.slice(0, 10) || ""}
+        onSaved={() => { setStatus("Hold"); invalidateOrders(); }} />
       <Dialog
         open={cancelModalOpen}
         onOpenChange={(open) => {
@@ -1047,6 +1066,11 @@ const columns: ColumnDef<OrderRow>[] = [
               )}
             </div>
           )}
+          {row.original.employee_note && (
+            <div className="mt-1 text-[10px] text-sky-800 dark:text-sky-300 bg-sky-500/10 border border-sky-500/20 rounded px-1.5 py-0.5 whitespace-normal break-words max-w-full" title="Order Note (Employee)">
+              <span className="font-semibold">Employee Note:</span> {row.original.employee_note}
+            </div>
+          )}
         </div>
       );
     },
@@ -1097,11 +1121,7 @@ const columns: ColumnDef<OrderRow>[] = [
               <span className="font-semibold">Cust Note:</span> {row.original.order_note}
             </div>
           )}
-          {row.original.employee_note && (
-            <div className="mt-1 text-[10px] text-sky-800 dark:text-sky-300 bg-sky-500/10 border border-sky-500/20 rounded px-1.5 py-0.5 whitespace-normal break-words max-w-[14ch]" title="Order Note (Employee)">
-              <span className="font-semibold">Emp Note:</span> {row.original.employee_note}
-            </div>
-          )}
+
         </div>
       </div>
     ),
@@ -1373,6 +1393,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
   const { features } = useModularFeatures();
   const { user } = useAuth();
   const context = React.useContext(OrderContext);
+  const topRowsId = React.useId();
 
   const [localPage, setLocalPage] = React.useState(1);
   const [localPerPage, setLocalPerPage] = React.useState(100);
@@ -1527,6 +1548,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
 
   const [bulkUpdating, setBulkUpdating] = React.useState(false);
   const [bulkCancelModalOpen, setBulkCancelModalOpen] = React.useState(false);
+  const [bulkHoldOrders, setBulkHoldOrders] = React.useState<string[]>([]);
   const [bulkCancelNote, setBulkCancelNote] = React.useState("");
   const [bulkCancelSubmitting, setBulkCancelSubmitting] = React.useState(false);
 
@@ -1563,6 +1585,10 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
   const handleBulkUpdate = async (type: "status" | "payment", val: string) => {
     const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
     if (!selectedIds.length || bulkUpdating || bulkCancelSubmitting) return;
+    if (type === "status" && val === "Hold") {
+      setBulkHoldOrders(selectedIds);
+      return;
+    }
     if (type === "status" && val === "Cancelled") {
       setBulkCancelNote("");
       setBulkCancelModalOpen(true);
@@ -1736,7 +1762,7 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                 </Button>
               </div>
             )}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-end gap-3">
               {!hidePaymentStatusFilter && showPaymentFilter && (
                 <div className="flex flex-wrap gap-2">
                   {paymentStatuses.map((s) => (
@@ -1752,23 +1778,43 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                   ))}
                 </div>
               )}
-              <div className="ml-auto flex shrink-0 items-center gap-2">
-                <span className="text-sm text-muted-foreground">Rows per page:</span>
-                <Select
-                  value={`${perPage}`}
-                  onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}
-                >
-                  <SelectTrigger aria-label="Rows per page" className="h-8 w-[70px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[10, 20, 30, 50, 100, 150, 200].map((s) => (
-                      <SelectItem key={s} value={`${s}`}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="ml-auto flex flex-wrap items-end gap-3">
+                {useServerPagination && context.listFilters && context.setListFilters && (
+                  <label className="flex flex-col gap-1.5 text-xs text-muted-foreground">
+                    Next Action Date
+                    <Input
+                      type="date"
+                      aria-label="Filter by Next Action Date"
+                      className="h-8 w-[155px] text-xs"
+                      value={context.listFilters.next_action_date === "All" ? "" : context.listFilters.next_action_date}
+                      onChange={(event) => {
+                        const date = event.target.value || "All";
+                        if (date !== "All") setStatusFilter("All");
+                        context.setListFilters?.({ ...context.listFilters!, next_action_date: date });
+                        setPage(1);
+                        setRowSelection({});
+                      }}
+                    />
+                  </label>
+                )}
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor={topRowsId} className="text-xs font-normal text-muted-foreground">Rows per page</Label>
+                  <Select
+                    value={`${perPage}`}
+                    onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}
+                  >
+                    <SelectTrigger id={topRowsId} aria-label="Rows per page" className="h-8 w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[10, 20, 30, 50, 100, 150, 200].map((s) => (
+                        <SelectItem key={s} value={`${s}`}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </div>
@@ -1989,6 +2035,8 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
       )}
 
       {/* Bulk Cancel Modal */}
+      <HoldOrderDialog open={bulkHoldOrders.length > 0} onOpenChange={open => { if (!open) setBulkHoldOrders([]); }}
+        orderNos={bulkHoldOrders} bulk onSaved={() => { setRowSelection({}); invalidateOrders(); }} />
       <Dialog open={bulkCancelModalOpen} onOpenChange={(open) => {
         if (!open && !bulkCancelSubmitting) setBulkCancelModalOpen(false);
       }}>

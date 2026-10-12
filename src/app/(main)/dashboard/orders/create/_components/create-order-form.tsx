@@ -36,6 +36,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import useProducts, { type Product } from "@/hooks/useProducts";
 
+import { HoldOrderFields } from "../../_components/hold-order-fields";
 import { PartialPaymentForm } from "../../_components/partial-payment-form";
 import { CustomPackSizeSelector } from "../../_components/custom-pack-size-selector";
 import { districts, divisions, thanas } from "./bd-locations";
@@ -493,6 +494,8 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
   const [orderNote, setOrderNote] = React.useState("");
   const [employeeNote, setEmployeeNote] = React.useState("");
   const [orderStatus, setOrderStatus] = React.useState("Pending");
+  const [holdNote, setHoldNote] = React.useState("");
+  const [nextActionDate, setNextActionDate] = React.useState("");
   const [orderSource, setOrderSource] = React.useState("Manual");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -650,6 +653,8 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
     setOrderNote("");
     setEmployeeNote("");
     setOrderStatus("Pending");
+    setHoldNote("");
+    setNextActionDate("");
     setOrderSource("Manual");
     toast.info("Form has been reset.");
   }
@@ -708,6 +713,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
       shipping_charge: shippingCost,
       grand_total_amount: total,
       order_status: orderStatus,
+      ...(orderStatus === "Hold" ? { hold_note: holdNote.trim() || null, next_action_date: nextActionDate || null } : {}),
       order_note: orderNote,
       employee_note: employeeNote,
       payment_method:
@@ -1318,6 +1324,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                   </Select>
                 </div>
               </div>
+              {orderStatus === "Hold" && <HoldOrderFields note={holdNote} date={nextActionDate} onNoteChange={setHoldNote} onDateChange={setNextActionDate} disabled={isSubmitting} />}
               <div className="space-y-1.5">
                 <Label htmlFor="order-note" className="text-primary font-medium">
                   Order Note (Customer)

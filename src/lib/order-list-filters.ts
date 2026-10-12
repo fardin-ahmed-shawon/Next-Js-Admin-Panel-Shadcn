@@ -6,6 +6,7 @@ export const emptyOrderListFilters = {
   customer_type: "All",
   invoice_status: "All",
   source: "All",
+  next_action_date: "All",
 };
 export type OrderListFilters = typeof emptyOrderListFilters;
 export type AssignmentFilterOptions = Partial<

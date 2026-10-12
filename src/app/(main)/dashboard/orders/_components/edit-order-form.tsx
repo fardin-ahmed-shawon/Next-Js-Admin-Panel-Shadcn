@@ -64,6 +64,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useModularFeatures } from "@/hooks/useModularFeatures";
 import { BulkReturnReceipts } from "./bulk-return-receipts";
+import { HoldOrderFields } from "./hold-order-fields";
 import { useOrderDetail } from "@/hooks/useOrderDetail";
 import { usePathaoSetup } from "@/hooks/usePathaoSetup";
 import { useRedxSetup } from "@/hooks/useRedxSetup";
@@ -490,6 +491,8 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
   const [note, setNote] = React.useState("");
   const [employeeNote, setEmployeeNote] = React.useState("");
   const [cancelledNote, setCancelledNote] = React.useState("");
+  const [holdNote, setHoldNote] = React.useState("");
+  const [nextActionDate, setNextActionDate] = React.useState("");
   const [selectedDistrict, setSelectedDistrict] = React.useState("");
   const [shippingChargeInput, setShippingChargeInput] = React.useState<number>(0);
   const [discountAmountInput, setDiscountAmountInput] = React.useState<number>(0);
@@ -717,6 +720,8 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
       setNote(order.order_note ?? "");
       setEmployeeNote(order.employee_note ?? "");
       setCancelledNote(order.cancelled_note ?? "");
+      setHoldNote(order.hold_note ?? "");
+      setNextActionDate(order.next_action_date?.slice(0, 10) ?? "");
       setSelectedDistrict(order.district ?? "");
       setShippingChargeInput(Number(order.shipping_charge ?? 0));
       setDiscountAmountInput(Number(order.discount_amount ?? 0));
@@ -911,6 +916,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
         order_note: note,
         employee_note: employeeNote,
         cancelled_note: cancelledNote,
+        ...(orderStatus === "Hold" ? { hold_note: holdNote.trim() || null, next_action_date: nextActionDate || null } : {}),
       });
 
       if (paymentStatus === "Full Paid") {
@@ -1585,6 +1591,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                       onChange={(e) => setEmployeeNote(e.target.value)}
                     />
                   </div>
+                  {orderStatus === "Hold" && <HoldOrderFields note={holdNote} date={nextActionDate} onNoteChange={setHoldNote} onDateChange={setNextActionDate} />}
                   {(orderStatus === "Cancelled" || cancelledNote) && (
                     <div className="space-y-1.5 border border-destructive/30 rounded-lg p-3 bg-destructive/5">
                       <Label className="text-sm font-medium text-destructive">Cancelled Order Note</Label>

@@ -287,6 +287,8 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
           order_note: order.order_note || null,
           employee_note: order.employee_note || null,
           cancelled_note: order.cancelled_note || null,
+          hold_note: order.hold_note || null,
+          next_action_date: order.next_action_date || null,
         };
       });
   }, [orders, getImageUrl, workflow]);
