@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export interface PartialPaymentFormProps {
+  compact?: boolean;
   orderTotal: number;
   currentPaid?: number; // Optional, defaults to 0
   status: string;
@@ -17,6 +18,7 @@ export interface PartialPaymentFormProps {
 }
 
 export function PartialPaymentForm({
+  compact = false,
   orderTotal,
   currentPaid = 0,
   status,
@@ -53,6 +55,50 @@ export function PartialPaymentForm({
       onStatusChange("Partially Paid");
     }
   };
+
+  if (compact) {
+    return (
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <label htmlFor="create-order-paid-amount" className="text-xs font-medium">
+            Paid Amount
+          </label>
+          <div className="relative">
+            <span className="pointer-events-none absolute inset-y-0 left-0 flex w-8 items-center justify-center rounded-l-lg border-r bg-muted/30 text-xs text-muted-foreground">
+              ৳
+            </span>
+            <Input
+              id="create-order-paid-amount"
+              type="number"
+              min={0}
+              className="pl-10"
+              placeholder="0"
+              value={paidAmount}
+              onChange={(event) => handleAmountChange(event.target.value === "" ? "" : Number(event.target.value))}
+            />
+          </div>
+        </div>
+        <div role="group" aria-label="Payment status" className="grid grid-cols-3 gap-2">
+          {["Unpaid", "Partially Paid", "Full Paid"].map((value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={status === value}
+              onClick={() => handleStatusChange(value)}
+              className={
+                "h-8 whitespace-nowrap rounded-md border px-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +
+                (status === value
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                  : "border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground")
+              }
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

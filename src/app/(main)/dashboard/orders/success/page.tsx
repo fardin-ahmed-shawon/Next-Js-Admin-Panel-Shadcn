@@ -3,6 +3,14 @@
 import * as React from "react";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import useSWR from "swr";
+import { fetchClient } from "@/lib/fetch-client";
+import { adminApiUrl, readAdminApiResponse } from "@/lib/admin-api";
+import { orderDisplayLines } from "@/lib/order-combos";
+import { formatOrderDateTime } from "@/lib/utils";
+import { usePrintModal } from "@/hooks/usePrintModal";
+import { useAuth } from "@/hooks/useAuth";
 
 import { CheckCircle2, Copy, CreditCard, MapPin, Package, Plus, Printer, Truck, User } from "lucide-react";
 import { toast } from "sonner";
@@ -12,73 +20,82 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-/* ------------------------------------------------------------------ */
-/*  Demo order data (simulates what would come from a server response) */
-/* ------------------------------------------------------------------ */
-
-const order = {
-  id: "ORD-20260518-0042",
-  date: "May 18, 2026 — 11:25 AM",
-  status: "Confirmed",
-  customer: {
-    name: "Arham Khan",
-    email: "arham@example.com",
-    phone: "+880 1711-234567",
-  },
-  shipping: {
-    address: "House #12, Road #5, Block C, Mirpur-10",
-    division: "Dhaka",
-    district: "Dhaka",
-    thana: "Mirpur",
-    method: "Inside Dhaka",
-    cost: 70,
-  },
-  payment: {
-    method: "bKash",
-    status: "Full Paid",
-    transactionId: "TXN8A3K92M1X",
-  },
-  items: [
-    {
-      name: "Premium Cotton T-Shirt",
-      sku: "SKU-001",
-      color: "Black",
-      size: "L",
-      qty: 2,
-      price: 850,
-      image: "https://placehold.co/64x64/1a1a2e/e0e0e0?text=TS",
-    },
-    {
-      name: "Slim Fit Denim Jeans",
-      sku: "SKU-002",
-      color: "Navy",
-      size: "32",
-      qty: 1,
-      price: 1450,
-      image: "https://placehold.co/64x64/1a1a2e/e0e0e0?text=DJ",
-    },
-    {
-      name: "Classic Polo Shirt",
-      sku: "SKU-009",
-      color: "White",
-      size: "XL",
-      qty: 1,
-      price: 950,
-      image: "https://placehold.co/64x64/1a1a2e/e0e0e0?text=PS",
-    },
-  ],
-  subtotal: 4100,
-  discount: 200,
-  shippingCost: 70,
-  total: 3970,
-  note: "Please deliver between 10 AM - 2 PM.",
-};
-
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
-
 export default function OrderSuccessPage() {
+  return (
+    <React.Suspense fallback={<p>Loading order…</p>}>
+      <OrderSuccessContent />
+    </React.Suspense>
+  );
+}
+
+function OrderSuccessContent() {
+  const orderNo = useSearchParams().get("order_no");
+  const { user } = useAuth();
+  const { data, error, isLoading, mutate } = useSWR(
+    orderNo && user?.id ? [adminApiUrl("orders/" + encodeURIComponent(orderNo)), user.id] : null,
+    async ([url]: [string, number]) => readAdminApiResponse(await fetchClient(url)),
+  );
+  if (!orderNo)
+    return (
+      <div className="space-y-3">
+        <p>No order was selected.</p>
+        <Button asChild>
+          <Link href="/dashboard/orders">Back to Orders</Link>
+        </Button>
+      </div>
+    );
+  if (error)
+    return (
+      <div className="space-y-3">
+        <p role="alert">Unable to load this order. {error.message}</p>
+        <Button onClick={() => mutate()}>Retry</Button>
+        <Button variant="outline" asChild>
+          <Link href="/dashboard/orders">Back to Orders</Link>
+        </Button>
+      </div>
+    );
+  if (isLoading || !data?.data) return <p>Loading order…</p>;
+  const saved = data.data;
+  const imageBase = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/").replace(
+    /\/api\/v1\/admin\/?$/,
+    "/",
+  );
+  const date = formatOrderDateTime(saved.created_at);
+  const order = {
+    id: saved.order_no,
+    date: date.date + " — " + date.time,
+    status: saved.order_status,
+    source: saved.source === "Incomplete" ? "From Incomplete" : saved.source,
+    customer: { name: saved.customer_full_name, email: saved.customer_email || "", phone: saved.customer_phone },
+    shipping: {
+      address: saved.customer_shipping_address,
+      method: saved.shipping_area,
+      cost: Number(saved.shipping_charge || 0),
+    },
+    payment: {
+      method: saved.payments?.[0]?.payment_method || "Cash on Delivery",
+      status: saved.payment_status,
+      transactionId: saved.payments?.[0]?.transaction_id || "",
+    },
+    items: orderDisplayLines(saved.ordered_products || []).map((line: any) => {
+      const image = line.product?.product_thumbnail_img;
+      return {
+        name: line.product?.title || "Product",
+        sku: line.product?.sku || "",
+        color: line.color_label || "",
+        size: line.size_label || "",
+        qty: Number(line.qty || 0),
+        price: Number(line.unit_price || 0),
+        image: image ? (/^https?:\/\//.test(image) ? image : imageBase + image.replace(/^\//, "")) : "",
+      };
+    }),
+    subtotal: Number(saved.subtotal_amount || 0),
+    discount: Number(saved.discount_amount || 0),
+    shippingCost: Number(saved.shipping_charge || 0),
+    total: Number(saved.grand_total_amount || 0),
+    note: saved.order_note || "",
+  };
+
   function copyOrderId() {
     navigator.clipboard.writeText(order.id);
     toast.success("Order ID copied to clipboard.");
@@ -107,7 +124,11 @@ export default function OrderSuccessPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-wrap items-center justify-center gap-3">
-        <Button variant="outline" size="sm" onClick={() => toast.info("Print functionality coming soon.")}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => usePrintModal.getState().openModal(order.id, "a4", `/invoice/${encodeURIComponent(order.id)}`)}
+        >
           <Printer className="mr-2 size-4" />
           Print Invoice
         </Button>
@@ -140,12 +161,16 @@ export default function OrderSuccessPage() {
               {order.items.map((item, i) => (
                 <div key={i} className="flex items-center gap-3 rounded-lg border p-3">
                   <div className="size-12 shrink-0 overflow-hidden rounded-md border bg-muted">
-                    <img src={item.image} alt={item.name} className="size-full object-cover" />
+                    {item.image ? (
+                      <img src={item.image} alt={item.name} className="size-full object-cover" />
+                    ) : (
+                      <Package className="size-full p-3 text-muted-foreground" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{item.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {item.sku} · {item.color} · {item.size}
+                      {[item.sku, item.color, item.size].filter(Boolean).join(" · ")}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
@@ -227,9 +252,6 @@ export default function OrderSuccessPage() {
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               <p className="text-sm">{order.shipping.address}</p>
-              <p className="text-xs text-muted-foreground">
-                {order.shipping.thana}, {order.shipping.district}, {order.shipping.division}
-              </p>
               <div className="flex items-center gap-2 mt-1">
                 <Truck className="size-4 text-muted-foreground" />
                 <span className="text-xs font-medium">
@@ -276,6 +298,7 @@ export default function OrderSuccessPage() {
               <Badge variant="secondary" className="text-sm px-3 py-1">
                 {order.status}
               </Badge>
+              {order.source && <p className="mt-3 text-sm text-muted-foreground">Source: {order.source}</p>}
             </CardContent>
           </Card>
         </div>

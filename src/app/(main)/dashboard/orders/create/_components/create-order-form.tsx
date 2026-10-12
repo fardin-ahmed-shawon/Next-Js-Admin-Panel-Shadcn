@@ -1,11 +1,27 @@
 "use client";
+import { manualOrderSources } from "@/lib/order-list-filters";
 import { fetchClient } from "@/lib/fetch-client";
 
 import * as React from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { CreditCard, Minus, Package, Plus, RefreshCw, Search, Send, ShoppingCart, Truck, User, X } from "lucide-react";
+import {
+  CreditCard,
+  Minus,
+  Package,
+  Percent,
+  Plus,
+  ReceiptText,
+  RefreshCw,
+  Search,
+  Send,
+  Settings2,
+  ShoppingCart,
+  Truck,
+  User,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 /* ---- catalogue ---- */
 import useSWR from "swr";
@@ -58,7 +74,7 @@ function resolveCartVariant(item: CartItem) {
   return variants.find((v: any) => {
     const size = v.option_label || v.size?.label || v.size?.name || (typeof v.size === "string" ? v.size : "");
     const color = v.color?.label || v.color?.name || (typeof v.color === "string" ? v.color : "");
-    return (!v.size_id && !size || size === item.size) && (!v.color_id && !color || color === item.color);
+    return ((!v.size_id && !size) || size === item.size) && ((!v.color_id && !color) || color === item.color);
   });
 }
 
@@ -77,7 +93,15 @@ const getVariantSellingPrice = (v: any, fallbackPrice: number = 0): number => {
   return fallbackPrice;
 };
 
-function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, updateUnitPrice, setCartItemQuantity, isWholesale }: any) {
+function CartItemRow({
+  item,
+  updateQuantity,
+  removeFromCart,
+  updateCartItem,
+  updateUnitPrice,
+  setCartItemQuantity,
+  isWholesale,
+}: any) {
   const { data: sizesRes } = useSWR(
     `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_WEB_SIZES || "sizes"}`,
     fetcher,
@@ -129,7 +153,8 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
 
   const isSharedBulk = item.product.inventory_mode === "shared_bulk";
   const requiresVariant =
-    ((Number(item.product.has_variants) === 1 || Boolean(item.product.has_variant_wise_pricing)) && variants.length > 0) ||
+    ((Number(item.product.has_variants) === 1 || Boolean(item.product.has_variant_wise_pricing)) &&
+      variants.length > 0) ||
     isSharedBulk;
   const requiresSize = sizes.length > 0;
   const requiresColor = colors.length > 0;
@@ -170,7 +195,18 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
         updateUnitPrice(item.lineId ?? item.product.id, price);
       }
     }
-  }, [item.size, item.color, sizes, colors, variants, requiresVariant, requiresSize, requiresColor, isSizeComplete, isColorComplete]);
+  }, [
+    item.size,
+    item.color,
+    sizes,
+    colors,
+    variants,
+    requiresVariant,
+    requiresSize,
+    requiresColor,
+    isSizeComplete,
+    isColorComplete,
+  ]);
 
   React.useEffect(() => {
     if (requiresVariant) {
@@ -186,11 +222,13 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
   if (requiresVariant && isSizeComplete && isColorComplete && (item.size || item.color)) {
     const selectedSizeId = requiresSize ? sizes.find((s: any) => s.label === item.size)?.id : null;
     const selectedColorId = requiresColor ? colors.find((c: any) => c.label === item.color)?.id : null;
-    isValidVariant = isSharedBulk ? true : variants.some(
-      (v: any) =>
-        (requiresSize ? String(v.size_id) === String(selectedSizeId) : true) &&
-        (requiresColor ? String(v.color_id) === String(selectedColorId) : true),
-    );
+    isValidVariant = isSharedBulk
+      ? true
+      : variants.some(
+          (v: any) =>
+            (requiresSize ? String(v.size_id) === String(selectedSizeId) : true) &&
+            (requiresColor ? String(v.color_id) === String(selectedColorId) : true),
+        );
   }
 
   return (
@@ -207,7 +245,9 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
           <p className="text-sm font-medium leading-snug">{item.product.title}</p>
           {isSharedBulk && (
             <p className="text-xs text-muted-foreground">
-              Pack: {item.size || "Standard"} · Stock consumed: {Number(resolveCartVariant(item)?.sale_quantity || 0) * item.quantity} {resolveCartVariant(item)?.sale_unit_code || item.product.inventory_unit_code}
+              Pack: {item.size || "Standard"} · Stock consumed:{" "}
+              {Number(resolveCartVariant(item)?.sale_quantity || 0) * item.quantity}{" "}
+              {resolveCartVariant(item)?.sale_unit_code || item.product.inventory_unit_code}
             </p>
           )}
           {isWholesale ? (
@@ -240,11 +280,19 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
             />
           ) : (
             <>
-              <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.lineId ?? item.product.id, -1)}>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => updateQuantity(item.lineId ?? item.product.id, -1)}
+              >
                 <Minus className="size-3" />
               </Button>
               <span className="w-8 text-center text-sm font-medium tabular-nums">{item.quantity}</span>
-              <Button variant="outline" size="icon-sm" onClick={() => updateQuantity(item.lineId ?? item.product.id, 1)}>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => updateQuantity(item.lineId ?? item.product.id, 1)}
+              >
                 <Plus className="size-3" />
               </Button>
             </>
@@ -262,7 +310,10 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
         <div className="mt-2 flex flex-col gap-2 pl-15">
           <div className="flex items-center gap-3">
             {availableColors.length > 1 ? (
-              <Select value={item.color} onValueChange={(v) => updateCartItem(item.lineId ?? item.product.id, "color", v)}>
+              <Select
+                value={item.color}
+                onValueChange={(v) => updateCartItem(item.lineId ?? item.product.id, "color", v)}
+              >
                 <SelectTrigger
                   className={`h-7 w-28 text-xs ${!isValidVariant && item.color ? "border-destructive text-destructive" : ""}`}
                 >
@@ -279,7 +330,8 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                     const optPrice = optVariant ? getVariantSellingPrice(optVariant, 0) : null;
                     return (
                       <SelectItem key={c.id} value={c.label}>
-                        {c.label} {optPrice !== null && optPrice > 0 && !requiresSize ? `(৳${optPrice.toLocaleString()})` : ""}
+                        {c.label}{" "}
+                        {optPrice !== null && optPrice > 0 && !requiresSize ? `(৳${optPrice.toLocaleString()})` : ""}
                       </SelectItem>
                     );
                   })}
@@ -292,7 +344,10 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
             ) : null}
 
             {availableSizes.length > 1 ? (
-              <Select value={item.size} onValueChange={(v) => updateCartItem(item.lineId ?? item.product.id, "size", v)}>
+              <Select
+                value={item.size}
+                onValueChange={(v) => updateCartItem(item.lineId ?? item.product.id, "size", v)}
+              >
                 <SelectTrigger
                   className={`h-7 min-w-28 text-xs ${!isValidVariant && item.size ? "border-destructive text-destructive" : ""}`}
                 >
@@ -326,11 +381,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
             ) : null}
 
             {isSharedBulk && (
-              <CustomPackSizeSelector
-                item={item}
-                updateCartItem={updateCartItem}
-                updateUnitPrice={updateUnitPrice}
-              />
+              <CustomPackSizeSelector item={item} updateCartItem={updateCartItem} updateUnitPrice={updateUnitPrice} />
             )}
 
             {(item.color || item.size) && (
@@ -341,7 +392,8 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
                 onClick={() => {
                   updateCartItem(item.lineId ?? item.product.id, "color", "");
                   updateCartItem(item.lineId ?? item.product.id, "size", "");
-                  const basePrice = item.product.selling_price || (variants[0] ? getVariantSellingPrice(variants[0]) : 0);
+                  const basePrice =
+                    item.product.selling_price || (variants[0] ? getVariantSellingPrice(variants[0]) : 0);
                   updateUnitPrice(item.lineId ?? item.product.id, basePrice);
                 }}
                 title="Clear selections"
@@ -429,6 +481,10 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
   }, []);
 
   const [paymentMethod, setPaymentMethod] = React.useState("cod");
+  const [accountNumber, setAccountNumber] = React.useState("");
+  const [transactionId, setTransactionId] = React.useState("");
+  const transactionIdRef = React.useRef<HTMLInputElement>(null);
+  const requiresPaymentDetails = paymentMethod !== "cod";
   const [paymentStatus, setPaymentStatus] = React.useState("Unpaid");
   const [paidAmount, setPaidAmount] = React.useState<number | "">("");
 
@@ -437,6 +493,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
   const [orderNote, setOrderNote] = React.useState("");
   const [employeeNote, setEmployeeNote] = React.useState("");
   const [orderStatus, setOrderStatus] = React.useState("Pending");
+  const [orderSource, setOrderSource] = React.useState("Manual");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const searchRef = React.useRef<HTMLDivElement>(null);
@@ -447,7 +504,8 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
 
   function addToCart(product: Product) {
     setCart((prev) => {
-      const existing = product.inventory_mode === "shared_bulk" ? undefined : prev.find((i) => i.product.id === product.id);
+      const existing =
+        product.inventory_mode === "shared_bulk" ? undefined : prev.find((i) => i.product.id === product.id);
       if (existing) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
 
       const variants = product.variants || [];
@@ -457,9 +515,19 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
       const initialColor = firstVariant?.color?.label || "";
       const initialPrice = firstVariant
         ? getVariantSellingPrice(firstVariant, product.selling_price || 0)
-        : (product.selling_price || 0);
+        : product.selling_price || 0;
 
-      return [...prev, { lineId: crypto.randomUUID(), product, quantity: 1, color: initialColor, size: initialSize, unitPrice: initialPrice }];
+      return [
+        ...prev,
+        {
+          lineId: crypto.randomUUID(),
+          product,
+          quantity: 1,
+          color: initialColor,
+          size: initialSize,
+          unitPrice: initialPrice,
+        },
+      ];
     });
     setSearchQuery("");
     setSearchFocused(false);
@@ -469,14 +537,16 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
   function updateQuantity(productId: number | string, delta: number) {
     setCart((prev) =>
       prev
-        .map((i) => ((i.lineId ?? i.product.id) === productId ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i))
+        .map((i) =>
+          (i.lineId ?? i.product.id) === productId ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i,
+        )
         .filter((i) => i.quantity > 0),
     );
   }
 
   function setCartItemQuantity(productId: number | string, qty: number) {
     setCart((prev) =>
-      prev.map((i) => ((i.lineId ?? i.product.id) === productId ? { ...i, quantity: Math.max(0, qty) } : i))
+      prev.map((i) => ((i.lineId ?? i.product.id) === productId ? { ...i, quantity: Math.max(0, qty) } : i)),
     );
   }
 
@@ -571,13 +641,16 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
     setThana("");
     setShippingMethod("inside-dhaka");
     setPaymentMethod("cod");
-    setPaymentStatus("unpaid");
+    setAccountNumber("");
+    setTransactionId("");
+    setPaymentStatus("Unpaid");
     setPaidAmount("");
     setDiscountType("fixed");
     setDiscountValue("");
     setOrderNote("");
     setEmployeeNote("");
     setOrderStatus("Pending");
+    setOrderSource("Manual");
     toast.info("Form has been reset.");
   }
 
@@ -602,6 +675,12 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
     }
     if (!shippingAddress.trim()) {
       toast.error("Shipping address is required.");
+      return;
+    }
+
+    if (requiresPaymentDetails && !transactionId.trim()) {
+      toast.error("Transaction ID is required for the selected payment method.");
+      transactionIdRef.current?.focus();
       return;
     }
 
@@ -643,12 +722,15 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                 : paymentMethod === "bank"
                   ? "Bank Transfer"
                   : "Card Payment",
+      ...(requiresPaymentDetails
+        ? { acc_number: accountNumber.trim() || null, transaction_id: transactionId.trim() }
+        : {}),
       paid_amount: Number(paidAmount) || 0,
       payment_status: paymentStatus,
-      source: isWholesale ? "Wholesale" : "Manual",
+      source: isWholesale ? "Wholesale" : orderSource,
       products: validCart.map((item) => ({
         product_id: item.product.id,
-          product_variant_id: resolveCartVariant(item)?.id,
+        product_variant_id: resolveCartVariant(item)?.id,
         qty: item.quantity,
         unit_price: item.unitPrice,
         ...(item.size ? { size_label: item.size } : {}),
@@ -672,7 +754,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
         if (isWholesale) {
           router.push("/dashboard/orders/wholesale");
         } else {
-          router.push("/dashboard/orders");
+          router.push(`/dashboard/orders/success?order_no=${encodeURIComponent(json.data.order_no)}`);
         }
       } else {
         toast.error(json.error || json.message || "Failed to create order.");
@@ -709,7 +791,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl tracking-tight">Create Order</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Create Order</h1>
           <p className="text-sm text-muted-foreground">
             Build a new order by searching products, entering customer details, and selecting payment.
           </p>
@@ -726,9 +808,9 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
         {/* ======== LEFT ======== */}
-        <div className="flex flex-col gap-6 lg:col-span-2">
+        <div className="flex min-w-0 flex-col gap-4">
           {/* Products */}
           <Card>
             <CardHeader>
@@ -776,18 +858,21 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                             <span className="text-sm font-semibold tabular-nums">
                               {(() => {
                                 if (p.has_variant_wise_pricing || (p.has_variants && p.variants?.length > 0)) {
-                                  const prices = p.variants
-                                    ?.map((v: any) => {
-                                      const vp = v.variant_pricing || v.variantPricing;
-                                      return vp?.selling_price ?? v.selling_price;
-                                    })
-                                    .filter((pr: any) => pr !== undefined && pr !== null && !isNaN(Number(pr)))
-                                    .map(Number) || [];
+                                  const prices =
+                                    p.variants
+                                      ?.map((v: any) => {
+                                        const vp = v.variant_pricing || v.variantPricing;
+                                        return vp?.selling_price ?? v.selling_price;
+                                      })
+                                      .filter((pr: any) => pr !== undefined && pr !== null && !isNaN(Number(pr)))
+                                      .map(Number) || [];
 
                                   if (prices.length > 0) {
                                     const min = Math.min(...prices);
                                     const max = Math.max(...prices);
-                                    return min === max ? `৳${min.toLocaleString()}` : `৳${min.toLocaleString()} - ৳${max.toLocaleString()}`;
+                                    return min === max
+                                      ? `৳${min.toLocaleString()}`
+                                      : `৳${min.toLocaleString()} - ৳${max.toLocaleString()}`;
                                   }
                                 }
                                 return `৳${(p.selling_price || 0).toLocaleString()}`;
@@ -939,28 +1024,26 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
           </Card>
 
           {/* Shipping */}
-          <Card>
+          <Card size="sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Truck className="size-5" />
                 Shipping Information
               </CardTitle>
-              <CardDescription>Where should this order be delivered?</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-5">
+            <CardContent className="flex flex-col gap-4">
               <div className="space-y-2">
                 <Label htmlFor="shipping-address">
-                  Street Address <span className="text-destructive">*</span>
+                  Address <span className="text-destructive">*</span>
                 </Label>
-                <Textarea
+                <Input
                   id="shipping-address"
                   placeholder="House #, Road #, Block, Area..."
-                  className="min-h-[80px] resize-y"
                   value={shippingAddress}
                   onChange={(e) => setShippingAddress(e.target.value)}
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <div className="space-y-2">
                   <Label>Division</Label>
                   <Select
@@ -1027,40 +1110,45 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <Separator />
-              <div className="space-y-2">
-                <Label>Shipping Method</Label>
-                <Select value={shippingMethod} onValueChange={setShippingMethod}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="inside-dhaka">Inside Dhaka — ৳{insideShippingCharge}</SelectItem>
-                    <SelectItem value="outside-dhaka">Outside Dhaka — ৳{outsideShippingCharge}</SelectItem>
-                    <SelectItem value="free">Free Shipping — ৳0</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <Label>Shipping Method</Label>
+                  <Select value={shippingMethod} onValueChange={setShippingMethod}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="inside-dhaka">Inside Dhaka — ৳{insideShippingCharge}</SelectItem>
+                      <SelectItem value="outside-dhaka">Outside Dhaka — ৳{outsideShippingCharge}</SelectItem>
+                      <SelectItem value="free">Free Shipping — ৳0</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* ======== RIGHT ======== */}
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-3 [&_label]:text-xs [&_label]:font-medium [&_[data-slot=select-trigger]]:text-xs [&_input]:text-xs [&_textarea]:text-xs">
           {/* Payment */}
-          <Card>
+          <Card size="sm" className="gap-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base text-primary">
-                <CreditCard className="size-5" />
+                <CreditCard className="size-4" />
                 Payment
               </CardTitle>
-              <CardDescription>Select payment method and status.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <div className="space-y-2">
+            <CardContent className="flex flex-col gap-3">
+              <div className="space-y-1.5">
                 <Label className="text-primary font-medium">Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <Select
+                  value={paymentMethod}
+                  onValueChange={(value) => {
+                    setPaymentMethod(value);
+                    setAccountNumber("");
+                    setTransactionId("");
+                  }}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -1075,8 +1163,43 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                 </Select>
               </div>
 
-              <div className="mt-2 border-t pt-4">
+              {requiresPaymentDetails && (
+                <div className="grid gap-3 border-t pt-3 sm:grid-cols-2 lg:grid-cols-1">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="payment-account-number">
+                      Acc No <span className="text-muted-foreground font-normal">(optional)</span>
+                    </Label>
+                    <Input
+                      id="payment-account-number"
+                      value={accountNumber}
+                      onChange={(event) => setAccountNumber(event.target.value)}
+                      placeholder="Account number"
+                      maxLength={50}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="payment-transaction-id">
+                      Transaction ID <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      ref={transactionIdRef}
+                      id="payment-transaction-id"
+                      value={transactionId}
+                      onChange={(event) => setTransactionId(event.target.value)}
+                      placeholder="Transaction reference"
+                      maxLength={50}
+                      autoComplete="off"
+                      required
+                      aria-required="true"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
                 <PartialPaymentForm
+                  compact
                   orderTotal={total}
                   status={paymentStatus}
                   onStatusChange={setPaymentStatus}
@@ -1089,33 +1212,43 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
           </Card>
 
           {/* Discount */}
-          <Card>
+          <Card size="sm" className="gap-2">
             <CardHeader>
-              <CardTitle className="text-base text-primary">Discount</CardTitle>
-              <CardDescription>Apply a discount to this order.</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Percent className="size-4" /> Discount{" "}
+                <span className="text-xs font-normal text-muted-foreground">(Optional)</span>
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="grid gap-3 grid-cols-2">
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label className="text-primary font-medium">Type</Label>
                   <Select value={discountType} onValueChange={setDiscountType}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="fixed">Fixed (৳)</SelectItem>
+                      <SelectItem value="fixed">Fixed Amount</SelectItem>
                       <SelectItem value="percentage">Percentage (%)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label className="text-primary font-medium">Value</Label>
-                  <Input
-                    type="number"
-                    placeholder={discountType === "percentage" ? "e.g. 10" : "e.g. 200"}
-                    value={discountValue}
-                    onChange={(e) => setDiscountValue(e.target.value)}
-                  />
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-0 flex w-8 items-center justify-center border-r text-xs text-muted-foreground">
+                      {discountType === "percentage" ? "%" : "৳"}
+                    </span>
+                    <Input
+                      aria-label="Discount value"
+                      className="pl-10"
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
               {discountAmount > 0 && (
@@ -1126,54 +1259,85 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
             </CardContent>
           </Card>
 
-          {/* Order Status */}
-          <Card>
+          {/* Order Settings */}
+          <Card size="sm" className="gap-2">
             <CardHeader>
-              <CardTitle className="text-base text-primary">Order Status</CardTitle>
-              <CardDescription>Set the initial status for this order.</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Settings2 className="size-4" /> Order Settings
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <Select value={orderStatus} onValueChange={setOrderStatus}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Confirmed">Confirmed</SelectItem>
-                  <SelectItem value="Ready To Ship">Ready To Ship</SelectItem>
-                  <SelectItem value="In-Courier">In-Courier</SelectItem>
-                  <SelectItem value="Ship Later">Ship Later</SelectItem>
-                  <SelectItem value="Hold">Hold</SelectItem>
-                  <SelectItem value="Pending-Return">Pending-Return</SelectItem><SelectItem value="Partial">Partial</SelectItem><SelectItem value="Returned">Returned</SelectItem>
-                  <SelectItem value="Pre-Order">Pre-Order</SelectItem>
-                  <SelectItem value="Delivered">Delivered</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
-                  <SelectItem value="Missing">Missing</SelectItem>
-                  <SelectItem value="Lost">Lost</SelectItem>
-                  <SelectItem value="Fake">Fake</SelectItem>
-                  <SelectItem value="Trash">Trash</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="min-w-0 space-y-1.5">
+                  <Label htmlFor="order-source">Order Source</Label>
+                  <Select
+                    value={isWholesale ? "Wholesale" : orderSource}
+                    onValueChange={setOrderSource}
+                    disabled={isSubmitting || isWholesale}
+                  >
+                    <SelectTrigger id="order-source" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {isWholesale ? (
+                        <SelectItem value="Wholesale">Wholesale</SelectItem>
+                      ) : (
+                        manualOrderSources.map((source) => (
+                          <SelectItem key={source} value={source}>
+                            {source}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="min-w-0 space-y-1.5">
+                  <Label htmlFor="order-status">Order Status</Label>
+                  <Select value={orderStatus} onValueChange={setOrderStatus}>
+                    <SelectTrigger id="order-status" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Confirmed">Confirmed</SelectItem>
+                      <SelectItem value="Ready To Ship">Ready To Ship</SelectItem>
+                      <SelectItem value="In-Courier">In-Courier</SelectItem>
+                      <SelectItem value="Ship Later">Ship Later</SelectItem>
+                      <SelectItem value="Hold">Hold</SelectItem>
+                      <SelectItem value="Pending-Return">Pending-Return</SelectItem>
+                      <SelectItem value="Partial">Partial</SelectItem>
+                      <SelectItem value="Returned">Returned</SelectItem>
+                      <SelectItem value="Pre-Order">Pre-Order</SelectItem>
+                      <SelectItem value="Delivered">Delivered</SelectItem>
+                      <SelectItem value="Cancelled">Cancelled</SelectItem>
+                      <SelectItem value="Missing">Missing</SelectItem>
+                      <SelectItem value="Lost">Lost</SelectItem>
+                      <SelectItem value="Fake">Fake</SelectItem>
+                      <SelectItem value="Trash">Trash</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
                 <Label htmlFor="order-note" className="text-primary font-medium">
                   Order Note (Customer)
                 </Label>
                 <Textarea
                   id="order-note"
                   placeholder="Customer note or instructions..."
-                  className="min-h-[70px] resize-y"
+                  className="min-h-[58px] resize-y"
                   value={orderNote}
                   onChange={(e) => setOrderNote(e.target.value)}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="employee-note" className="text-primary font-medium">
                   Order Note (Employee)
                 </Label>
                 <Textarea
                   id="employee-note"
-                  placeholder="Internal employee note..."
-                  className="min-h-[70px] resize-y"
+                  placeholder="Internal note..."
+                  className="min-h-[58px] resize-y"
                   value={employeeNote}
                   onChange={(e) => setEmployeeNote(e.target.value)}
                 />
@@ -1182,34 +1346,35 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
           </Card>
 
           {/* Order Summary */}
-          <Card>
+          <Card
+            size="sm"
+            className="gap-2 bg-amber-50/40 ring-amber-900/10 dark:bg-amber-950/10 dark:ring-amber-200/10"
+          >
             <CardHeader>
-              <CardTitle className="text-base text-primary">Order Summary</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <ReceiptText className="size-4 text-amber-800 dark:text-amber-400" /> Order Summary
+              </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium tabular-nums">৳{subtotal.toLocaleString()}</span>
+            <CardContent className="flex flex-col gap-2">
+              <div className="flex justify-between text-xs">
+                <span>Items ({cart.reduce((count, item) => count + item.quantity, 0)})</span>
+                <span className="tabular-nums">৳ {subtotal.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Shipping</span>
-                <span className="font-medium tabular-nums">৳{shippingCost.toLocaleString()}</span>
+              <div className="flex justify-between text-xs">
+                <span>Discount</span>
+                <span className="tabular-nums">− ৳ {discountAmount.toLocaleString()}</span>
               </div>
-              {discountAmount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Discount</span>
-                  <span className="font-medium tabular-nums text-emerald-600">−৳{discountAmount.toLocaleString()}</span>
-                </div>
-              )}
-              <Separator />
-              <div className="flex justify-between text-base">
+              <div className="flex justify-between text-xs">
+                <span>Shipping</span>
+                <span className="tabular-nums">৳ {shippingCost.toLocaleString()}</span>
+              </div>
+              <Separator className="my-1" />
+              <div className="flex items-center justify-between">
                 <span className="font-semibold">Total</span>
-                <span className="font-bold tabular-nums text-primary">৳{total.toLocaleString()}</span>
+                <span className="text-xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                  ৳ {total.toLocaleString()}
+                </span>
               </div>
-              <Button className="w-full mt-2" onClick={handleCreateOrder} disabled={isSubmitting}>
-                <Send className="mr-2 size-4" />
-                {isSubmitting ? "Creating..." : "Create Order"}
-              </Button>
             </CardContent>
           </Card>
         </div>

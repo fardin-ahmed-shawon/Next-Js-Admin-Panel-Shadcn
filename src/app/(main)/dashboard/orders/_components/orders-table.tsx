@@ -1,5 +1,7 @@
 "use client";
 
+import { emptyOrderListFilters } from "@/lib/order-list-filters";
+import { OrderListFilterControls } from "./order-list-filter-controls";
 import { WorkflowAssignment } from "./workflow-assignment";
 import { OrderAssignmentCell } from "./order-assignment-cell";
 import { ExcelExportButton } from "@/components/excel-export-button";
@@ -1512,14 +1514,16 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
     setRowSelection({});
   }
   function clearAllFilters() {
-    setStatusFilter(hideOrderStatusFilter ? "All" : "Pending");
+    setStatusFilter(packingMode || hideOrderStatusFilter ? "All" : "Pending");
     setPaymentFilter("All");
+    setCourierFilter("All");
+    if (useServerPagination) context.setListFilters?.({ ...emptyOrderListFilters });
     setSearchQuery("");
     setPage(1);
     setRowSelection({});
   }
 
-  const hasFilters = statusFilter !== (hideOrderStatusFilter ? "All" : "Pending") || paymentFilter !== "All" || searchQuery;
+  const hasFilters = statusFilter !== (packingMode || hideOrderStatusFilter ? "All" : "Pending") || paymentFilter !== "All" || courierFilter !== "All" || searchQuery || (useServerPagination && Object.values(context.listFilters || {}).some(value => value !== "All"));
 
   const [bulkUpdating, setBulkUpdating] = React.useState(false);
   const [bulkCancelModalOpen, setBulkCancelModalOpen] = React.useState(false);
@@ -1591,23 +1595,19 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="font-normal text-muted-foreground text-sm">Order Management</CardTitle>
-        <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
-          {selectedCount > 0 ? `${selectedCount} of ${totalCount} selected` : `${totalCount} orders`}
-        </CardDescription>
-        <CardAction>
-          <ExcelExportButton module="orders" title="Orders" label={selectedCount ? "Export selected" : useServerPagination ? "Export Excel (page)" : "Export Excel"} getData={() => orderExcelData((selectedCount ? table.getSelectedRowModel() : table.getFilteredRowModel()).rows.map(r => r.original))} />
-        </CardAction>
-      </CardHeader>
-
-      <CardContent className="flex flex-col gap-4 px-0">
-        {/* Toolbar: Search + Categories + Sort */}
-        <div className="flex flex-wrap items-center gap-3 px-4">
-          <div className="relative w-full sm:w-auto flex-1 sm:flex-none">
+      <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-1">
+          <CardTitle className="font-normal text-muted-foreground text-sm">Order Management</CardTitle>
+          <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
+            {selectedCount > 0 ? `${selectedCount} of ${totalCount} selected` : `${totalCount} orders`}
+          </CardDescription>
+        </div>
+        <CardAction className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
+          <div className="relative min-w-0 flex-1 sm:flex-none">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="h-8 w-full sm:w-52 rounded-[min(var(--radius-md),12px)] pl-8"
+              className="h-8 w-full sm:w-72 xl:w-96 rounded-[min(var(--radius-md),12px)] pl-8"
+              aria-label="Search orders"
               placeholder="Search orders..."
               value={searchQuery}
               onChange={(e) => {
@@ -1616,11 +1616,32 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
               }}
             />
           </div>
+          <ExcelExportButton module="orders" title="Orders" label={selectedCount ? "Export selected" : useServerPagination ? "Export Excel (page)" : "Export Excel"} getData={() => orderExcelData((selectedCount ? table.getSelectedRowModel() : table.getFilteredRowModel()).rows.map(r => r.original))} />
+          <Button
+            size="icon-sm"
+            variant="outline"
+            onClick={() => table.getColumn("total")?.toggleSorting(table.getColumn("total")?.getIsSorted() === "asc")}
+            title="Sort by Total"
+            aria-label="Sort by Total"
+          >
+            <ArrowUpDown />
+          </Button>
+        </CardAction>
+      </CardHeader>
 
-          {hasFilters && (
-            <Button variant="secondary" size="sm" className="h-8 text-xs" onClick={clearAllFilters}>
-              Clear filters
-            </Button>
+      <CardContent className="flex flex-col gap-4 px-0">
+        {/* Toolbar: Filters */}
+        <div className="flex flex-wrap items-center gap-3 px-4">
+          {useServerPagination && context.listFilters && context.setListFilters && (
+            <OrderListFilterControls
+              filters={context.listFilters}
+              options={context.assignmentFilterOptions || {}}
+              onChange={(filters) => {
+                context.setListFilters?.(filters);
+                setPage(1);
+                setRowSelection({});
+              }}
+            />
           )}
 
           <div className="flex items-center gap-2">
@@ -1639,28 +1660,14 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                 <SelectItem value="Pending">Pending</SelectItem>
               </SelectContent>
             </Select>
+            {hasFilters && (
+              <Button variant="secondary" size="sm" className="h-8 text-xs" onClick={clearAllFilters}>
+                Clear filters
+              </Button>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground hidden sm:inline">Rows:</span>
-            <Select
-              value={`${perPage}`}
-              onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}
-            >
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[10, 20, 30, 50, 100, 150, 200].map((s) => (
-                  <SelectItem key={s} value={`${s}`}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2 sm:hidden">
             <Button
               size="icon-sm"
               variant={showFiltersMobile ? "secondary" : "outline"}
@@ -1668,15 +1675,6 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
               onClick={() => setShowFiltersMobile(!showFiltersMobile)}
             >
               <Filter className="size-4" />
-            </Button>
-            <Button
-              size="icon-sm"
-              variant="outline"
-              className={showFiltersMobile ? "flex" : "hidden sm:flex"}
-              onClick={() => table.getColumn("total")?.toggleSorting(table.getColumn("total")?.getIsSorted() === "asc")}
-              title="Sort by Total"
-            >
-              <ArrowUpDown />
             </Button>
           </div>
         </div>
@@ -1721,8 +1719,8 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
           )}
 
           {/* Payment Status Filter */}
-          {!hidePaymentStatusFilter && (
-            <div className="flex flex-col gap-2 px-4">
+          <div className="flex flex-col gap-2 px-4">
+            {!hidePaymentStatusFilter && (
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground shrink-0">
                   Payment:
@@ -1737,7 +1735,9 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                   <ChevronDown className={`size-3.5 transition-transform ${showPaymentFilter ? "" : "-rotate-90"}`} />
                 </Button>
               </div>
-              {showPaymentFilter && (
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              {!hidePaymentStatusFilter && showPaymentFilter && (
                 <div className="flex flex-wrap gap-2">
                   {paymentStatuses.map((s) => (
                     <Button
@@ -1752,8 +1752,26 @@ export function OrdersTable({ data, hideOrderStatusFilter, hidePaymentStatusFilt
                   ))}
                 </div>
               )}
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                <span className="text-sm text-muted-foreground">Rows per page:</span>
+                <Select
+                  value={`${perPage}`}
+                  onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}
+                >
+                  <SelectTrigger aria-label="Rows per page" className="h-8 w-[70px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[10, 20, 30, 50, 100, 150, 200].map((s) => (
+                      <SelectItem key={s} value={`${s}`}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Bulk action row — appears below pay filter when rows selected */}

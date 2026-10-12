@@ -1,3 +1,4 @@
+import type { OrderListFilters } from "@/lib/order-list-filters";
 import { canUseAllOrdersToggle } from "@/hooks/useRoles";
 import { fetchClient } from "@/lib/fetch-client";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +27,7 @@ const fetcher = async (key: string | [string, number | undefined]) => {
 
   return {
     summary: json.summary || {},
+    filterOptions: json.filter_options || {},
     data: json.data?.data || [],
     pagination: {
       current_page: json.data?.current_page,
@@ -36,7 +38,7 @@ const fetcher = async (key: string | [string, number | undefined]) => {
   };
 };
 
-interface UseOrdersParams {
+interface UseOrdersParams extends Partial<OrderListFilters> {
   report?: boolean;
   workflow?: "packing";
   page?: number;
@@ -77,6 +79,11 @@ export function useOrders(params?: UseOrdersParams) {
   if (params?.courier && params.courier !== "All") searchParams.append("courier", params.courier);
   if (params?.include_incomplete) searchParams.append("include_incomplete", "1");
 
+  for (const key of ["order_agent", "packing_by", "return_confirmed_by", "customer_type", "invoice_status", "source"] as const) {
+    const value = params?.[key];
+    if (value && value !== "All") searchParams.append(key, value);
+  }
+
   const queryString = searchParams.toString() ? `?${searchParams.toString()}` : "";
   const url = `${baseUrl}${ordersEndpoint}${queryString}`;
 
@@ -86,6 +93,7 @@ export function useOrders(params?: UseOrdersParams) {
 
   return {
     summary: data?.summary || {},
+    filterOptions: data?.filterOptions || {},
     orders: data?.data || [],
     pagination: data?.pagination || ({} as any),
     isLoading,

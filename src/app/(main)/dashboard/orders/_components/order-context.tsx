@@ -1,9 +1,13 @@
 "use client";
 
 import * as React from "react";
+import type { OrderListFilters, AssignmentFilterOptions } from "@/lib/order-list-filters";
 export type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
 
 export const OrderContext = React.createContext<{
+  listFilters?: OrderListFilters;
+  setListFilters?: (filters: OrderListFilters) => void;
+  assignmentFilterOptions?: AssignmentFilterOptions;
   params: any;
   searchQuery: string;
   setSearchQuery: (s: string) => void;

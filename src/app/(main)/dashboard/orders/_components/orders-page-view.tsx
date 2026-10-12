@@ -1,4 +1,5 @@
 "use client";
+import { emptyOrderListFilters } from "@/lib/order-list-filters";
 import { orderDisplayLines } from "@/lib/order-combos";
 
 import * as React from "react";
@@ -99,6 +100,7 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
   const [customTo, setCustomTo] = React.useState("");
 
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [listFilters, setListFilters] = React.useState({ ...emptyOrderListFilters });
   const [statusFilter, setStatusFilter] = React.useState(workflow === "packing" ? "All" : "Pending");
   const [paymentFilter, setPaymentFilter] = React.useState("All");
   const [courierFilter, setCourierFilter] = React.useState("All");
@@ -133,6 +135,7 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
 
   const params = React.useMemo(() => {
     const p: any = {
+      ...listFilters,
       workflow,
       page,
       per_page: perPage,
@@ -170,6 +173,7 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
 
     return p;
   }, [
+    listFilters,
     workflow,
     user,
     page,
@@ -184,7 +188,7 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
     customTo,
   ]);
 
-  const { orders, summary, pagination, isLoading } = useOrders(params);
+  const { orders, summary, pagination, isLoading, filterOptions } = useOrders(params);
 
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1/admin/", "/") || "http://127.0.0.1:8000/";
 
@@ -320,6 +324,9 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
   return (
     <OrderContext.Provider
       value={{
+        listFilters,
+        setListFilters,
+        assignmentFilterOptions: filterOptions,
         params,
         searchQuery,
         setSearchQuery,
