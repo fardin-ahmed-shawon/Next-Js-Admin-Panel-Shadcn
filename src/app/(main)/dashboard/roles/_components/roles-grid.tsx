@@ -3,6 +3,7 @@
 import { fetchClient } from "@/lib/fetch-client";
 
 import * as React from "react";
+import { HISTORY_PERMISSION_GROUPS } from "@/lib/data-history";
 import { DELIVERY_SUPPORT_PERMISSIONS } from "@/lib/delivery-support-permissions";
 
 import Link from "next/link";
@@ -85,6 +86,7 @@ import { PageAccess, useRoles } from "@/hooks/useRoles";
 
 const ALL_PERMISSIONS = [
   ...DELIVERY_SUPPORT_PERMISSIONS,
+  ...HISTORY_PERMISSION_GROUPS.flatMap(group => group.items),
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "products", label: "Products", icon: Package },
   { id: "procurement", label: "Purchase & Procurement", icon: ShoppingBag },

@@ -1,4 +1,5 @@
 "use client";
+import { HISTORY_LABELS, historyPeriods, historyDefault, historyDates, historyMinimum } from "@/lib/data-history";
 import { emptyOrderListFilters } from "@/lib/order-list-filters";
 import { orderDisplayLines } from "@/lib/order-combos";
 
@@ -37,45 +38,7 @@ import { OrdersTable } from "./orders-table";
 
 /* ---- Time range helpers ---- */
 
-function getDateFrom(range: TimeRange): string {
-  const now = new Date();
-  const d = new Date(now);
-  console.log("now:", now);
-  console.log("d:", d);
-  switch (range) {
-    case "daily":
-      return now.toISOString().slice(0, 10);
-    case "weekly":
-      d.setDate(d.getDate() - 7);
-      return d.toISOString().slice(0, 10);
-    case "monthly":
-      d.setMonth(d.getMonth() - 1);
-      return d.toISOString().slice(0, 10);
-    case "4months":
-      d.setMonth(d.getMonth() - 4);
-      return d.toISOString().slice(0, 10);
-    case "6months":
-      d.setMonth(d.getMonth() - 6);
-      return d.toISOString().slice(0, 10);
-    case "yearly":
-      d.setFullYear(d.getFullYear() - 1);
-      return d.toISOString().slice(0, 10);
-    default:
-      return "";
-  }
-}
-
-const rangeLabels: Record<TimeRange, string> = {
-  alltime: "All Time",
-  daily: "Today",
-  yesterday: "Yesterday",
-  weekly: "Weekly",
-  monthly: "Monthly",
-  "4months": "Last 4 Months",
-  "6months": "Last 6 Months",
-  yearly: "Yearly",
-  custom: "Custom Range",
-};
+const rangeLabels = HISTORY_LABELS;
 
 export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
   const router = useRouter();
@@ -95,7 +58,10 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
   }, [isAuthLoading, hasOrdersAccess, hasPackagingAccess, hasPendingReturnsAccess, router]);
 
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(false);
-  const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
+  const [selectedTimeRange, setTimeRange] = React.useState<TimeRange>("alltime");
+  const allowedPeriods = historyPeriods(user, "orders");
+  const historyMin = historyMinimum(allowedPeriods);
+  const timeRange = allowedPeriods.includes(selectedTimeRange) ? selectedTimeRange : historyDefault(allowedPeriods);
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
 
@@ -146,30 +112,9 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
       all_orders: allOrdersToggle && canUseAllOrdersToggle(user),
     };
 
-    const now = new Date();
-    if (timeRange !== "alltime" && timeRange !== "custom") {
-      let fromDate = null;
-      if (timeRange === "daily") fromDate = now;
-      else if (timeRange === "yesterday") fromDate = subDays(now, 1);
-      else if (timeRange === "weekly") fromDate = subDays(now, 7);
-      else if (timeRange === "monthly") fromDate = subMonths(now, 1);
-      else if (timeRange === "4months") fromDate = subMonths(now, 4);
-      else if (timeRange === "6months") fromDate = subMonths(now, 6);
-      else if (timeRange === "yearly") fromDate = startOfYear(now);
-
-      if (fromDate) {
-        if (timeRange === "yesterday") {
-          p.start_date = format(fromDate, "yyyy-MM-dd");
-          p.end_date = format(fromDate, "yyyy-MM-dd");
-        } else {
-          p.start_date = format(fromDate, "yyyy-MM-dd");
-          p.end_date = format(now, "yyyy-MM-dd");
-        }
-      }
-    } else if (timeRange === "custom") {
-      if (customFrom) p.start_date = customFrom;
-      if (customTo) p.end_date = customTo;
-    }
+    const dates = historyDates(timeRange, customFrom, customTo);
+    if (dates.from) p.start_date = dates.from;
+    if (dates.to) p.end_date = dates.to;
 
     return p;
   }, [
@@ -410,7 +355,7 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
                 )}
 
                 <Select
-                  value={timeRange}
+                  disabled={!allowedPeriods.length} value={allowedPeriods.length ? timeRange : ""}
                   onValueChange={(v) => {
                     setTimeRange(v as TimeRange);
                     setPage(1);
@@ -422,23 +367,23 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
                   <SelectContent>
                     <SelectGroup>
                       {(Object.keys(rangeLabels) as TimeRange[])
-                        .filter((r) => r !== "custom")
+                        .filter((r) => r !== "custom" && allowedPeriods.includes(r))
                         .map((r) => (
                           <SelectItem key={r} value={r}>
                             {rangeLabels[r]}
                           </SelectItem>
                         ))}
-                      <SelectItem value="custom">Custom Range</SelectItem>
+                      {allowedPeriods.includes("custom") && <SelectItem value="custom">Custom Range</SelectItem>}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
 
                 {/* Custom date inputs â€” inline on desktop only */}
-                {timeRange === "custom" && (
+                {timeRange === "custom" && allowedPeriods.includes("custom") && (
                   <div className="hidden sm:flex items-center gap-2">
                     <CalendarIcon className="size-4 text-muted-foreground" />
                     <Input
-                      type="date"
+                      type="date" min={historyMin}
                       className="h-8 w-36 text-xs"
                       value={customFrom}
                       onChange={(e) => {
@@ -448,7 +393,7 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
                     />
                     <span className="text-xs text-muted-foreground">to</span>
                     <Input
-                      type="date"
+                      type="date" min={historyMin}
                       className="h-8 w-36 text-xs"
                       value={customTo}
                       onChange={(e) => {
@@ -496,11 +441,11 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
             </div>
 
             {/* Custom date inputs â€” own row on mobile only */}
-            {timeRange === "custom" && (
+            {timeRange === "custom" && allowedPeriods.includes("custom") && (
               <div className="flex sm:hidden items-center gap-2 w-full">
                 <CalendarIcon className="size-4 text-muted-foreground shrink-0" />
                 <Input
-                  type="date"
+                  type="date" min={historyMin}
                   className="h-8 flex-1 text-xs"
                   value={customFrom}
                   onChange={(e) => {
@@ -510,7 +455,7 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
                 />
                 <span className="text-xs text-muted-foreground shrink-0">to</span>
                 <Input
-                  type="date"
+                  type="date" min={historyMin}
                   className="h-8 flex-1 text-xs"
                   value={customTo}
                   onChange={(e) => {

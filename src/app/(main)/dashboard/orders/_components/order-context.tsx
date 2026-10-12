@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import type { OrderListFilters, AssignmentFilterOptions } from "@/lib/order-list-filters";
-export type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
+export type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "3months" | "4months" | "6months" | "yearly" | "alltime" | "custom";
 
 export const OrderContext = React.createContext<{
   listFilters?: OrderListFilters;

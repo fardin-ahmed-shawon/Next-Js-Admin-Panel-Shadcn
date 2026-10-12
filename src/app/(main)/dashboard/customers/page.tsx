@@ -1,4 +1,7 @@
 "use client";
+import { HistoryDateFilter } from "@/components/history-date-filter";
+import { historyPeriods } from "@/lib/data-history";
+import { useAuth } from "@/hooks/useAuth";
 
 import * as React from "react";
 import { useCustomers, useSegmentationRules } from "@/hooks/useCustomers";
@@ -21,12 +24,10 @@ export default function CustomersPage() {
   const { options } = useCrmAssignments();
   const { rules: savedSegments } = useSegmentationRules();
   const segmentRules = React.useMemo(() => [...(savedSegments.length ? savedSegments : DEFAULT_CUSTOMER_SEGMENTS)].sort((a, b) => a.priority - b.priority), [savedSegments]);
-  const [preset, setPreset] = React.useState("All Time");
-  const [orderDateFrom, setOrderDateFrom] = React.useState("");
-  const [orderDateTo, setOrderDateTo] = React.useState("");
-  const [dateFilters, setDateFilters] = React.useState<{ order_date_from?: string; order_date_to?: string }>({});
+  const { user } = useAuth();
+  const allowedPeriods = historyPeriods(user, "customers");
+  const [dateFilters, setDateFilters] = React.useState<{order_date_from?: string; order_date_to?: string; created_date_from?: string; created_date_to?: string}>({});
   const { data: response, isLoading, error, mutate } = useCustomers(false, dateFilters);
-  const invalidRange = Boolean(orderDateFrom && orderDateTo && orderDateFrom > orderDateTo);
 
   if (isLoading && !response) {
     return (
@@ -187,16 +188,6 @@ export default function CustomersPage() {
     };
   });
 
-  const choosePreset = (label: string) => {
-    setPreset(label);
-    if (label === "All Time") { setOrderDateFrom(""); setOrderDateTo(""); setDateFilters({}); return; }
-    const end = new Date(); const start = new Date();
-    if (label === "This Year") start.setMonth(0, 1);
-    else start.setDate(start.getDate() - Number.parseInt(label) + 1);
-    const localDate = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-    const from = localDate(start), to = localDate(end);
-    setOrderDateFrom(from); setOrderDateTo(to); setDateFilters({ order_date_from: from, order_date_to: to });
-  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -207,28 +198,14 @@ export default function CustomersPage() {
           <p className="text-muted-foreground text-sm">Manage your customers, track revenue and assign CRM agents.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-wrap items-end gap-3 xl:w-auto xl:justify-end">
+            <HistoryDateFilter label="Customer Created Date" periods={allowedPeriods} onChange={dates => setDateFilters(current => ({...current, created_date_from: dates.from, created_date_to: dates.to}))} />
+            <HistoryDateFilter label="Order Date" periods={allowedPeriods} onChange={dates => setDateFilters(current => ({...current, order_date_from: dates.from, order_date_to: dates.to}))} />
           <div ref={setExportContainer} />
           {options?.all_customers && <Button variant="outline" onClick={() => setImportOpen(true)}><Upload className="size-4" />Import Customers</Button>}
-          <Button variant="outline" onClick={() => mutate()}><RefreshCw className="size-4" />Refresh Customers</Button>
           {options?.all_customers && <Button onClick={() => setCreateOpen(true)}><Plus className="size-4" />Add Customer</Button>}
         </div>
       </div>
-
-      <form className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4" onSubmit={event => {
-        event.preventDefault(); if (!invalidRange) { setPreset(""); setDateFilters({ order_date_from: orderDateFrom, order_date_to: orderDateTo }); }
-      }}>
-        <span className="flex items-center gap-2 text-sm font-medium mr-2"><CalendarDays className="size-5" />Order Date</span>
-        <div className="flex items-center gap-2 rounded-lg border px-2 py-1">
-          <Label htmlFor="order-date-from" className="sr-only">Order date from</Label><Input id="order-date-from" className="w-[140px] border-0 shadow-none px-1" type="date" value={orderDateFrom} max={orderDateTo || undefined} onChange={event => { setOrderDateFrom(event.target.value); setPreset(""); }} />
-          <ArrowRight className="size-4 text-muted-foreground" />
-          <Label htmlFor="order-date-to" className="sr-only">Order date to</Label><Input id="order-date-to" className="w-[140px] border-0 shadow-none px-1" type="date" value={orderDateTo} min={orderDateFrom || undefined} onChange={event => { setOrderDateTo(event.target.value); setPreset(""); }} />
-        </div>
-        <div className="flex flex-wrap gap-1">{["7D", "30D", "90D", "This Year", "All Time"].map(label => <Button key={label} type="button" size="sm" variant={preset === label ? "default" : "outline"} aria-pressed={preset === label} onClick={() => choosePreset(label)}>{label}</Button>)}</div>
-        <div className="ml-auto flex gap-2"><Button type="button" variant="outline" onClick={() => choosePreset("All Time")}>Clear</Button><Button type="submit" disabled={invalidRange || isLoading}>Apply</Button></div>
-        {invalidRange && <p role="alert" className="w-full text-sm text-destructive">The end date must be on or after the start date.</p>}
-        {error && <p role="alert" className="w-full text-sm text-destructive">Could not apply the date filter. Please try again.</p>}
-      </form>
 
       {/* Top 4 Modern KPI Cards */}
       <CustomersStats data={mappedData} />
@@ -236,8 +213,8 @@ export default function CustomersPage() {
       {/* Advanced Data-Driven Customers Table */}
       {isLoading ? <p className="text-sm text-muted-foreground">Loading customers for the selected order dates...</p>
         : !error && <CustomersTable segmentRules={segmentRules} exportContainer={exportContainer} data={mappedData} onRefresh={() => mutate()} />}
-      <CustomerCreateSheet open={createOpen} onOpenChange={setCreateOpen} onCreated={() => { choosePreset("All Time"); mutate(); }} />
-      <CustomerImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={() => { choosePreset("All Time"); mutate(); }} />
+      <CustomerCreateSheet open={createOpen} onOpenChange={setCreateOpen} onCreated={() => { setDateFilters({}); mutate(); }} />
+      <CustomerImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={() => { setDateFilters({}); mutate(); }} />
     </div>
   );
 }

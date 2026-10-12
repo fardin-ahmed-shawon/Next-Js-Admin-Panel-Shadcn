@@ -1,4 +1,5 @@
 "use client";
+import { HISTORY_LABELS, historyPeriods, historyDefault, historyDates, historyMinimum } from "@/lib/data-history";
 import { orderDisplayLines } from "@/lib/order-combos";
 
 import * as React from "react";
@@ -26,33 +27,18 @@ import { OrderContext } from "../_components/order-context";
 import { IncompleteReportView } from "../../reports/incomplete/_components/incomplete-report-view";
 
 /* ---- Time range helpers ---- */
-type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
+type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "3months" | "4months" | "6months" | "yearly" | "alltime" | "custom";
 
-function getDateFrom(range: TimeRange): string {
-  const now = new Date();
-  const d = new Date(now);
-  switch (range) {
-    case "daily": return now.toISOString().slice(0, 10);
-    case "weekly": d.setDate(d.getDate() - 7); return d.toISOString().slice(0, 10);
-    case "monthly": d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 10);
-    case "4months": d.setMonth(d.getMonth() - 4); return d.toISOString().slice(0, 10);
-    case "6months": d.setMonth(d.getMonth() - 6); return d.toISOString().slice(0, 10);
-    case "yearly": d.setFullYear(d.getFullYear() - 1); return d.toISOString().slice(0, 10);
-    default: return "";
-  }
-}
-
-const rangeLabels: Record<TimeRange, string> = {
-  alltime: "All Time", daily: "Today", yesterday: "Yesterday", weekly: "Weekly",
-  monthly: "Monthly", "4months": "Last 4 Months", "6months": "Last 6 Months",
-  yearly: "Yearly", custom: "Custom Range",
-};
+const rangeLabels = HISTORY_LABELS;
 
 export default function IncompleteOrdersPage() {
   const { user } = useAuth();
   const { features } = useModularFeatures();
   const [allOrdersToggle, setAllOrdersToggle] = React.useState(false);
-  const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
+  const [selectedTimeRange, setTimeRange] = React.useState<TimeRange>("alltime");
+  const allowedPeriods = historyPeriods(user, "orders");
+  const historyMin = historyMinimum(allowedPeriods);
+  const timeRange = allowedPeriods.includes(selectedTimeRange) ? selectedTimeRange : historyDefault(allowedPeriods);
   const [customFrom, setCustomFrom] = React.useState<string>("");
   const [customTo, setCustomTo] = React.useState<string>("");
   const [activeTab, setActiveTab] = React.useState<"Incomplete" | "Complete" | "Report">("Incomplete");
@@ -100,25 +86,9 @@ export default function IncompleteOrdersPage() {
     setPage(1);
   }, []);
 
-  const startDate = React.useMemo(() => {
-    if (timeRange === "alltime") return undefined;
-    if (timeRange === "custom") return customFrom || undefined;
-    if (timeRange === "yesterday") {
-      const d = new Date(); d.setDate(d.getDate() - 1);
-      return d.toISOString().slice(0, 10);
-    }
-    return getDateFrom(timeRange);
-  }, [timeRange, customFrom]);
-
-  const endDate = React.useMemo(() => {
-    if (timeRange === "alltime") return undefined;
-    if (timeRange === "custom") return customTo || undefined;
-    if (timeRange === "yesterday") {
-      const d = new Date(); d.setDate(d.getDate() - 1);
-      return d.toISOString().slice(0, 10);
-    }
-    return new Date().toISOString().slice(0, 10); // today
-  }, [timeRange, customTo]);
+  const dates = historyDates(timeRange, customFrom, customTo);
+  const startDate = dates.from || undefined;
+  const endDate = dates.to || undefined;
 
   // Fetch paginated data from endpoint
   const { orders, pagination, summary, isLoading } = useIncompleteOrders({
@@ -289,16 +259,16 @@ export default function IncompleteOrdersPage() {
               )}
 
               {/* Time Period Selector - visible for all tabs */}
-              <Select value={timeRange} onValueChange={(v) => { setTimeRange(v as TimeRange); setPage(1); }}>
+              <Select disabled={!allowedPeriods.length} value={allowedPeriods.length ? timeRange : ""} onValueChange={(v) => { setTimeRange(v as TimeRange); setPage(1); }}>
                 <SelectTrigger className="w-32 sm:w-36 h-9">
                   <SelectValue placeholder="Select period" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {(Object.keys(rangeLabels) as TimeRange[]).filter(r => r !== "custom").map(r => (
+                    {(Object.keys(rangeLabels) as TimeRange[]).filter(r => r !== "custom" && allowedPeriods.includes(r)).map(r => (
                       <SelectItem key={r} value={r}>{rangeLabels[r]}</SelectItem>
                     ))}
-                    <SelectItem value="custom">Custom Range</SelectItem>
+                    {allowedPeriods.includes("custom") && <SelectItem value="custom">Custom Range</SelectItem>}
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -332,22 +302,22 @@ export default function IncompleteOrdersPage() {
                 </Select>
               )}
 
-              {timeRange === "custom" && (
+              {timeRange === "custom" && allowedPeriods.includes("custom") && (
                 <div className="hidden sm:flex items-center gap-2">
                   <CalendarIcon className="size-4 text-muted-foreground" />
-                  <Input type="date" className="h-8 w-36 text-xs" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+                  <Input type="date" min={historyMin} className="h-8 w-36 text-xs" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
                   <span className="text-xs text-muted-foreground">to</span>
-                  <Input type="date" className="h-8 w-36 text-xs" value={customTo} onChange={e => setCustomTo(e.target.value)} />
+                  <Input type="date" min={historyMin} className="h-8 w-36 text-xs" value={customTo} onChange={e => setCustomTo(e.target.value)} />
                 </div>
               )}
             </div>
 
-            {timeRange === "custom" && (
+            {timeRange === "custom" && allowedPeriods.includes("custom") && (
               <div className="flex sm:hidden items-center gap-2 w-full">
                 <CalendarIcon className="size-4 text-muted-foreground shrink-0" />
-                <Input type="date" className="h-8 flex-1 text-xs" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+                <Input type="date" min={historyMin} className="h-8 flex-1 text-xs" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
                 <span className="text-xs text-muted-foreground shrink-0">to</span>
-                <Input type="date" className="h-8 flex-1 text-xs" value={customTo} onChange={e => setCustomTo(e.target.value)} />
+                <Input type="date" min={historyMin} className="h-8 flex-1 text-xs" value={customTo} onChange={e => setCustomTo(e.target.value)} />
               </div>
             )}
           </div>

@@ -3,6 +3,7 @@
 import { fetchClient } from "@/lib/fetch-client";
 
 import * as React from "react";
+import { HISTORY_PERMISSION_GROUPS } from "@/lib/data-history";
 import { DELIVERY_SUPPORT_PERMISSION_GROUP } from "@/lib/delivery-support-permissions";
 
 import Link from "next/link";
@@ -106,6 +107,7 @@ type PermissionGroupType = {
 
 const PERMISSION_GROUPS: PermissionGroupType[] = [
   DELIVERY_SUPPORT_PERMISSION_GROUP,
+  ...HISTORY_PERMISSION_GROUPS,
   {
     id: "core",
     title: "Core & Security",

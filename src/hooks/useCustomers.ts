@@ -1,7 +1,8 @@
+import { useAuth } from "@/hooks/useAuth";
 import { fetchClient } from "@/lib/fetch-client";
 import useSWR from "swr";
 
-const fetcher = async (url: string) => {
+const fetcher = async ([url]: [string, number, string]) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const res = await fetchClient(url, {
     headers: {
@@ -27,16 +28,17 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
-export function useCustomers(report = false, filters?: { order_date_from?: string; order_date_to?: string }) {
+export function useCustomers(report = false, filters?: { order_date_from?: string; order_date_to?: string; created_date_from?: string; created_date_to?: string }) {
+  const { user } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const customersEndpoint = report ? "reports/customers" : process.env.NEXT_PUBLIC_API_WEB_CUSTOMERS || "customers";
 
   const query = new URLSearchParams(Object.entries(filters || {}).filter(([, value]) => Boolean(value)));
   const url = `${baseUrl}${customersEndpoint}${query.size ? `?${query}` : ""}`;
 
-  const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
+  const { data, error, isLoading, mutate } = useSWR(user?.id && url ? [url, user.id, JSON.stringify(user.role?.page_access)] : null, fetcher, {
     revalidateOnFocus: false,
-    keepPreviousData: true,
+    keepPreviousData: false,
   });
 
   return {
@@ -48,10 +50,11 @@ export function useCustomers(report = false, filters?: { order_date_from?: strin
 }
 
 export function useCustomer(id: string | number | undefined) {
+  const { user } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const url = id ? `${baseUrl}customers/${id}` : null;
 
-  const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
+  const { data, error, isLoading, mutate } = useSWR(user?.id && url ? [url, user.id, JSON.stringify(user.role?.page_access)] : null, fetcher, {
     revalidateOnFocus: false,
   });
 
@@ -236,6 +239,7 @@ export function useFollowUps(params?: {
   page?: number;
   per_page?: number;
 }) {
+  const { user } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const query = new URLSearchParams();
   if (params?.status && params.status !== "all") query.set("status", params.status);
@@ -248,7 +252,7 @@ export function useFollowUps(params?: {
   const queryString = query.toString();
   const url = `${baseUrl}crm/follow-ups${queryString ? `?${queryString}` : ""}`;
 
-  const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
+  const { data, error, isLoading, mutate } = useSWR(user?.id && url ? [url, user.id, JSON.stringify(user.role?.page_access)] : null, fetcher, {
     revalidateOnFocus: false,
   });
 
@@ -286,10 +290,11 @@ export interface CustomerSegmentRule {
 }
 
 export function useSegmentationRules() {
+  const { user } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const url = `${baseUrl}crm/segmentation-rules`;
 
-  const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
+  const { data, error, isLoading, mutate } = useSWR(user?.id && url ? [url, user.id, JSON.stringify(user.role?.page_access)] : null, fetcher, {
     revalidateOnFocus: false,
   });
 

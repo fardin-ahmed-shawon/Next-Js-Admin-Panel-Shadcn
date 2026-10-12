@@ -1,7 +1,8 @@
+import { useAuth } from "@/hooks/useAuth";
 import useSWR from 'swr';
 import { fetchClient } from "@/lib/fetch-client";
 
-const fetcher = async (url: string) => {
+const fetcher = async ([url]: [string, number, string]) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const res = await fetchClient(url, {
     headers: {
@@ -31,6 +32,7 @@ interface UseIncompleteOrdersOptions {
 }
 
 export function useIncompleteOrders(options?: UseIncompleteOrdersOptions) {
+  const { user } = useAuth();
   const queryParams = new URLSearchParams();
 
   if (options?.tab) queryParams.append('tab', options.tab);
@@ -51,7 +53,7 @@ export function useIncompleteOrders(options?: UseIncompleteOrdersOptions) {
   const endpoint = "incomplete-orders";
   const url = queryString ? `${baseUrl}${endpoint}?${queryString}` : `${baseUrl}${endpoint}`;
 
-  const { data, error, mutate, isLoading } = useSWR(url, fetcher);
+  const { data, error, mutate, isLoading } = useSWR(user?.id && url ? [url, user.id, JSON.stringify(user.role?.page_access)] : null, fetcher);
 
   return {
     orders: data?.data?.data || [],

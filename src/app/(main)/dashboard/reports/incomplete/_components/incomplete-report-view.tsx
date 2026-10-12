@@ -41,6 +41,7 @@ export type TimeRange =
   | "weekly"
   | "monthly"
   | "last_month"
+  | "3months"
   | "4months"
   | "6months"
   | "yearly"
@@ -54,6 +55,7 @@ const rangeLabels: Record<TimeRange, string> = {
   weekly: "Last 7 Days",
   monthly: "This Month",
   last_month: "Last Month",
+  "3months": "Last 3 Months",
   "4months": "Last 4 Months",
   "6months": "Last 6 Months",
   yearly: "This Year",

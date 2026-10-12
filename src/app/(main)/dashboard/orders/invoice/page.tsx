@@ -21,7 +21,7 @@ function formatSafeDate(dateStr?: string | null, pattern = "yyyy-MM-dd · hh:mm 
 
 const invoiceTypes = ["All", "a4", "pos", "label"];
 
-type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "4months" | "6months" | "yearly" | "alltime" | "custom";
+type TimeRange = "daily" | "yesterday" | "weekly" | "monthly" | "3months" | "4months" | "6months" | "yearly" | "alltime" | "custom";
 
 function getDateFrom(range: TimeRange): string {
   const now = new Date();
@@ -30,6 +30,9 @@ function getDateFrom(range: TimeRange): string {
     case "daily": return now.toISOString().slice(0, 10);
     case "weekly": d.setDate(d.getDate() - 7); return d.toISOString().slice(0, 10);
     case "monthly": d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 10);
+    case "3months":
+      d.setMonth(d.getMonth() - 3);
+      return d.toISOString().slice(0, 10);
     case "4months": d.setMonth(d.getMonth() - 4); return d.toISOString().slice(0, 10);
     case "6months": d.setMonth(d.getMonth() - 6); return d.toISOString().slice(0, 10);
     case "yearly": d.setFullYear(d.getFullYear() - 1); return d.toISOString().slice(0, 10);
@@ -43,6 +46,7 @@ const rangeLabels: Record<TimeRange, string> = {
   yesterday: "Yesterday",
   weekly: "Weekly",
   monthly: "Monthly",
+  "3months": "Last 3 Months",
   "4months": "Last 4 Months",
   "6months": "Last 6 Months",
   yearly: "Yearly",

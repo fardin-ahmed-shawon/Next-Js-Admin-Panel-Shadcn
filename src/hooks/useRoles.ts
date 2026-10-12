@@ -3,7 +3,7 @@ import { fetchClient } from "@/lib/fetch-client";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ROLES || ""}`;
 
-export interface PageAccess {
+export interface PageAccess extends Partial<Record<`orders_history_${import("@/lib/data-history").HistoryPeriod}` | `customers_history_${import("@/lib/data-history").HistoryPeriod}`, number>> {
   delivery_support?: number;
   delivery_support_create?: number;
   delivery_support_reporting_team?: number;

@@ -1,5 +1,6 @@
 "use client";
 
+import { HISTORY_PERMISSION_GROUPS } from "@/lib/data-history";
 import { DELIVERY_SUPPORT_PERMISSION_GROUP } from "@/lib/delivery-support-permissions";
 
 import type * as React from "react";
@@ -90,6 +91,7 @@ type PermissionGroupType = {
 
 const PERMISSION_GROUPS: PermissionGroupType[] = [
   DELIVERY_SUPPORT_PERMISSION_GROUP,
+  ...HISTORY_PERMISSION_GROUPS,
   {
     id: "core",
     title: "Core & Security",
