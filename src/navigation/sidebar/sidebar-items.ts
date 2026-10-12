@@ -115,6 +115,12 @@ export const sidebarItems: NavGroup[] = [
 
 
       {
+        title: "Delivery Ops & Support",
+        url: "/dashboard/delivery-support",
+        icon: Truck,
+        module: "delivery_support",
+      },
+      {
         title: "Wholesale Orders",
         url: "/dashboard/orders/wholesale",
         icon: ShoppingCart,

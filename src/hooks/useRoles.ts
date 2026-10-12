@@ -4,6 +4,14 @@ import { fetchClient } from "@/lib/fetch-client";
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${process.env.NEXT_PUBLIC_API_ROLES || ""}`;
 
 export interface PageAccess {
+  delivery_support?: number;
+  delivery_support_create?: number;
+  delivery_support_reporting_team?: number;
+  delivery_support_all?: number;
+  delivery_support_assign?: number;
+  delivery_support_handle?: number;
+  delivery_support_approve?: number;
+  delivery_support_export?: number;
   id: number;
   role_id: number;
   dashboard: number;
@@ -199,6 +207,8 @@ export const HRM_MODULE_KEYS: (keyof PageAccess)[] = [
 
 export function hasModuleAccess(user: any, module: string): boolean {
   if (!user || !user.role) return false;
+
+  if (module === "delivery_support" && user.status === "active" && user.role.role_name === "Admin") return true;
 
   const pageAccess = user.role.page_access || user.role.pageAccess;
 

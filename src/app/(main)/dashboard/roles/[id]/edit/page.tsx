@@ -3,6 +3,7 @@
 import { fetchClient } from "@/lib/fetch-client";
 
 import * as React from "react";
+import { DELIVERY_SUPPORT_PERMISSION_GROUP } from "@/lib/delivery-support-permissions";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -104,6 +105,7 @@ type PermissionGroupType = {
 };
 
 const PERMISSION_GROUPS: PermissionGroupType[] = [
+  DELIVERY_SUPPORT_PERMISSION_GROUP,
   {
     id: "core",
     title: "Core & Security",
@@ -584,6 +586,7 @@ export default function EditRolePage() {
                 </CardHeader>
 
                 <CardContent className="flex flex-col p-2 space-y-1 flex-1">
+                  {group.id === "delivery_support" && <p className="px-2 py-2 text-xs leading-relaxed text-muted-foreground">Employees see their own raised issues. Reporting Team adds issues raised by direct and indirect reports. Handlers also see issues assigned to them. Assignment and approval require separate permissions; All Issues grants system-wide visibility. Team leaders assign within their reporting team.</p>}
                   {group.items.map((item) => {
                     const isOn = item.alwaysOn || !!selected[item.id];
                     const isParentActive = item.dependsOn ? !!selected[item.dependsOn] : true;

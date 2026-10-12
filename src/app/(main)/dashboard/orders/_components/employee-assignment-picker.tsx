@@ -25,6 +25,7 @@ export function EmployeeAssignmentPicker({
   loadFailed = false,
   disabled,
   allowUnassigned = false,
+  unassignedLabel = "Unassigned — remove this assignment",
 }: {
   employees: AssignmentEmployee[];
   value: string;
@@ -33,6 +34,7 @@ export function EmployeeAssignmentPicker({
   loadFailed?: boolean;
   disabled?: boolean;
   allowUnassigned?: boolean;
+  unassignedLabel?: string;
 }) {
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("all");
@@ -176,7 +178,7 @@ export function EmployeeAssignmentPicker({
             <SelectValue placeholder="Choose employee" />
           </SelectTrigger>
           <SelectContent>
-            {allowUnassigned && <SelectItem value="unassigned">Unassigned — remove this assignment</SelectItem>}
+            {allowUnassigned && <SelectItem value="unassigned">{unassignedLabel}</SelectItem>}
             {filteredSelection && <SelectItem value={value}>{selected.full_name} (current selection)</SelectItem>}
             {unavailableSelection && (
               <SelectItem value={value} disabled>
