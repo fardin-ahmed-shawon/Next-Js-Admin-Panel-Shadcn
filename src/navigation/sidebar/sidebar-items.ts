@@ -112,14 +112,6 @@ export const sidebarItems: NavGroup[] = [
           { title: "AI Calling Logs", url: "/dashboard/ai-calling-logs", module: "ai_calling_logs", isNew: true }
         ],
       },
-
-
-      {
-        title: "Delivery Ops & Support",
-        url: "/dashboard/delivery-support",
-        icon: Truck,
-        module: "delivery_support",
-      },
       {
         title: "Wholesale Orders",
         url: "/dashboard/orders/wholesale",
@@ -187,6 +179,22 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/blogs",
         icon: BookOpenText,
         module: "blogs",
+      },
+      {
+        title: "Meta Marketing",
+        url: "/dashboard/meta-marketing",
+        icon: TrendingUp,
+        subItems: [
+          { title: "Dashboard", url: "/dashboard/meta-marketing" },
+          { title: "Meta API Integration", url: "/dashboard/meta-marketing/integration" },
+          { title: "Insights", url: "/dashboard/meta-marketing/insights" },
+        ],
+      },
+      {
+        title: "Delivery Ops & Support",
+        url: "/dashboard/delivery-support",
+        icon: Truck,
+        module: "delivery_support",
       },
       {
         title: "Reports",

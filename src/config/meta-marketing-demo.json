@@ -1,0 +1,449 @@
+{
+  "mode": "demo",
+  "currency": "BDT",
+  "periods": ["All Time", "Today", "Weekly", "Monthly", "Last 3 Months", "Yearly"],
+  "metrics": [
+    {
+      "label": "Total Ad Spend",
+      "description": "This month spend",
+      "format": "money",
+      "value": 0,
+      "change": 0
+    },
+    {
+      "label": "Total Revenue Attributed",
+      "description": "Revenue from ads",
+      "format": "money",
+      "value": 0,
+      "change": 0
+    },
+    {
+      "label": "Blended ROAS",
+      "description": "Return on ad spend",
+      "format": "ratio",
+      "value": 0,
+      "change": 0
+    },
+    {
+      "label": "Orders from Ads",
+      "description": "Items sold via ads",
+      "format": "number",
+      "value": 0,
+      "change": 0
+    },
+    {
+      "label": "Cost per Purchase",
+      "description": "Average cost to acquire an order",
+      "format": "money",
+      "value": 0,
+      "change": 0
+    },
+    {
+      "label": "Active Campaigns",
+      "description": "Currently running",
+      "format": "number",
+      "value": 0,
+      "change": 0
+    },
+    {
+      "label": "Total Stock Unit",
+      "description": "Linked products in stock",
+      "format": "number",
+      "value": 0,
+      "change": 0
+    },
+    {
+      "label": "Customers Acquired",
+      "description": "New customers via ads",
+      "format": "number",
+      "value": 0,
+      "change": 0
+    }
+  ],
+  "trends": [
+    {
+      "month": "Jan",
+      "revenue": 0,
+      "spend": 0,
+      "roas": 0,
+      "sales": 0
+    },
+    {
+      "month": "Feb",
+      "revenue": 0,
+      "spend": 0,
+      "roas": 0,
+      "sales": 0
+    },
+    {
+      "month": "Mar",
+      "revenue": 0,
+      "spend": 0,
+      "roas": 0,
+      "sales": 0
+    },
+    {
+      "month": "Apr",
+      "revenue": 0,
+      "spend": 0,
+      "roas": 0,
+      "sales": 0
+    },
+    {
+      "month": "May",
+      "revenue": 0,
+      "spend": 0,
+      "roas": 0,
+      "sales": 0
+    },
+    {
+      "month": "Jun",
+      "revenue": 0,
+      "spend": 0,
+      "roas": 0,
+      "sales": 0
+    },
+    {
+      "month": "Jul",
+      "revenue": 0,
+      "spend": 0,
+      "roas": 0,
+      "sales": 0
+    },
+    {
+      "month": "Aug",
+      "revenue": 0,
+      "spend": 0,
+      "roas": 0,
+      "sales": 0
+    },
+    {
+      "month": "Sep",
+      "revenue": 0,
+      "spend": 0,
+      "roas": 0,
+      "sales": 0
+    },
+    {
+      "month": "Oct",
+      "revenue": 0,
+      "spend": 0,
+      "roas": 0,
+      "sales": 0
+    },
+    {
+      "month": "Nov",
+      "revenue": 0,
+      "spend": 0,
+      "roas": 0,
+      "sales": 0
+    },
+    {
+      "month": "Dec",
+      "revenue": 0,
+      "spend": 0,
+      "roas": 0,
+      "sales": 0
+    }
+  ],
+  "statuses": [
+    {
+      "name": "Incomplete",
+      "value": 0,
+      "color": "#18181b"
+    },
+    {
+      "name": "Pending",
+      "value": 0,
+      "color": "#71717a"
+    },
+    {
+      "name": "Confirmed",
+      "value": 0,
+      "color": "#a1a1aa"
+    },
+    {
+      "name": "Delivered",
+      "value": 0,
+      "color": "#d4d4d8"
+    },
+    {
+      "name": "Ready To Ship",
+      "value": 0,
+      "color": "#52525b"
+    },
+    {
+      "name": "In-Courier",
+      "value": 0,
+      "color": "#e4e4e7"
+    },
+    {
+      "name": "Cancelled",
+      "value": 0,
+      "color": "#f4f4f5"
+    }
+  ],
+  "performance": [
+    {
+      "campaign": "Eid Collection",
+      "product": "Puff Sleeve Top",
+      "spend": 0,
+      "revenue": 0,
+      "roas": 0,
+      "units": 0
+    },
+    {
+      "campaign": "Summer Sale",
+      "product": "Ethnic Sandals",
+      "spend": 0,
+      "revenue": 0,
+      "roas": 0,
+      "units": 0
+    },
+    {
+      "campaign": "Retargeting 7d",
+      "product": "Casual Slippers",
+      "spend": 0,
+      "revenue": 0,
+      "roas": 0,
+      "units": 0
+    },
+    {
+      "campaign": "Advantage+",
+      "product": "Shorts Kurti Maisha",
+      "spend": 0,
+      "revenue": 0,
+      "roas": 0,
+      "units": 0
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "demo-a",
+      "name": "Marketing Executive Hiring",
+      "resultLabel": "Lead forms",
+      "results": 0,
+      "cost": 0,
+      "budget": 0,
+      "spent": 0,
+      "impressions": 0,
+      "reach": 0,
+      "active": false,
+      "ends": "Not scheduled",
+      "costLabel": "Per lead form"
+    },
+    {
+      "id": "demo-b",
+      "name": "Junior Web Developer Hiring",
+      "resultLabel": "Lead forms",
+      "results": 0,
+      "cost": 0,
+      "budget": 0,
+      "spent": 0,
+      "impressions": 0,
+      "reach": 0,
+      "active": false,
+      "ends": "Not scheduled",
+      "costLabel": "Per lead form"
+    },
+    {
+      "id": "demo-c",
+      "name": "Easy Tech Solutions — Engagement",
+      "resultLabel": "Post engagements",
+      "results": 0,
+      "cost": 0,
+      "budget": 0,
+      "spent": 0,
+      "impressions": 0,
+      "reach": 0,
+      "active": false,
+      "ends": "Not scheduled",
+      "costLabel": "Per post engagement"
+    },
+    {
+      "id": "demo-d",
+      "name": "Marketing Executive — Reach",
+      "resultLabel": "Reach",
+      "results": 0,
+      "cost": 0,
+      "budget": 0,
+      "spent": 0,
+      "impressions": 0,
+      "reach": 0,
+      "active": false,
+      "ends": "Not scheduled",
+      "costLabel": "Per reach"
+    },
+    {
+      "id": "demo-e",
+      "name": "Pexsas — Website Purchases",
+      "resultLabel": "Website purchases",
+      "results": 0,
+      "cost": 0,
+      "budget": 0,
+      "spent": 0,
+      "impressions": 0,
+      "reach": 0,
+      "active": false,
+      "ends": "Not scheduled",
+      "costLabel": "Per website purchase"
+    },
+    {
+      "id": "demo-f",
+      "name": "Business Development — Leads",
+      "resultLabel": "Lead forms",
+      "results": 0,
+      "cost": 0,
+      "budget": 0,
+      "spent": 0,
+      "impressions": 0,
+      "reach": 0,
+      "active": false,
+      "ends": "Not scheduled",
+      "costLabel": "Per lead form"
+    },
+    {
+      "id": "demo-g",
+      "name": "Business Development — Engagement",
+      "resultLabel": "Post engagements",
+      "results": 0,
+      "cost": 0,
+      "budget": 0,
+      "spent": 0,
+      "impressions": 0,
+      "reach": 0,
+      "active": false,
+      "ends": "Not scheduled",
+      "costLabel": "Per post engagement"
+    },
+    {
+      "id": "demo-h",
+      "name": "Business Development — Retargeting",
+      "resultLabel": "Post engagements",
+      "results": 0,
+      "cost": 0,
+      "budget": 0,
+      "spent": 0,
+      "impressions": 0,
+      "reach": 0,
+      "active": false,
+      "ends": "Not scheduled",
+      "costLabel": "Per post engagement"
+    },
+    {
+      "id": "demo-i",
+      "name": "Media Buying Executive Hiring",
+      "resultLabel": "Post engagements",
+      "results": 0,
+      "cost": 0,
+      "budget": 0,
+      "spent": 0,
+      "impressions": 0,
+      "reach": 0,
+      "active": false,
+      "ends": "Not scheduled",
+      "costLabel": "Per post engagement"
+    },
+    {
+      "id": "demo-j",
+      "name": "Schengen — Bengali Campaign",
+      "resultLabel": "Messaging conversations",
+      "results": 0,
+      "cost": 0,
+      "budget": 0,
+      "spent": 0,
+      "impressions": 0,
+      "reach": 0,
+      "active": false,
+      "ends": "Not scheduled",
+      "costLabel": "Per messaging conversation"
+    },
+    {
+      "id": "demo-k",
+      "name": "Junior Web Developer — Engagement",
+      "resultLabel": "Post engagements",
+      "results": 0,
+      "cost": 0,
+      "budget": 0,
+      "spent": 0,
+      "impressions": 0,
+      "reach": 0,
+      "active": false,
+      "ends": "Not scheduled",
+      "costLabel": "Per post engagement"
+    }
+  ],
+  "payments": [
+    {
+      "label": "Total Processing",
+      "value": 0,
+      "percent": 0
+    },
+    {
+      "label": "Cash on Delivery",
+      "value": 0,
+      "percent": 0
+    },
+    {
+      "label": "bKash",
+      "value": 0,
+      "percent": 0
+    },
+    {
+      "label": "Rocket",
+      "value": 0,
+      "percent": 0
+    },
+    {
+      "label": "Upay",
+      "value": 0,
+      "percent": 0
+    },
+    {
+      "label": "Nagad",
+      "value": 0,
+      "percent": 0
+    }
+  ],
+  "integration": {
+    "appId": "",
+    "appSecret": "",
+    "accessToken": "",
+    "status": "Not connected",
+    "lastSynced": "Never",
+    "linkedProducts": 0,
+    "linkedCampaigns": 0,
+    "help": [
+      "Each Meta campaign maps to a Zymerce product SKU.",
+      "Revenue attribution uses UTM parameters and pixel purchase events.",
+      "ROAS = attributed revenue / campaign spend, displayed in BDT (৳).",
+      "Cash on Delivery, bKash, Nagad, Rocket and Upay appear in payment reporting."
+    ]
+  },
+  "insights": [
+    {
+      "title": "Best ROAS",
+      "value": 0,
+      "format": "ratio",
+      "description": "No campaign revenue or spend yet. Product performance will appear here."
+    },
+    {
+      "title": "Spend spike analysis",
+      "value": 0,
+      "format": "money",
+      "description": "The demo has no spending activity. Monthly trends are shown at zero."
+    },
+    {
+      "title": "Payment behavior",
+      "value": 0,
+      "format": "percent",
+      "description": "No attributed payments yet. The payment split will appear when data is available."
+    }
+  ],
+  "recommendations": [
+    "Link campaigns to the correct product SKUs.",
+    "Verify purchase-event and UTM attribution before comparing performance.",
+    "Review cost per purchase and ROAS before adjusting budgets.",
+    "Compare Bengali creative variations when campaign data is available."
+  ]
+}
