@@ -2,12 +2,14 @@
 
 import { ExcelExportButton } from "@/components/excel-export-button";
 import * as React from "react";
+import { createPortal } from "react-dom";
+import { CustomerSegmentTabs } from "./customer-segment-tabs";
+import { LastContactedEditor } from "./last-contacted-editor";
 import Link from "next/link";
 import {
   Search,
   Download,
   Eye,
-  MoreHorizontal,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -55,14 +57,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -73,7 +67,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { sendCustomerSms, sendBulkSms } from "@/hooks/useCustomers";
+import { sendCustomerSms, sendBulkSms, type CustomerSegmentRule } from "@/hooks/useCustomers";
 import { cn, getInitials } from "@/lib/utils";
 import { useCrmAssignments, assignCrmCustomers } from "@/hooks/useCrmAssignments";
 
@@ -157,6 +151,8 @@ export interface CustomerRow {
   avatar: string;
   joinDate: string;
   lastOrderDate: string | null;
+  lastContactedAt?: string | null;
+  accountStatus?: string;
   daysSinceLastOrder: number | null;
   successRate: number;
   returnRate: number;
@@ -182,9 +178,11 @@ export interface CustomerRow {
 interface CustomersTableProps {
   data: CustomerRow[];
   onRefresh?: () => void;
+  exportContainer?: HTMLElement | null;
+  segmentRules: CustomerSegmentRule[];
 }
 
-export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
+export function CustomersTable({ data, onRefresh, exportContainer, segmentRules }: CustomersTableProps) {
   const { options: assignmentOptions } = useCrmAssignments();
   const [assignmentIds, setAssignmentIds] = React.useState<(string | number)[]>([]);
   const [assignmentMode, setAssignmentMode] = React.useState<"handover" | "assign">("assign");
@@ -239,7 +237,6 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   const [productFilter, setProductFilter] = React.useState<string>("");
 
   // --- Behavioral filters ---
-  const [selectedSegment, setSelectedSegment] = React.useState<string>("all");
   const [spendFilter, setSpendFilter] = React.useState<string>("all");
   const [orderFilter, setOrderFilter] = React.useState<string>("all");
   const [deliveryFilter, setDeliveryFilter] = React.useState<string>("all");
@@ -292,30 +289,16 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
     return [...detected, ...remaining];
   }, [data]);
 
-  // --- Pre-calculated counts for quick filter tabs ---
   const tabCounts = React.useMemo(() => {
-    return {
-      all: data.length,
-      vip: data.filter((c) => c.segmentKey === "vip").length,
-      repeat: data.filter((c) => c.segmentKey === "returning" || c.totalOrders > 1).length,
-      new: data.filter((c) => c.segmentKey === "new" || (c.daysSinceLastOrder !== null && c.daysSinceLastOrder <= 30 && c.totalOrders <= 1)).length,
-      inactive: data.filter((c) => c.segmentKey === "inactive" || (c.daysSinceLastOrder !== null && c.daysSinceLastOrder > 30 && c.daysSinceLastOrder <= 90)).length,
-      risk: data.filter((c) => c.segmentKey === "lost" || c.returnRate > 30).length,
-    };
+    const counts: Record<string, number> = { all: data.length };
+    for (const customer of data) counts[customer.segmentKey] = (counts[customer.segmentKey] || 0) + 1;
+    return counts;
   }, [data]);
 
   // --- Filtering Logic ---
   const filteredData = React.useMemo(() => {
     return data.filter((c) => {
-      // 1. Quick Tab Filter
-      if (activeTab === "vip" && c.segmentKey !== "vip") return false;
-      if (activeTab === "repeat" && c.segmentKey !== "returning" && c.totalOrders <= 1) return false;
-      if (activeTab === "new" && c.segmentKey !== "new" && !(c.daysSinceLastOrder !== null && c.daysSinceLastOrder <= 30 && c.totalOrders <= 1)) return false;
-      if (activeTab === "inactive" && c.segmentKey !== "inactive" && !(c.daysSinceLastOrder !== null && c.daysSinceLastOrder > 30 && c.daysSinceLastOrder <= 90)) return false;
-      if (activeTab === "risk" && c.segmentKey !== "lost" && c.returnRate <= 30) return false;
-
-      // 2. Specific Segment Filter
-      if (selectedSegment !== "all" && c.segmentKey !== selectedSegment) return false;
+      if (activeTab !== "all" && c.segmentKey !== activeTab) return false;
 
       // 3. Dedicated District Filter
       if (districtFilter !== "all") {
@@ -434,7 +417,6 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   }, [
     data,
     activeTab,
-    selectedSegment,
     districtFilter,
     orderIdFilter,
     productFilter,
@@ -451,6 +433,12 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
     const list = [...filteredData];
     list.sort((a, b) => {
       switch (sortBy) {
+        case "contact-desc":
+        case "contact-asc": {
+          if (!a.lastContactedAt) return b.lastContactedAt ? 1 : 0;
+          if (!b.lastContactedAt) return -1;
+          return (new Date(a.lastContactedAt).getTime() - new Date(b.lastContactedAt).getTime()) * (sortBy === "contact-asc" ? 1 : -1);
+        }
         case "spent-desc":
           return b.totalSpent - a.totalSpent;
         case "spent-asc":
@@ -552,7 +540,6 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   // --- Reset All Filters ---
   const hasActiveFilters =
     activeTab !== "all" ||
-    selectedSegment !== "all" ||
     districtFilter !== "all" ||
     Boolean(orderIdFilter.trim()) ||
     Boolean(productFilter.trim()) ||
@@ -565,7 +552,6 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
 
   const resetAllFilters = () => {
     setActiveTab("all");
-    setSelectedSegment("all");
     setDistrictFilter("all");
     setOrderIdFilter("");
     setProductFilter("");
@@ -579,10 +565,10 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
   };
 
   const customerExcelData = (selectedOnly = false) => ({
-    headers: ["ID", "Full Name", "Customer Relationship Manager", "Customer Relationship Agent", "Phone", "Email", "Account Status", "Segment", "Total Orders", "Products Ordered", "Lifetime Spend (BDT)", "AOV (BDT)", "Delivery Success Rate (%)", "Return Rate (%)", "Last Order Date", "Joined Date", "District", "City/Shipping Area", "Address", "Order IDs", "Recent Order", "Purchased Products"],
+    headers: ["ID", "Full Name", "Customer Relationship Manager", "Customer Relationship Agent", "Phone", "Email", "Account Status", "Segment", "Total Orders", "Products Ordered", "Lifetime Spend (BDT)", "AOV (BDT)", "Delivery Success Rate (%)", "Return Rate (%)", "Last Order Date", "Last Contacted (Dhaka)", "Joined Date", "District", "City/Shipping Area", "Address", "Order IDs", "Recent Order", "Purchased Products"],
     rows: (selectedOnly ? data.filter(c => selectedRowIds.has(c.id)) : sortedData).map(c => [
-      c.id, c.name, c.crmManager?.trim() || "Unassigned", c.crmAssignee?.trim() || "Unassigned", c.phone, c.email, c.status, c.segmentName, c.totalOrders, c.productsCount,
-      c.totalSpent, c.aov, c.successRate, c.returnRate, c.lastOrderDate || "Never", c.joinDate,
+      c.id, c.name, c.crmManager?.trim() || "Unassigned", c.crmAssignee?.trim() || "Unassigned", c.phone, c.email, c.accountStatus || "active", c.segmentName, c.totalOrders, c.productsCount,
+      c.totalSpent, c.aov, c.successRate, c.returnRate, c.lastOrderDate || "Never", c.lastContactedAt || "Never", c.joinDate,
       c.district, c.city, c.address, (c.orderNos || c.orderIds || []).join(" | "), c.recentOrderNo, (c.productNames || []).join(" | "),
     ]),
   });
@@ -686,132 +672,202 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
 
   return (
     <Card className="gap-0 py-0">
-      {/* 1. Header Toolbar with Quick Segment Filter Tabs */}
-      <div className="border-b bg-muted/20 px-3 sm:px-4 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("all");
-            setPage(1);
-          }}
-          className={cn(
-            "px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border",
-            activeTab === "all"
-              ? "bg-card text-foreground border-border shadow-2xs font-bold"
-              : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/60"
-          )}
-        >
-          <span>All Customers</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-muted font-mono">{tabCounts.all}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("vip");
-            setPage(1);
-          }}
-          className={cn(
-            "px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border",
-            activeTab === "vip"
-              ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 shadow-2xs font-bold"
-              : "border-transparent text-muted-foreground hover:text-amber-600 hover:bg-muted/60"
-          )}
-        >
-          <Crown className="size-3.5 text-amber-500" />
-          <span>VIP Spenders</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/15 font-mono text-amber-700 dark:text-amber-300">
-            {tabCounts.vip}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("repeat");
-            setPage(1);
-          }}
-          className={cn(
-            "px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border",
-            activeTab === "repeat"
-              ? "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30 shadow-2xs font-bold"
-              : "border-transparent text-muted-foreground hover:text-blue-600 hover:bg-muted/60"
-          )}
-        >
-          <RotateCcw className="size-3.5 text-blue-500" />
-          <span>Repeat Buyers</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-500/15 font-mono text-blue-700 dark:text-blue-300">
-            {tabCounts.repeat}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("new");
-            setPage(1);
-          }}
-          className={cn(
-            "px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border",
-            activeTab === "new"
-              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 shadow-2xs font-bold"
-              : "border-transparent text-muted-foreground hover:text-emerald-600 hover:bg-muted/60"
-          )}
-        >
-          <Calendar className="size-3.5 text-emerald-500" />
-          <span>New Buyers</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/15 font-mono text-emerald-700 dark:text-emerald-300">
-            {tabCounts.new}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("inactive");
-            setPage(1);
-          }}
-          className={cn(
-            "px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border",
-            activeTab === "inactive"
-              ? "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30 shadow-2xs font-bold"
-              : "border-transparent text-muted-foreground hover:text-purple-600 hover:bg-muted/60"
-          )}
-        >
-          <Clock className="size-3.5 text-purple-500" />
-          <span>At-Risk</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-500/15 font-mono text-purple-700 dark:text-purple-300">
-            {tabCounts.inactive}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("risk");
-            setPage(1);
-          }}
-          className={cn(
-            "px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border",
-            activeTab === "risk"
-              ? "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 shadow-2xs font-bold"
-              : "border-transparent text-muted-foreground hover:text-rose-600 hover:bg-muted/60"
-          )}
-        >
-          <ShieldAlert className="size-3.5 text-rose-500" />
-          <span>Return Risk</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/15 font-mono text-rose-700 dark:text-rose-300">
-            {tabCounts.risk}
-          </span>
-        </button>
-      </div>
+      <CustomerSegmentTabs rules={segmentRules} counts={tabCounts} total={data.length} activeKey={activeTab} onChange={key => { setActiveTab(key); setPage(1); }} />
 
       {/* 2. Main Search, Multi-Filter, and Sorting Control Bar */}
       <div className="p-4 border-b bg-card space-y-3.5">
-        {/* Top Control Header: Search Scope Tabs, Universal Search Input, Sort By & Export */}
-        <div className="space-y-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
-            {/* Search Scope Pills */}
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-9 gap-3 items-end">
+          {/* Search Input Box */}
+          <div className="relative w-full col-span-2 md:col-span-3 self-end">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="text"
+              placeholder={
+                searchMode === "district"
+                  ? "Search by district or city name (e.g. Dhaka, Gazipur, Chattogram, Sylhet)..."
+                  : searchMode === "order"
+                  ? "Search by Order ID or Order Number (e.g. ORD-1790147394912 or #4)..."
+                  : searchMode === "product"
+                  ? "Search by Product name or SKU (e.g. Acid Black Denim, Panjabi, SKU-4650)..."
+                  : "Search name, phone, email, order ID, product, district..."
+              }
+              className="pl-9 pr-8 h-10 text-xs"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                title="Clear search"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+          {/* 1. District Selector */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
+                <MapPin className="size-3 text-emerald-500" />
+                District / Region
+              </Label>
+              {districtFilter !== "all" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDistrictFilter("all");
+                    setPage(1);
+                  }}
+                  className="text-[10px] text-muted-foreground hover:text-foreground underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <Select
+              value={districtFilter}
+              onValueChange={(val) => {
+                setDistrictFilter(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-full min-w-0 text-xs [&_[data-slot=select-value]]:truncate">
+                <SelectValue placeholder="All Districts" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72 text-xs">
+                <SelectItem value="all">All Districts & Cities</SelectItem>
+                {availableDistricts.map((d) => (
+                  <SelectItem key={d.district} value={d.district}>
+                    {d.district} {d.count > 0 ? `(${d.count})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+
+          {/* Filter: Segment */}
+          <div>
+            <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Segment</Label>
+            <Select
+              value={activeTab}
+              onValueChange={(val) => {
+                setActiveTab(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-full min-w-0 text-xs [&_[data-slot=select-value]]:truncate">
+                <SelectValue placeholder="All Segments" />
+              </SelectTrigger>
+              <SelectContent className="text-xs">
+                <SelectItem value="all">All Segments</SelectItem>
+                {segmentRules.map(rule => <SelectItem key={rule.key} value={rule.key}><span className="inline-flex items-center gap-2"><span className="size-2 rounded-full" style={{ backgroundColor: rule.color }} />{rule.name}</span></SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Filter: Spending Tier */}
+          <div>
+            <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Lifetime Spend</Label>
+            <Select
+              value={spendFilter}
+              onValueChange={(val) => {
+                setSpendFilter(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-full min-w-0 text-xs [&_[data-slot=select-value]]:truncate">
+                <SelectValue placeholder="All Spend" />
+              </SelectTrigger>
+              <SelectContent className="text-xs">
+                <SelectItem value="all">All Spend Tiers</SelectItem>
+                <SelectItem value="vip">VIP (৳15,000+)</SelectItem>
+                <SelectItem value="high">High (৳8,000 - ৳15k)</SelectItem>
+                <SelectItem value="mid">Mid (৳2,000 - ৳8k)</SelectItem>
+                <SelectItem value="low">Budget (&lt; ৳2,000)</SelectItem>
+                <SelectItem value="zero">Zero Spend (৳0)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Filter: Order Count */}
+          <div>
+            <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Orders Count</Label>
+            <Select
+              value={orderFilter}
+              onValueChange={(val) => {
+                setOrderFilter(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-full min-w-0 text-xs [&_[data-slot=select-value]]:truncate">
+                <SelectValue placeholder="All Orders" />
+              </SelectTrigger>
+              <SelectContent className="text-xs">
+                <SelectItem value="all">All Orders</SelectItem>
+                <SelectItem value="5plus">5+ Orders</SelectItem>
+                <SelectItem value="2to4">2 to 4 Orders</SelectItem>
+                <SelectItem value="single">Single (1 Order)</SelectItem>
+                <SelectItem value="zero">No Orders (0)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Filter: Delivery Success */}
+          <div>
+            <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Fulfillment Health</Label>
+            <Select
+              value={deliveryFilter}
+              onValueChange={(val) => {
+                setDeliveryFilter(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-full min-w-0 text-xs [&_[data-slot=select-value]]:truncate">
+                <SelectValue placeholder="All Rates" />
+              </SelectTrigger>
+              <SelectContent className="text-xs">
+                <SelectItem value="all">All Delivery Rates</SelectItem>
+                <SelectItem value="high">High Delivery (≥ 80%)</SelectItem>
+                <SelectItem value="mid">Moderate (50% - 79%)</SelectItem>
+                <SelectItem value="risk">High Return Risk (&gt; 30%)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Filter: Recency Activity */}
+          <div>
+            <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Activity Recency</Label>
+            <Select
+              value={recencyFilter}
+              onValueChange={(val) => {
+                setRecencyFilter(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-full min-w-0 text-xs [&_[data-slot=select-value]]:truncate">
+                <SelectValue placeholder="All Time" />
+              </SelectTrigger>
+              <SelectContent className="text-xs">
+                <SelectItem value="all">All Activity</SelectItem>
+                <SelectItem value="recent">Active (&lt; 30d)</SelectItem>
+                <SelectItem value="inactive">Inactive (30 - 90d)</SelectItem>
+                <SelectItem value="dormant">Dormant (&gt; 90d)</SelectItem>
+                <SelectItem value="never">Never Ordered</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+        </div>
+        <details className="group/filters">
+          <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground w-fit">More filters & sorting</summary>
+          <div className="space-y-3 pt-3">
+            <div className="flex flex-wrap justify-between gap-3">            {/* Search Scope Pills */}
             <div className="flex items-center gap-1 p-1 bg-muted/60 dark:bg-muted/30 rounded-lg border text-xs">
               <span className="text-[11px] font-semibold text-muted-foreground px-2 hidden sm:inline">Search By:</span>
               {[
@@ -868,6 +924,8 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                     <SelectItem value="return-desc">Highest Return Rate (%)</SelectItem>
                     <SelectItem value="recency-desc">Recently Active (Latest Order)</SelectItem>
                     <SelectItem value="recency-asc">Oldest Last Order</SelectItem>
+                    <SelectItem value="contact-desc">Most recently contacted</SelectItem>
+                    <SelectItem value="contact-asc">Oldest contact first</SelectItem>
                     <SelectItem value="newest">Newest Joined</SelectItem>
                     <SelectItem value="oldest">Oldest Customer</SelectItem>
                     <SelectItem value="name-asc">Name (A → Z)</SelectItem>
@@ -883,88 +941,9 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
               </div>
 
               {/* Export Excel Button */}
-              <ExcelExportButton module="crm" title="Customers" getData={() => customerExcelData()} />
-            </div>
-          </div>
-
-          {/* Search Input Box */}
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-            <Input
-              type="text"
-              placeholder={
-                searchMode === "district"
-                  ? "Search by district or city name (e.g. Dhaka, Gazipur, Chattogram, Sylhet)..."
-                  : searchMode === "order"
-                  ? "Search by Order ID or Order Number (e.g. ORD-1790147394912 or #4)..."
-                  : searchMode === "product"
-                  ? "Search by Product name or SKU (e.g. Acid Black Denim, Panjabi, SKU-4650)..."
-                  : "Search across all fields: name, phone, email, district, order ID, product name/SKU..."
-              }
-              className="pl-9 pr-8 h-9 text-xs"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setPage(1);
-              }}
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
-                title="Clear search"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Dedicated Targeted Filters Row: District, Order ID, and Product */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t">
-          {/* 1. District Selector */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <Label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
-                <MapPin className="size-3 text-emerald-500" />
-                District / Region
-              </Label>
-              {districtFilter !== "all" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDistrictFilter("all");
-                    setPage(1);
-                  }}
-                  className="text-[10px] text-muted-foreground hover:text-foreground underline"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            <Select
-              value={districtFilter}
-              onValueChange={(val) => {
-                setDistrictFilter(val);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs bg-background">
-                <SelectValue placeholder="All Districts" />
-              </SelectTrigger>
-              <SelectContent className="max-h-72 text-xs">
-                <SelectItem value="all">All Districts & Cities</SelectItem>
-                {availableDistricts.map((d) => (
-                  <SelectItem key={d.district} value={d.district}>
-                    {d.district} {d.count > 0 ? `(${d.count})` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 2. Order ID Filter */}
+              {exportContainer ? createPortal(<ExcelExportButton module="crm" title="Customers" getData={() => customerExcelData()} />, exportContainer) : <ExcelExportButton module="crm" title="Customers" getData={() => customerExcelData()} />}
+            </div></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">          {/* 2. Order ID Filter */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <Label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
@@ -1056,129 +1035,9 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                 </button>
               )}
             </div>
+          </div></div>
           </div>
-        </div>
-
-        {/* Secondary Behavioral Filter Selectors Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1 text-xs">
-          {/* Filter: Segment */}
-          <div>
-            <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Segment</Label>
-            <Select
-              value={selectedSegment}
-              onValueChange={(val) => {
-                setSelectedSegment(val);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All Segments" />
-              </SelectTrigger>
-              <SelectContent className="text-xs">
-                <SelectItem value="all">All Segments</SelectItem>
-                <SelectItem value="vip">VIP Spenders</SelectItem>
-                <SelectItem value="high_value">High Value</SelectItem>
-                <SelectItem value="returning">Repeat Buyers</SelectItem>
-                <SelectItem value="new">New Buyers</SelectItem>
-                <SelectItem value="inactive">At-Risk (Inactive)</SelectItem>
-                <SelectItem value="lost">Return Risk / Lost</SelectItem>
-                <SelectItem value="low_value">Low Value</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Filter: Spending Tier */}
-          <div>
-            <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Lifetime Spend</Label>
-            <Select
-              value={spendFilter}
-              onValueChange={(val) => {
-                setSpendFilter(val);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All Spend" />
-              </SelectTrigger>
-              <SelectContent className="text-xs">
-                <SelectItem value="all">All Spend Tiers</SelectItem>
-                <SelectItem value="vip">VIP (৳15,000+)</SelectItem>
-                <SelectItem value="high">High (৳8,000 - ৳15k)</SelectItem>
-                <SelectItem value="mid">Mid (৳2,000 - ৳8k)</SelectItem>
-                <SelectItem value="low">Budget (&lt; ৳2,000)</SelectItem>
-                <SelectItem value="zero">Zero Spend (৳0)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Filter: Order Count */}
-          <div>
-            <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Orders Count</Label>
-            <Select
-              value={orderFilter}
-              onValueChange={(val) => {
-                setOrderFilter(val);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All Orders" />
-              </SelectTrigger>
-              <SelectContent className="text-xs">
-                <SelectItem value="all">All Orders</SelectItem>
-                <SelectItem value="5plus">5+ Orders</SelectItem>
-                <SelectItem value="2to4">2 to 4 Orders</SelectItem>
-                <SelectItem value="single">Single (1 Order)</SelectItem>
-                <SelectItem value="zero">No Orders (0)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Filter: Delivery Success */}
-          <div>
-            <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Fulfillment Health</Label>
-            <Select
-              value={deliveryFilter}
-              onValueChange={(val) => {
-                setDeliveryFilter(val);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All Rates" />
-              </SelectTrigger>
-              <SelectContent className="text-xs">
-                <SelectItem value="all">All Delivery Rates</SelectItem>
-                <SelectItem value="high">High Delivery (≥ 80%)</SelectItem>
-                <SelectItem value="mid">Moderate (50% - 79%)</SelectItem>
-                <SelectItem value="risk">High Return Risk (&gt; 30%)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Filter: Recency Activity */}
-          <div>
-            <Label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Activity Recency</Label>
-            <Select
-              value={recencyFilter}
-              onValueChange={(val) => {
-                setRecencyFilter(val);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All Time" />
-              </SelectTrigger>
-              <SelectContent className="text-xs">
-                <SelectItem value="all">All Activity</SelectItem>
-                <SelectItem value="recent">Active (&lt; 30d)</SelectItem>
-                <SelectItem value="inactive">Inactive (30 - 90d)</SelectItem>
-                <SelectItem value="dormant">Dormant (&gt; 90d)</SelectItem>
-                <SelectItem value="never">Never Ordered</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        </details>
 
         {/* Active Filters Pill Bar & Results Count */}
         {hasActiveFilters && (
@@ -1218,17 +1077,12 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
 
             {activeTab !== "all" && (
               <Badge variant="secondary" className="gap-1 text-[11px] py-0.5 px-2 capitalize">
-                Tab: {activeTab}
+                Segment: {segmentRules.find(rule => rule.key === activeTab)?.name || activeTab}
                 <X className="size-3 cursor-pointer" onClick={() => setActiveTab("all")} />
               </Badge>
             )}
 
-            {selectedSegment !== "all" && (
-              <Badge variant="secondary" className="gap-1 text-[11px] py-0.5 px-2 capitalize">
-                Segment: {selectedSegment}
-                <X className="size-3 cursor-pointer" onClick={() => setSelectedSegment("all")} />
-              </Badge>
-            )}
+
 
             {spendFilter !== "all" && (
               <Badge variant="secondary" className="gap-1 text-[11px] py-0.5 px-2">
@@ -1274,7 +1128,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
         )}
       </div>
 
-      {assignmentOptions?.can_assign && (
+      {assignmentOptions?.can_assign && selectedRowIds.size > 0 && (
         <div className="flex flex-wrap items-center gap-3 border-b p-4 text-xs">
           <Button size="sm" variant="outline" disabled={!filteredData.length} onClick={() => setSelectedRowIds(new Set(filteredData.map((customer) => customer.id)))}>
             Select all {filteredData.length} matching customers
@@ -1359,33 +1213,27 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
               {/* Customer Info */}
               <th
                 onClick={() => toggleColumnSort("name")}
-                className="py-3 px-4 text-left min-w-[220px] cursor-pointer group hover:text-foreground transition-colors"
+                className="py-3 px-4 text-left min-w-[200px] cursor-pointer group hover:text-foreground transition-colors"
               >
                 <span>Customer</span>
                 {getSortIcon("name")}
               </th>
 
-              {/* CRM Ownership */}
-              {[
-                { field: "manager", label: "Manager" },
-                { field: "agent", label: "Agent" },
-              ].map(({ field, label }) => (
-                <th
-                  key={field}
-                  scope="col"
-                  aria-sort={sortBy === `${field}-asc` ? "ascending" : sortBy === `${field}-desc` ? "descending" : "none"}
-                  className="py-3 px-4 text-left min-w-[180px]"
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleColumnSort(field)}
-                    className="group flex items-center text-left hover:text-foreground transition-colors rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
-                  >
-                    <span>Customer Relationship<br /><span className="text-foreground">{label}</span></span>
-                    {getSortIcon(field)}
-                  </button>
-                </th>
-              ))}
+              {/* Separate ownership controls within one column */}
+              <th scope="col" className="py-3 px-4 text-left min-w-[175px]">
+                <div className="space-y-1">
+                  {[
+                    { field: "manager", label: "CRM Manager" },
+                    { field: "agent", label: "CRM Agent" },
+                  ].map(({ field, label }) => (
+                    <button key={field} type="button" onClick={() => toggleColumnSort(field)}
+                      aria-label={`Sort by ${label}`}
+                      className="group flex items-center text-left hover:text-foreground rounded-sm focus-visible:outline-2 focus-visible:outline-ring">
+                      {label}{getSortIcon(field)}
+                    </button>
+                  ))}
+                </div>
+              </th>
 
               {/* Dynamic Segment */}
               <th className="py-3 px-3 text-left min-w-[130px]">
@@ -1395,7 +1243,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
               {/* Orders & Volume */}
               <th
                 onClick={() => toggleColumnSort("orders")}
-                className="py-3 px-3 text-left min-w-[130px] cursor-pointer group hover:text-foreground transition-colors"
+                className="py-3 px-3 text-left min-w-[85px] cursor-pointer group hover:text-foreground transition-colors"
               >
                 <span>Orders</span>
                 {getSortIcon("orders")}
@@ -1419,15 +1267,13 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                 {getSortIcon("success")}
               </th>
 
-              {/* Purchase Recency / Last Active */}
-              <th
-                onClick={() => toggleColumnSort("recency")}
-                className="py-3 px-3 text-left min-w-[130px] cursor-pointer group hover:text-foreground transition-colors"
-              >
-                <span>Last Active</span>
-                {getSortIcon("recency")}
+              {/* Activity dates share a column with independent sorting */}
+              <th scope="col" className="py-3 px-3 text-left min-w-[155px]">
+                <div className="space-y-1">
+                  <button type="button" className="group flex items-center hover:text-foreground" onClick={() => toggleColumnSort("recency")}>Last Active{getSortIcon("recency")}</button>
+                  <button type="button" className="group flex items-center hover:text-foreground" onClick={() => toggleColumnSort("contact")}>Last Contacted{getSortIcon("contact")}</button>
+                </div>
               </th>
-
               {/* Actions Header */}
               <th className="py-3 px-4 text-right min-w-[170px]">
                 <span>Actions</span>
@@ -1438,7 +1284,7 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
           <tbody className="divide-y divide-border/60">
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={11} className="py-14 text-center text-muted-foreground">
+                <td colSpan={10} className="py-14 text-center text-muted-foreground">
                   <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
                     <div className="size-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                       <Users className="size-6" />
@@ -1482,48 +1328,35 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                       #{customer.id}
                     </td>
 
-                    {/* Customer Info (Avatar, Name, Phone, Email, Status) */}
+                    {/* Customer contact details */}
                     <td className="py-3.5 px-4 align-middle">
-                      <div className="flex items-center gap-3">
-                        <div className="size-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0 border shadow-2xs overflow-hidden">
+                      <div className="flex items-start gap-3">
+                        <div className="size-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0 border overflow-hidden">
                           {customer.name ? getInitials(customer.name) : <Users className="size-4" />}
                         </div>
-                        <div className="min-w-0 space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/dashboard/customers/${customer.id}`}
-                              className="font-bold text-foreground hover:text-primary transition-colors truncate max-w-[160px] sm:max-w-[200px]"
-                              title={customer.name}
-                            >
-                              {customer.name}
-                            </Link>
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] px-1.5 py-0 h-4 font-normal bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20"
-                            >
-                              Registered
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
-                            {customer.phone && (
-                              <span className="font-mono">{customer.phone}</span>
-                            )}
-                            {(customer.district || customer.city) && (
-                              <>
-                                <span className="opacity-40">•</span>
-                                <span className="inline-flex items-center gap-1 font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]" title={customer.allDistricts?.join(", ") || customer.district || customer.city || ""}>
-                                  <MapPin className="size-2.5 shrink-0" />
-                                  <span className="truncate max-w-[120px]">{customer.district || customer.city}</span>
-                                </span>
-                              </>
-                            )}
-                          </div>
+                        <div className="min-w-0 space-y-1">
+                          <Link href={`/dashboard/customers/${customer.id}`}
+                            className="block font-semibold text-foreground hover:text-primary truncate max-w-[220px]" title={customer.name}>
+                            {customer.name}
+                          </Link>
+                          {customer.email ? (
+                            <a href={`mailto:${customer.email}`} className="block max-w-[220px] truncate text-[11px] text-muted-foreground hover:text-primary" title={customer.email}>{customer.email}</a>
+                          ) : <span className="block text-[11px] text-muted-foreground">No email</span>}
+                          {customer.phone ? (
+                            <a href={`tel:${customer.phone}`} className="block text-[11px] font-mono text-muted-foreground hover:text-primary">{customer.phone}</a>
+                          ) : <span className="block text-[11px] text-muted-foreground">No phone</span>}
+                          <span className="flex items-center gap-1 text-[11px] text-muted-foreground" title={customer.district || "District not provided"}>
+                            <MapPin className="size-3 shrink-0" /><span className="truncate max-w-[200px]">{customer.district || "No district"}</span>
+                          </span>
                         </div>
                       </div>
                     </td>
 
-                    {/* Customer Relationship Manager */}
+                    {/* CRM Manager and Agent */}
                     <td className="py-3.5 px-4 align-middle">
+                      <div className="space-y-3">
+                      <div>
+                      <span className="block text-[10px] text-muted-foreground mb-0.5">Manager</span>
                       <span className={cn("block max-w-[220px] break-words", customer.crmManager?.trim() ? "font-semibold text-foreground" : "text-muted-foreground")}>
                         {customer.crmManager?.trim() || "Unassigned"}
                       </span>
@@ -1538,10 +1371,9 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                           {customer.crmManager?.trim() ? "Change Manager" : "Assign Manager"}
                         </Button>
                       )}
-                    </td>
-
-                    {/* Customer Relationship Agent */}
-                    <td className="py-3.5 px-4 align-middle">
+                      </div>
+                      <div>
+                      <span className="block text-[10px] text-muted-foreground mb-0.5">Agent</span>
                       <span className={cn("block max-w-[220px] break-words", customer.crmAssignee?.trim() ? "font-semibold text-foreground" : "text-muted-foreground")}>
                         {customer.crmAssignee?.trim() || "Unassigned"}
                       </span>
@@ -1556,6 +1388,8 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                           {customer.crmAssignee?.trim() ? "Change Agent" : "Assign Agent"}
                         </Button>
                       )}
+                      </div>
+                      </div>
                     </td>
 
                     {/* Dynamic Segment Badge */}
@@ -1564,9 +1398,9 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                         variant="outline"
                         className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full shadow-2xs gap-1.5 whitespace-nowrap"
                         style={{
-                          backgroundColor: `${customer.segmentColor}12`,
+                          backgroundColor: `color-mix(in srgb, ${customer.segmentColor} 8%, transparent)`,
                           color: customer.segmentColor,
-                          borderColor: `${customer.segmentColor}35`,
+                          borderColor: `color-mix(in srgb, ${customer.segmentColor} 22%, transparent)`,
                         }}
                       >
                         <span
@@ -1577,41 +1411,9 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                       </Badge>
                     </td>
 
-                    {/* Orders & AOV */}
-                    <td className="py-3.5 px-3 align-middle">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-foreground tabular-nums">
-                          {customer.totalOrders} {customer.totalOrders === 1 ? "order" : "orders"}
-                        </span>
-                        {customer.recentOrderNo && (
-                          <span
-                            className="inline-flex items-center gap-0.5 text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20"
-                            title={`Recent Order: #${customer.recentOrderNo}`}
-                          >
-                            <Hash className="size-2.5 opacity-70" />
-                            {customer.recentOrderNo.length > 14
-                              ? `${customer.recentOrderNo.slice(0, 12)}…`
-                              : customer.recentOrderNo}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">
-                        {customer.productsCount} items • AOV ৳{customer.aov.toLocaleString()}
-                      </div>
-                      {customer.productNames && customer.productNames.length > 0 && (
-                        <div
-                          className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 max-w-[210px] truncate"
-                          title={`Purchased Products: ${customer.productNames.join(", ")}`}
-                        >
-                          <Package className="size-2.5 text-purple-600 dark:text-purple-400 shrink-0" />
-                          <span className="truncate">{customer.productNames[0]}</span>
-                          {customer.productNames.length > 1 && (
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-muted text-muted-foreground shrink-0 font-medium">
-                              +{customer.productNames.length - 1}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                    {/* Order count only; order IDs remain in the search data */}
+                    <td className="py-3.5 px-3 align-middle font-semibold tabular-nums">
+                      {customer.totalOrders}
                     </td>
 
                     {/* Total Lifetime Spend */}
@@ -1683,6 +1485,9 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
 
                     {/* Last Active / Recency */}
                     <td className="py-3.5 px-3 align-middle text-muted-foreground">
+                      <div className="space-y-3">
+                      <div>
+                      <span className="block text-[10px] mb-0.5">Last active</span>
                       {customer.daysSinceLastOrder !== null ? (
                         <div>
                           <span className="font-medium text-foreground text-xs block">
@@ -1699,8 +1504,13 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                       ) : (
                         <span className="text-[11px] italic">Never ordered</span>
                       )}
+                      </div>
+                      <div>
+                        <span className="block text-[10px] mb-0.5">Last contacted</span>
+                        <LastContactedEditor id={customer.id} name={customer.name} value={customer.lastContactedAt} onSaved={onRefresh} />
+                      </div>
+                      </div>
                     </td>
-
                     {/* Actions Column */}
                     <td className="py-3.5 px-4 align-middle text-right">
                       <div className="flex items-center justify-end gap-1.5">
@@ -1740,11 +1550,9 @@ export function CustomersTable({ data, onRefresh }: CustomersTableProps) {
                           </button>
                         )}
 
-                        {/* Direct 360 View Button */}
-                        <Button asChild variant="outline" size="sm" className="h-7 text-xs font-semibold gap-1 hover:border-primary">
-                          <Link href={`/dashboard/customers/${customer.id}`}>
-                            360 View
-                          </Link>
+                        {/* Customer profile */}
+                        <Button asChild variant="outline" size="sm" className="h-7 px-2 text-xs gap-1 whitespace-nowrap">
+                          <Link href={`/dashboard/customers/${customer.id}`}><Eye className="size-3.5" />360 View</Link>
                         </Button>
                       </div>
                     </td>

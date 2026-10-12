@@ -81,7 +81,7 @@ export async function updateCustomer(id: string | number, payload: Record<string
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Failed to update customer");
+    throw new Error(Object.values(err.errors || {}).flat().join(" ") || err.message || "Failed to update customer");
   }
 
   return res.json();
@@ -357,4 +357,27 @@ export async function addBulkCustomerFollowUps(payload: {
   const result = await response.json();
   if (!response.ok) throw new Error(Object.values(result.errors || {}).flat().join(" ") || result.message || "Could not schedule follow-ups.");
   return result;
+}
+
+
+async function customerMutation(path: string, body: FormData | Record<string, unknown>) {
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+  const multipart = body instanceof FormData;
+  const response = await fetchClient(base + path, {
+    method: "POST",
+    ...(multipart ? {} : { headers: { "Content-Type": "application/json" } }),
+    body: multipart ? body : JSON.stringify(body),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(Object.values(result.errors || {}).flat().join("\n") || result.message || "Unable to save customers.");
+  return result;
+}
+
+export function createCustomer(payload: Record<string, unknown>) {
+  return customerMutation("customers", payload);
+}
+
+export function importCustomers(file: File) {
+  const body = new FormData(); body.append("file", file);
+  return customerMutation("customers/import", body);
 }

@@ -1,16 +1,27 @@
 "use client";
 
 import * as React from "react";
-import { useCustomers } from "@/hooks/useCustomers";
-import { Loader2, RefreshCw } from "lucide-react";
+import { useCustomers, useSegmentationRules } from "@/hooks/useCustomers";
+import { Loader2, RefreshCw, Plus, Upload, CalendarDays, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CustomerCreateSheet } from "./_components/customer-create-sheet";
+import { CustomerImportDialog } from "./_components/customer-import-dialog";
+import { useCrmAssignments } from "@/hooks/useCrmAssignments";
 import { Label } from "@/components/ui/label";
 
+import { DEFAULT_CUSTOMER_SEGMENTS } from "@/lib/customer-segments";
 import { CustomersStats } from "./_components/customers-stats";
 import { CustomerRow, CustomersTable } from "./_components/customers-table";
 
 export default function CustomersPage() {
+  const [createOpen, setCreateOpen] = React.useState(false);
+  const [importOpen, setImportOpen] = React.useState(false);
+  const [exportContainer, setExportContainer] = React.useState<HTMLDivElement | null>(null);
+  const { options } = useCrmAssignments();
+  const { rules: savedSegments } = useSegmentationRules();
+  const segmentRules = React.useMemo(() => [...(savedSegments.length ? savedSegments : DEFAULT_CUSTOMER_SEGMENTS)].sort((a, b) => a.priority - b.priority), [savedSegments]);
+  const [preset, setPreset] = React.useState("All Time");
   const [orderDateFrom, setOrderDateFrom] = React.useState("");
   const [orderDateTo, setOrderDateTo] = React.useState("");
   const [dateFilters, setDateFilters] = React.useState<{ order_date_from?: string; order_date_to?: string }>({});
@@ -95,9 +106,10 @@ export default function CustomersPage() {
       }
     }
 
-    const segmentKey = c.dynamic_segment?.key || "returning";
-    const segmentName = c.dynamic_segment?.name || (orderCount > 1 ? "Repeat Buyer" : orderCount === 1 ? "New Buyer" : "Standard Customer");
-    const segmentColor = c.dynamic_segment?.color || (orderCount > 1 ? "#3b82f6" : "#10b981");
+    const segmentKey = c.dynamic_segment?.key || (orderCount > 1 ? "returning" : orderCount === 1 ? "new" : "standard");
+    const configuredSegment = segmentRules.find(rule => rule.key === segmentKey);
+    const segmentName = configuredSegment?.name || c.dynamic_segment?.name || "Standard Customer";
+    const segmentColor = configuredSegment?.color || c.dynamic_segment?.color || "#64748b";
 
     const status: "Registered" = "Registered";
     const joinDate = c.created_at ? new Date(c.created_at).toISOString().split("T")[0] : "";
@@ -152,6 +164,8 @@ export default function CustomersPage() {
       status,
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.full_name || "C")}&background=random`,
       joinDate,
+      lastContactedAt: c.last_contacted_at || null,
+      accountStatus: c.status || "active",
       lastOrderDate,
       daysSinceLastOrder,
       successRate: Number(successRate || 0),
@@ -173,42 +187,47 @@ export default function CustomersPage() {
     };
   });
 
+  const choosePreset = (label: string) => {
+    setPreset(label);
+    if (label === "All Time") { setOrderDateFrom(""); setOrderDateTo(""); setDateFilters({}); return; }
+    const end = new Date(); const start = new Date();
+    if (label === "This Year") start.setMonth(0, 1);
+    else start.setDate(start.getDate() - Number.parseInt(label) + 1);
+    const localDate = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const from = localDate(start), to = localDate(end);
+    setOrderDateFrom(from); setOrderDateTo(to); setDateFilters({ order_date_from: from, order_date_to: to });
+  };
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl tracking-tight">All Customers</h1>
-          <p className="text-muted-foreground text-sm">Manage your customers and CRM assignments.</p>
+          <h1 className="text-3xl font-semibold tracking-tight">All Customers</h1>
+          <p className="text-muted-foreground text-sm">Manage your customers, track revenue and assign CRM agents.</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => mutate()}>
-            <RefreshCw className="mr-2 size-4" />
-            Refresh
-          </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div ref={setExportContainer} />
+          {options?.all_customers && <Button variant="outline" onClick={() => setImportOpen(true)}><Upload className="size-4" />Import Customers</Button>}
+          <Button variant="outline" onClick={() => mutate()}><RefreshCw className="size-4" />Refresh Customers</Button>
+          {options?.all_customers && <Button onClick={() => setCreateOpen(true)}><Plus className="size-4" />Add Customer</Button>}
         </div>
       </div>
 
-      <form className="flex flex-wrap items-end gap-3 rounded-lg border p-4" onSubmit={(event) => {
-        event.preventDefault();
-        if (!invalidRange) setDateFilters({ order_date_from: orderDateFrom, order_date_to: orderDateTo });
+      <form className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4" onSubmit={event => {
+        event.preventDefault(); if (!invalidRange) { setPreset(""); setDateFilters({ order_date_from: orderDateFrom, order_date_to: orderDateTo }); }
       }}>
-        <div className="space-y-2">
-          <Label htmlFor="order-date-from">Order date from</Label>
-          <Input id="order-date-from" type="date" value={orderDateFrom} max={orderDateTo || undefined} onChange={(event) => setOrderDateFrom(event.target.value)} />
+        <span className="flex items-center gap-2 text-sm font-medium mr-2"><CalendarDays className="size-5" />Order Date</span>
+        <div className="flex items-center gap-2 rounded-lg border px-2 py-1">
+          <Label htmlFor="order-date-from" className="sr-only">Order date from</Label><Input id="order-date-from" className="w-[140px] border-0 shadow-none px-1" type="date" value={orderDateFrom} max={orderDateTo || undefined} onChange={event => { setOrderDateFrom(event.target.value); setPreset(""); }} />
+          <ArrowRight className="size-4 text-muted-foreground" />
+          <Label htmlFor="order-date-to" className="sr-only">Order date to</Label><Input id="order-date-to" className="w-[140px] border-0 shadow-none px-1" type="date" value={orderDateTo} min={orderDateFrom || undefined} onChange={event => { setOrderDateTo(event.target.value); setPreset(""); }} />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="order-date-to">Order date to</Label>
-          <Input id="order-date-to" type="date" value={orderDateTo} min={orderDateFrom || undefined} onChange={(event) => setOrderDateTo(event.target.value)} />
-        </div>
-        <Button type="submit" disabled={invalidRange || isLoading}>Apply order dates</Button>
-        <Button type="button" variant="outline" onClick={() => {
-          setOrderDateFrom(""); setOrderDateTo(""); setDateFilters({});
-        }}>Clear dates</Button>
-        <p className="w-full text-xs text-muted-foreground">Includes customers with any order placed in this range. Both dates are included; customer totals show lifetime activity.</p>
-        {invalidRange && <p role="alert" className="text-sm text-destructive">The end date must be on or after the start date.</p>}
-        {error && <p role="alert" className="text-sm text-destructive">Could not apply the date filter. Please try again.</p>}
+        <div className="flex flex-wrap gap-1">{["7D", "30D", "90D", "This Year", "All Time"].map(label => <Button key={label} type="button" size="sm" variant={preset === label ? "default" : "outline"} aria-pressed={preset === label} onClick={() => choosePreset(label)}>{label}</Button>)}</div>
+        <div className="ml-auto flex gap-2"><Button type="button" variant="outline" onClick={() => choosePreset("All Time")}>Clear</Button><Button type="submit" disabled={invalidRange || isLoading}>Apply</Button></div>
+        {invalidRange && <p role="alert" className="w-full text-sm text-destructive">The end date must be on or after the start date.</p>}
+        {error && <p role="alert" className="w-full text-sm text-destructive">Could not apply the date filter. Please try again.</p>}
       </form>
 
       {/* Top 4 Modern KPI Cards */}
@@ -216,7 +235,9 @@ export default function CustomersPage() {
 
       {/* Advanced Data-Driven Customers Table */}
       {isLoading ? <p className="text-sm text-muted-foreground">Loading customers for the selected order dates...</p>
-        : !error && <CustomersTable data={mappedData} onRefresh={() => mutate()} />}
+        : !error && <CustomersTable segmentRules={segmentRules} exportContainer={exportContainer} data={mappedData} onRefresh={() => mutate()} />}
+      <CustomerCreateSheet open={createOpen} onOpenChange={setCreateOpen} onCreated={() => { choosePreset("All Time"); mutate(); }} />
+      <CustomerImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={() => { choosePreset("All Time"); mutate(); }} />
     </div>
   );
 }
