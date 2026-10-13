@@ -110,7 +110,7 @@ export default function PeerTasksPage() {
     return list.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
   }, [tasks, sortBy]);
 
-  const { employees } = useHrmEmployees();
+  const { employees } = useHrmEmployees("", "tasks");
   const { departments } = useHrmDepartments();
 
   // Create Task Modal state

@@ -173,6 +173,8 @@ export default function EmployeeCashFlowPage() {
     policy_name: "Standard Company Work Hours",
     department_id: null,
     expected_daily_hours: 8,
+    shift_start: "09:00",
+    late_grace_minutes: 15,
     working_days: ["Sun", "Mon", "Tue", "Wed", "Thu"],
     enable_deficit_deduction: true,
     calculation_basis: "basic_salary",
@@ -204,6 +206,8 @@ export default function EmployeeCashFlowPage() {
         policy_name: policy.policy_name || "Standard Company Work Hours",
         department_id: policy.department_id || null,
         expected_daily_hours: policy.expected_daily_hours || 8,
+        shift_start: policy.shift_start?.slice(0, 5) || "09:00",
+        late_grace_minutes: policy.late_grace_minutes ?? 15,
         working_days: Array.isArray(policy.working_days) ? policy.working_days : ["Sun", "Mon", "Tue", "Wed", "Thu"],
         enable_deficit_deduction: policy.enable_deficit_deduction !== false,
         calculation_basis: policy.calculation_basis || "basic_salary",
@@ -1514,6 +1518,11 @@ export default function EmployeeCashFlowPage() {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2"><Label htmlFor="shift-start">Office start time</Label><Input id="shift-start" type="time" value={policyForm.shift_start || "09:00"} onChange={e => setPolicyForm({ ...policyForm, shift_start: e.target.value })} /></div>
+              <div className="space-y-2"><Label htmlFor="daily-grace">Daily late grace (minutes)</Label><Input id="daily-grace" type="number" min={0} max={240} value={policyForm.late_grace_minutes ?? 15} onChange={e => setPolicyForm({ ...policyForm, late_grace_minutes: Number(e.target.value) })} /></div>
+            </div>
+            <p className="text-xs text-muted-foreground">Shift end = start time + expected daily hours. Arrival within the daily grace is Present; arrival after it is Late. Approved leave and holidays never incur absence deductions.</p>
             {/* Expected Daily Hours */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">

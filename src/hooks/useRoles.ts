@@ -69,6 +69,15 @@ export interface PageAccess extends Partial<Record<`orders_history_${import("@/l
   history: number;
   settings: number;
   hrm?: number;
+  hrm_notices?: number;
+  hrm_manage_notices?: number;
+  hrm_leaves?: number;
+  hrm_all_leaves?: number;
+  hrm_team_leaves?: number;
+  hrm_manage_leaves?: number;
+  hrm_approve_leaves?: number;
+  hrm_holidays?: number;
+  hrm_manage_holidays?: number;
   hrm_team_upsells?: number;
   hrm_team_tasks?: number;
   hrm_team_attendance?: number;
@@ -188,6 +197,9 @@ export const ORDER_CONNECTED_MODULES = [
 ];
 
 export const HRM_MODULE_KEYS: (keyof PageAccess)[] = [
+  "hrm_notices",
+  "hrm_leaves",
+  "hrm_holidays",
   "hrm_overview",
   "hrm_leaderboard",
   "hrm_department_performance",

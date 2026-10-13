@@ -91,7 +91,7 @@ export default function AttendanceManagementPage() {
     sort_order: sortOrder,
   });
 
-  const { employees } = useHrmEmployees();
+  const { employees } = useHrmEmployees("", "attendance");
   const { departments } = useHrmDepartments();
 
   // Log / Override modal
@@ -165,7 +165,7 @@ export default function AttendanceManagementPage() {
         date: formState.date,
         check_in: formState.check_in ? `${formState.check_in}:00` : null,
         check_out: formState.check_out ? `${formState.check_out}:00` : null,
-        status: formState.status,
+
         notes: formState.notes,
       });
       toast.success("Attendance record saved successfully");
@@ -1042,7 +1042,7 @@ export default function AttendanceManagementPage() {
             <DialogHeader>
               <DialogTitle>{editingRecord ? "Edit Attendance" : "Log Manual Attendance"}</DialogTitle>
               <DialogDescription className="text-xs">
-                Record or adjust employee punch-in times, shift status, and late notes
+                Record punch times. Status, working hours and deductions are calculated from the policy, approved leave and holidays.
               </DialogDescription>
             </DialogHeader>
 
@@ -1096,25 +1096,7 @@ export default function AttendanceManagementPage() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <Label>Status *</Label>
-                <Select
-                  value={formState.status}
-                  onValueChange={(val) => setFormState({ ...formState, status: val })}
-                >
-                  <SelectTrigger className="text-xs h-9">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent className="text-xs">
-                    <SelectItem value="Present">Present</SelectItem>
-                    <SelectItem value="Late">Late</SelectItem>
-                    <SelectItem value="Absent">Absent</SelectItem>
-                    <SelectItem value="Half Day">Half Day</SelectItem>
-                    <SelectItem value="On Leave">On Leave</SelectItem>
-                    <SelectItem value="Holiday">Holiday</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+<p className="text-xs text-muted-foreground">Status is calculated automatically. Use Leave Management or Holiday Calendar to exempt a day.</p>
 
               <div className="space-y-1">
                 <Label>Notes / Reason</Label>

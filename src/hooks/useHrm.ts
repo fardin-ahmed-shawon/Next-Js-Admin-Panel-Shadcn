@@ -817,6 +817,8 @@ export function useDepartmentPerformance(params?: {
 // ------------------------------------------
 
 export interface WorkHourPolicy {
+  shift_start?: string;
+  late_grace_minutes?: number;
   id?: number;
   policy_name: string;
   department_id?: number | null;
@@ -1091,3 +1093,8 @@ export async function deleteEmployeeFine(id: number) {
 }
 
 
+
+export function useHrmCalendar(endpoint: string) {
+ const { data, error, isLoading, mutate } = useSWR(`${HRM_BASE}/${endpoint}`, fetcher);
+ return { data, error, loading: isLoading, refetch: mutate };
+}
