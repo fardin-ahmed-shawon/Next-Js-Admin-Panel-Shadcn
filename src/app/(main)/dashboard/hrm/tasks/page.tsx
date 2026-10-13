@@ -9,20 +9,18 @@ import {
   AlertCircle,
   Plus,
   Search,
-  Filter,
   Trash2,
-  User,
   Calendar,
   Building2,
   ListTodo,
-  CheckCircle,
-  ArrowRight,
-  Sparkles,
   LayoutGrid,
   Table as TableIcon,
   ArrowDown,
   Send,
   UserCheck,
+  RefreshCw,
+  Loader2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -47,7 +45,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   useHrmTasks,
   assignTask,
@@ -55,26 +60,55 @@ import {
   deleteTask,
   useHrmEmployees,
   useHrmDepartments,
-  TaskRecord,
 } from "@/hooks/useHrm";
+import { cn } from "@/lib/utils";
 
 export default function PeerTasksPage() {
   const { user } = useAuth();
-  const canManageEmployee = (id: number | null | undefined) => hasAllUserAccess(user, "tasks") || Number(id) === Number(user?.id);
+  const canManageEmployee = (id: number | null | undefined) =>
+    hasAllUserAccess(user, "tasks") || Number(id) === Number(user?.id);
+
   const [scope, setScope] = React.useState<"all" | "assigned_to_me" | "assigned_by_me">("all");
   const [viewMode, setViewMode] = React.useState<"grid" | "table">("grid");
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
   const [priorityFilter, setPriorityFilter] = React.useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = React.useState<string>("all");
+  const [sortBy, setSortBy] = React.useState<string>("newest");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = React.useState<string>("");
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const { tasks, summary, loading, refetch } = useHrmTasks({
     scope,
     status: statusFilter,
     priority: priorityFilter,
     department_id: departmentFilter,
-    search: searchQuery,
+    search: debouncedSearch,
   });
+
+  const sortedTasks = React.useMemo(() => {
+    const list = [...tasks];
+    if (sortBy === "oldest") {
+      return list.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+    }
+    if (sortBy === "due_date") {
+      return list.sort((a, b) => {
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      });
+    }
+    if (sortBy === "priority") {
+      const weights: Record<string, number> = { urgent: 4, high: 3, medium: 2, low: 1 };
+      return list.sort((a, b) => (weights[b.priority] || 0) - (weights[a.priority] || 0));
+    }
+    // default newest
+    return list.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+  }, [tasks, sortBy]);
 
   const { employees } = useHrmEmployees();
   const { departments } = useHrmDepartments();
@@ -152,232 +186,346 @@ export default function PeerTasksPage() {
     switch (priority) {
       case "urgent":
       case "high":
-        return <Badge variant="destructive" className="capitalize text-xs">{priority}</Badge>;
+        return <Badge variant="destructive" className="capitalize text-xs font-semibold">{priority}</Badge>;
       case "medium":
-        return <Badge className="bg-amber-500 hover:bg-amber-600 text-white capitalize text-xs">Medium</Badge>;
+        return <Badge className="bg-amber-500 hover:bg-amber-600 text-white capitalize text-xs font-semibold">Medium</Badge>;
       default:
-        return <Badge variant="secondary" className="capitalize text-xs">Low</Badge>;
+        return <Badge variant="secondary" className="capitalize text-xs font-semibold">Low</Badge>;
     }
   };
 
+  const hasActiveFilters =
+    scope !== "all" ||
+    statusFilter !== "all" ||
+    priorityFilter !== "all" ||
+    departmentFilter !== "all" ||
+    sortBy !== "newest" ||
+    !!searchQuery;
+
+  const handleResetFilters = () => {
+    setScope("all");
+    setStatusFilter("all");
+    setPriorityFilter("all");
+    setDepartmentFilter("all");
+    setSortBy("newest");
+    setSearchQuery("");
+  };
+
   return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            Peer Task Management
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+    <div className="flex flex-col gap-6 w-full">
+      {/* Header + Toolbar (Orders page pattern) */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        {/* Left: Title + description */}
+        <div className="space-y-1 hidden sm:block">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl tracking-tight">Peer Tasks</h1>
+          </div>
+          <p className="text-muted-foreground text-sm">
             Assign, track, and collaborate on operational tasks across departments and team members.
           </p>
         </div>
-        <Button onClick={() => setCreateModalOpen(true)} className="gap-2 shrink-0">
-          <Plus className="h-4 w-4" />
-          Assign Peer Task
-        </Button>
+
+        {/* Mobile: Title shown above */}
+        <div className="space-y-1 sm:hidden">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl tracking-tight">Peer Tasks</h1>
+            <Badge variant="secondary" className="font-mono text-xs">
+              {summary.total}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Assign and track operational tasks across team members.
+          </p>
+        </div>
+
+        {/* Controls: on mobile = full-width row, desktop = stacked column on right */}
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="flex items-center justify-between gap-2 sm:justify-end flex-wrap">
+            <Button size="sm" onClick={() => setCreateModalOpen(true)} className="gap-1.5 h-9">
+              <Plus className="size-4" />
+              Assign Peer Task
+            </Button>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center border rounded-[min(var(--radius-md),12px)] p-0.5 bg-background shadow-2xs h-9">
+              <Button
+                variant={viewMode === "grid" ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 px-2.5 gap-1.5 text-xs shadow-none"
+                onClick={() => setViewMode("grid")}
+                title="Card View"
+              >
+                <LayoutGrid className="size-3.5" />
+                <span className="hidden sm:inline">Cards</span>
+              </Button>
+              <Button
+                variant={viewMode === "table" ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 px-2.5 gap-1.5 text-xs shadow-none"
+                onClick={() => setViewMode("table")}
+                title="Table View"
+              >
+                <TableIcon className="size-3.5" />
+                <span className="hidden sm:inline">Table</span>
+              </Button>
+            </div>
+
+            {/* Refresh Button */}
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-9 w-9 shrink-0"
+              aria-label="Refresh tasks"
+              onClick={() => refetch()}
+              disabled={loading}
+              title="Refresh tasks"
+            >
+              <RefreshCw className={cn("size-4", loading && "animate-spin")} />
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* KPI Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-border/60 shadow-sm">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Total Tasks</p>
-              <h3 className="text-2xl font-bold mt-1">{summary.total}</h3>
+        {/* Total Tasks */}
+        <Card className="border shadow-2xs hover:shadow-xs transition-all relative overflow-hidden bg-card">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-bl-full pointer-events-none" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Total Tasks
+            </CardTitle>
+            <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
+              <ListTodo className="size-4" />
             </div>
-            <div className="p-2.5 bg-primary/10 rounded-full text-primary">
-              <ListTodo className="h-5 w-5" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-extrabold text-foreground tabular-nums tracking-tight">
+              {summary.total}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Active peer tasks
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 shadow-sm">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Pending</p>
-              <h3 className="text-2xl font-bold mt-1 text-amber-600">{summary.pending}</h3>
+        {/* Pending */}
+        <Card className="border shadow-2xs hover:shadow-xs transition-all relative overflow-hidden bg-card">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-bl-full pointer-events-none" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Pending
+            </CardTitle>
+            <div className="size-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
+              <Clock className="size-4" />
             </div>
-            <div className="p-2.5 bg-amber-500/10 rounded-full text-amber-600">
-              <Clock className="h-5 w-5" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-extrabold text-amber-600 tabular-nums tracking-tight">
+              {summary.pending}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Awaiting action
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 shadow-sm">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">In Progress</p>
-              <h3 className="text-2xl font-bold mt-1 text-blue-600">{summary.in_progress}</h3>
+        {/* In Progress */}
+        <Card className="border shadow-2xs hover:shadow-xs transition-all relative overflow-hidden bg-card">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-bl-full pointer-events-none" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              In Progress
+            </CardTitle>
+            <div className="size-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold">
+              <AlertCircle className="size-4" />
             </div>
-            <div className="p-2.5 bg-blue-500/10 rounded-full text-blue-600">
-              <AlertCircle className="h-5 w-5" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-extrabold text-blue-600 tabular-nums tracking-tight">
+              {summary.in_progress}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Currently underway
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 shadow-sm">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Completed</p>
-              <h3 className="text-2xl font-bold mt-1 text-emerald-600">{summary.completed}</h3>
+        {/* Completed */}
+        <Card className="border shadow-2xs hover:shadow-xs transition-all relative overflow-hidden bg-card">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-bl-full pointer-events-none" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Completed
+            </CardTitle>
+            <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">
+              <CheckCircle2 className="size-4" />
             </div>
-            <div className="p-2.5 bg-emerald-500/10 rounded-full text-emerald-600">
-              <CheckCircle2 className="h-5 w-5" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-600 tabular-nums tracking-tight">
+              {summary.completed}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Finished successfully
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filter and Scope Controls */}
-      <Card className="border-border/60 shadow-sm">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <Tabs
-              value={scope}
-              onValueChange={(val) => setScope(val as any)}
-              className="w-full sm:w-auto"
+      {/* Search & Sort Toolbar — Minimal Single Row */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Search Input */}
+        <div className="relative w-48 sm:w-60">
+          <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search tasks or people..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 text-xs h-8 w-full bg-background"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
             >
-              <TabsList className="grid grid-cols-3 w-full sm:w-[380px]">
-                <TabsTrigger value="all">All Tasks</TabsTrigger>
-                <TabsTrigger value="assigned_to_me">Assigned to Me</TabsTrigger>
-                <TabsTrigger value="assigned_by_me">Created by Me</TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search tasks, delegators, performers..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 text-sm h-9"
-                />
-              </div>
-
-              {/* Grid / Table View Toggle */}
-              <div className="flex items-center border rounded-lg p-0.5 bg-muted/30 shrink-0">
-                <Button
-                  variant={viewMode === "grid" ? "secondary" : "ghost"}
-                  size="sm"
-                  className="h-8 px-2.5 gap-1.5 text-xs shadow-none"
-                  onClick={() => setViewMode("grid")}
-                  title="Card View"
-                >
-                  <LayoutGrid className="size-3.5" />
-                  <span className="hidden sm:inline">Cards</span>
-                </Button>
-                <Button
-                  variant={viewMode === "table" ? "secondary" : "ghost"}
-                  size="sm"
-                  className="h-8 px-2.5 gap-1.5 text-xs shadow-none"
-                  onClick={() => setViewMode("table")}
-                  title="Table View"
-                >
-                  <TableIcon className="size-3.5" />
-                  <span className="hidden sm:inline">Table</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t">
-            {/* Department Filter */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Department</Label>
-              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="All Departments" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map((d) => (
-                    <SelectItem key={d.id} value={String(d.id)}>
-                      {d.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Status Filter */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Priority Filter */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Priority</Label>
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="All Priorities" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Priorities</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Task List / Cards or Table */}
-      {loading ? (
-        <div className="py-16 text-center text-muted-foreground">
-          <Clock className="h-8 w-8 animate-spin mx-auto text-primary mb-2" />
-          <p>Loading peer tasks...</p>
+              <X className="size-3.5" />
+            </button>
+          )}
         </div>
-      ) : tasks.length === 0 ? (
-        <Card className="border-dashed p-12 text-center">
-          <ListTodo className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold">No tasks found</h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto mt-1">
-            There are no tasks matching your selected filters. Create a new task or adjust your search criteria.
-          </p>
-          <Button onClick={() => setCreateModalOpen(true)} className="mt-4 gap-2">
-            <Plus className="h-4 w-4" />
-            Assign a Task
+
+        {/* Scope Filter */}
+        <Select value={scope} onValueChange={(val: any) => setScope(val)}>
+          <SelectTrigger className="h-8 w-[130px] text-xs shrink-0">
+            <SelectValue placeholder="Scope" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Tasks</SelectItem>
+            <SelectItem value="assigned_to_me">Assigned to Me</SelectItem>
+            <SelectItem value="assigned_by_me">Created by Me</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Department Filter */}
+        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+          <SelectTrigger className="h-8 w-[140px] text-xs shrink-0">
+            <SelectValue placeholder="All Departments" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Departments</SelectItem>
+            {departments.map((d) => (
+              <SelectItem key={d.id} value={String(d.id)}>
+                {d.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Status Filter */}
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-8 w-[120px] text-xs shrink-0">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="in_progress">In Progress</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Priority Filter */}
+        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+          <SelectTrigger className="h-8 w-[120px] text-xs shrink-0">
+            <SelectValue placeholder="All Priorities" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Priorities</SelectItem>
+            <SelectItem value="urgent">Urgent</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Sort Filter */}
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="h-8 w-[125px] text-xs shrink-0">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Newest First</SelectItem>
+            <SelectItem value="oldest">Oldest First</SelectItem>
+            <SelectItem value="due_date">Due Date</SelectItem>
+            <SelectItem value="priority">Priority</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Clear Filters (if active) */}
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1 shrink-0"
+            onClick={handleResetFilters}
+            title="Reset all filters"
+          >
+            <X className="size-3.5" />
+            <span className="hidden sm:inline">Reset</span>
           </Button>
+        )}
+      </div>
+
+      {/* Task Content: Table or Cards View */}
+      {loading ? (
+        <Card className="border shadow-2xs p-16 text-center text-muted-foreground">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <Loader2 className="size-6 animate-spin text-primary" />
+            <span className="text-sm">Loading peer tasks...</span>
+          </div>
+        </Card>
+      ) : sortedTasks.length === 0 ? (
+        <Card className="border shadow-2xs p-12 text-center">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <div className="rounded-full bg-muted p-3">
+              <ListTodo className="size-6 text-muted-foreground" />
+            </div>
+            <h3 className="text-base font-semibold text-foreground">No tasks found</h3>
+            <p className="text-xs text-muted-foreground max-w-sm">
+              {hasActiveFilters
+                ? "No tasks match your selected filter criteria. Try adjusting or clearing filters."
+                : "There are no peer tasks created yet. Click below to assign the first task."}
+            </p>
+            <Button onClick={() => setCreateModalOpen(true)} size="sm" className="mt-3 gap-2">
+              <Plus className="size-4" />
+              Assign a Task
+            </Button>
+          </div>
         </Card>
       ) : viewMode === "table" ? (
         /* TABLE VIEW */
-        <Card className="border shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-muted/40 border-b text-muted-foreground font-semibold">
-                <tr>
-                  <th className="py-3 px-4 text-left">Task</th>
-                  <th className="py-3 px-4 text-left">Priority</th>
-                  <th className="py-3 px-4 text-left">Given By (Creator)</th>
-                  <th className="py-3 px-4 text-left">Assigned To (Performer)</th>
-                  <th className="py-3 px-4 text-left">Due Date</th>
-                  <th className="py-3 px-4 text-left">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {tasks.map((task) => {
+        <Card className="border shadow-2xs overflow-hidden">
+          <div className="w-full overflow-x-auto">
+            <Table className="w-full min-w-[1000px]">
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="min-w-[280px]">Task &amp; Details</TableHead>
+                  <TableHead className="min-w-[110px]">Priority</TableHead>
+                  <TableHead className="min-w-[220px]">Delegator (Given By)</TableHead>
+                  <TableHead className="min-w-[220px]">Assignee (Assigned To)</TableHead>
+                  <TableHead className="min-w-[120px]">Due Date</TableHead>
+                  <TableHead className="min-w-[140px]">Status</TableHead>
+                  <TableHead className="text-right min-w-[80px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedTasks.map((task) => {
                   const isCompleted = task.status === "completed";
                   return (
-                    <tr key={task.id} className="hover:bg-muted/30 transition-colors">
+                    <TableRow key={task.id} className="hover:bg-muted/50 transition-colors">
                       {/* Task Info */}
-                      <td className="py-3 px-4 max-w-[280px]">
+                      <TableCell className="max-w-[280px]">
                         <span
                           className={`font-semibold text-sm block ${
                             isCompleted ? "line-through text-muted-foreground" : "text-foreground"
@@ -386,152 +534,158 @@ export default function PeerTasksPage() {
                           {task.title}
                         </span>
                         {task.description && (
-                          <span className="text-[11px] text-muted-foreground truncate block max-w-xs mt-0.5">
+                          <span className="text-xs text-muted-foreground truncate block max-w-xs mt-0.5">
                             {task.description}
                           </span>
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Priority */}
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap">
                         {getPriorityBadge(task.priority)}
-                      </td>
+                      </TableCell>
 
                       {/* Given By (Creator) */}
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <div className="size-7 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold text-[10px] shrink-0">
                             {task.creator?.full_name?.slice(0, 2).toUpperCase() || "AD"}
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-semibold text-foreground block">
+                              <span className="font-semibold text-foreground block text-xs">
                                 {task.creator?.full_name || "Management / Admin"}
                               </span>
-                              <Badge variant="outline" className="text-[9px] py-0 h-3.5 bg-blue-500/5 text-blue-700 dark:text-blue-300 border-blue-500/20">
+                              <Badge variant="outline" className="text-[9px] py-0 h-4 bg-blue-500/5 text-blue-700 dark:text-blue-300 border-blue-500/20">
                                 Creator
                               </Badge>
                             </div>
                             <span className="text-[10px] text-muted-foreground block">
-                              {task.creator?.employee_detail?.designation?.title || task.creator?.employee_detail?.department?.name || "Zymerce"}
+                              {task.creator?.employee_detail?.designation?.title ||
+                                task.creator?.employee_detail?.department?.name ||
+                                "Zymerce"}
                             </span>
                           </div>
                         </div>
-                      </td>
+                      </TableCell>
 
                       {/* Assigned To (Performer) */}
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <div className="size-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-[10px] shrink-0">
                             {task.assignee?.full_name?.slice(0, 2).toUpperCase() || "AS"}
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-foreground block">
+                              <span className="font-bold text-foreground block text-xs">
                                 {task.assignee?.full_name || "Unassigned"}
                               </span>
-                              <Badge variant="outline" className="text-[9px] py-0 h-3.5 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300 border-emerald-500/20">
+                              <Badge variant="outline" className="text-[9px] py-0 h-4 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300 border-emerald-500/20">
                                 Assignee
                               </Badge>
                             </div>
                             <span className="text-[10px] text-muted-foreground block">
-                              {task.assignee?.employee_detail?.designation?.title || task.assignee?.employee_detail?.department?.name || "Zymerce"}
+                              {task.assignee?.employee_detail?.designation?.title ||
+                                task.assignee?.employee_detail?.department?.name ||
+                                "Zymerce"}
                             </span>
                           </div>
                         </div>
-                      </td>
+                      </TableCell>
 
                       {/* Due Date */}
-                      <td className="py-3 px-4 whitespace-nowrap text-muted-foreground font-mono">
+                      <TableCell className="whitespace-nowrap text-muted-foreground font-mono text-xs">
                         {task.due_date ? (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="size-3 text-muted-foreground" />
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="size-3.5 text-muted-foreground" />
                             {task.due_date}
                           </span>
                         ) : (
                           "—"
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Status Selector */}
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap">
                         <Select
                           disabled={!(canManageEmployee(task.assigned_to) || canManageEmployee(task.assigned_by))}
                           value={task.status}
                           onValueChange={(val) => handleStatusChange(task.id, val)}
                         >
-                          <SelectTrigger className="h-7 text-xs w-[125px]">
+                          <SelectTrigger className="h-8 text-xs w-[130px]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="pending">
-                              <span className="flex items-center gap-1.5 text-amber-600">
-                                <Clock className="size-3" /> Pending
+                              <span className="flex items-center gap-1.5 text-amber-600 font-medium">
+                                <Clock className="size-3.5" /> Pending
                               </span>
                             </SelectItem>
                             <SelectItem value="in_progress">
-                              <span className="flex items-center gap-1.5 text-blue-600">
-                                <AlertCircle className="size-3" /> In Progress
+                              <span className="flex items-center gap-1.5 text-blue-600 font-medium">
+                                <AlertCircle className="size-3.5" /> In Progress
                               </span>
                             </SelectItem>
                             <SelectItem value="completed">
-                              <span className="flex items-center gap-1.5 text-emerald-600">
-                                <CheckCircle2 className="size-3" /> Completed
+                              <span className="flex items-center gap-1.5 text-emerald-600 font-medium">
+                                <CheckCircle2 className="size-3.5" /> Completed
                               </span>
                             </SelectItem>
                           </SelectContent>
                         </Select>
-                      </td>
+                      </TableCell>
 
                       {/* Actions */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                      <TableCell className="text-right whitespace-nowrap">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
                           disabled={!(canManageEmployee(task.assigned_to) || canManageEmployee(task.assigned_by))}
                           onClick={() => handleDeleteTask(task.id)}
                           title="Delete Task"
                         >
-                          <Trash2 className="size-3.5" />
+                          <Trash2 className="size-4" />
                         </Button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </Card>
       ) : (
         /* GRID / CARDS VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {tasks.map((task) => {
+          {sortedTasks.map((task) => {
             const isCompleted = task.status === "completed";
 
             return (
               <Card
                 key={task.id}
-                className={`border shadow-sm flex flex-col justify-between transition-all hover:shadow-md ${
-                  isCompleted ? "opacity-85 border-emerald-500/30 bg-emerald-500/[0.02]" : ""
-                }`}
+                className={cn(
+                  "border shadow-2xs flex flex-col justify-between transition-all hover:shadow-xs bg-card",
+                  isCompleted && "border-emerald-500/30 bg-emerald-500/[0.02]"
+                )}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1 flex-1">
+                    <div className="space-y-1.5 flex-1">
                       <div className="flex items-center gap-2">
                         {getPriorityBadge(task.priority)}
                         {task.due_date && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
+                          <span className="text-xs text-muted-foreground flex items-center gap-1 font-mono">
+                            <Calendar className="size-3" />
                             {task.due_date}
                           </span>
                         )}
                       </div>
                       <CardTitle
-                        className={`text-base font-semibold leading-snug ${
+                        className={cn(
+                          "text-base font-semibold leading-snug",
                           isCompleted ? "line-through text-muted-foreground" : "text-foreground"
-                        }`}
+                        )}
                       >
                         {task.title}
                       </CardTitle>
@@ -542,10 +696,10 @@ export default function PeerTasksPage() {
                       size="icon"
                       className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
                       disabled={!(canManageEmployee(task.assigned_to) || canManageEmployee(task.assigned_by))}
-                          onClick={() => handleDeleteTask(task.id)}
+                      onClick={() => handleDeleteTask(task.id)}
                       title="Delete Task"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="size-3.5" />
                     </Button>
                   </div>
 
@@ -564,7 +718,7 @@ export default function PeerTasksPage() {
                       <div className="flex items-center justify-between gap-2 mb-1.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1">
                           <Send className="size-3" />
-                          Given By (Task Delegator)
+                          Given By (Delegator)
                         </span>
                         {task.creator?.employee_detail?.department && (
                           <Badge variant="outline" className="text-[9px] py-0 h-4 border-blue-500/20 text-blue-700 dark:text-blue-300 bg-background">
@@ -600,7 +754,7 @@ export default function PeerTasksPage() {
                       <div className="flex items-center justify-between gap-2 mb-1.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                           <UserCheck className="size-3" />
-                          Assigned To (Task Performer)
+                          Assigned To (Performer)
                         </span>
                         {task.assignee?.employee_detail?.department && (
                           <Badge variant="outline" className="text-[9px] py-0 h-4 border-emerald-500/20 text-emerald-700 dark:text-emerald-300 bg-background">
@@ -631,7 +785,7 @@ export default function PeerTasksPage() {
                     <span className="text-xs text-muted-foreground font-medium">Status:</span>
                     <Select
                       disabled={!(canManageEmployee(task.assigned_to) || canManageEmployee(task.assigned_by))}
-                          value={task.status}
+                      value={task.status}
                       onValueChange={(val) => handleStatusChange(task.id, val)}
                     >
                       <SelectTrigger className="h-8 text-xs w-[130px]">
@@ -639,18 +793,18 @@ export default function PeerTasksPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="pending">
-                          <span className="flex items-center gap-1.5 text-amber-600">
-                            <Clock className="h-3 w-3" /> Pending
+                          <span className="flex items-center gap-1.5 text-amber-600 font-medium">
+                            <Clock className="size-3" /> Pending
                           </span>
                         </SelectItem>
                         <SelectItem value="in_progress">
-                          <span className="flex items-center gap-1.5 text-blue-600">
-                            <AlertCircle className="h-3 w-3" /> In Progress
+                          <span className="flex items-center gap-1.5 text-blue-600 font-medium">
+                            <AlertCircle className="size-3" /> In Progress
                           </span>
                         </SelectItem>
                         <SelectItem value="completed">
-                          <span className="flex items-center gap-1.5 text-emerald-600">
-                            <CheckCircle2 className="h-3 w-3" /> Completed
+                          <span className="flex items-center gap-1.5 text-emerald-600 font-medium">
+                            <CheckCircle2 className="size-3" /> Completed
                           </span>
                         </SelectItem>
                       </SelectContent>
@@ -668,8 +822,8 @@ export default function PeerTasksPage() {
         <DialogContent className="sm:max-w-md">
           <form onSubmit={handleCreateTask}>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <ListTodo className="h-5 w-5 text-primary" />
+              <DialogTitle className="flex items-center gap-2 text-lg">
+                <ListTodo className="size-5 text-primary" />
                 Assign Peer Task
               </DialogTitle>
               <DialogDescription>
@@ -687,7 +841,7 @@ export default function PeerTasksPage() {
                   value={taskForm.assigned_to}
                   onValueChange={(val) => setTaskForm({ ...taskForm, assigned_to: val })}
                 >
-                  <SelectTrigger id="assignee">
+                  <SelectTrigger id="assignee" className="h-9 text-xs">
                     <SelectValue placeholder="Select colleague..." />
                   </SelectTrigger>
                   <SelectContent className="max-h-60">
@@ -713,6 +867,7 @@ export default function PeerTasksPage() {
                   placeholder="e.g. Verify delivered return parcels from Courier"
                   value={taskForm.title}
                   onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                  className="h-9 text-xs"
                   required
                 />
               </div>
@@ -727,7 +882,7 @@ export default function PeerTasksPage() {
                     value={taskForm.priority}
                     onValueChange={(val) => setTaskForm({ ...taskForm, priority: val })}
                   >
-                    <SelectTrigger id="task-priority">
+                    <SelectTrigger id="task-priority" className="h-9 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -748,6 +903,7 @@ export default function PeerTasksPage() {
                     type="date"
                     value={taskForm.due_date}
                     onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
+                    className="h-9 text-xs"
                   />
                 </div>
               </div>
@@ -762,22 +918,34 @@ export default function PeerTasksPage() {
                   placeholder="Detailed notes, order IDs, or checklist for your colleague..."
                   value={taskForm.description}
                   onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                  className="text-xs resize-none"
                   rows={3}
                 />
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="gap-2">
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => setCreateModalOpen(false)}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="gap-2">
-                {isSubmitting ? "Assigning..." : "Assign Task"}
+              <Button type="submit" size="sm" disabled={isSubmitting} className="gap-1.5">
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Assigning...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="size-3.5" />
+                    Assign Task
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </form>

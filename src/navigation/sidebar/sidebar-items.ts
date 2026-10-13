@@ -118,9 +118,9 @@ export const sidebarItems: NavGroup[] = [
         icon: ShoppingCart,
         module: "wholesale_orders",
         subItems: [
-          { title: "Order Create", url: "/dashboard/orders/wholesale-create", module: "wholesale_orders", isNew: true },
-          { title: "Order History", url: "/dashboard/orders/wholesale", module: "wholesale_orders", isNew: true },
-          { title: "Order Due", url: "/dashboard/orders/wholesale/due", module: "wholesale_orders", isNew: true }
+          { title: "Order Create", url: "/dashboard/orders/wholesale-create", module: "wholesale_orders" },
+          { title: "Order History", url: "/dashboard/orders/wholesale", module: "wholesale_orders" },
+          { title: "Order Due", url: "/dashboard/orders/wholesale/due", module: "wholesale_orders" }
         ],
       },
 
@@ -184,6 +184,7 @@ export const sidebarItems: NavGroup[] = [
         title: "Meta Marketing",
         url: "/dashboard/meta-marketing",
         icon: TrendingUp,
+        isNew: true,
         subItems: [
           { title: "Dashboard", url: "/dashboard/meta-marketing" },
           { title: "Meta API Integration", url: "/dashboard/meta-marketing/integration" },
@@ -195,6 +196,7 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/delivery-support",
         icon: Truck,
         module: "delivery_support",
+        isNew: true,
       },
       {
         title: "Reports",
@@ -209,11 +211,11 @@ export const sidebarItems: NavGroup[] = [
           { title: "Customer Report", url: "/dashboard/reports/customer", module: "customer_report" },
           { title: "Supplier Report", url: "/dashboard/reports/supplier", module: "supplier_report" },
           { title: "Employee Report", url: "/dashboard/reports/employee", module: "employee_report" },
-          { title: "Upsell Report", url: "/dashboard/reports/upsell", module: "employee_report", isNew: true },
+          { title: "Upsell Report", url: "/dashboard/reports/upsell", module: "employee_report" },
           { title: "Payment Report", url: "/dashboard/reports/payment", module: "payment_report" },
           { title: "Parcel Report", url: "/dashboard/reports/parcel", module: "parcel_report" },
           { title: "Courier Report", url: "/dashboard/reports/courier", module: "courier_report" },
-          { title: "Incomplete Orders", url: "/dashboard/reports/incomplete", module: "incomplete_orders", isNew: true },
+          { title: "Incomplete Orders", url: "/dashboard/reports/incomplete", module: "incomplete_orders" },
           {
             title: "Inventory Report",
             url: "/dashboard/reports/inventory",
@@ -241,15 +243,15 @@ export const sidebarItems: NavGroup[] = [
         module: "hrm",
         subItems: [
           { title: "Overview", url: "/dashboard/hrm", module: "hrm_overview" },
-          { title: "Leaderboard", url: "/dashboard/hrm/leaderboard", isNew: true, module: "hrm_leaderboard" },
-          { title: "Dept Performance", url: "/dashboard/hrm/department-performance", isNew: true, module: "hrm_department_performance" },
+          { title: "Leaderboard", url: "/dashboard/hrm/leaderboard", module: "hrm_leaderboard" },
+          { title: "Dept Performance", url: "/dashboard/hrm/department-performance", module: "hrm_department_performance" },
           { title: "Upsell Tracking", url: "/dashboard/hrm/upsell-report", module: "hrm_upsells" },
-          { title: "Peer Tasks", url: "/dashboard/hrm/tasks", isNew: true, module: "hrm_tasks" },
+          { title: "Peer Tasks", url: "/dashboard/hrm/tasks", module: "hrm_tasks" },
           { title: "Organization Tree", url: "/dashboard/hrm/organization", module: "hrm_org_tree" },
           { title: "Employees", url: "/dashboard/hrm/employees", module: "hrm_employees" },
           { title: "Attendance", url: "/dashboard/hrm/attendance", module: "hrm_attendance" },
           { title: "Salary & Payroll", url: "/dashboard/hrm/salaries", module: "hrm_salaries" },
-          { title: "Employee Cash Flow", url: "/dashboard/hrm/cash-flow", isNew: true, module: "hrm_cash_flow" },
+          { title: "Employee Cash Flow", url: "/dashboard/hrm/cash-flow", module: "hrm_cash_flow" },
           { title: "Loans & Advance", url: "/dashboard/hrm/loans", module: "hrm_loans" },
           { title: "Documents", url: "/dashboard/hrm/documents", module: "hrm_documents" },
           { title: "Resignation & Exit", url: "/dashboard/hrm/exits", module: "hrm_exits" },
@@ -275,7 +277,7 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/unified-inbox",
         icon: MessagesSquare,
         module: "unified_inbox",
-        isNew: true,
+        comingSoon: true,
       },
       // { title: "Feature Control", url: "/dashboard/feature-control", icon: SlidersHorizontal, module: "settings" },
       { title: "Settings", url: "/dashboard/settings", icon: Settings, module: "settings" },

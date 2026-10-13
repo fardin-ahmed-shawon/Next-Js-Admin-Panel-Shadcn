@@ -48,6 +48,9 @@ export function useOrderActivityLogs(params?: {
   orderNo?: string;
   userId?: number | string;
   actionType?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
   limit?: number;
 }) {
   const baseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/"}order-activity-logs`;
@@ -56,6 +59,9 @@ export function useOrderActivityLogs(params?: {
   if (params?.orderNo) searchParams.append("order_no", params.orderNo);
   if (params?.userId) searchParams.append("user_id", String(params.userId));
   if (params?.actionType) searchParams.append("action_type", params.actionType);
+  if (params?.startDate) searchParams.append("start_date", params.startDate);
+  if (params?.endDate) searchParams.append("end_date", params.endDate);
+  if (params?.page) searchParams.append("page", String(params.page));
   if (params?.limit) searchParams.append("limit", String(params.limit));
 
   const url = searchParams.toString() ? `${baseUrl}?${searchParams.toString()}` : baseUrl;

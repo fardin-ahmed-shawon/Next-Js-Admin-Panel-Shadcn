@@ -52,31 +52,41 @@ export default function HrmDashboardPage() {
   const recentNotices = overview?.recent_notices || [];
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1680px] mx-auto w-full">
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            HRM & People Management
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+    <div className="flex flex-col gap-6 w-full">
+      {/* Header + Toolbar combined (Orders page design) */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        {/* Left: Title + description (hidden on mobile, shown on sm+) */}
+        <div className="space-y-1 hidden sm:block">
+          <h1 className="text-3xl tracking-tight">HRM &amp; People Management</h1>
+          <p className="text-muted-foreground text-sm">
             Complete workforce intelligence, organization hierarchy, automated attendance, payroll, loans, documents, and self-service.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Link href="/dashboard/hrm/self-service">
-            <Button variant="outline" className="gap-2 shadow-2xs">
-              <UserCheck className="size-4 text-emerald-600" />
-              <span>Self-Service Portal (ESS)</span>
+        {/* Mobile: Title shown above */}
+        <div className="space-y-1 sm:hidden">
+          <h1 className="text-2xl tracking-tight">HRM &amp; People Management</h1>
+          <p className="text-muted-foreground text-sm">
+            Complete workforce intelligence, organization hierarchy, automated attendance, payroll, and self-service.
+          </p>
+        </div>
+
+        {/* Controls: on mobile = full-width row, on desktop = stacked column on right */}
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="flex items-center justify-between gap-2 sm:justify-end">
+            <Button size="sm" variant="outline" asChild>
+              <Link href="/dashboard/hrm/self-service">
+                <UserCheck className="mr-2 size-4 text-emerald-600" />
+                Self-Service (ESS)
+              </Link>
             </Button>
-          </Link>
-          <Link href="/dashboard/hrm/organization">
-            <Button variant="default" className="gap-2 shadow-sm">
-              <Building2 className="size-4" />
-              <span>Org Hierarchy Tree</span>
+            <Button size="sm" asChild>
+              <Link href="/dashboard/hrm/organization">
+                <Building2 className="mr-2 size-4" />
+                Org Hierarchy Tree
+              </Link>
             </Button>
-          </Link>
+          </div>
         </div>
       </div>
 
@@ -199,7 +209,6 @@ export default function HrmDashboardPage() {
       {/* Quick Navigation Cards Grid */}
       <div>
         <h2 className="text-base font-bold text-foreground mb-3 flex items-center gap-2">
-          <Sparkles className="size-4 text-primary" />
           HRM Sub-Modules & Operations
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
