@@ -16,6 +16,8 @@ import {
   TrendingUp,
   Receipt,
   RotateCcw,
+  RefreshCw,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -148,44 +150,83 @@ export default function LoansAdvancesPage() {
       );
     });
   }, [loans, searchQuery]);
+  const hasActiveFilters = statusFilter !== "all" || !!searchQuery;
+
+  const handleResetFilters = () => {
+    setStatusFilter("all");
+    setSearchQuery("");
+  };
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1680px] mx-auto w-full">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            Employee Loans & Salary Advances
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage advance amounts, installments, remaining balance, and automated monthly salary deductions.
+    <div className="flex flex-col gap-6 w-full">
+      {/* Header + Toolbar (Orders page pattern) */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        {/* Left: Title + description */}
+        <div className="space-y-1 hidden sm:block">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl tracking-tight">Loans &amp; Salary Advances</h1>
+            <Badge variant="secondary" className="font-mono text-xs">
+              {summary?.active_count || 0} Active
+            </Badge>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Advance disbursements, installment repayment schedules, remaining balances, and monthly salary deductions.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <Button
-            onClick={() => {
-              setLoanForm({
-                user_id: employees.find((employee) => canManageEmployee(employee.id))?.id?.toString() || "",
-                loan_type: "salary_advance",
-                amount: 10000,
-                disbursement_date: new Date().toISOString().split("T")[0],
-                total_installments: 2,
-                purpose: "Salary advance requested for emergency expenses",
-              });
-              setCreateModalOpen(true);
-            }}
-            className="gap-2 shadow-xs text-xs"
-          >
-            <PlusCircle className="size-4" />
-            <span>Issue Salary Advance / Loan</span>
-          </Button>
+        {/* Mobile: Title shown above */}
+        <div className="space-y-1 sm:hidden">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl tracking-tight">Loans &amp; Advances</h1>
+            <Badge variant="secondary" className="font-mono text-xs">
+              {summary?.active_count || 0} Active
+            </Badge>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Advance disbursements and installment schedules.
+          </p>
+        </div>
+
+        {/* Controls: on mobile = full-width row, desktop = stacked column on right */}
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="flex items-center justify-between gap-2 sm:justify-end flex-wrap">
+            <Button
+              size="sm"
+              onClick={() => {
+                setLoanForm({
+                  user_id: employees.find((employee) => canManageEmployee(employee.id))?.id?.toString() || "",
+                  loan_type: "salary_advance",
+                  amount: 10000,
+                  disbursement_date: new Date().toISOString().split("T")[0],
+                  total_installments: 2,
+                  purpose: "Salary advance requested for emergency expenses",
+                });
+                setCreateModalOpen(true);
+              }}
+              className="gap-1.5 h-9 text-xs"
+            >
+              <PlusCircle className="size-4" />
+              <span>Issue Advance / Loan</span>
+            </Button>
+
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-9 w-9 shrink-0"
+              aria-label="Refresh loan records"
+              onClick={() => refetch()}
+              disabled={loading}
+              title="Refresh loan records"
+            >
+              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="border shadow-2xs bg-card">
+        <Card className="border shadow-2xs hover:shadow-xs transition-all relative overflow-hidden bg-card">
           <CardContent className="p-4 space-y-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
               Total Disbursed
@@ -197,7 +238,7 @@ export default function LoansAdvancesPage() {
           </CardContent>
         </Card>
 
-        <Card className="border shadow-2xs bg-card">
+        <Card className="border shadow-2xs hover:shadow-xs transition-all relative overflow-hidden bg-card">
           <CardContent className="p-4 space-y-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
               Total Recovered
@@ -209,7 +250,7 @@ export default function LoansAdvancesPage() {
           </CardContent>
         </Card>
 
-        <Card className="border shadow-2xs bg-card">
+        <Card className="border shadow-2xs hover:shadow-xs transition-all relative overflow-hidden bg-card">
           <CardContent className="p-4 space-y-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
               Active Balance Remaining
@@ -221,7 +262,7 @@ export default function LoansAdvancesPage() {
           </CardContent>
         </Card>
 
-        <Card className="border shadow-2xs bg-card">
+        <Card className="border shadow-2xs hover:shadow-xs transition-all relative overflow-hidden bg-card">
           <CardContent className="p-4 space-y-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
               Active Loans
@@ -236,39 +277,59 @@ export default function LoansAdvancesPage() {
         </Card>
       </div>
 
-      {/* Filter and Table */}
-      <Card className="border shadow-xs bg-card">
-        <div className="p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Search by employee, ID, purpose..."
-              className="pl-9 h-9 text-xs"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-9 text-xs w-[140px]">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent className="text-xs">
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="repaid">Repaid</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Minimal Search & Filter Toolbar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-48 sm:w-60">
+          <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search by employee, purpose..."
+            className="pl-8 h-8 text-xs w-full bg-background"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
         </div>
 
-        {/* Table */}
-        <CardContent className="p-0 border-t">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-8 text-xs w-[130px] shrink-0">
+            <SelectValue placeholder="All Status" />
+          </SelectTrigger>
+          <SelectContent className="text-xs">
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="repaid">Repaid</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1 shrink-0"
+            onClick={handleResetFilters}
+            title="Reset filters"
+          >
+            <X className="size-3.5" />
+            <span className="hidden sm:inline">Reset</span>
+          </Button>
+        )}
+      </div>
+
+      {/* Table Card */}
+      <Card className="border shadow-2xs overflow-hidden">
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-muted/40 border-b text-muted-foreground font-semibold">
+              <thead className="bg-muted/50 border-b text-muted-foreground font-semibold">
                 <tr>
                   <th className="py-3 px-4 text-left">Employee</th>
                   <th className="py-3 px-4 text-left">Type</th>
@@ -285,8 +346,18 @@ export default function LoansAdvancesPage() {
               <tbody className="divide-y divide-border/60">
                 {filteredLoans.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="py-12 text-center text-muted-foreground">
-                      No employee loans or advances recorded.
+                    <td colSpan={10} className="h-48 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="rounded-full bg-muted p-3">
+                          <CreditCard className="size-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-base font-medium text-foreground">No loans or advances recorded</p>
+                        <p className="text-xs text-muted-foreground max-w-sm">
+                          {hasActiveFilters
+                            ? "No loan records match your selected filter criteria."
+                            : "There are currently no active employee loans or advances."}
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 ) : (

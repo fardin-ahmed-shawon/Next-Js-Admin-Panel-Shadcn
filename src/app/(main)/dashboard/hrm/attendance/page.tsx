@@ -26,6 +26,7 @@ import {
   RotateCcw,
   ShieldAlert,
   Info,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -489,37 +490,62 @@ export default function AttendanceManagementPage() {
   }, [attendances, statusFilter, searchQuery]);
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1680px] mx-auto w-full">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            Attendance & Working Hours Tracking
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Real-time daily punch check-in, check-out, working hours, late penalty, overtime, and attendance logs.
+    <div className="flex flex-col gap-6 w-full">
+      {/* Header + Toolbar (Orders page pattern) */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        {/* Left: Title + description */}
+        <div className="space-y-1 hidden sm:block">
+          <h1 className="text-3xl tracking-tight">Attendance &amp; Working Hours</h1>
+          <p className="text-muted-foreground text-sm">
+            Real-time daily punch check-in, check-out, working hours, late penalties, overtime, and shift records.
           </p>
         </div>
 
-        {canManageAttendance && (
-          <div className="flex flex-wrap items-center gap-2.5">
+        {/* Mobile: Title shown above */}
+        <div className="space-y-1 sm:hidden">
+          <h1 className="text-2xl tracking-tight">Attendance &amp; Working Hours</h1>
+          <p className="text-muted-foreground text-sm">
+            Real-time daily punch check-in, check-out, and shift records.
+          </p>
+        </div>
+
+        {/* Controls: on mobile = full-width row, desktop = stacked column on right */}
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="flex items-center justify-between gap-2 sm:justify-end flex-wrap">
+            {canManageAttendance && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setImportModalOpen(true);
+                    setImportResult(null);
+                  }}
+                  className="gap-1.5 h-9 text-xs border-emerald-600/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                >
+                  <FileSpreadsheet className="size-4 text-emerald-600" />
+                  <span>Import Excel/CSV</span>
+                </Button>
+                <Button size="sm" onClick={() => openLogModal()} className="gap-1.5 h-9 text-xs">
+                  <PlusCircle className="size-4" />
+                  <span>Log Attendance</span>
+                </Button>
+              </>
+            )}
+
             <Button
+              size="icon"
               variant="outline"
-              onClick={() => {
-                setImportModalOpen(true);
-                setImportResult(null);
-              }}
-              className="gap-2 shadow-xs text-xs border-emerald-600/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+              className="h-9 w-9 shrink-0"
+              aria-label="Refresh attendance records"
+              onClick={() => refetch()}
+              disabled={loading}
+              title="Refresh attendance records"
             >
-              <FileSpreadsheet className="size-4 text-emerald-600" />
-              <span>Import Attendance (Excel/CSV)</span>
-            </Button>
-            <Button onClick={() => openLogModal()} className="gap-2 shadow-sm text-xs">
-              <PlusCircle className="size-4" />
-              <span>Log Manual Attendance</span>
+              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Policy Info Banner */}

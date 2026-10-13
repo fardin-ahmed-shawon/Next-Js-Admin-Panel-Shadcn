@@ -418,69 +418,92 @@ export default function EmployeeCashFlowPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1720px] mx-auto w-full">
-      {/* 1. Top Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
-            <DollarSign className="size-7 text-primary" />
-            Employee Cash Flow & Payment Statement
+    <div className="flex flex-col gap-6 w-full">
+      {/* Header + Toolbar (Orders page pattern) */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        {/* Left: Title + description */}
+        <div className="space-y-1 hidden sm:block">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl tracking-tight">Employee Cash Flow &amp; Ledger</h1>
             {!canAccessAllCashFlow && (
               <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30">
-                Attribute Based (Self Data)
+                Self Data
               </Badge>
             )}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Financial ledger statement tracking gross compensation inflows, incentive commissions, weekday working hour deficit penalties, and net disbursements.
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Financial ledger tracking gross compensation, commission inflows, working hour deficit deductions, and net disbursements.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          {canIssueFine && (
+        {/* Mobile: Title shown above */}
+        <div className="space-y-1 sm:hidden">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl tracking-tight">Employee Cash Flow</h1>
+            {!canAccessAllCashFlow && (
+              <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                Self Data
+              </Badge>
+            )}
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Financial ledger tracking compensation, commissions, and deductions.
+          </p>
+        </div>
+
+        {/* Controls: on mobile = full-width row, desktop = stacked column on right */}
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="flex items-center justify-between gap-2 sm:justify-end flex-wrap">
+            {canIssueFine && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFineUserId(selectedUserId !== "all" ? selectedUserId : "");
+                  setFineMonth(selectedMonth);
+                  setFineYear(selectedYear);
+                  setFineModalOpen(true);
+                }}
+                className="gap-1.5 h-9 text-xs border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 font-medium"
+              >
+                <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
+                <span>Issue Fine</span>
+              </Button>
+            )}
+
             <Button
               variant="outline"
-              onClick={() => {
-                setFineUserId(selectedUserId !== "all" ? selectedUserId : "");
-                setFineMonth(selectedMonth);
-                setFineYear(selectedYear);
-                setFineModalOpen(true);
-              }}
-              className="gap-2 text-xs border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 font-bold"
+              size="sm"
+              disabled={!canManagePayroll}
+              onClick={() => setPolicyModalOpen(true)}
+              className="gap-1.5 h-9 text-xs"
             >
-              <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
-              <span>Issue Employee Fine</span>
+              <Clock className="size-4 text-primary" />
+              <span>Work Hour Policy</span>
             </Button>
-          )}
 
-          <Button
-            variant="outline"
-            disabled={!canManagePayroll}
-            onClick={() => setPolicyModalOpen(true)}
-            className="gap-2 text-xs"
-          >
-            <Clock className="size-4 text-primary" />
-            <span>Work Hours & Weekdays Rule</span>
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRecalculate}
+              disabled={!canManagePayroll || isRecalculating}
+              className="gap-1.5 h-9 text-xs"
+              title="Recalculate cash flow metrics"
+            >
+              <RefreshCw className={`size-4 ${isRecalculating ? "animate-spin" : ""}`} />
+              <span>Recalculate</span>
+            </Button>
 
-          <Button
-            variant="outline"
-            onClick={handleRecalculate}
-            disabled={!canManagePayroll || isRecalculating}
-            className="gap-2 text-xs"
-          >
-            <RefreshCw className={`size-4 ${isRecalculating ? "animate-spin" : ""}`} />
-            <span>Recalculate</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => window.print()}
-            className="gap-2 text-xs"
-          >
-            <Printer className="size-4" />
-            <span>Print Statement</span>
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+              className="gap-1.5 h-9 text-xs"
+            >
+              <Printer className="size-4" />
+              <span>Print</span>
+            </Button>
+          </div>
         </div>
       </div>
 

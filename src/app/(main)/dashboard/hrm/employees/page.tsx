@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   DollarSign,
   Download,
+  RefreshCw,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -159,73 +161,131 @@ export default function EmployeesDirectoryPage() {
       return true;
     });
   }, [employees, departmentFilter, statusFilter, searchQuery]);
+  const hasActiveFilters =
+    departmentFilter !== "all" ||
+    statusFilter !== "all" ||
+    !!searchQuery;
+
+  const handleResetFilters = () => {
+    setDepartmentFilter("all");
+    setStatusFilter("all");
+    setSearchQuery("");
+  };
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1680px] mx-auto w-full">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            Employees Directory & Profiles
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            System users mapped as employees with department designations, salary structure, and reporting lines.
+    <div className="flex flex-col gap-6 w-full">
+      {/* Header + Toolbar (Orders page pattern) */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        {/* Left: Title + description */}
+        <div className="space-y-1 hidden sm:block">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl tracking-tight">Employees Directory</h1>
+            <Badge variant="secondary" className="font-mono text-xs">
+              {employees.length} Employees
+            </Badge>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Workforce roster, department designations, reporting lines, and compensation profiles.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs px-3 py-1 font-semibold">
-            {employees.length} Total Registered Users
-          </Badge>
+        {/* Mobile: Title shown above */}
+        <div className="space-y-1 sm:hidden">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl tracking-tight">Employees Directory</h1>
+            <Badge variant="secondary" className="font-mono text-xs">
+              {employees.length}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Workforce roster and employee profile management.
+          </p>
+        </div>
+
+        {/* Controls: on mobile = full-width row, desktop = stacked column on right */}
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="flex items-center justify-between gap-2 sm:justify-end flex-wrap">
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-9 w-9 shrink-0"
+              aria-label="Refresh employees"
+              onClick={() => refetch()}
+              disabled={loading}
+              title="Refresh employee directory"
+            >
+              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <Card className="border shadow-xs bg-card">
-        <div className="p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Search by name, ID, email, phone, role..."
-              className="pl-9 h-9 text-xs"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="h-9 text-xs w-[170px]">
-                <SelectValue placeholder="All Departments" />
-              </SelectTrigger>
-              <SelectContent className="text-xs">
-                <SelectItem value="all">All Departments</SelectItem>
-                {departments.map((d) => (
-                  <SelectItem key={d.id} value={String(d.id)}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-9 text-xs w-[130px]">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent className="text-xs">
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Minimal Search & Filter Toolbar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-48 sm:w-60">
+          <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, ID, phone..."
+            className="pl-8 h-8 text-xs w-full bg-background"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
         </div>
 
-        {/* Table */}
-        <CardContent className="p-0 border-t">
+        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+          <SelectTrigger className="h-8 text-xs w-[150px] shrink-0">
+            <SelectValue placeholder="All Departments" />
+          </SelectTrigger>
+          <SelectContent className="text-xs">
+            <SelectItem value="all">All Departments</SelectItem>
+            {departments.map((d) => (
+              <SelectItem key={d.id} value={String(d.id)}>
+                {d.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-8 text-xs w-[120px] shrink-0">
+            <SelectValue placeholder="All Status" />
+          </SelectTrigger>
+          <SelectContent className="text-xs">
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1 shrink-0"
+            onClick={handleResetFilters}
+            title="Reset filters"
+          >
+            <X className="size-3.5" />
+            <span className="hidden sm:inline">Reset</span>
+          </Button>
+        )}
+      </div>
+
+      {/* Table Card */}
+      <Card className="border shadow-2xs overflow-hidden">
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-muted/40 border-b text-muted-foreground font-semibold">
+              <thead className="bg-muted/50 border-b text-muted-foreground font-semibold">
                 <tr>
                   <th className="py-3 px-4 text-left">EMP ID</th>
                   <th className="py-3 px-4 text-left">Employee Name</th>
@@ -241,8 +301,18 @@ export default function EmployeesDirectoryPage() {
               <tbody className="divide-y divide-border/60">
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-muted-foreground">
-                      No employee records found.
+                    <td colSpan={9} className="h-48 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="rounded-full bg-muted p-3">
+                          <Users className="size-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-base font-medium text-foreground">No employees found</p>
+                        <p className="text-xs text-muted-foreground max-w-sm">
+                          {hasActiveFilters
+                            ? "No employee records match your selected filter criteria."
+                            : "No employees registered yet."}
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 ) : (

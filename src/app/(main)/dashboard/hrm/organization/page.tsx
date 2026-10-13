@@ -10,6 +10,7 @@ import {
   Trash2,
   UserCheck,
   Layers,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -147,50 +148,72 @@ export default function OrganizationStructurePage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1680px] mx-auto w-full">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            Organization Structure & Reporting Hierarchy
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Visual company hierarchy (CEO/MD → Management → Marketing / Sales / Accounts), reporting lines, and departments.
+    <div className="flex flex-col gap-6 w-full">
+      {/* Header + Toolbar (Orders page pattern) */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        {/* Left: Title + description */}
+        <div className="space-y-1 hidden sm:block">
+          <h1 className="text-3xl tracking-tight">Organization Structure</h1>
+          <p className="text-muted-foreground text-sm">
+            Visual company hierarchy, reporting lines, operational departments, and official job designations.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setEditingDept(null);
-              setDeptForm({ name: "", code: "", parent_id: "", description: "" });
-              setDeptModalOpen(true);
-            }}
-            className="gap-1.5 shadow-2xs"
-          >
-            <PlusCircle className="size-4" />
-            <span>Add Department</span>
-          </Button>
+        {/* Mobile: Title shown above */}
+        <div className="space-y-1 sm:hidden">
+          <h1 className="text-2xl tracking-tight">Organization Structure</h1>
+          <p className="text-muted-foreground text-sm">
+            Visual company hierarchy, reporting lines, and departments.
+          </p>
+        </div>
 
-          <Button
-            size="sm"
-            onClick={() => {
-              setEditingDesig(null);
-              setDesigForm({
-                department_id: allDepartments[0]?.id || "",
-                title: "",
-                grade: "Executive",
-                description: "",
-              });
-              setDesigModalOpen(true);
-            }}
-            className="gap-1.5 shadow-xs"
-          >
-            <PlusCircle className="size-4" />
-            <span>Add Designation</span>
-          </Button>
+        {/* Controls: on mobile = full-width row, desktop = stacked column on right */}
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="flex items-center justify-between gap-2 sm:justify-end flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setEditingDept(null);
+                setDeptForm({ name: "", code: "", parent_id: "", description: "" });
+                setDeptModalOpen(true);
+              }}
+              className="gap-1.5 h-9"
+            >
+              <PlusCircle className="size-4" />
+              <span>Add Department</span>
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditingDesig(null);
+                setDesigForm({
+                  department_id: allDepartments[0]?.id || "",
+                  title: "",
+                  grade: "Executive",
+                  description: "",
+                });
+                setDesigModalOpen(true);
+              }}
+              className="gap-1.5 h-9"
+            >
+              <PlusCircle className="size-4" />
+              <span>Add Designation</span>
+            </Button>
+
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-9 w-9 shrink-0"
+              aria-label="Refresh organization data"
+              onClick={() => refetch()}
+              disabled={loading}
+              title="Refresh organization structure"
+            >
+              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
       </div>
 

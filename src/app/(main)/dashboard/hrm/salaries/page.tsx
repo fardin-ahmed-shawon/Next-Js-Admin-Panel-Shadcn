@@ -351,43 +351,70 @@ export default function SalaryManagementPage() {
   }, [salaries, searchQuery]);
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1680px] mx-auto w-full">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            Salary & Incentive Rules Engine
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Dynamic incentive rules (delivered orders, sales value, collections, upsells & extra hours) integrated with monthly payroll.
+    <div className="flex flex-col gap-6 w-full">
+      {/* Header + Toolbar (Orders page pattern) */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        {/* Left: Title + description */}
+        <div className="space-y-1 hidden sm:block">
+          <h1 className="text-3xl tracking-tight">Salary &amp; Payroll Management</h1>
+          <p className="text-muted-foreground text-sm">
+            Dynamic incentive rules, performance commissions, work hour policies, and automated monthly payroll.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setPreviewUserId(employees[0]?.id ? String(employees[0].id) : "");
-              setPreviewResult(null);
-              setPreviewModalOpen(true);
-            }}
-            className="gap-2 text-xs"
-          >
-            <Target className="size-4 text-primary" />
-            <span>Test / Preview Incentive</span>
-          </Button>
+        {/* Mobile: Title shown above */}
+        <div className="space-y-1 sm:hidden">
+          <h1 className="text-2xl tracking-tight">Salary &amp; Payroll</h1>
+          <p className="text-muted-foreground text-sm">
+            Incentive rules, performance commissions, and monthly payroll.
+          </p>
+        </div>
 
-          <Button
-            onClick={() => {
-              setGenMonth(selectedMonth);
-              setGenYear(selectedYear);
-              setGenerateModalOpen(true);
-            }}
-            className="gap-2 text-xs shadow-xs"
-          >
-            <Sparkles className="size-4" />
-            <span>Process Monthly Payroll</span>
-          </Button>
+        {/* Controls: on mobile = full-width row, desktop = stacked column on right */}
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="flex items-center justify-between gap-2 sm:justify-end flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setPreviewUserId(employees[0]?.id ? String(employees[0].id) : "");
+                setPreviewResult(null);
+                setPreviewModalOpen(true);
+              }}
+              className="gap-1.5 h-9 text-xs"
+            >
+              <Target className="size-4 text-primary" />
+              <span>Test / Preview Incentive</span>
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => {
+                setGenMonth(selectedMonth);
+                setGenYear(selectedYear);
+                setGenerateModalOpen(true);
+              }}
+              className="gap-1.5 h-9 text-xs"
+            >
+              <Sparkles className="size-4" />
+              <span>Process Payroll</span>
+            </Button>
+
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-9 w-9 shrink-0"
+              aria-label="Refresh payroll data"
+              onClick={() => {
+                refetch();
+                refetchRules();
+              }}
+              disabled={loading || rulesLoading}
+              title="Refresh payroll data"
+            >
+              <RefreshCw className={`size-4 ${loading || rulesLoading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
       </div>
 
