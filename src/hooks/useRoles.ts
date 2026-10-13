@@ -59,6 +59,17 @@ export interface PageAccess extends Partial<Record<`orders_history_${import("@/l
   product_percent: number;
   customer_report: number;
   employee_report: number;
+  performance_sales?: number;
+  performance_packing?: number;
+  performance_returns?: number;
+  performance_support_raised?: number;
+  performance_support_handled?: number;
+  employee_report_all?: number;
+  employee_report_reporting_team?: number;
+  hrm_all_leaderboard?: number;
+  hrm_team_leaderboard?: number;
+  hrm_all_department_performance?: number;
+  hrm_team_department_performance?: number;
   payment_report: number;
   parcel_report: number;
   courier_report: number;

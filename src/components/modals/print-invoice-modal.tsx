@@ -28,7 +28,7 @@ interface PrintInvoiceModalProps {
   workflow?: "packing";
 }
 
-export function PrintInvoiceModal({ open, onOpenChange, orderIds, type, onSuccess, workflow }: PrintInvoiceModalProps) {
+export function PrintInvoiceModal({ open, onOpenChange, orderIds, type, onSuccess }: PrintInvoiceModalProps) {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const handleConfirm = async () => {
@@ -49,37 +49,17 @@ export function PrintInvoiceModal({ open, onOpenChange, orderIds, type, onSucces
         throw new Error(err?.message || "Request failed");
       }
 
-      // Automation: Update order status to "Ready To Ship"
-      try {
-        const selectedIds = Array.isArray(orderIds) ? orderIds : [orderIds];
-        const statusResponse = await fetchClient(
-          `${getApiBaseUrl()}${workflow === "packing" ? "order-workflows/packing/ready" : "orders/bulk-update-status"}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ order_nos: selectedIds, order_status: "Ready To Ship" }),
-          },
-        );
-
-        if (!statusResponse.ok) {
-          const error = await statusResponse.json().catch(() => ({}));
-          throw new Error(error.message || "Invoice saved, but the order status could not be updated.");
-        }
-
-        // Auto-refresh the orders table data globally
-        const ordersEndpoint = process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders";
-        mutate(
-          (key: any) => {
-            if (typeof key === "string") return key.includes(ordersEndpoint);
-            if (Array.isArray(key)) return key.some((k) => typeof k === "string" && k.includes(ordersEndpoint));
-            return false;
-          },
-          undefined,
-          { revalidate: true },
-        );
-      } catch (statusErr) {
-        throw statusErr;
-      }
+      // Auto-refresh the orders table data globally
+      const ordersEndpoint = process.env.NEXT_PUBLIC_API_WEB_ORDERS || "orders";
+      mutate(
+        (key: any) => {
+          if (typeof key === "string") return key.includes(ordersEndpoint);
+          if (Array.isArray(key)) return key.some((k) => typeof k === "string" && k.includes(ordersEndpoint));
+          return false;
+        },
+        undefined,
+        { revalidate: true },
+      );
 
       toast.success("Invoice print status saved successfully");
       if (onSuccess) onSuccess();
@@ -95,8 +75,8 @@ export function PrintInvoiceModal({ open, onOpenChange, orderIds, type, onSucces
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-          <AlertDialogDescription>All invoiced Printed !</AlertDialogDescription>
+          <AlertDialogTitle>Confirm invoice printing</AlertDialogTitle>
+          <AlertDialogDescription>Confirm the invoices were printed. Eligible orders will become Ready to Ship. Packing credit is recorded once per order.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
