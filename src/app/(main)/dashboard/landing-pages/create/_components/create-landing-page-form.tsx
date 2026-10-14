@@ -13,7 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchClient } from "@/lib/fetch-client";
-import { type LandingPage, landingImage, landingPublicUrl, landingRequest } from "@/lib/landing-pages";
+import { LandingProductOptions } from "./landing-product-options";
+import { type LandingProductSelection, type LandingPage, landingImage, landingPublicUrl, landingRequest } from "@/lib/landing-pages";
 
 type ImageValue = { path: string; file?: File };
 type ImageRow = ImageValue & { key: string };
@@ -31,6 +32,7 @@ const empty = {
   why_choose_bottom_title: "",
   review_main_title: "",
   checkout_main_title: "",
+  closer_look_title: "A CLOSER LOOK",
   yt_link: "",
 };
 
@@ -131,6 +133,7 @@ function moved<T>(rows: T[], index: number, direction: number) {
 
 export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
   const router = useRouter();
+  const [selections, setSelections] = useState<LandingProductSelection[]>([]);
   const [fields, setFields] = useState(empty);
   const [homeImage, setHomeImage] = useState<ImageValue>({ path: "" });
   const [featureImage, setFeatureImage] = useState<ImageValue>({ path: "" });
@@ -160,7 +163,7 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
           ) as typeof empty,
         );
         targetStatusRef.current = (data.status as "draft" | "published") || "draft";
-        setProductName(data.product?.title || `Product #${data.product_id}`);
+        setSelections(data.product_selections || [{ product_id: data.product_id, variant_mode: "all", variant_ids: [] }]);
         setHomeImage({ path: data.home_img });
         setFeatureImage({ path: data.feature_img });
         setFeatures(data.features.map((row) => ({ ...row, key: uid() })));
@@ -245,6 +248,7 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
       "payload",
       JSON.stringify({
         ...fields,
+        product_selections: selections,
         status: effectiveStatus,
         home_img: serializeImage(homeImage),
         feature_img: serializeImage(featureImage),
@@ -286,6 +290,7 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
     ["why_choose_bottom_title", "Why choose closing title"],
     ["review_main_title", "Reviews heading"],
     ["checkout_main_title", "Order section heading"],
+    ["closer_look_title", "Gallery heading (A CLOSER LOOK)"],
   ] as const;
   return (
     <form onSubmit={save} className="space-y-6 pb-12">
@@ -348,11 +353,7 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
             <CardTitle>1. Choose one product</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {productName && (
-              <div className="rounded-lg border bg-muted/40 p-3 font-medium">
-                {productName} <span className="text-muted-foreground text-sm">(#{fields.product_id})</span>
-              </div>
-            )}
+            {selections.map(selection => <LandingProductOptions key={selection.product_id} value={selection} primary={fields.product_id === selection.product_id} onPrimary={() => field("product_id", selection.product_id)} onChange={next => setSelections(prev => prev.map(item => item.product_id === next.product_id ? next : item))} onRemove={() => { const remaining = selections.filter(item => item.product_id !== selection.product_id); setSelections(remaining); if (fields.product_id === selection.product_id) field("product_id", remaining[0]?.product_id || 0); }} />)}
             <label htmlFor="search-products-by-title-or-sku" className="block space-y-2 font-medium text-sm">
               <span>Search products by title or SKU</span>
               <Input
@@ -383,8 +384,8 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
                     key={product.id}
                     className="block w-full border-b p-3 text-left hover:bg-muted"
                     onClick={() => {
-                      field("product_id", product.id);
-                      setProductName(product.title);
+                      if (!selections.some(item => item.product_id === product.id)) setSelections(prev => [...prev, { product_id: product.id, variant_mode: "all", variant_ids: [] }]);
+                      if (!fields.product_id) field("product_id", product.id);
                       setQuery("");
                     }}
                   >
@@ -394,7 +395,7 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
               </div>
             )}
             <p className="text-muted-foreground text-sm">
-              Prices, color/size options, variant images and available stock stay linked to this product automatically.
+              Add products and bundles, then choose which variants or packs customers can select directly in checkout.
             </p>
           </CardContent>
         </Card>

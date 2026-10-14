@@ -1,9 +1,12 @@
 import { fetchClient } from "@/lib/fetch-client";
 
 export type PageImage = { img: string };
+export type LandingProductSelection = { product_id: number; variant_mode: "all" | "selected"; variant_ids: number[] };
 export interface LandingPage {
   id: number;
   product_id: number;
+  product_selections?: LandingProductSelection[];
+  closer_look_title?: string;
   product?: { id: number; title: string };
   slug: string;
   status: "draft" | "published";
