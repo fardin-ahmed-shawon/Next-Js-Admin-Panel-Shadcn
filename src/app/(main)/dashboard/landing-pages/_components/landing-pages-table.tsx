@@ -73,6 +73,30 @@ export function LandingPagesTable() {
       setDeleting(null);
     }
   }
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
+  async function toggleStatus(row: LandingPage) {
+    const nextStatus = row.status === "published" ? "draft" : "published";
+    setUpdatingStatus(row.id);
+    try {
+      await landingRequest(`/${row.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      setRows((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, status: nextStatus } : r)),
+      );
+      toast.success(
+        nextStatus === "published"
+          ? `“${row.home_title}” is now published.`
+          : `“${row.home_title}” switched to draft.`,
+      );
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setUpdatingStatus(null);
+    }
+  }
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -170,6 +194,15 @@ export function LandingPagesTable() {
                           Copy link
                         </Button>
                       )}
+                      <Button
+                        variant={row.status === "published" ? "outline" : "default"}
+                        size="sm"
+                        disabled={updatingStatus === row.id || deleting !== null}
+                        className={row.status === "published" ? "" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+                        onClick={() => toggleStatus(row)}
+                      >
+                        {updatingStatus === row.id ? "Saving…" : row.status === "published" ? "Unpublish" : "Publish"}
+                      </Button>
                       <Button asChild variant="outline" size="sm">
                         <Link href={`/dashboard/landing-pages/${row.id}/edit`}>Edit</Link>
                       </Button>

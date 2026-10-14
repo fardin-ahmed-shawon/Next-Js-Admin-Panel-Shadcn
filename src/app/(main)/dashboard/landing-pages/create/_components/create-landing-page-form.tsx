@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { ArrowDown, ArrowUp, ImagePlus, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Globe, ImagePlus, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -147,6 +147,7 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [loadError, setLoadError] = useState("");
+  const targetStatusRef = useRef<"draft" | "published">("published");
 
   useEffect(() => {
     if (!pageId) return;
@@ -158,6 +159,7 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
             Object.keys(empty).map((key) => [key, data[key as keyof typeof empty] ?? empty[key as keyof typeof empty]]),
           ) as typeof empty,
         );
+        targetStatusRef.current = (data.status as "draft" | "published") || "draft";
         setProductName(data.product?.title || `Product #${data.product_id}`);
         setHomeImage({ path: data.home_img });
         setFeatureImage({ path: data.feature_img });
@@ -238,10 +240,12 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
       body.append(`uploads[${key}]`, image.file);
       return `upload:${key}`;
     };
+    const effectiveStatus = targetStatusRef.current || fields.status || "draft";
     body.append(
       "payload",
       JSON.stringify({
         ...fields,
+        status: effectiveStatus,
         home_img: serializeImage(homeImage),
         feature_img: serializeImage(featureImage),
         features: features.map(({ title, description }) => ({ title, description })),
@@ -254,7 +258,7 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
     setSaving(true);
     try {
       await landingRequest(pageId ? `/${pageId}` : "", { method: "POST", body });
-      toast.success(fields.status === "published" ? "Landing page published." : "Draft saved.");
+      toast.success(effectiveStatus === "published" ? "Landing page published successfully." : "Draft saved successfully.");
       router.push("/dashboard/landing-pages");
       router.refresh();
     } catch (err) {
@@ -287,14 +291,56 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
     <form onSubmit={save} className="space-y-6 pb-12">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl tracking-tight">{pageId ? "Edit Landing Page" : "Create Landing Page"}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl tracking-tight">{pageId ? "Edit Landing Page" : "Create Landing Page"}</h1>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                fields.status === "published"
+                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {fields.status === "published" ? "Published" : "Draft"}
+            </span>
+          </div>
           <p className="mt-1 text-muted-foreground text-sm">
             Tell your product’s story and turn visitors into customers.
           </p>
         </div>
-        <Button variant="outline" asChild>
-          <Link href="/dashboard/landing-pages">All landing pages</Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/landing-pages">All landing pages</Link>
+          </Button>
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={saving}
+            onClick={() => {
+              targetStatusRef.current = "draft";
+              field("status", "draft");
+            }}
+          >
+            {saving && targetStatusRef.current === "draft" && <Loader2 className="mr-2 size-4 animate-spin" />}
+            Save draft
+          </Button>
+          <Button
+            type="submit"
+            variant="default"
+            disabled={saving}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={() => {
+              targetStatusRef.current = "published";
+              field("status", "published");
+            }}
+          >
+            {saving && targetStatusRef.current === "published" ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <Globe className="mr-2 size-4" />
+            )}
+            {pageId && fields.status === "published" ? "Save & update" : "Publish page"}
+          </Button>
+        </div>
       </div>
       <fieldset disabled={saving} className="space-y-6">
         <Card>
@@ -395,15 +441,19 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
                 </span>
               </label>
               <label htmlFor="visibility" className="space-y-2 font-medium text-sm">
-                <span>Visibility</span>
+                <span>Visibility & Status</span>
                 <select
                   id="visibility"
-                  className="h-9 w-full rounded-md border bg-background px-3"
+                  className="h-9 w-full rounded-md border bg-background px-3 font-normal"
                   value={fields.status}
-                  onChange={(e) => field("status", e.target.value)}
+                  onChange={(e) => {
+                    const nextStatus = e.target.value as "draft" | "published";
+                    field("status", nextStatus);
+                    targetStatusRef.current = nextStatus;
+                  }}
                 >
                   <option value="draft">Draft — hidden from visitors</option>
-                  <option value="published">Published — public</option>
+                  <option value="published">Published — live & public</option>
                 </select>
               </label>
             </div>
@@ -572,11 +622,50 @@ export function CreateLandingPageForm({ pageId }: { pageId?: string }) {
             {error}
           </p>
         )}
-        <div className="flex justify-end gap-3">
-          <Button type="submit" disabled={saving}>
-            {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-            {saving ? "Saving…" : fields.status === "published" ? "Save & publish" : "Save draft"}
-          </Button>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Status:</span>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                fields.status === "published"
+                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {fields.status === "published" ? "Published (Live)" : "Draft (Hidden)"}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              type="submit"
+              variant="outline"
+              disabled={saving}
+              onClick={() => {
+                targetStatusRef.current = "draft";
+                field("status", "draft");
+              }}
+            >
+              {saving && targetStatusRef.current === "draft" && <Loader2 className="mr-2 size-4 animate-spin" />}
+              Save draft
+            </Button>
+            <Button
+              type="submit"
+              variant="default"
+              disabled={saving}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => {
+                targetStatusRef.current = "published";
+                field("status", "published");
+              }}
+            >
+              {saving && targetStatusRef.current === "published" ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Globe className="mr-2 size-4" />
+              )}
+              {pageId && fields.status === "published" ? "Save & update page" : "Publish landing page"}
+            </Button>
+          </div>
         </div>
       </fieldset>
     </form>

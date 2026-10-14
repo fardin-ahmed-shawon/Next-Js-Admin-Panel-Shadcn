@@ -20,7 +20,8 @@ export function GtmTab() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}web-settings`);
+        const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+        const response = await fetchClient(`${base}/web-settings`);
         if (response.ok) {
           const res = await response.json();
           if (res.success && res.data) {
@@ -45,7 +46,8 @@ export function GtmTab() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await fetchClient(`${process.env.NEXT_PUBLIC_API_BASE_URL}web-settings`, {
+      const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+      const response = await fetchClient(`${base}/web-settings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -114,21 +116,80 @@ export function GtmTab() {
         </ol>
       </div>
 
-      <div className="rounded-lg border p-4 space-y-3">
-        <div className="flex items-center justify-between gap-6">
+      {/* Purchase Event Trigger Selection */}
+      <div className="rounded-xl border bg-card p-5 space-y-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
           <div className="space-y-1">
-            <label htmlFor="purchase-event-source" className="text-sm font-semibold">Purchase event trigger</label>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-base text-foreground">Purchase Event Trigger</span>
+              <span
+                className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
+                  purchaseEventSource === "admin_confirmed"
+                    ? "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300"
+                    : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                }`}
+              >
+                {purchaseEventSource === "admin_confirmed" ? "Trigger: Order Confirmed" : "Trigger: Place Order"}
+              </span>
+            </div>
             <p className="text-xs text-muted-foreground">
-              {purchaseEventSource === "admin_confirmed"
-                ? "Fire purchase when an order first changes to Confirmed in the Admin Panel."
-                : "Fire purchase immediately after the customer places the order in the Store-Front."}
+              Determine when the GTM / Facebook Pixel purchase event fires: immediately after place order or after order status is confirmed.
             </p>
           </div>
-          <Switch id="purchase-event-source" checked={purchaseEventSource === "admin_confirmed"} onCheckedChange={(checked) => setPurchaseEventSource(checked ? "admin_confirmed" : "storefront")} />
+          <div className="flex items-center gap-3">
+            <Switch
+              id="purchase-event-source"
+              checked={purchaseEventSource === "admin_confirmed"}
+              onCheckedChange={(checked) => setPurchaseEventSource(checked ? "admin_confirmed" : "storefront")}
+            />
+          </div>
         </div>
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span className={purchaseEventSource === "storefront" ? "font-semibold text-foreground" : ""}>Direct Place Order</span>
-          <span className={purchaseEventSource === "admin_confirmed" ? "font-semibold text-foreground" : ""}>Confirmed Order from Admin</span>
+
+        {/* Two interactive option cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setPurchaseEventSource("storefront")}
+            className={`rounded-lg border p-3.5 transition-all text-left space-y-1.5 ${
+              purchaseEventSource === "storefront"
+                ? "border-primary bg-primary/5 ring-1 ring-primary"
+                : "border-border hover:bg-muted/40"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-sm text-foreground flex items-center gap-1.5">
+                🛒 After Place Order
+              </span>
+              {purchaseEventSource === "storefront" && (
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Fires the <code className="text-[11px] bg-muted px-1 rounded">purchase</code> event immediately after the customer places the order on the Store-Front or Landing Page.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setPurchaseEventSource("admin_confirmed")}
+            className={`rounded-lg border p-3.5 transition-all text-left space-y-1.5 ${
+              purchaseEventSource === "admin_confirmed"
+                ? "border-primary bg-primary/5 ring-1 ring-primary"
+                : "border-border hover:bg-muted/40"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-sm text-foreground flex items-center gap-1.5">
+                ✅ After Order Confirmed
+              </span>
+              {purchaseEventSource === "admin_confirmed" && (
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Fires the <code className="text-[11px] bg-muted px-1 rounded">purchase</code> event only after an administrator confirms the order in the Admin Panel (filters fake/test orders).
+            </p>
+          </button>
         </div>
       </div>
       <div className="space-y-6">
