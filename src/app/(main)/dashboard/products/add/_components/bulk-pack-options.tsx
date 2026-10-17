@@ -41,7 +41,7 @@ export function BulkPackOptions({
         <table className="w-full text-sm">
           <thead>
             <tr>
-              {["Quantity", "Unit", "SKU", "Regular price", "Selling price", "Available packs", ""].map((label) => (
+              {["Quantity", "Unit", "SKU", "Regular price", "Selling price", "Available packs", "Visibility", ""].map((label) => (
                 <th key={label} className="p-2 text-left">
                   {label}
                 </th>
@@ -102,6 +102,18 @@ export function BulkPackOptions({
                 </td>
                 <td className="p-2">{v.stock || "Calculated after saving"}</td>
                 <td className="p-2">
+                  <select
+                    aria-label="Pack visibility"
+                    className="h-9 rounded-md border bg-background px-2 text-xs"
+                    value={v.status || "active"}
+                    onChange={(e) => update(v.id, "status" as any, e.target.value)}
+                  >
+                    <option value="active">Visible Everywhere</option>
+                    <option value="hide_storefront">Hide from Store Front</option>
+                    <option value="hidden">Hide from Full System</option>
+                  </select>
+                </td>
+                <td className="p-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -132,6 +144,7 @@ export function BulkPackOptions({
               stock: "",
               regularPrice: "",
               sellingPrice: "",
+              status: "active",
             },
           ])
         }

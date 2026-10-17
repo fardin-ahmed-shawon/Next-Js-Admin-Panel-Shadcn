@@ -123,7 +123,7 @@ function CartItemRow({
   }, [colorsRes]);
 
   const variants = React.useMemo(() => {
-    return item.product.variants || [];
+    return (item.product.variants || []).filter((v: any) => v.status !== "hidden");
   }, [item.product.variants]);
 
   const sizes = React.useMemo(() => {
@@ -511,7 +511,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
         product.inventory_mode === "shared_bulk" ? undefined : prev.find((i) => i.product.id === product.id);
       if (existing) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
 
-      const variants = product.variants || [];
+      const variants = (product.variants || []).filter((v: any) => v.status !== "hidden");
       const firstVariant = variants.length > 0 ? variants[0] : null;
 
       const initialSize = firstVariant?.option_label || firstVariant?.size?.label || "";
@@ -864,14 +864,14 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                             <span className="text-sm font-semibold tabular-nums">
                               {(() => {
                                 if (p.has_variant_wise_pricing || (p.has_variants && p.variants?.length > 0)) {
-                                  const prices =
-                                    p.variants
-                                      ?.map((v: any) => {
-                                        const vp = v.variant_pricing || v.variantPricing;
-                                        return vp?.selling_price ?? v.selling_price;
-                                      })
-                                      .filter((pr: any) => pr !== undefined && pr !== null && !isNaN(Number(pr)))
-                                      .map(Number) || [];
+                                  const prices = (p.variants || [])
+                                    .filter((v: any) => v.status !== "hidden")
+                                    .map((v: any) => {
+                                      const vp = v.variant_pricing || v.variantPricing;
+                                      return vp?.selling_price ?? v.selling_price;
+                                    })
+                                    .filter((pr: any) => pr !== undefined && pr !== null && !isNaN(Number(pr)))
+                                    .map(Number);
 
                                   if (prices.length > 0) {
                                     const min = Math.min(...prices);

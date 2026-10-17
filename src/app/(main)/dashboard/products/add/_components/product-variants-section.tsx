@@ -45,6 +45,7 @@ export interface Variant {
   purchasePrice?: string;
   regularPrice?: string;
   sellingPrice?: string;
+  status?: string;
 }
 
 interface ProductVariantsSectionProps {
@@ -521,10 +522,10 @@ export function ProductVariantsSection({
             <Button variant="outline" size="sm" onClick={autoGenerateSKUs}>
               <Settings2 className="size-4 mr-2" /> Auto Generate SKUs
             </Button>
-            <Button variant="outline" size="sm" onClick={() => {}} className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
+            <Button variant="outline" size="sm" onClick={() => setVariants(prev => prev.map(v => ({ ...v, status: 'active' })))} className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
               <Check className="size-4 mr-2" /> Enable All
             </Button>
-            <Button variant="outline" size="sm" onClick={() => {}} className="text-amber-600 hover:text-amber-700 hover:bg-amber-50">
+            <Button variant="outline" size="sm" onClick={() => setVariants(prev => prev.map(v => ({ ...v, status: 'hidden' })))} className="text-amber-600 hover:text-amber-700 hover:bg-amber-50">
               <Ban className="size-4 mr-2" /> Disable All
             </Button>
             <Button variant="outline" size="sm" onClick={handleDeleteSelected} className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto">
@@ -647,9 +648,16 @@ export function ProductVariantsSection({
                         />
                       </td>
                       <td className="p-4 text-center">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
-                          Active
-                        </span>
+                        <select
+                          aria-label="Variant visibility"
+                          className="h-8 rounded-md border bg-background px-2 text-xs font-medium"
+                          value={v.status || "active"}
+                          onChange={(e) => updateVariant(v.id, "status" as any, e.target.value)}
+                        >
+                          <option value="active">Visible Everywhere</option>
+                          <option value="hide_storefront">Hide from Storefront</option>
+                          <option value="hidden">Hide from Full System</option>
+                        </select>
                       </td>
                       <td className="p-4 text-right">
                         <DropdownMenu>

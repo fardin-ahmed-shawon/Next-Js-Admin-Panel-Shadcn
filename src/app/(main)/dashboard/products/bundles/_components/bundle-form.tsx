@@ -13,6 +13,15 @@ import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { fetchClient } from "@/lib/fetch-client";
 
 export default function BundleForm({ bundleId }: { bundleId?: string }) {
@@ -32,8 +41,27 @@ export default function BundleForm({ bundleId }: { bundleId?: string }) {
   const [productSearch, setProductSearch] = useState(""),
     [productCategory, setProductCategory] = useState("all"),
     [searchFocused, setSearchFocused] = useState(false);
+  const [customPackProduct, setCustomPackProduct] = useState<{ product: any; rowIndex: number } | null>(null);
   const thumbnailRef = useRef<HTMLInputElement>(null),
     galleryRef = useRef<HTMLInputElement>(null);
+
+  const handleCustomPackCreated = (variant: any) => {
+    if (!customPackProduct) return;
+    const { product, rowIndex } = customPackProduct;
+    if (!product.variants) product.variants = [];
+    if (!product.variants.some((v: any) => String(v.id) === String(variant.id))) {
+      product.variants.push(variant);
+    }
+    setProducts((prev) =>
+      prev.map((p) =>
+        String(p.id) === String(product.id)
+          ? { ...p, variants: [...(p.variants || []), variant] }
+          : p
+      )
+    );
+    patch(rowIndex, { variantId: String(variant.id) });
+    setCustomPackProduct(null);
+  };
   useEffect(() => {
     void Promise.all([
       fetchClient(api + "products?per_page=1000").then((r) => r.json()),
@@ -369,19 +397,35 @@ export default function BundleForm({ bundleId }: { bundleId?: string }) {
                           </div>
                         </div>
                         {(product?.has_variants || product?.inventory_mode === "shared_bulk") && (
-                          <Select value={row.variantId} onValueChange={(value) => patch(index, { variantId: value })}>
-                            <SelectTrigger className="w-full md:w-44">
-                              <SelectValue placeholder="Variant / pack" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {product?.variants?.map((item: any) => (
-                                <SelectItem key={item.id} value={String(item.id)}>
-                                  {item.option_label ||
-                                    [item.size?.label, item.color?.label].filter(Boolean).join(" / ")}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-1.5 w-full md:w-auto">
+                            <Select value={row.variantId} onValueChange={(value) => patch(index, { variantId: value })}>
+                              <SelectTrigger className="w-full md:w-44">
+                                <SelectValue placeholder="Variant / pack" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {product?.variants
+                                  ?.filter((item: any) => item.status !== "hidden")
+                                  .map((item: any) => (
+                                    <SelectItem key={item.id} value={String(item.id)}>
+                                      {item.option_label ||
+                                        [item.size?.label, item.color?.label].filter(Boolean).join(" / ")}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                            {product?.inventory_mode === "shared_bulk" && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-9 px-2.5 text-xs shrink-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-300 dark:border-blue-700"
+                                onClick={() => setCustomPackProduct({ product, rowIndex: index })}
+                                title="Add Custom Pack Size for Bundle"
+                              >
+                                <Plus className="size-3.5 mr-1" /> Custom Pack
+                              </Button>
+                            )}
+                          </div>
                         )}
                         <div className="flex items-center gap-2">
                           <Button
@@ -548,6 +592,213 @@ export default function BundleForm({ bundleId }: { bundleId?: string }) {
           </Card>
         </div>
       </div>
+
+      <CustomPackDialog
+        target={customPackProduct}
+        onClose={() => setCustomPackProduct(null)}
+        onCreated={handleCustomPackCreated}
+        api={api}
+      />
     </div>
+  );
+}
+
+function CustomPackDialog({
+  target,
+  onClose,
+  onCreated,
+  api,
+}: {
+  target: { product: any; rowIndex: number } | null;
+  onClose: () => void;
+  onCreated: (variant: any) => void;
+  api: string;
+}) {
+  const product = target?.product;
+  const isWeight = ["kg", "g"].includes(product?.inventory_unit_code || "kg");
+  const units = isWeight ? ["g", "kg"] : ["ml", "l"];
+
+  const [quantity, setQuantity] = useState("250");
+  const [unit, setUnit] = useState(units[0]);
+  const [price, setPrice] = useState("");
+  const [visibility, setVisibility] = useState<"active" | "hide_storefront">("hide_storefront");
+  const [submitting, setSubmitting] = useState(false);
+
+  // Auto calculate estimated price when qty or unit changes
+  useEffect(() => {
+    if (!product) return;
+    const qtyNum = parseFloat(quantity);
+    if (!qtyNum || qtyNum <= 0) return;
+
+    const factor = unit === "kg" || unit === "l" ? 1000 : 1;
+    const baseQuantity = qtyNum * factor;
+
+    // Derived from product.selling_price
+    const productBase = (product.inventory_unit_code === "kg" || product.inventory_unit_code === "l") ? 1000 : 1;
+    if (product.selling_price && Number(product.selling_price) > 0) {
+      const rate = Number(product.selling_price) / productBase;
+      setPrice(String(Math.round(rate * baseQuantity)));
+      return;
+    }
+
+    // Or from existing variants
+    const sample = (product.variants || []).find(
+      (v: any) => v.base_quantity_per_sale && (v.variant_pricing?.selling_price || v.variantPricing?.selling_price || v.selling_price)
+    );
+    if (sample) {
+      const samplePrice = Number(sample.variant_pricing?.selling_price ?? sample.variantPricing?.selling_price ?? sample.selling_price ?? 0);
+      const rate = samplePrice / Number(sample.base_quantity_per_sale);
+      setPrice(String(Math.round(rate * baseQuantity)));
+    }
+  }, [quantity, unit, product, isWeight]);
+
+  if (!target || !product) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quantity || parseFloat(quantity) <= 0) {
+      toast.error("Enter a valid pack quantity.");
+      return;
+    }
+    const priceNum = Math.round(Number(price));
+    if (isNaN(priceNum) || priceNum <= 0) {
+      toast.error("Enter a valid selling price.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetchClient(`${api}products/${product.id}/custom-pack`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          sale_quantity: parseFloat(quantity),
+          sale_unit_code: unit,
+          unit_price: priceNum,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to create custom pack size.");
+      }
+
+      const variant = data.variant || data.data;
+
+      // If user chose to hide from storefront (exclusive to bundle), update visibility
+      if (visibility === "hide_storefront" && variant?.id) {
+        await fetchClient(`${api}inventory/variants/${variant.id}/visibility`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ status: "hide_storefront" }),
+        });
+        variant.status = "hide_storefront";
+      }
+
+      toast.success(
+        `Custom pack size "${variant.option_label || `${quantity} ${unit.toUpperCase()}`}" added to bundle!`
+      );
+      onCreated(variant);
+    } catch (err: any) {
+      toast.error(err.message || "Unable to create custom pack size.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={Boolean(target)} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Package className="size-5 text-primary" />
+            Add Custom Pack Size
+          </DialogTitle>
+          <DialogDescription>
+            Create a custom pack for <strong>{product.title}</strong>. It draws directly from the shared bulk inventory.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="pack-quantity">Pack Quantity</Label>
+              <Input
+                id="pack-quantity"
+                type="number"
+                step="any"
+                min="0.001"
+                placeholder="e.g. 250"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pack-unit">Unit</Label>
+              <Select value={unit} onValueChange={setUnit}>
+                <SelectTrigger id="pack-unit">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {units.map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {u === "g" ? "Grams (g)" : u === "kg" ? "Kilograms (kg)" : u === "ml" ? "Millilitres (ml)" : "Litres (l)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="pack-price">Unit Selling Price (৳)</Label>
+            <Input
+              id="pack-price"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="e.g. 150"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Estimated based on bulk rate. You can customize the price.
+            </p>
+          </div>
+
+          <div className="space-y-2 rounded-lg border p-3 bg-muted/20">
+            <Label className="text-xs font-semibold">Visibility Option</Label>
+            <RadioGroup
+              value={visibility}
+              onValueChange={(val: any) => setVisibility(val)}
+              className="gap-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="hide_storefront" id="bundle-vis-hide" />
+                <Label htmlFor="bundle-vis-hide" className="text-xs font-normal cursor-pointer">
+                  <span className="font-medium">Exclusive to Bundle</span> (Hide from Storefront catalog)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="active" id="bundle-vis-active" />
+                <Label htmlFor="bundle-vis-active" className="text-xs font-normal cursor-pointer">
+                  <span className="font-medium">Visible Everywhere</span> (Also available on Storefront standalone)
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Creating..." : "Add & Select Pack"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

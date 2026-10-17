@@ -115,7 +115,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
   }, [colorsRes]);
 
   const variants = React.useMemo(() => {
-    return item.product.variants || [];
+    return (item.product.variants || []).filter((v: any) => v.status !== "hidden");
   }, [item.product.variants]);
 
   const sizes = React.useMemo(() => {

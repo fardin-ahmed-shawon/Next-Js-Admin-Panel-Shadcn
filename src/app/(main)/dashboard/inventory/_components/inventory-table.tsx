@@ -34,6 +34,10 @@ import {
   Settings2,
   Trash,
   PackageCheck,
+  Eye,
+  EyeOff,
+  Ban,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -164,12 +168,23 @@ const columns: ColumnDef<any>[] = [
     cell: ({ row }) => {
       const isVariant = row.depth > 0;
       if (isVariant) {
+        const vis = (row.original as any).visibility_status;
         return (
-          <div className="flex items-center pl-6">
+          <div className="flex items-center pl-6 flex-wrap gap-1.5">
             <span className="flex items-center text-sm text-muted-foreground">
               <Pen className="size-3 mr-1.5" />
               {row.original.name}
             </span>
+            {vis === "hide_storefront" && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] h-4 px-1.5 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
+                <EyeOff className="size-2.5 mr-1" /> Storefront Hidden
+              </Badge>
+            )}
+            {vis === "hidden" && (
+              <Badge variant="destructive" className="text-[10px] h-4 px-1.5">
+                <Ban className="size-2.5 mr-1" /> Full System Hidden
+              </Badge>
+            )}
           </div>
         );
       }
@@ -453,6 +468,119 @@ const columns: ColumnDef<any>[] = [
 
 /* ---- Row Actions ---- */
 
+function VariantVisibilityMenu({ variant, mutate }: { variant: any; mutate?: () => void }) {
+  const [updating, setUpdating] = React.useState(false);
+  const status = variant.visibility_status || "active";
+
+  const handleSetVisibility = async (newStatus: "active" | "hide_storefront" | "hidden") => {
+    if (newStatus === status || updating) return;
+    setUpdating(true);
+    try {
+      const res = await fetchClient(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}inventory/variants/${variant.id}/visibility`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Failed to update visibility");
+      }
+      toast.success(
+        newStatus === "active"
+          ? "Variant is now visible everywhere."
+          : newStatus === "hide_storefront"
+          ? "Variant hidden from Store Front."
+          : "Variant hidden from Full System (Admin & Storefront)."
+      );
+      mutate?.();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update visibility");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={updating}
+          className={`h-8 text-xs font-medium ${
+            status === "hide_storefront"
+              ? "text-amber-700 bg-amber-50 border-amber-300 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
+              : status === "hidden"
+              ? "text-rose-700 bg-rose-50 border-rose-300 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {status === "hide_storefront" ? (
+            <>
+              <EyeOff className="mr-1.5 size-3.5" />
+              Storefront Hidden
+            </>
+          ) : status === "hidden" ? (
+            <>
+              <Ban className="mr-1.5 size-3.5" />
+              Full System Hidden
+            </>
+          ) : (
+            <>
+              <Eye className="mr-1.5 size-3.5" />
+              Visible Everywhere
+            </>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuItem
+          onClick={() => handleSetVisibility("active")}
+          className="flex items-center justify-between cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <Eye className="size-4 text-emerald-600" />
+            <div>
+              <p className="font-medium text-xs">Visible Everywhere</p>
+              <p className="text-[10px] text-muted-foreground">Store Front + Admin Panel</p>
+            </div>
+          </div>
+          {status === "active" && <Check className="size-4 text-emerald-600" />}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => handleSetVisibility("hide_storefront")}
+          className="flex items-center justify-between cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <EyeOff className="size-4 text-amber-600" />
+            <div>
+              <p className="font-medium text-xs">Hide From Store Front</p>
+              <p className="text-[10px] text-muted-foreground">Admin only (orders/bundles)</p>
+            </div>
+          </div>
+          {status === "hide_storefront" && <Check className="size-4 text-amber-600" />}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => handleSetVisibility("hidden")}
+          className="flex items-center justify-between cursor-pointer text-destructive focus:text-destructive"
+        >
+          <div className="flex items-center gap-2">
+            <Ban className="size-4 text-destructive" />
+            <div>
+              <p className="font-medium text-xs">Hide From Full System</p>
+              <p className="text-[10px] text-muted-foreground">Hidden from Admin & Store</p>
+            </div>
+          </div>
+          {status === "hidden" && <Check className="size-4 text-destructive" />}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function RowActions({ row, mutate }: { row: any; mutate?: () => void }) {
   const [adjustmentOpen, setAdjustmentOpen] = React.useState(false);
   const [packedOpen, setPackedOpen] = React.useState(false);
@@ -465,7 +593,8 @@ function RowActions({ row, mutate }: { row: any; mutate?: () => void }) {
 
   if (isVariant && parentProduct?.inventory_mode === "shared_bulk") {
     return (
-      <div className="flex w-full justify-end">
+      <div className="flex w-full justify-end items-center gap-2">
+        <VariantVisibilityMenu variant={item} mutate={mutate} />
         <Button
           variant="outline"
           size="sm"
@@ -483,6 +612,34 @@ function RowActions({ row, mutate }: { row: any; mutate?: () => void }) {
           mutate={mutate}
         />
       </div>
+    );
+  }
+
+  if (isVariant) {
+    return (
+      <>
+        <div className="flex w-full justify-end items-center gap-2">
+          <VariantVisibilityMenu variant={item} mutate={mutate} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setAdjustmentOpen(true)}
+            className="h-8 text-xs font-medium"
+          >
+            <Settings2 className="mr-2 size-3.5" />
+            Stock Adjustment
+          </Button>
+        </div>
+
+        <ProductStockAdjustmentModal
+          open={adjustmentOpen}
+          onOpenChange={setAdjustmentOpen}
+          item={item}
+          variantId={variantId}
+          productId={productId}
+          mutate={mutate}
+        />
+      </>
     );
   }
 

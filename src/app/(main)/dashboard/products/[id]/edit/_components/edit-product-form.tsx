@@ -143,10 +143,11 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
         );
       }
 
+      const isProductBulk = (product.inventory_mode || "independent") === "shared_bulk";
       setInventoryMode(product.inventory_mode || "independent");
       setInventoryUnit(product.inventory_unit_code || "kg");
-      setHasVariants(!!product.has_variants);
-      setHasVariantWisePricing(!!product.has_variant_wise_pricing);
+      setHasVariants(isProductBulk || !!product.has_variants);
+      setHasVariantWisePricing(isProductBulk || !!product.has_variant_wise_pricing);
       setHasFreeShipping(!!product.has_free_shipping);
 
       if (product.variants && Array.isArray(product.variants)) {
@@ -168,6 +169,7 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
               purchasePrice: v.variant_pricing?.purchase_price?.toString() || "",
               regularPrice: v.variant_pricing?.regular_price?.toString() || "",
               sellingPrice: v.variant_pricing?.selling_price?.toString() || "",
+              status: v.status || "active",
             };
           }),
         );
@@ -285,7 +287,7 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
         formData.append(`existing_gallery_sizes[]`, m.size || "null");
       });
 
-      if (hasVariants && variants.length > 0) {
+      if ((hasVariants || isBulk) && variants.length > 0) {
         // Filter out temporary string IDs for new variants
         const mappedVariants = variants.map((v) => {
           const mapped: any = { ...v };
@@ -296,7 +298,7 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
           mapped.size = mapped.size || null;
           mapped.available_stock = !isBulk && mapped.stock ? Number(mapped.stock) : undefined;
 
-          if (hasVariantWisePricing) {
+          if (hasVariantWisePricing || isBulk) {
             mapped.purchase_price = mapped.purchasePrice ? Number(mapped.purchasePrice) : undefined;
             mapped.regular_price = mapped.regularPrice ? Number(mapped.regularPrice) : undefined;
             mapped.selling_price = mapped.sellingPrice ? Number(mapped.sellingPrice) : undefined;
@@ -306,6 +308,7 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
           delete mapped.regularPrice;
           delete mapped.sellingPrice;
           delete mapped.stock;
+          mapped.status = v.status || "active";
 
           return mapped;
         });
@@ -314,10 +317,15 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
 
       formData.append("has_free_shipping", hasFreeShipping ? "1" : "0");
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}product/${productId}`, {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
+      const cleanBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+
+      const res = await fetch(`${cleanBase}product/${productId}`, {
         method: "POST", // POST with _method=PUT
         headers: {
           Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: formData,
       });

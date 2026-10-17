@@ -57,6 +57,7 @@ export interface InventoryVariant {
   };
   profit: number;
   status: "In Stock" | "Low Stock" | "Out of Stock" | string;
+  visibility_status?: "active" | "hide_storefront" | "hidden" | string;
 }
 
 export interface InventoryItem {
