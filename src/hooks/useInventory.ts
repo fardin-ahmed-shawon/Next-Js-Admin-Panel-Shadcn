@@ -47,6 +47,7 @@ export interface InventoryVariant {
   packed_weight?: number;
   estimated_packs?: number;
   total_estimated_packs?: number;
+  actual_total_packs?: number;
   sale_quantity?: number | string;
   sale_unit_code?: string;
   base_quantity_per_sale?: number;

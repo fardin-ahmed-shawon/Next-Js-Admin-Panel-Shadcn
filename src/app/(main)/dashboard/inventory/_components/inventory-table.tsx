@@ -254,7 +254,7 @@ const columns: ColumnDef<any>[] = [
           return (
             <div className="flex flex-col gap-1 min-w-[170px]">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[11px] font-semibold px-1.5 py-0 h-5">
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[11px] font-semibold px-1.5 py-0 h-5 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800">
                   Actual: {row.original.packed_qty ?? 0} packs
                 </Badge>
                 <Badge variant="secondary" className="text-[11px] px-1.5 py-0 h-5 font-medium">
@@ -364,15 +364,23 @@ const columns: ColumnDef<any>[] = [
         } else {
           const totalStock = row.original.total_stock ?? row.original.total_estimated_packs ?? row.original.stock ?? 0;
           const reservedStock = row.original.reserved_stock ?? 0;
+          const actualTotal = row.original.actual_total_packs ?? ((row.original.packed_qty ?? 0) + reservedStock);
           return (
-            <div className="flex flex-col gap-0.5">
-              <span className="tabular-nums font-bold text-foreground">
-                {totalStock} packs
-              </span>
-              {reservedStock > 0 && (
+            <div className="flex flex-col gap-1 min-w-[170px]">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[11px] font-semibold px-1.5 py-0 h-5 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800">
+                  Actual: {actualTotal} packs
+                </Badge>
+                <Badge variant="secondary" className="text-[11px] px-1.5 py-0 h-5 font-medium">
+                  Est: {totalStock} packs
+                </Badge>
+              </div>
+              {reservedStock > 0 ? (
                 <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                  ({reservedStock} res)
+                  {row.original.packed_qty ?? 0} rem + {reservedStock} res
                 </span>
+              ) : (
+                <span className="text-[10px] text-muted-foreground">All remaining</span>
               )}
             </div>
           );
