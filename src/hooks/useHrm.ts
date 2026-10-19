@@ -90,7 +90,9 @@ export interface HrmEmployee {
 }
 
 export interface AttendanceRecord {
-  id: number;
+  id: number | string;
+  is_generated?: boolean;
+  can_delete?: boolean;
   user_id: number;
   date: string;
   check_in?: string | null;
@@ -164,6 +166,9 @@ export interface SalaryRecord {
   other_deduction: number;
   total_deduction: number;
   net_salary: number;
+  paid_amount: number;
+  remaining_payable: number;
+  overpaid_amount: number;
   payment_status: "unpaid" | "paid" | "partial";
   payment_method?: string | null;
   payment_date?: string | null;
@@ -377,6 +382,9 @@ export interface HrmWorkHourPolicySummary {
 }
 
 export function useHrmAttendances(params?: {
+  page?: number;
+  per_page?: number;
+  designation_id?: string;
   date?: string;
   month?: number;
   year?: number;
@@ -391,6 +399,9 @@ export function useHrmAttendances(params?: {
   search?: string;
 }) {
   const searchParams = new URLSearchParams();
+  if (params?.page) searchParams.set("page", String(params.page));
+  if (params?.per_page) searchParams.set("per_page", String(params.per_page));
+  if (params?.designation_id) searchParams.set("designation_id", params.designation_id);
   if (params?.date) searchParams.set("date", params.date);
   if (params?.month) searchParams.set("month", String(params.month));
   if (params?.year) searchParams.set("year", String(params.year));
@@ -408,6 +419,7 @@ export function useHrmAttendances(params?: {
   const { data, error, isLoading, mutate } = useSWR(url, fetcher);
   return {
     attendances: (data?.attendances as AttendanceRecord[]) || [],
+    pagination: data?.pagination as { current_page: number; per_page: number; last_page: number; total: number } | undefined,
     summary: data?.summary as {
       total: number;
       present: number;
@@ -567,7 +579,7 @@ export async function importAttendances(data: { rows?: any[]; file?: File }) {
 export async function generatePayroll(month: number, year: number, bonusRate = 0) {
   return hrmApiRequest("salaries/generate", {
     method: "POST",
-    body: JSON.stringify({ month, year, bonus_rate: bonusRate }),
+    body: JSON.stringify({ month, year, bonus: bonusRate }),
   });
 }
 
@@ -1097,4 +1109,8 @@ export async function deleteEmployeeFine(id: number) {
 export function useHrmCalendar(endpoint: string) {
  const { data, error, isLoading, mutate } = useSWR(`${HRM_BASE}/${endpoint}`, fetcher);
  return { data, error, loading: isLoading, refetch: mutate };
+}
+
+export async function deleteAttendances(ids: number[]) {
+  return hrmApiRequest("attendances", { method: "DELETE", body: JSON.stringify({ ids }) });
 }

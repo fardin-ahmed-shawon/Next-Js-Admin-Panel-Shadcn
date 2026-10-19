@@ -115,6 +115,7 @@ export default function SalaryManagementPage() {
     payment_date: new Date().toISOString().split("T")[0],
     transaction_ref: "",
     bonus: 0,
+    paid_amount: 0,
     notes: "",
   });
 
@@ -193,6 +194,7 @@ export default function SalaryManagementPage() {
       payment_date: sal.payment_date || new Date().toISOString().split("T")[0],
       transaction_ref: sal.transaction_ref || "",
       bonus: sal.bonus || 0,
+      paid_amount: sal.paid_amount || 0,
       notes: sal.notes || "",
     });
     setPayModalOpen(true);
@@ -581,7 +583,7 @@ export default function SalaryManagementPage() {
                       <th className="py-3 px-4 text-left">Basic Salary</th>
                       <th className="py-3 px-4 text-left">Allowances</th>
                       <th className="py-3 px-4 text-left">Incentive Commission</th>
-                      <th className="py-3 px-4 text-left">Bonus & Extra Hrs</th>
+                      <th className="py-3 px-4 text-left">Bonus</th>
                       <th className="py-3 px-4 text-left">Overtime</th>
                       <th className="py-3 px-4 text-left">Gross Salary</th>
                       <th className="py-3 px-4 text-left text-rose-600">Fines</th>
@@ -690,7 +692,7 @@ export default function SalaryManagementPage() {
                             {sal.total_deduction > 0 ? `-৳${sal.total_deduction.toLocaleString()}` : "৳0"}
                           </td>
                           <td className="py-3 px-4 font-mono font-extrabold text-sm text-emerald-600 dark:text-emerald-400">
-                            ৳{sal.net_salary.toLocaleString()}
+                            ৳{sal.net_salary.toLocaleString()}<div className="text-[10px] font-normal text-muted-foreground">Paid ৳{(sal.paid_amount || 0).toLocaleString()} · Due ৳{(sal.remaining_payable ?? sal.net_salary).toLocaleString()}</div>{sal.overpaid_amount > 0 && <div className="text-xs text-destructive">Overpaid ৳{sal.overpaid_amount.toLocaleString()}</div>}
                           </td>
                           <td className="py-3 px-4">
                             <Badge
@@ -900,7 +902,7 @@ export default function SalaryManagementPage() {
                             <span className="font-bold text-blue-600">
                               {rule.extra_hours_bonus_rate > 0
                                 ? `৳${rule.extra_hours_bonus_rate}/hr`
-                                : "Standard 1.5x Basic"}
+                                : "Overtime disabled Basic"}
                             </span>
                             <span className="text-[11px] text-muted-foreground ml-1">
                               {rule.extra_hours_min_threshold > 0
@@ -1427,7 +1429,7 @@ export default function SalaryManagementPage() {
                       type="number"
                       min={0}
                       step={1}
-                      placeholder="0 for standard 1.5x basic"
+                      placeholder="0 disables overtime pay"
                       value={ruleForm.extra_hours_bonus_rate || ""}
                       onChange={(e) =>
                         setRuleForm({
@@ -1614,6 +1616,7 @@ export default function SalaryManagementPage() {
                 </Select>
               </div>
 
+              {payForm.payment_status === "partial" && <div className="space-y-1"><Label>Total amount paid so far (৳)</Label><Input type="number" min={activeSalary?.paid_amount || 0} step="0.01" required value={payForm.paid_amount} onChange={e => setPayForm({ ...payForm, paid_amount: Number(e.target.value) })} /><p className="text-muted-foreground">Enter the cumulative amount, including previous payments. Already recorded: ৳{activeSalary?.paid_amount || 0}.</p></div>}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label>Payment Method</Label>
@@ -1747,13 +1750,13 @@ export default function SalaryManagementPage() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Bonus & Extra Hours:</span>
+                      <span className="text-muted-foreground">Bonus:</span>
                       <span className="font-mono font-semibold text-amber-600">
                         ৳{payslipData.bonus.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Overtime Pay:</span>
+                      <span className="text-muted-foreground">Overtime:</span>
                       <span className="font-mono font-semibold text-blue-600">
                         ৳{payslipData.overtime_amount.toLocaleString()}
                       </span>
@@ -1853,7 +1856,7 @@ export default function SalaryManagementPage() {
                 </div>
                 <div className="text-right">
                   <span className="text-2xl font-black text-primary font-mono">
-                    ৳{payslipData.net_salary.toLocaleString()}
+                    ৳{payslipData.net_salary.toLocaleString()}<div className="mt-2 text-sm">Paid: ৳{(payslipData.paid_amount || 0).toLocaleString()} · Remaining: ৳{(payslipData.remaining_payable ?? payslipData.net_salary).toLocaleString()}</div>{payslipData.overpaid_amount > 0 && <div className="text-sm text-destructive">Overpaid: ৳{payslipData.overpaid_amount.toLocaleString()}</div>}
                   </span>
                 </div>
               </div>

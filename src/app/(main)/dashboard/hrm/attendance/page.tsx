@@ -27,6 +27,7 @@ import {
   ShieldAlert,
   Info,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -55,6 +56,8 @@ import {
   useHrmAttendances,
   useHrmEmployees,
   useHrmDepartments,
+  useHrmDesignations,
+  deleteAttendances,
   recordAttendance,
   importAttendances,
   AttendanceRecord,
@@ -72,6 +75,13 @@ export default function AttendanceManagementPage() {
   const [startDate, setStartDate] = React.useState<string>(firstDayOfMonth);
   const [endDate, setEndDate] = React.useState<string>(todayStr);
   const [departmentFilter, setDepartmentFilter] = React.useState<string>("all");
+  const [page, setPage] = React.useState(1);
+  const [perPage, setPerPage] = React.useState(25);
+  const [designationFilter, setDesignationFilter] = React.useState("all");
+  const [employeeFilter, setEmployeeFilter] = React.useState("all");
+  const [selected, setSelected] = React.useState<number[]>([]);
+  const [deleteIds, setDeleteIds] = React.useState<number[]>([]);
+  const [deleting, setDeleting] = React.useState(false);
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [sortBy, setSortBy] = React.useState<string>("date");
@@ -80,7 +90,10 @@ export default function AttendanceManagementPage() {
   const { user } = useAuth();
   const canManageAttendance = hasManageAttendanceAccess(user);
 
-  const { attendances, summary, policy, loading, refetch } = useHrmAttendances({
+  const { attendances, summary, policy, pagination, loading, error, refetch } = useHrmAttendances({
+    page, per_page: perPage,
+    designation_id: designationFilter !== "all" ? designationFilter : undefined,
+    user_id: employeeFilter !== "all" ? Number(employeeFilter) : undefined,
     time_range: timeRange,
     start_date: timeRange === "custom" ? startDate : undefined,
     end_date: timeRange === "custom" ? endDate : undefined,
@@ -93,6 +106,9 @@ export default function AttendanceManagementPage() {
 
   const { employees } = useHrmEmployees("", "attendance");
   const { departments } = useHrmDepartments();
+  const { designations } = useHrmDesignations();
+  React.useEffect(() => { setPage(1); setSelected([]); }, [timeRange, startDate, endDate, departmentFilter, designationFilter, employeeFilter, statusFilter, searchQuery, sortBy, sortOrder, perPage]);
+  React.useEffect(() => { setSelected([]); }, [page]);
 
   // Log / Override modal
   const [logModalOpen, setLogModalOpen] = React.useState(false);
@@ -475,19 +491,7 @@ export default function AttendanceManagementPage() {
     setImportModalOpen(false);
   };
 
-  const filteredAttendances = React.useMemo(() => {
-    return attendances.filter((att) => {
-      if (statusFilter !== "all" && att.status !== statusFilter) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const name = att.user?.full_name?.toLowerCase() || "";
-        const empId = att.user?.employee_detail?.employee_id?.toLowerCase() || "";
-        const dept = att.user?.employee_detail?.department?.name?.toLowerCase() || "";
-        return name.includes(q) || empId.includes(q) || dept.includes(q);
-      }
-      return true;
-    });
-  }, [attendances, statusFilter, searchQuery]);
+  const filteredAttendances = attendances;
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -719,6 +723,14 @@ export default function AttendanceManagementPage() {
                 </SelectContent>
               </Select>
 
+              <Select value={designationFilter} onValueChange={setDesignationFilter}>
+                <SelectTrigger className="w-44 h-8 text-xs"><SelectValue placeholder="All Designations" /></SelectTrigger>
+                <SelectContent><SelectItem value="all">All Designations</SelectItem>{designations.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.title}</SelectItem>)}</SelectContent>
+              </Select>
+              <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
+                <SelectTrigger className="w-44 h-8 text-xs"><SelectValue placeholder="All Employees" /></SelectTrigger>
+                <SelectContent><SelectItem value="all">All Employees</SelectItem>{employees.map(e => <SelectItem key={e.id} value={String(e.id)}>{e.full_name}</SelectItem>)}</SelectContent>
+              </Select>
               {/* Status Filter */}
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-32 h-8 text-xs">
@@ -753,6 +765,12 @@ export default function AttendanceManagementPage() {
                   </div>
                 </SelectTrigger>
                 <SelectContent className="text-xs">
+                  <SelectItem value="employee_asc">Employee: A–Z</SelectItem>
+                  <SelectItem value="employee_desc">Employee: Z–A</SelectItem>
+                  <SelectItem value="department_asc">Department: A–Z</SelectItem>
+                  <SelectItem value="department_desc">Department: Z–A</SelectItem>
+                  <SelectItem value="designation_asc">Designation: A–Z</SelectItem>
+                  <SelectItem value="designation_desc">Designation: Z–A</SelectItem>
                   <SelectItem value="date_desc">Date: Newest First</SelectItem>
                   <SelectItem value="date_asc">Date: Oldest First</SelectItem>
                   <SelectItem value="working_hours_desc">Working Hours: High to Low</SelectItem>
@@ -775,14 +793,14 @@ export default function AttendanceManagementPage() {
               </div>
 
               {/* Reset to This Month button */}
-              {(timeRange !== "this_month" || departmentFilter !== "all" || statusFilter !== "all" || searchQuery || sortBy !== "date" || sortOrder !== "desc") && (
+              {(designationFilter !== "all" || employeeFilter !== "all" || timeRange !== "this_month" || departmentFilter !== "all" || statusFilter !== "all" || searchQuery || sortBy !== "date" || sortOrder !== "desc") && (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
                   onClick={() => {
                     setTimeRange("this_month");
-                    setDepartmentFilter("all");
+                    setDepartmentFilter("all"); setDesignationFilter("all"); setEmployeeFilter("all");
                     setStatusFilter("all");
                     setSearchQuery("");
                     setSortBy("date");
@@ -829,7 +847,7 @@ export default function AttendanceManagementPage() {
                 onClick={handleExportCSV}
               >
                 <Download className="size-3.5" />
-                Export CSV
+                Export page CSV
               </Button>
             </div>
           </div>
@@ -838,9 +856,12 @@ export default function AttendanceManagementPage() {
         {/* Table */}
         <CardContent className="p-0 border-t">
           <div className="overflow-x-auto">
+            {error && <p role="alert" className="p-4 text-destructive">Unable to load attendance. <button onClick={() => refetch()}>Retry</button></p>}
+            {canManageAttendance && <div className="p-3"><Button variant="destructive" size="sm" disabled={!selected.length || loading} onClick={() => setDeleteIds(selected)}><Trash2 className="size-4" />Delete selected ({selected.length})</Button></div>}
             <table className="w-full text-xs">
               <thead className="bg-muted/40 border-b text-muted-foreground font-semibold">
                 <tr>
+                  {canManageAttendance && <th className="px-3"><input type="checkbox" aria-label="Select saved records on this page" checked={attendances.some(a => a.can_delete) && attendances.filter(a => a.can_delete).every(a => selected.includes(Number(a.id)))} onChange={e => setSelected(e.target.checked ? attendances.filter(a => a.can_delete).map(a => Number(a.id)) : [])} /></th>}
                   <th className="py-3 px-4 text-left">Date</th>
                   <th className="py-3 px-4 text-left">Employee</th>
                   <th className="py-3 px-4 text-left">Department</th>
@@ -858,7 +879,7 @@ export default function AttendanceManagementPage() {
               <tbody className="divide-y divide-border/60">
                 {loading ? (
                   <tr>
-                    <td colSpan={canManageAttendance ? 12 : 11} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={canManageAttendance ? 13 : 11} className="py-12 text-center text-muted-foreground">
                       <Clock className="size-6 animate-spin mx-auto text-primary mb-2" />
                       Loading attendance records...
                     </td>
@@ -866,7 +887,7 @@ export default function AttendanceManagementPage() {
                 ) : filteredAttendances.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={canManageAttendance ? 12 : 11}
+                      colSpan={canManageAttendance ? 13 : 11}
                       className="py-12 text-center text-muted-foreground"
                     >
                       No attendance records found for selected filters.
@@ -897,6 +918,7 @@ export default function AttendanceManagementPage() {
 
                     return (
                       <tr key={att.id} className="hover:bg-muted/30 transition-colors">
+                        {canManageAttendance && <td className="px-3"><input type="checkbox" aria-label={`Select attendance for ${att.user?.full_name} on ${att.date}`} disabled={!att.can_delete} checked={selected.includes(Number(att.id))} onChange={e => setSelected(ids => e.target.checked ? [...ids, Number(att.id)] : ids.filter(id => id !== Number(att.id)))} /></td>}
                         {/* Date with day of week */}
                         <td className="py-3 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 font-mono">
@@ -1014,6 +1036,7 @@ export default function AttendanceManagementPage() {
                         {/* Actions */}
                         {canManageAttendance && (
                           <td className="py-3 px-4 text-right whitespace-nowrap">
+                            {att.can_delete && <Button variant="ghost" size="sm" aria-label="Delete attendance" onClick={() => setDeleteIds([Number(att.id)])}><Trash2 className="size-3.5 text-destructive" /></Button>}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1031,10 +1054,21 @@ export default function AttendanceManagementPage() {
                 )}
               </tbody>
             </table>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t p-4 text-sm">
+              <span>{pagination?.total || 0} records · Page {pagination?.current_page || 1} of {pagination?.last_page || 1}</span>
+              <div className="flex items-center gap-2"><label>Rows <select aria-label="Rows per page" value={perPage} onChange={e => setPerPage(Number(e.target.value))}>{[10,25,50,100].map(n => <option key={n} value={n}>{n}</option>)}</select></label>
+              <Button variant="outline" disabled={loading || (pagination?.current_page || 1) <= 1} onClick={() => setPage((pagination?.current_page || 1)-1)}>Previous</Button>
+              <Button variant="outline" disabled={loading || (pagination?.current_page || 1) >= (pagination?.last_page || 1)} onClick={() => setPage((pagination?.current_page || 1)+1)}>Next</Button></div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
+      <Dialog open={deleteIds.length > 0} onOpenChange={open => { if (!open && !deleting) setDeleteIds([]); }}>
+        <DialogContent><DialogHeader><DialogTitle>Delete {deleteIds.length} attendance record(s)?</DialogTitle><DialogDescription>This removes saved punches. The calendar day remains and applicable absence or deficit deductions will be recalculated for unpaid and partial payrolls.</DialogDescription></DialogHeader>
+          <DialogFooter><Button variant="outline" disabled={deleting} onClick={() => setDeleteIds([])}>Cancel</Button><Button variant="destructive" disabled={deleting} onClick={async () => { setDeleting(true); try { await deleteAttendances(deleteIds); toast.success("Attendance deleted"); setDeleteIds([]); setSelected([]); await refetch(); } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to delete attendance"); } finally { setDeleting(false); } }}>Delete records</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* LOG / EDIT ATTENDANCE DIALOG (Only accessible when canManageAttendance is true) */}
       <Dialog open={logModalOpen} onOpenChange={setLogModalOpen}>
         <DialogContent className="sm:max-w-md">
