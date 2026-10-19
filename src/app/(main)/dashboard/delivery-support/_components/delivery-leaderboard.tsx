@@ -7,7 +7,7 @@ export function DeliveryLeaderboard({ ranking, approved, total }: { ranking: Del
   return <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
     <div className="flex items-center justify-between gap-3 border-b px-5 py-4">
       <div className="flex items-center gap-3"><span className="grid size-8 place-items-center rounded-full bg-primary text-primary-foreground"><Crown className="size-4" /></span>
-        <div><h2 className="text-sm font-semibold">Agent Leaderboard</h2><p className="text-xs text-muted-foreground">Support handlers ranked by resolved issues within your access</p></div></div>
+        <div><h2 className="text-sm font-semibold">Agent Leaderboard</h2><p className="text-xs text-muted-foreground">Support handlers ranked by approved resolutions within your access</p></div></div>
       <span className="hidden text-xs text-muted-foreground sm:block">Resolution rate</span>
     </div>
     {ranking.length === 0 ? <p className="p-10 text-center text-sm text-muted-foreground">Assign an issue to a support handler to start the leaderboard.</p> :
@@ -20,7 +20,7 @@ export function DeliveryLeaderboard({ ranking, approved, total }: { ranking: Del
               <div className={`relative flex flex-col items-center justify-end rounded-t-xl border px-2 pb-3 ${index === 0 ? "h-36 border-amber-200 bg-amber-50 dark:bg-amber-950/30" : index === 1 ? "h-28 bg-muted/60" : "h-24 border-orange-200 bg-orange-50 dark:bg-orange-950/30"}`}>
                 {index === 0 && <Crown className="absolute -top-6 size-5 text-amber-500" />}
                 <span className="grid size-10 shrink-0 place-items-center rounded-full border bg-background text-xs font-semibold shadow-sm">{initials(person.name)}</span>
-                <p className="mt-2 w-full truncate text-xs font-semibold" title={person.name}>{person.name}</p><p className="text-[11px] text-muted-foreground">{person.resolved} solved</p>
+                <p className="mt-2 w-full truncate text-xs font-semibold" title={person.name}>{person.name}</p><p className="text-[11px] text-muted-foreground">{person.resolved} approved</p>
               </div>
               <div className="flex h-9 items-center justify-center gap-1 rounded-b-lg bg-primary text-xs font-semibold text-primary-foreground"><Medal className="size-3.5" />{["1st", "2nd", "3rd"][index]}</div>
               <div className="mt-3 flex justify-between text-[11px] text-muted-foreground"><span>{person.rate}%</span><span>{person.total} total</span></div>
@@ -33,7 +33,7 @@ export function DeliveryLeaderboard({ ranking, approved, total }: { ranking: Del
           <div className="mb-3 flex justify-between text-xs text-muted-foreground"><h3 className="font-semibold uppercase tracking-widest">Full ranking</h3><span>{ranking.length} handlers</span></div>
           <div className="max-h-64 space-y-2 overflow-y-auto">{ranking.slice(3).map((person, i) => <div key={person.id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
             <span className="text-xs text-muted-foreground">#{i + 4}</span><span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-xs text-primary-foreground">{initials(person.name)}</span>
-            <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{person.name}</p><p className="text-xs text-muted-foreground">{person.resolved} resolved · {person.total} assigned</p></div><span className="text-xs font-semibold">{person.rate}%</span>
+            <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{person.name}</p><p className="text-xs text-muted-foreground">{person.resolved} approved · {person.total} assigned</p></div><span className="text-xs font-semibold">{person.rate}%</span>
           </div>)}{ranking.length <= 3 && <p className="py-8 text-center text-xs text-muted-foreground">All ranked handlers are shown on the podium.</p>}</div>
           <div className="mt-auto pt-4"><div className="flex items-center justify-between rounded-xl bg-primary p-4 text-sm text-primary-foreground"><span className="flex items-center gap-2"><ShieldCheck className="size-4" />Admin approvals</span><span className="font-semibold">{approved}/{total}</span></div></div>
         </div>

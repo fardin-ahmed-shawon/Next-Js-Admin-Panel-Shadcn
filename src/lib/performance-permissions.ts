@@ -7,8 +7,7 @@ export const PERFORMANCE_PERMISSION_GROUPS = [
       { id: "performance_sales", label: "Sales — Orders, Revenue & Upsells", icon: BarChart3 },
       { id: "performance_packing", label: "Packaging — Packed Orders, Units & Courier Parcels", icon: BarChart3 },
       { id: "performance_returns", label: "Returns — Received Orders & Units", icon: BarChart3 },
-      { id: "performance_support_raised", label: "Support — Issues Raised & Their Outcomes", icon: BarChart3 },
-      { id: "performance_support_handled", label: "Support — Approved Resolutions & Open Work", icon: BarChart3 },
+      { id: "performance_support_handled", label: "Support — Approved Resolutions, Unresolved & Awaiting Approval", icon: BarChart3 },
     ],
   },
   {

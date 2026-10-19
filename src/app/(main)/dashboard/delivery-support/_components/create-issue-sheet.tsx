@@ -43,7 +43,7 @@ export function CreateIssueSheet({ canAssign, onClose, onCreated }: {
     <SheetContent side="right" className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-xl" showCloseButton={!saving}>
       <SheetHeader className="border-b p-6 pr-12">
         <SheetTitle className="flex items-center gap-2 text-lg"><Truck className="size-5" />New delivery issue</SheetTitle>
-        <SheetDescription>Select an order, describe the issue, and assign a support handler.</SheetDescription>
+        <SheetDescription>Select an order and describe the issue. You are the default support handler.</SheetDescription>
       </SheetHeader>
       <form className="flex min-h-0 flex-1 flex-col" onSubmit={async event => {
         event.preventDefault();
@@ -98,12 +98,12 @@ export function CreateIssueSheet({ canAssign, onClose, onCreated }: {
             <div><h2 className="text-sm font-semibold">Support handler</h2><p className="mt-1 text-xs text-muted-foreground">Search eligible employees and filter or sort by department and designation.</p></div>
             {recipients.error && <p role="alert" className="text-sm text-destructive">{issueError(recipients.error)} <button type="button" className="underline" onClick={() => recipients.mutate()}>Retry</button></p>}
             <EmployeeAssignmentPicker employees={recipients.data?.data || []} value={handler} onChange={value => setHandler(value || "unassigned")} loading={recipients.isLoading} loadFailed={!!recipients.error}
-              disabled={saving || !!recipients.error} allowUnassigned unassignedLabel="Unassigned — assign later" />
-            <p className="text-xs text-muted-foreground">Leave unassigned if the team leader will choose the handler later.</p>
-          </section> : <p className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">Your team leader will assign a support handler after you raise the issue.</p>}
+              disabled={saving || !!recipients.error} allowUnassigned unassignedLabel="Assign to me (default)" />
+            <p className="text-xs text-muted-foreground">You will handle this issue unless you choose another eligible employee.</p>
+          </section> : <p className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">You will automatically be assigned as the Support Handler for this issue.</p>}
 
           <div className="space-y-2"><Label htmlFor="new-issue-note">Issue note *</Label><Textarea id="new-issue-note" required maxLength={5000} rows={5} placeholder="Describe the delivery problem and what needs to be checked…" value={note} onChange={event => setNote(event.target.value)} disabled={saving} />
-            <p className="text-xs text-muted-foreground">You will be recorded as the employee raising this issue.</p></div>
+            <p className="text-xs text-muted-foreground">The issue will appear in the Support Handler’s performance report.</p></div>
           {error && <p role="alert" className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
         </div>
         <SheetFooter className="flex-row justify-end border-t bg-background p-4">
