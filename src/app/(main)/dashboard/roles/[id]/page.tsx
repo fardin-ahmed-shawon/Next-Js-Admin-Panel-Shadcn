@@ -102,7 +102,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
       { id: "roles_and_permission", label: "Roles & Permission", icon: Shield },
-      { id: "auto_order", label: "Auto Order Distribution", icon: RefreshCw },
+      { id: "auto_order", label: "Auto Distribution", icon: RefreshCw },
       { id: "users", label: "Users", icon: Users },
       { id: "user_behaviour_logs", label: "User Behaviour Logs", icon: History },
       { id: "settings", label: "Settings", icon: Settings },
@@ -211,6 +211,7 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
     items: [
       { id: "hrm_overview", label: "Overview", icon: LayoutDashboard, badge: "Access Based" },
       { id: "hrm_leaderboard", label: "Leaderboard", icon: Trophy, badge: "Access Based" },
+      { id: "hrm_own_department_leaderboard", label: "Own Department — Leaderboard", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_leaderboard" },
       { id: "hrm_department_performance", label: "Dept Performance", icon: BarChart3, badge: "Access Based" },
       { id: "hrm_own_department_performance", label: "Only Own Dept Performance", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_department_performance" },
       { id: "hrm_org_tree", label: "Organization Tree", icon: Network, badge: "Access Based" },
@@ -225,8 +226,8 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "hrm_all_tasks", label: "All User Tasks Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_tasks" },
       { id: "hrm_team_tasks", label: "Reporting Team Tasks Access", icon: ShieldCheck, isSubToggle: true, dependsOn: "hrm_tasks" },
 
-      { id: "hrm_notices", label: "Notice Board", icon: ShieldCheck },
-  { id: "hrm_manage_notices", label: "Publish / Delete Notices", icon: ShieldCheck },
+      { id: "hrm_notices", label: "Notice & Warning", icon: ShieldCheck },
+  { id: "hrm_manage_notices", label: "Manage Notices & Warnings", icon: ShieldCheck },
   { id: "hrm_leaves", label: "Leave Management", icon: ShieldCheck },
   { id: "hrm_all_leaves", label: "All Employee Leaves", icon: ShieldCheck },
   { id: "hrm_team_leaves", label: "Reporting Team — Leaves", icon: ShieldCheck },
@@ -422,7 +423,7 @@ export default function ViewRolePage() {
                               <item.icon className="h-3.5 w-3.5 text-primary shrink-0" />
                               <span className="text-xs font-semibold truncate">{item.label}</span>
                               <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">
-                                {(item.id.startsWith("hrm_team_") || item.id.endsWith("_reporting_team")) ? "Reporting Team" : item.id === "hrm_own_department_performance" ? "Own Department" : "All User Access"}
+                                {(item.id.startsWith("hrm_team_") || item.id.endsWith("_reporting_team")) ? "Reporting Team" : (item.id === "hrm_own_department_performance" || item.id === "hrm_own_department_leaderboard") ? "Own Department" : "All User Access"}
                               </Badge>
                             </div>
                             <span className="text-[10px] text-muted-foreground ml-5">
@@ -432,7 +433,7 @@ export default function ViewRolePage() {
                                   : "View all orders in this workflow, including unassigned orders. Changing assignments requires the separate assignment permission."
                                 : item.id.startsWith("hrm_team_")
                                 ? "View own data and direct/indirect reports. Existing All User Access takes precedence."
-                                : item.id === "hrm_own_department_performance"
+                                : (item.id === "hrm_own_department_performance" || item.id === "hrm_own_department_leaderboard")
                                   ? "Restrict the report and totals to the user's assigned department."
                                   : selected[item.id] ? "Full Access: Can see all employees' data" : "Attribute-Based: Strictly sees own data"}
                             </span>

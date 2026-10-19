@@ -93,6 +93,7 @@ export interface AttendanceRecord {
   id: number | string;
   is_generated?: boolean;
   can_delete?: boolean;
+  delete_disabled_reason?: string;
   user_id: number;
   date: string;
   check_in?: string | null;
@@ -385,6 +386,7 @@ export function useHrmAttendances(params?: {
   page?: number;
   per_page?: number;
   designation_id?: string;
+  record_type?: string;
   date?: string;
   month?: number;
   year?: number;
@@ -399,6 +401,7 @@ export function useHrmAttendances(params?: {
   search?: string;
 }) {
   const searchParams = new URLSearchParams();
+  if (params?.record_type) searchParams.set("record_type", params.record_type);
   if (params?.page) searchParams.set("page", String(params.page));
   if (params?.per_page) searchParams.set("per_page", String(params.per_page));
   if (params?.designation_id) searchParams.set("designation_id", params.designation_id);
@@ -439,7 +442,7 @@ export function useHrmAttendances(params?: {
   };
 }
 
-export function useHrmSalaries(params?: { month?: number; year?: number; payment_status?: string }) {
+export function useHrmSalaries(params?: { month?: number; year?: number; payment_status?: string }, enabled = true) {
   const searchParams = new URLSearchParams();
   if (params?.month) searchParams.set("month", String(params.month));
   if (params?.year) searchParams.set("year", String(params.year));

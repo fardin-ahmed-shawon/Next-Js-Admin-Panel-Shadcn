@@ -186,11 +186,11 @@ function WorkflowPool({ workflow }: { workflow: "packing" | "returns" }) {
   );
 }
 
-export function AutoWorkflowPools() {
+export function AutoWorkflowPools({ canPacking, canReturns }: { canPacking: boolean; canReturns: boolean }) {
   return (
     <div className="grid gap-4 xl:grid-cols-2">
-      <WorkflowPool workflow="packing" />
-      <WorkflowPool workflow="returns" />
+      {canPacking && <WorkflowPool workflow="packing" />}
+      {canReturns && <WorkflowPool workflow="returns" />}
     </div>
   );
 }

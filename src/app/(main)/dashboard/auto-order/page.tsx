@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "@/hooks/useAuth";
+import { hasModuleAccess } from "@/hooks/useRoles";
 import { AutoWorkflowPools } from "./auto-workflow-pools";
 
 import React, { useEffect, useState, useMemo } from "react";
@@ -45,6 +47,10 @@ import {
 
 export default function AutoOrderPage() {
   const { features } = useModularFeatures();
+  const { user } = useAuth();
+  const canAgent = hasModuleAccess(user, "assign_orders");
+  const canPacking = hasModuleAccess(user, "assign_packing");
+  const canReturns = hasModuleAccess(user, "assign_returns");
   if (
     features?.employee_management === false ||
     String(features?.employee_management) === "0" ||
@@ -55,13 +61,17 @@ export default function AutoOrderPage() {
       <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
         <h2 className="text-2xl font-bold">Feature Disabled</h2>
         <p className="text-muted-foreground mt-2">
-          The Auto Order Distribution feature is currently disabled.
+          The Auto Distribution feature is currently disabled.
         </p>
       </div>
     );
   }
 
-  return <AutoOrderContent />;
+  return <div className="space-y-6"><div><h1 className="text-3xl">Auto Distribution</h1><p className="text-sm text-muted-foreground">Manage automatic assignment for the workflows available to your role.</p></div>
+    {canAgent && <AutoOrderContent />}
+    <AutoWorkflowPools canPacking={canPacking} canReturns={canReturns} />
+    {!canAgent && !canPacking && !canReturns && <p className="rounded-xl border p-6 text-muted-foreground">Enable an assignment permission in Role Management to manage automatic distribution.</p>}
+  </div>;
 }
 
 function AutoOrderContent() {
@@ -282,13 +292,13 @@ function AutoOrderContent() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Header Card */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card border p-5 rounded-2xl shadow-xs">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-              Auto Order Distribution
+              Auto Order Agent
             </h1>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -307,7 +317,6 @@ function AutoOrderContent() {
         </div>
       </div>
 
-      <AutoWorkflowPools />
       <h2 className="text-lg font-semibold">Auto Order Agent — Customer Segments</h2>
       {/* Segment Metrics Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">

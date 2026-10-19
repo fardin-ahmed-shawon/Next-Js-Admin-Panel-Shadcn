@@ -100,6 +100,7 @@ export interface PageAccess extends Partial<Record<`orders_history_${import("@/l
   hrm_own_department_performance?: number;
   hrm_overview?: number;
   hrm_leaderboard?: number;
+  hrm_own_department_leaderboard?: number;
   hrm_department_performance?: number;
   hrm_upsells?: number;
   hrm_all_upsells?: number;

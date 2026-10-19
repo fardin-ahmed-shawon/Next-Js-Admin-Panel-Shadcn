@@ -869,7 +869,7 @@ export default function EmployeeSelfServicePortalPage() {
           <Card className="border-border/60 shadow-sm">
             <CardHeader className="pb-3 border-b border-border/40">
               <CardTitle className="text-base font-semibold flex items-center gap-2 text-rose-600">
-                <ShieldAlert className="h-5 w-5" /> Official HR Warnings & Notices
+                <ShieldAlert className="h-5 w-5" /> Official HR Warnings
               </CardTitle>
               <CardDescription className="text-xs">
                 Formal performance or attendance warnings issued by management
@@ -880,7 +880,7 @@ export default function EmployeeSelfServicePortalPage() {
                 <div className="text-center py-10 text-xs text-muted-foreground space-y-2">
                   <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto" />
                   <p className="font-semibold text-foreground">Clean Record!</p>
-                  <p>You have no disciplinary warnings or attendance notices on file.</p>
+                  <p>You have no disciplinary warnings on file.</p>
                 </div>
               ) : (
                 myWarnings.map((w: any) => (
@@ -898,8 +898,8 @@ export default function EmployeeSelfServicePortalPage() {
                     </div>
                     <p className="text-xs text-foreground/80 leading-relaxed">{w.description}</p>
                     <div className="text-[11px] text-muted-foreground flex justify-between pt-1">
-                      <span>Date Issued: {w.warning_date}</span>
-                      <span>Issuer: Management HR</span>
+                      <span>Date Issued: {w.warning_date?.slice(0, 10)}</span>
+                      <span>Issuer: {w.issuer?.full_name || "Management HR"}</span>
                     </div>
                   </div>
                 ))

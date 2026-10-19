@@ -1,5 +1,7 @@
 "use client";
 
+import hrmStyles from "@/components/hrm/hrm-page.module.css";
+
 import { useAuth } from "@/hooks/useAuth";
 import { hasAllUserAccess } from "@/hooks/useRoles";
 import { useState } from "react";
@@ -176,7 +178,7 @@ export default function EmployeeDocumentsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className={hrmStyles.page}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -201,7 +203,7 @@ export default function EmployeeDocumentsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className={hrmStyles.stats}>
         <Card className="border-border/60 shadow-sm">
           <CardHeader className="pb-2">
             <CardDescription className="text-xs uppercase tracking-wider font-semibold">Total Documents</CardDescription>

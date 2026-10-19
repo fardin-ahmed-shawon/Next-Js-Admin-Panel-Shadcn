@@ -265,9 +265,14 @@ export default function DepartmentPerformancePage({ performanceControls, perform
         </div>
       </div>
 
-      {performanceControls}
+      <div className="flex flex-wrap items-end gap-4">
+        {performanceControls}
+        {!performanceContent && (
+      <label className="space-y-2 shrink-0 text-xs text-muted-foreground"><span>Sort departments by</span><Select value={sortBy} onValueChange={setSortBy}><SelectTrigger className="w-56" aria-label="Sort departments"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="revenue">Revenue</SelectItem><SelectItem value="orders">Assigned Orders</SelectItem><SelectItem value="delivery">Delivery Success Rate</SelectItem><SelectItem value="upsell">Upsell Value</SelectItem><SelectItem value="tasks">Task Completion</SelectItem><SelectItem value="name">Department Name</SelectItem></SelectContent></Select></label>
+        )}
+      </div>
       {performanceContent ?? <>
-      <label className="ml-auto space-y-1 text-xs text-muted-foreground"><span>Sort departments by</span><Select value={sortBy} onValueChange={setSortBy}><SelectTrigger className="w-56" aria-label="Sort departments"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="revenue">Revenue</SelectItem><SelectItem value="orders">Assigned Orders</SelectItem><SelectItem value="delivery">Delivery Success Rate</SelectItem><SelectItem value="upsell">Upsell Value</SelectItem><SelectItem value="tasks">Task Completion</SelectItem><SelectItem value="name">Department Name</SelectItem></SelectContent></Select></label>
+
       {/* Overview KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Delivery Success Rate */}

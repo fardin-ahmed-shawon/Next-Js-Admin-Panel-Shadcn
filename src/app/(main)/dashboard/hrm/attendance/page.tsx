@@ -1,5 +1,7 @@
 "use client";
 
+import hrmStyles from "@/components/hrm/hrm-page.module.css";
+
 import * as React from "react";
 import {
   Clock,
@@ -33,6 +35,8 @@ import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,6 +83,7 @@ export default function AttendanceManagementPage() {
   const [perPage, setPerPage] = React.useState(25);
   const [designationFilter, setDesignationFilter] = React.useState("all");
   const [employeeFilter, setEmployeeFilter] = React.useState("all");
+  const [recordType, setRecordType] = React.useState("all");
   const [selected, setSelected] = React.useState<number[]>([]);
   const [deleteIds, setDeleteIds] = React.useState<number[]>([]);
   const [deleting, setDeleting] = React.useState(false);
@@ -91,7 +96,7 @@ export default function AttendanceManagementPage() {
   const canManageAttendance = hasManageAttendanceAccess(user);
 
   const { attendances, summary, policy, pagination, loading, error, refetch } = useHrmAttendances({
-    page, per_page: perPage,
+    page, per_page: perPage, record_type: recordType,
     designation_id: designationFilter !== "all" ? designationFilter : undefined,
     user_id: employeeFilter !== "all" ? Number(employeeFilter) : undefined,
     time_range: timeRange,
@@ -107,7 +112,7 @@ export default function AttendanceManagementPage() {
   const { employees } = useHrmEmployees("", "attendance");
   const { departments } = useHrmDepartments();
   const { designations } = useHrmDesignations();
-  React.useEffect(() => { setPage(1); setSelected([]); }, [timeRange, startDate, endDate, departmentFilter, designationFilter, employeeFilter, statusFilter, searchQuery, sortBy, sortOrder, perPage]);
+  React.useEffect(() => { setPage(1); setSelected([]); }, [recordType, timeRange, startDate, endDate, departmentFilter, designationFilter, employeeFilter, statusFilter, searchQuery, sortBy, sortOrder, perPage]);
   React.useEffect(() => { setSelected([]); }, [page]);
 
   // Log / Override modal
@@ -492,9 +497,13 @@ export default function AttendanceManagementPage() {
   };
 
   const filteredAttendances = attendances;
+  const selectableIds = attendances.filter(row => row.can_delete && Number.isInteger(Number(row.id))).map(row => Number(row.id));
+  const selectedCount = selectableIds.filter(id => selected.includes(id)).length;
+  const allSelected = selectableIds.length > 0 && selectedCount === selectableIds.length;
+  React.useEffect(() => { setSelected(ids => { const next = ids.filter(id => attendances.some(row => row.can_delete && Number(row.id) === id)); return next.length === ids.length ? ids : next; }); }, [attendances]);
 
   return (
-    <div className="flex flex-col gap-6 w-full">
+    <div className={hrmStyles.page}>
       {/* Header + Toolbar (Orders page pattern) */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         {/* Left: Title + description */}
@@ -587,7 +596,7 @@ export default function AttendanceManagementPage() {
       )}
 
       {/* KPI Cards (6 metrics) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div className={hrmStyles.stats} style={{ "--hrm-stat-columns": 6 } as React.CSSProperties}>
         <Card className="border shadow-2xs bg-card">
           <CardContent className="p-3.5 sm:p-4 space-y-1">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
@@ -816,30 +825,6 @@ export default function AttendanceManagementPage() {
 
             {/* Right Controls: Actions */}
             <div className="flex items-center gap-2 justify-end w-full sm:w-auto">
-              {canManageAttendance && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-xs border-emerald-600/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                    onClick={() => {
-                      setImportModalOpen(true);
-                      setImportResult(null);
-                    }}
-                  >
-                    <FileSpreadsheet className="size-3.5 text-emerald-600" />
-                    Import Excel
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="gap-1.5 text-xs bg-primary"
-                    onClick={() => openLogModal()}
-                  >
-                    <PlusCircle className="size-3.5" />
-                    Log Attendance
-                  </Button>
-                </>
-              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -857,42 +842,47 @@ export default function AttendanceManagementPage() {
         <CardContent className="p-0 border-t">
           <div className="overflow-x-auto">
             {error && <p role="alert" className="p-4 text-destructive">Unable to load attendance. <button onClick={() => refetch()}>Retry</button></p>}
-            {canManageAttendance && <div className="p-3"><Button variant="destructive" size="sm" disabled={!selected.length || loading} onClick={() => setDeleteIds(selected)}><Trash2 className="size-4" />Delete selected ({selected.length})</Button></div>}
-            <table className="w-full text-xs">
-              <thead className="bg-muted/40 border-b text-muted-foreground font-semibold">
-                <tr>
-                  {canManageAttendance && <th className="px-3"><input type="checkbox" aria-label="Select saved records on this page" checked={attendances.some(a => a.can_delete) && attendances.filter(a => a.can_delete).every(a => selected.includes(Number(a.id)))} onChange={e => setSelected(e.target.checked ? attendances.filter(a => a.can_delete).map(a => Number(a.id)) : [])} /></th>}
-                  <th className="py-3 px-4 text-left">Date</th>
-                  <th className="py-3 px-4 text-left">Employee</th>
-                  <th className="py-3 px-4 text-left">Department</th>
-                  <th className="py-3 px-4 text-left">Check-In</th>
-                  <th className="py-3 px-4 text-left">Check-Out</th>
-                  <th className="py-3 px-4 text-left">Working Hours</th>
-                  <th className="py-3 px-4 text-left">Overtime</th>
-                  <th className="py-3 px-4 text-left">Late Minutes</th>
-                  <th className="py-3 px-4 text-left">Deficit Hours</th>
-                  <th className="py-3 px-4 text-left">Status</th>
-                  <th className="py-3 px-4 text-left">Notes</th>
-                  {canManageAttendance && <th className="py-3 px-4 text-right">Actions</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+              <div className="flex items-center gap-3"><Select value={recordType} onValueChange={setRecordType}><SelectTrigger className="h-8 w-48"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All calendar days</SelectItem><SelectItem value="saved">Saved records only</SelectItem><SelectItem value="generated">Generated days only</SelectItem></SelectContent></Select>
+              <span className="text-xs text-muted-foreground">{selectedCount} selected · {selectableIds.length} deletable on this page</span></div>
+              {canManageAttendance && <Button variant="destructive" size="sm" disabled={!selectedCount || loading || deleting} onClick={() => setDeleteIds(selectableIds.filter(id => selected.includes(id)))}><Trash2 className="size-4" />Delete selected</Button>}
+              <p className="w-full text-xs text-muted-foreground">Generated days have no saved punches to delete. Paid payroll records are locked.</p>
+            </div>
+            <Table className="w-full min-w-[1200px] text-sm">
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  {canManageAttendance && <TableHead className="w-12 px-4"><Checkbox aria-label="Select deletable records on this page" disabled={loading || !selectableIds.length} checked={allSelected ? true : selectedCount ? "indeterminate" : false} onCheckedChange={checked => setSelected(checked === true ? selectableIds : [])} /></TableHead>}
+                  <TableHead className="py-3 px-4 text-left"><Button variant="ghost" size="sm" className="-ml-2 h-8 px-2" onClick={() => { setSortBy("date"); setSortOrder(sortBy === "date" && sortOrder === "asc" ? "desc" : "asc"); }}>Date<ArrowUpDown className="ml-1 size-3" /></Button></TableHead>
+                  <TableHead className="py-3 px-4 text-left"><Button variant="ghost" size="sm" className="-ml-2 h-8 px-2" onClick={() => { setSortBy("employee"); setSortOrder(sortBy === "employee" && sortOrder === "asc" ? "desc" : "asc"); }}>Employee<ArrowUpDown className="ml-1 size-3" /></Button></TableHead>
+                  <TableHead className="py-3 px-4 text-left"><Button variant="ghost" size="sm" className="-ml-2 h-8 px-2" onClick={() => { setSortBy("department"); setSortOrder(sortBy === "department" && sortOrder === "asc" ? "desc" : "asc"); }}>Department<ArrowUpDown className="ml-1 size-3" /></Button></TableHead>
+                  <TableHead className="py-3 px-4 text-left">Check-In</TableHead>
+                  <TableHead className="py-3 px-4 text-left">Check-Out</TableHead>
+                  <TableHead className="py-3 px-4 text-left"><Button variant="ghost" size="sm" className="-ml-2 h-8 px-2" onClick={() => { setSortBy("working_hours"); setSortOrder(sortBy === "working_hours" && sortOrder === "asc" ? "desc" : "asc"); }}>Working Hours<ArrowUpDown className="ml-1 size-3" /></Button></TableHead>
+                  <TableHead className="py-3 px-4 text-left"><Button variant="ghost" size="sm" className="-ml-2 h-8 px-2" onClick={() => { setSortBy("overtime_hours"); setSortOrder(sortBy === "overtime_hours" && sortOrder === "asc" ? "desc" : "asc"); }}>Overtime<ArrowUpDown className="ml-1 size-3" /></Button></TableHead>
+                  <TableHead className="py-3 px-4 text-left"><Button variant="ghost" size="sm" className="-ml-2 h-8 px-2" onClick={() => { setSortBy("late_minutes"); setSortOrder(sortBy === "late_minutes" && sortOrder === "asc" ? "desc" : "asc"); }}>Late Minutes<ArrowUpDown className="ml-1 size-3" /></Button></TableHead>
+                  <TableHead className="py-3 px-4 text-left"><Button variant="ghost" size="sm" className="-ml-2 h-8 px-2" onClick={() => { setSortBy("deficit_hours"); setSortOrder(sortBy === "deficit_hours" && sortOrder === "asc" ? "desc" : "asc"); }}>Deficit Hours<ArrowUpDown className="ml-1 size-3" /></Button></TableHead>
+                  <TableHead className="py-3 px-4 text-left"><Button variant="ghost" size="sm" className="-ml-2 h-8 px-2" onClick={() => { setSortBy("status"); setSortOrder(sortBy === "status" && sortOrder === "asc" ? "desc" : "asc"); }}>Status<ArrowUpDown className="ml-1 size-3" /></Button></TableHead>
+                  <TableHead className="py-3 px-4 text-left">Notes</TableHead>
+                  {canManageAttendance && <TableHead className="py-3 px-4 text-right">Actions</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-border/60">
                 {loading ? (
-                  <tr>
-                    <td colSpan={canManageAttendance ? 13 : 11} className="py-12 text-center text-muted-foreground">
+                  <TableRow>
+                    <TableCell colSpan={canManageAttendance ? 13 : 11} className="py-12 text-center text-muted-foreground">
                       <Clock className="size-6 animate-spin mx-auto text-primary mb-2" />
                       Loading attendance records...
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : filteredAttendances.length === 0 ? (
-                  <tr>
-                    <td
+                  <TableRow>
+                    <TableCell
                       colSpan={canManageAttendance ? 13 : 11}
                       className="py-12 text-center text-muted-foreground"
                     >
                       No attendance records found for selected filters.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   filteredAttendances.map((att) => {
                     const statusBadgeColors: Record<string, string> = {
@@ -917,10 +907,10 @@ export default function AttendanceManagementPage() {
                     const hasDeficit = Number(att.deficit_hours || 0) > 0;
 
                     return (
-                      <tr key={att.id} className="hover:bg-muted/30 transition-colors">
-                        {canManageAttendance && <td className="px-3"><input type="checkbox" aria-label={`Select attendance for ${att.user?.full_name} on ${att.date}`} disabled={!att.can_delete} checked={selected.includes(Number(att.id))} onChange={e => setSelected(ids => e.target.checked ? [...ids, Number(att.id)] : ids.filter(id => id !== Number(att.id)))} /></td>}
+                      <TableRow key={att.id} data-state={selected.includes(Number(att.id)) ? "selected" : undefined}>
+                        {canManageAttendance && <TableCell className="px-4"><span title={att.delete_disabled_reason}><Checkbox aria-label={"Select attendance for " + att.user?.full_name + " on " + att.date} disabled={!att.can_delete || deleting} checked={selected.includes(Number(att.id))} onCheckedChange={checked => setSelected(ids => checked === true ? Array.from(new Set([...ids, Number(att.id)])) : ids.filter(id => id !== Number(att.id)))} /></span></TableCell>}
                         {/* Date with day of week */}
-                        <td className="py-3 px-4 whitespace-nowrap">
+                        <TableCell className="py-3 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 font-mono">
                             <span className="font-semibold text-foreground">{att.date}</span>
                             {dayOfWeek && (
@@ -936,10 +926,10 @@ export default function AttendanceManagementPage() {
                               </Badge>
                             )}
                           </div>
-                        </td>
+                        </TableCell>
 
                         {/* Employee */}
-                        <td className="py-3 px-4">
+                        <TableCell className="py-3 px-4">
                           <div className="flex items-center gap-2.5">
                             <div className="size-7 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0 text-[11px]">
                               {att.user?.full_name?.slice(0, 2).toUpperCase() || "EM"}
@@ -953,10 +943,10 @@ export default function AttendanceManagementPage() {
                               </span>
                             </div>
                           </div>
-                        </td>
+                        </TableCell>
 
                         {/* Department & Designation */}
-                        <td className="py-3 px-4">
+                        <TableCell className="py-3 px-4">
                           <span className="font-medium text-foreground block">
                             {att.user?.employee_detail?.department?.name || "Unassigned"}
                           </span>
@@ -965,25 +955,25 @@ export default function AttendanceManagementPage() {
                               {att.user.employee_detail.designation.title}
                             </span>
                           )}
-                        </td>
+                        </TableCell>
 
                         {/* Check-In */}
-                        <td className="py-3 px-4 font-mono font-semibold text-foreground whitespace-nowrap">
+                        <TableCell className="py-3 px-4 font-mono font-semibold text-foreground whitespace-nowrap">
                           {att.check_in ? att.check_in.slice(0, 5) : "—"}
-                        </td>
+                        </TableCell>
 
                         {/* Check-Out */}
-                        <td className="py-3 px-4 font-mono font-semibold text-foreground whitespace-nowrap">
+                        <TableCell className="py-3 px-4 font-mono font-semibold text-foreground whitespace-nowrap">
                           {att.check_out ? att.check_out.slice(0, 5) : "—"}
-                        </td>
+                        </TableCell>
 
                         {/* Working Hours */}
-                        <td className="py-3 px-4 font-mono font-bold text-foreground whitespace-nowrap">
+                        <TableCell className="py-3 px-4 font-mono font-bold text-foreground whitespace-nowrap">
                           {att.working_hours ? `${att.working_hours}h` : "—"}
-                        </td>
+                        </TableCell>
 
                         {/* Overtime */}
-                        <td className="py-3 px-4 font-mono whitespace-nowrap">
+                        <TableCell className="py-3 px-4 font-mono whitespace-nowrap">
                           {att.overtime_hours > 0 ? (
                             <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                               +{att.overtime_hours}h
@@ -991,19 +981,19 @@ export default function AttendanceManagementPage() {
                           ) : (
                             <span className="text-muted-foreground">0h</span>
                           )}
-                        </td>
+                        </TableCell>
 
                         {/* Late Minutes */}
-                        <td className="py-3 px-4 font-mono whitespace-nowrap">
+                        <TableCell className="py-3 px-4 font-mono whitespace-nowrap">
                           {att.late_minutes > 0 ? (
                             <span className="text-amber-600 font-semibold">{att.late_minutes}m</span>
                           ) : (
                             <span className="text-muted-foreground">0m</span>
                           )}
-                        </td>
+                        </TableCell>
 
                         {/* Deficit Hours (Policy shortfall) */}
-                        <td className="py-3 px-4 font-mono whitespace-nowrap">
+                        <TableCell className="py-3 px-4 font-mono whitespace-nowrap">
                           {hasDeficit ? (
                             <Badge
                               variant="outline"
@@ -1014,10 +1004,10 @@ export default function AttendanceManagementPage() {
                           ) : (
                             <span className="text-muted-foreground">0h</span>
                           )}
-                        </td>
+                        </TableCell>
 
                         {/* Status */}
-                        <td className="py-3 px-4 whitespace-nowrap">
+                        <TableCell className="py-3 px-4 whitespace-nowrap">
                           <Badge
                             variant="outline"
                             className={`text-[10px] font-semibold px-2 py-0.5 ${
@@ -1026,17 +1016,17 @@ export default function AttendanceManagementPage() {
                           >
                             {att.status}
                           </Badge>
-                        </td>
+                        </TableCell>
 
                         {/* Notes */}
-                        <td className="py-3 px-4 text-muted-foreground truncate max-w-[150px]" title={att.notes || ""}>
+                        <TableCell className="py-3 px-4 text-muted-foreground truncate max-w-[150px]" title={att.notes || ""}>
                           {att.notes || "—"}
-                        </td>
+                        </TableCell>
 
                         {/* Actions */}
                         {canManageAttendance && (
-                          <td className="py-3 px-4 text-right whitespace-nowrap">
-                            {att.can_delete && <Button variant="ghost" size="sm" aria-label="Delete attendance" onClick={() => setDeleteIds([Number(att.id)])}><Trash2 className="size-3.5 text-destructive" /></Button>}
+                          <TableCell className="py-3 px-4 text-right whitespace-nowrap">
+                            <span title={att.delete_disabled_reason || "Delete saved attendance"}><Button variant="ghost" size="icon" aria-label="Delete attendance" disabled={!att.can_delete || deleting} onClick={() => setDeleteIds([Number(att.id)])}><Trash2 className="size-4 text-destructive" /></Button></span>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1046,14 +1036,14 @@ export default function AttendanceManagementPage() {
                             >
                               <Pencil className="size-3.5 text-muted-foreground hover:text-foreground" />
                             </Button>
-                          </td>
+                          </TableCell>
                         )}
-                      </tr>
+                      </TableRow>
                     );
                   })
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
             <div className="flex flex-wrap items-center justify-between gap-3 border-t p-4 text-sm">
               <span>{pagination?.total || 0} records · Page {pagination?.current_page || 1} of {pagination?.last_page || 1}</span>
               <div className="flex items-center gap-2"><label>Rows <select aria-label="Rows per page" value={perPage} onChange={e => setPerPage(Number(e.target.value))}>{[10,25,50,100].map(n => <option key={n} value={n}>{n}</option>)}</select></label>

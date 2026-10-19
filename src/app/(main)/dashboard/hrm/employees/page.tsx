@@ -1,5 +1,8 @@
 "use client";
 
+import { HrmSummary } from "@/components/hrm/hrm-summary";
+import hrmStyles from "@/components/hrm/hrm-page.module.css";
+
 import * as React from "react";
 import {
   Users,
@@ -55,6 +58,8 @@ import {
 export default function EmployeesDirectoryPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [departmentFilter, setDepartmentFilter] = React.useState("all");
+  const [designationFilter, setDesignationFilter] = React.useState("all");
+  const [sort, setSort] = React.useState("name_asc");
   const [statusFilter, setStatusFilter] = React.useState("all");
 
   const { employees, loading, refetch } = useHrmEmployees();
@@ -142,6 +147,7 @@ export default function EmployeesDirectoryPage() {
   // Filtered employees
   const filteredEmployees = React.useMemo(() => {
     return employees.filter((emp) => {
+      if (designationFilter !== "all" && String(emp.employee_detail?.designation_id) !== designationFilter) return false;
       if (departmentFilter !== "all" && String(emp.employee_detail?.department_id) !== departmentFilter) {
         return false;
       }
@@ -159,30 +165,32 @@ export default function EmployeesDirectoryPage() {
         );
       }
       return true;
+    }).sort((a, b) => {
+      const field = sort.split("_")[0];
+      const value = (emp: HrmEmployee) => field === "department" ? emp.employee_detail?.department?.name || "" : field === "designation" ? emp.employee_detail?.designation?.title || "" : emp.full_name || "";
+      return value(a).localeCompare(value(b)) * (sort.endsWith("desc") ? -1 : 1) || a.id - b.id;
     });
-  }, [employees, departmentFilter, statusFilter, searchQuery]);
+  }, [employees, departmentFilter, designationFilter, statusFilter, searchQuery, sort]);
   const hasActiveFilters =
-    departmentFilter !== "all" ||
+    designationFilter !== "all" || sort !== "name_asc" || departmentFilter !== "all" ||
     statusFilter !== "all" ||
     !!searchQuery;
 
   const handleResetFilters = () => {
-    setDepartmentFilter("all");
+    setDepartmentFilter("all"); setDesignationFilter("all"); setSort("name_asc");
     setStatusFilter("all");
     setSearchQuery("");
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full">
+    <div className={hrmStyles.page}>
       {/* Header + Toolbar (Orders page pattern) */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         {/* Left: Title + description */}
         <div className="space-y-1 hidden sm:block">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl tracking-tight">Employees Directory</h1>
-            <Badge variant="secondary" className="font-mono text-xs">
-              {employees.length} Employees
-            </Badge>
+
           </div>
           <p className="text-muted-foreground text-sm">
             Workforce roster, department designations, reporting lines, and compensation profiles.
@@ -193,9 +201,7 @@ export default function EmployeesDirectoryPage() {
         <div className="space-y-1 sm:hidden">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl tracking-tight">Employees Directory</h1>
-            <Badge variant="secondary" className="font-mono text-xs">
-              {employees.length}
-            </Badge>
+
           </div>
           <p className="text-muted-foreground text-sm">
             Workforce roster and employee profile management.
@@ -220,9 +226,15 @@ export default function EmployeesDirectoryPage() {
         </div>
       </div>
 
+      <HrmSummary loading={loading} items={[
+        { label: "Total Employees", value: employees.length, hint: "Within your access" },
+        { label: "Active Employees", value: employees.filter(e => e.status === "active").length, hint: "Currently active" },
+        { label: "Departments", value: new Set(employees.map(e => e.employee_detail?.department_id).filter(Boolean)).size, hint: "Represented in your workforce" },
+        { label: "Designations", value: new Set(employees.map(e => e.employee_detail?.designation_id).filter(Boolean)).size, hint: "Roles across the workforce" },
+      ]} />
       {/* Minimal Search & Filter Toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-48 sm:w-60">
+      <div className={hrmStyles.toolbar}>
+        <div className="relative w-full sm:w-72">
           <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
           <Input
             placeholder="Search by name, ID, phone..."
@@ -241,7 +253,7 @@ export default function EmployeesDirectoryPage() {
           )}
         </div>
 
-        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+        <Select value={departmentFilter} onValueChange={value => { setDepartmentFilter(value); setDesignationFilter("all"); }}>
           <SelectTrigger className="h-8 text-xs w-[150px] shrink-0">
             <SelectValue placeholder="All Departments" />
           </SelectTrigger>
@@ -255,6 +267,14 @@ export default function EmployeesDirectoryPage() {
           </SelectContent>
         </Select>
 
+        <Select value={designationFilter} onValueChange={setDesignationFilter}>
+          <SelectTrigger className="h-8 text-xs w-44" aria-label="Filter designation"><SelectValue placeholder="All Designations" /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All Designations</SelectItem>{designations.filter(d => departmentFilter === "all" || String(d.department_id) === departmentFilter).map(d => <SelectItem key={d.id} value={String(d.id)}>{d.title}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={sort} onValueChange={setSort}>
+          <SelectTrigger className="h-8 text-xs w-44" aria-label="Sort employees"><SelectValue /></SelectTrigger>
+          <SelectContent>{[["name_asc", "Name: A–Z"], ["name_desc", "Name: Z–A"], ["department_asc", "Department: A–Z"], ["department_desc", "Department: Z–A"], ["designation_asc", "Designation: A–Z"], ["designation_desc", "Designation: Z–A"]].map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent>
+        </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="h-8 text-xs w-[120px] shrink-0">
             <SelectValue placeholder="All Status" />
@@ -282,6 +302,7 @@ export default function EmployeesDirectoryPage() {
 
       {/* Table Card */}
       <Card className="border shadow-2xs overflow-hidden">
+        <CardHeader><CardTitle className="text-sm font-normal text-muted-foreground">Employee Directory</CardTitle><CardDescription className="text-xl text-foreground tabular-nums">{filteredEmployees.length} of {employees.length} employees</CardDescription></CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -299,7 +320,7 @@ export default function EmployeesDirectoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {filteredEmployees.length === 0 ? (
+                {loading ? (<tr><td colSpan={9} className="p-6"><div role="status" aria-label="Loading employees" className="space-y-3">{[1,2,3,4].map(row => <div key={row} className="h-10 animate-pulse rounded bg-muted" />)}</div></td></tr>) : filteredEmployees.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="h-48 text-center text-muted-foreground">
                       <div className="flex flex-col items-center justify-center gap-2">

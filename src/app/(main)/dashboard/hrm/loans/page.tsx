@@ -1,5 +1,7 @@
 "use client";
 
+import hrmStyles from "@/components/hrm/hrm-page.module.css";
+
 import * as React from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { hasAllUserAccess } from "@/hooks/useRoles";
@@ -158,7 +160,7 @@ export default function LoansAdvancesPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full">
+    <div className={hrmStyles.page}>
       {/* Header + Toolbar (Orders page pattern) */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         {/* Left: Title + description */}
@@ -225,7 +227,7 @@ export default function LoansAdvancesPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className={hrmStyles.stats}>
         <Card className="border shadow-2xs hover:shadow-xs transition-all relative overflow-hidden bg-card">
           <CardContent className="p-4 space-y-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">

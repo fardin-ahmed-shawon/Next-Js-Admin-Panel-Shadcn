@@ -479,11 +479,11 @@ export default function EmployeeCashFlowPage() {
               variant="outline"
               size="sm"
               disabled={!canManagePayroll}
-              onClick={() => setPolicyModalOpen(true)}
+              onClick={() => { window.location.href = "/dashboard/hrm/policy-rules"; }}
               className="gap-1.5 h-9 text-xs"
             >
               <Clock className="size-4 text-primary" />
-              <span>Work Hour Policy</span>
+              <span>Policy &amp; Rules</span>
             </Button>
 
             <Button
