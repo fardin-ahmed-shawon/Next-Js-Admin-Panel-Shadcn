@@ -574,10 +574,11 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
                       <th className="py-3 px-4 text-left">Basic Salary</th>
                       <th className="py-3 px-4 text-left">Allowances</th>
                       <th className="py-3 px-4 text-left">Incentive Commission</th>
-                      <th className="py-3 px-4 text-left">Bonus</th>
+                      <th className="py-3 px-4 text-left">Festival / Monthly Bonus</th>
                       <th className="py-3 px-4 text-left">Overtime</th>
                       <th className="py-3 px-4 text-left">Gross Salary</th>
                       <th className="py-3 px-4 text-left text-rose-600">Fines</th>
+                      <th className="py-3 px-4 text-left text-amber-600">Hour Deficit</th>
                       <th className="py-3 px-4 text-left">Total Deductions</th>
                       <th className="py-3 px-4 text-left">Net Salary</th>
                       <th className="py-3 px-4 text-left">Payment</th>
@@ -587,13 +588,13 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
                   <tbody className="divide-y divide-border/60">
                     {loading ? (
                       <tr>
-                        <td colSpan={12} className="py-12 text-center text-muted-foreground">
+                        <td colSpan={13} className="py-12 text-center text-muted-foreground">
                           Loading monthly payroll records...
                         </td>
                       </tr>
                     ) : filteredSalaries.length === 0 ? (
                       <tr>
-                        <td colSpan={12} className="py-12 text-center text-muted-foreground">
+                        <td colSpan={13} className="py-12 text-center text-muted-foreground">
                           No payroll records generated yet for {MONTHS[selectedMonth - 1]} {selectedYear}.
                           <div className="mt-2">
                             <Button
@@ -665,20 +666,13 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
                                 <span className="font-mono font-bold text-rose-600 block">
                                   -৳{Number(sal.fine_deduction).toLocaleString()}
                                 </span>
-                                {sal.fines && sal.fines.length > 0 && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[9px] px-1 py-0 bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 max-w-[120px] truncate block"
-                                    title={`${sal.fines[0]?.reason} • Fined by: ${sal.fines[0]?.finedBy?.full_name || sal.fines[0]?.fined_by}`}
-                                  >
-                                    {sal.fines[0]?.reason}
-                                  </Badge>
-                                )}
+
                               </div>
                             ) : (
                               <span className="text-muted-foreground/30 font-mono text-xs">—</span>
                             )}
                           </td>
+                          <td className="py-3 px-4 font-mono text-amber-600">৳{Number(sal.hour_deficit_deduction || 0).toLocaleString()}<div className="text-[10px] text-muted-foreground">{Number(sal.deficit_hours || 0)}h</div></td>
                           <td className="py-3 px-4 font-mono text-rose-600 font-semibold">
                             {sal.total_deduction > 0 ? `-৳${sal.total_deduction.toLocaleString()}` : "৳0"}
                           </td>
@@ -1647,7 +1641,7 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
               </div>
 
               <div className="space-y-1">
-                <Label>Special Festival Bonus (৳)</Label>
+                <Label>Festival / Monthly Bonus (৳)</Label>
                 <Input
                   type="number"
                   min={0}
@@ -1741,7 +1735,7 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Bonus:</span>
+                      <span className="text-muted-foreground">Festival / Monthly Bonus:</span>
                       <span className="font-mono font-semibold text-amber-600">
                         ৳{payslipData.bonus.toLocaleString()}
                       </span>

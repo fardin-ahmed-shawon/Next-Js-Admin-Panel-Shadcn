@@ -739,7 +739,7 @@ export default function EmployeeCashFlowPage() {
                     Gross Salary
                   </SelectItem>
                   <SelectItem value="hour_deficit_deduction" className="text-xs">
-                    Hour Deficit Penalty
+                    Hour Deficit
                   </SelectItem>
                   <SelectItem value="deficit_hours" className="text-xs">
                     Deficit Hours Short
@@ -1025,7 +1025,7 @@ export default function EmployeeCashFlowPage() {
                   onClick={() => setCategoryFilter("fines")}
                   className="text-xs h-7 px-2.5 text-amber-700 dark:text-amber-400 font-semibold"
                 >
-                  Fines & Penalties ({statementEntries.filter((e) => e.category === "fine_deduction").length})
+                  Fines ({statementEntries.filter((e) => e.category === "fine_deduction").length})
                 </Button>
                 <Button
                   variant={categoryFilter === "deficits" ? "default" : "outline"}
@@ -1111,7 +1111,7 @@ export default function EmployeeCashFlowPage() {
                               ? "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 font-semibold"
                               : entry.category === "hour_deficit"
                               ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
-                              : entry.category === "incentive"
+                              : ["sales_incentive", "upsell_incentive", "incentive"].includes(entry.category)
                               ? "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20"
                               : entry.category === "salary_payment"
                               ? "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20"
@@ -1216,8 +1216,8 @@ export default function EmployeeCashFlowPage() {
                     <TableHead className="text-xs font-bold text-right">Incentives</TableHead>
                     <TableHead className="text-xs font-bold text-right">Gross Salary</TableHead>
                     <TableHead className="text-xs font-bold text-center">Work Hours (Act / Exp)</TableHead>
-                    <TableHead className="text-xs font-bold text-right text-amber-700 dark:text-amber-400">Hour Deficit Penalty</TableHead>
-                    <TableHead className="text-xs font-bold text-right text-rose-600">Fines & Penalties</TableHead>
+                    <TableHead className="text-xs font-bold text-right text-amber-700 dark:text-amber-400">Hour Deficit</TableHead>
+                    <TableHead className="text-xs font-bold text-right text-rose-600">Fines</TableHead>
                     <TableHead className="text-xs font-bold text-right text-red-600">Other Deductions</TableHead>
                     <TableHead className="text-xs font-bold text-right">Net Cash Outflow</TableHead>
                     <TableHead className="text-xs font-bold text-center">Status</TableHead>
@@ -1349,7 +1349,7 @@ export default function EmployeeCashFlowPage() {
                             )}
                           </TableCell>
 
-                          {/* Fines & Penalties Column */}
+                          {/* Fines Column */}
                           <TableCell className="text-xs text-right">
                             {Number(record.fine_deduction || 0) > 0 ? (
                               <div className="space-y-0.5">
@@ -1776,7 +1776,7 @@ export default function EmployeeCashFlowPage() {
                     <div className="font-bold text-rose-700 dark:text-rose-400 flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <AlertTriangle className="size-3.5 text-rose-600" />
-                        Employee Fines & Penalties ({empFines.length})
+                        Employee Fines ({empFines.length})
                       </span>
                       <span className="font-extrabold">
                         -{formatCurrency(empFines.reduce((sum, f) => sum + (f.amount || 0), 0))}
@@ -1958,7 +1958,7 @@ export default function EmployeeCashFlowPage() {
                     <div className="font-bold text-[11px] text-rose-700 dark:text-rose-400 flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <AlertTriangle className="size-3 text-rose-600" />
-                        Disciplinary Fines & Penalties ({empFines.length})
+                        Disciplinary Fines ({empFines.length})
                       </span>
                       <span className="font-mono font-extrabold text-rose-600">
                         -{formatCurrency(empFines.reduce((sum: number, f: any) => sum + (Number(f.amount) || 0), 0))}
