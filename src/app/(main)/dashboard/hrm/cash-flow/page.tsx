@@ -179,7 +179,7 @@ export default function EmployeeCashFlowPage() {
     enable_deficit_deduction: true,
     calculation_basis: "basic_salary",
     handle_absent_days: "hour_deficit_only",
-    grace_hours_monthly: 0,
+    hourly_rate_basis: "weekdays", fixed_working_days: 30,
     status: "active",
     notes: "",
     recalculate_unpaid: true,
@@ -212,7 +212,7 @@ export default function EmployeeCashFlowPage() {
         enable_deficit_deduction: policy.enable_deficit_deduction !== false,
         calculation_basis: policy.calculation_basis || "basic_salary",
         handle_absent_days: policy.handle_absent_days || "hour_deficit_only",
-        grace_hours_monthly: policy.grace_hours_monthly || 0,
+        hourly_rate_basis: policy.hourly_rate_basis || "weekdays", fixed_working_days: policy.fixed_working_days || 30,
         status: policy.status || "active",
         notes: policy.notes || "",
         recalculate_unpaid: true,
@@ -1565,24 +1565,13 @@ export default function EmployeeCashFlowPage() {
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Monthly Grace Buffer</Label>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    max="50"
-                    value={policyForm.grace_hours_monthly || 0}
-                    onChange={(e) =>
-                      setPolicyForm({ ...policyForm, grace_hours_monthly: parseFloat(e.target.value) || 0 })
-                    }
-                    className="h-8 text-xs pr-8"
-                  />
-                  <span className="absolute right-2.5 top-2 text-[10px] text-muted-foreground font-semibold">
-                    hrs
-                  </span>
-                </div>
+<div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Hourly Rate Days</Label>
+                <Select value={policyForm.hourly_rate_basis || "weekdays"} onValueChange={(value: "weekdays" | "fixed_days") => setPolicyForm({ ...policyForm, hourly_rate_basis: value, fixed_working_days: policyForm.fixed_working_days || 30 })}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="weekdays">Only Weekdays</SelectItem><SelectItem value="fixed_days">Fixed Days</SelectItem></SelectContent>
+                </Select>
+                {policyForm.hourly_rate_basis === "fixed_days" && <Input aria-label="Fixed working days" type="number" min={1} max={31} value={policyForm.fixed_working_days ?? 30} onChange={e => setPolicyForm({ ...policyForm, fixed_working_days: Number(e.target.value) })} />}
               </div>
             </div>
 
@@ -1610,7 +1599,7 @@ export default function EmployeeCashFlowPage() {
                 })}
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">
-                Selected {policyForm.working_days?.length || 0} days per week. Month expected hours = (Weekdays count in month) × {policyForm.expected_daily_hours || 8} hrs.
+                Selected {policyForm.working_days?.length || 0} days per week. Monthly grace = working weekdays in the month × {policyForm.late_grace_minutes ?? 15} minutes, applied once to total deficit. Hourly rate = salary ÷ (selected rate days × daily hours). Holidays and approved leave remain exempt from deficits.
               </p>
             </div>
 
@@ -1640,22 +1629,7 @@ export default function EmployeeCashFlowPage() {
                     "Hour Deficit Only" avoids duplicate penalties by deducting all missing hours via the hourly rate.
                   </div>
                 </div>
-                <Select
-                  value={policyForm.handle_absent_days}
-                  onValueChange={(val: any) => setPolicyForm({ ...policyForm, handle_absent_days: val })}
-                >
-                  <SelectTrigger className="h-8 text-xs w-[170px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hour_deficit_only" className="text-xs">
-                      Hour Deficit Only (Unified)
-                    </SelectItem>
-                    <SelectItem value="both_separate" className="text-xs">
-                      Deduct Both Separately
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <span className="text-xs font-semibold">Hour Deficit Only (Unified)</span>
               </div>
             </div>
 

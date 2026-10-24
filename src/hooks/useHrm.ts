@@ -103,7 +103,7 @@ export interface AttendanceRecord {
   late_minutes: number;
   early_leave_minutes: number;
   deficit_hours?: number;
-  status: "Present" | "Absent" | "Late" | "Half Day" | "On Leave" | "Holiday";
+  status: "Scheduled" | "Present" | "Absent" | "Late" | "On Leave" | "Holiday";
   notes?: string | null;
   ip_address?: string | null;
   user?: HrmEmployee;
@@ -842,7 +842,8 @@ export interface WorkHourPolicy {
   enable_deficit_deduction: boolean;
   calculation_basis: "basic_salary" | "gross_salary";
   handle_absent_days: "hour_deficit_only" | "both_separate";
-  grace_hours_monthly?: number;
+  hourly_rate_basis?: "weekdays" | "fixed_days";
+  fixed_working_days?: number;
   status: "active" | "inactive";
   notes?: string | null;
   department?: Department | null;

@@ -750,7 +750,7 @@ export default function AttendanceManagementPage() {
                   <SelectItem value="Present">Present</SelectItem>
                   <SelectItem value="Late">Late</SelectItem>
                   <SelectItem value="Absent">Absent</SelectItem>
-                  <SelectItem value="Half Day">Half Day</SelectItem>
+                  <SelectItem value="Scheduled">Scheduled</SelectItem>
                   <SelectItem value="On Leave">On Leave</SelectItem>
                   <SelectItem value="Holiday">Holiday</SelectItem>
                 </SelectContent>
@@ -889,7 +889,7 @@ export default function AttendanceManagementPage() {
                       Present: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
                       Late: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
                       Absent: "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20",
-                      "Half Day": "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20",
+                      Scheduled: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20",
                       "On Leave": "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20",
                       Holiday: "bg-muted text-muted-foreground",
                     };
