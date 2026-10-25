@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { EmployeeAssignmentPicker } from "../../orders/_components/employee-assignment-picker";
-import { createDeliveryIssue, useDeliveryOrders, useDeliveryRecipients, type DeliveryOrderOption } from "@/hooks/useDeliverySupport";
+import { issueCategories, createDeliveryIssue, useDeliveryOrders, useDeliveryRecipients, type DeliveryOrderOption } from "@/hooks/useDeliverySupport";
 import { issueError } from "./issue-dialogs";
 
 export function CreateIssueSheet({ canAssign, onClose, onCreated }: {
@@ -22,6 +22,7 @@ export function CreateIssueSheet({ canAssign, onClose, onCreated }: {
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [handler, setHandler] = useState("unassigned");
+  const [category, setCategory] = useState<string>(issueCategories[0]);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -50,7 +51,7 @@ export function CreateIssueSheet({ canAssign, onClose, onCreated }: {
         if (!selectedOrder || saving) return;
         setSaving(true); setError("");
         try {
-          await createDeliveryIssue({ order_no: selectedOrder.order_no, note: note.trim(),
+          await createDeliveryIssue({ order_no: selectedOrder.order_no, category, note: note.trim(),
             ...(canAssign && handler !== "unassigned" ? { assigned_to: Number(handler) } : {}) });
           toast.success("Delivery issue raised"); onCreated(); onClose();
         } catch (err) { setError(issueError(err)); } finally { setSaving(false); }
@@ -94,6 +95,7 @@ export function CreateIssueSheet({ canAssign, onClose, onCreated }: {
               : <p className="text-xs text-muted-foreground">Type at least 2 characters and select an order from the suggestions.</p>}
           </div>
 
+          <div className="space-y-2"><Label htmlFor="issue-category">Issue category *</Label><select id="issue-category" required disabled={saving} value={category} onChange={e => setCategory(e.target.value)} className="h-10 w-full rounded-md border bg-background px-3">{issueCategories.map(value => <option key={value}>{value}</option>)}</select><p className="text-xs text-muted-foreground">You are automatically recorded as the Issue Raiser.</p></div>
           {canAssign ? <section className="space-y-3 rounded-xl border bg-muted/15 p-4">
             <div><h2 className="text-sm font-semibold">Support handler</h2><p className="mt-1 text-xs text-muted-foreground">Search eligible employees and filter or sort by department and designation.</p></div>
             {recipients.error && <p role="alert" className="text-sm text-destructive">{issueError(recipients.error)} <button type="button" className="underline" onClick={() => recipients.mutate()}>Retry</button></p>}

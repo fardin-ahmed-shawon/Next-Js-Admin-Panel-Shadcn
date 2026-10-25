@@ -60,6 +60,8 @@ export function IssueDetails({ id, onClose, onSaved }: { id: number; onClose: ()
       {error && <p role="alert" className="text-sm text-destructive">{issueError(error)} <button onClick={() => mutate()} className="underline">Retry</button></p>}
       {issue && !error && <>
         <div className="grid grid-cols-2 gap-4 rounded-xl border bg-muted/30 p-4 text-sm">
+          <div><p className="text-xs text-muted-foreground">Issue category</p><p className="mt-1 font-medium">{issue.category}</p></div>
+          <div><p className="text-xs text-muted-foreground">Issue raiser</p><p className="mt-1 font-medium">{issue.raiser?.full_name || "Former employee"}</p></div>
           <div><p className="text-xs text-muted-foreground">Support handler</p><p className="mt-1 font-medium">{issue.handler?.full_name || "Unassigned"}</p></div>
           <div><p className="text-xs text-muted-foreground">Status</p><p className="mt-1 font-medium">{issue.resolved ? "Resolved" : "Pending"}</p></div>
           <div><p className="text-xs text-muted-foreground">Admin approval</p><p className="mt-1 font-medium">{issue.approved ? `Approved by ${issue.approver?.full_name || "Former employee"}` : "Not approved"}</p></div>

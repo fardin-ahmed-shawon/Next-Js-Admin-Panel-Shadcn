@@ -26,12 +26,14 @@ type Employee = { user_id: number; name: string; email: string; department_id: n
 type Department = { department_id: number | null; name: string; employees: number; groups: Group[]; metrics: Record<string, number> };
 type Report = { rows: Employee[]; departments: Department[]; summary: Record<string, number>; total_employees: number };
 const endpoints = { employee: "employee-reports", department: "hrm/department-performance", leaderboard: "hrm/leaderboard" };
+const issueCategories = ["Delivery Issue", "Customer Issue", "COD Change Issue"];
 const titles = { employee: "Employee Report", department: "Department Performance", leaderboard: "Leaderboard" };
 const format = (key: string, value: number) => `${key.includes("revenue") || key.includes("value") ? "৳" : ""}${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 function localDate(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
 
 export function PerformanceReportPage({ mode, employeeId, salesDetails, renderLayout }: { mode: keyof typeof endpoints; employeeId?: string; salesDetails?: ReactNode; renderLayout?: (props: PerformanceLayoutProps) => ReactNode }) {
   const [showSalesDetails, setShowSalesDetails] = useState(false);
+  const [issueCategory, setIssueCategory] = useState("");
   const [period, setPeriod] = useState("all");
   const [layoutDates, setLayoutDates] = useState<{ start?: string; end?: string }>({});
   const onDatesChange = useCallback((dates: { start?: string; end?: string }) => setLayoutDates(dates), []);
@@ -45,6 +47,7 @@ export function PerformanceReportPage({ mode, employeeId, salesDetails, renderLa
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState("25");
   const params = new URLSearchParams({ performance: "1" });
+  if (issueCategory) params.set("issue_category", issueCategory);
   if (employeeId) params.set("employee_id", employeeId);
   if (renderLayout) {
     if (layoutDates.start) params.set("start_date", layoutDates.start);
@@ -93,6 +96,7 @@ export function PerformanceReportPage({ mode, employeeId, salesDetails, renderLa
   const groupLabel = (group: Group) => mode === "employee" ? ({ sales: "Order Agent", packing: "Packing By", returns: "Return Confirmed By", support_handled: "Support" })[group] : GROUPS[group].label;
   const controls = <div className="flex min-w-0 flex-1 flex-wrap items-end gap-4">
     <div className="space-y-2"><p className="text-xs font-medium text-muted-foreground">{mode === "employee" ? "Employee performance by" : "Performance type"}</p><div className="flex flex-wrap gap-2" role="tablist" aria-label="Performance type">{availableGroups.map(group => <Button size="sm" role="tab" aria-selected={activeGroup === group} key={group} variant={activeGroup === group ? "default" : "outline"} onClick={() => chooseGroup(group)}>{groupLabel(group)}</Button>)}</div></div>
+    {activeGroup === "support_handled" && <label className="space-y-2 text-xs font-medium text-muted-foreground"><span>Issue category</span><Select value={issueCategory || "all"} onValueChange={value => { setIssueCategory(value === "all" ? "" : value); setPage(1); }}><SelectTrigger className="w-48" aria-label="Support issue category"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All categories</SelectItem>{issueCategories.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select></label>}
     <label className="ml-auto space-y-2 text-xs font-medium text-muted-foreground"><span>Department</span><Select value={department} onValueChange={value => { setDepartment(value); setPage(1); }}><SelectTrigger className="w-56" aria-label="Department"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Departments</SelectItem>{data?.departments.map(row => <SelectItem key={String(row.department_id)} value={String(row.department_id)}>{row.name}</SelectItem>)}</SelectContent></Select></label>
   </div>;
   const content = <div className="space-y-6">

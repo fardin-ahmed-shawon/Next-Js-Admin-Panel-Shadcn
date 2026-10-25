@@ -31,6 +31,13 @@ import {
   Truck,
   UserCog,
   Users,
+  ShoppingBag,
+  CirclePile,
+  Puzzle,
+  House,
+  LayoutGrid,
+  WalletCards,
+  Link2,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -70,13 +77,13 @@ export const sidebarItems: NavGroup[] = [
       {
         title: "Dashboard",
         url: "/dashboard/home",
-        icon: LayoutDashboard,
+        icon: House,
         module: "dashboard",
       },
       {
         title: "Categories",
         url: "/dashboard/categories",
-        icon: Layers,
+        icon: LayoutGrid,
         module: "categories",
       },
       {
@@ -115,7 +122,7 @@ export const sidebarItems: NavGroup[] = [
       {
         title: "Wholesale Orders",
         url: "/dashboard/orders/wholesale",
-        icon: ShoppingCart,
+        icon: ShoppingBag,
         module: "wholesale_orders",
         subItems: [
           { title: "Order Create", url: "/dashboard/orders/wholesale-create", module: "wholesale_orders" },
@@ -150,7 +157,7 @@ export const sidebarItems: NavGroup[] = [
       {
         title: "Accounts",
         url: "/dashboard/accounts",
-        icon: ChartBar,
+        icon: WalletCards,
         module: "accounts",
         subItems: [
           { title: "Dashboard", url: "/dashboard/accounts", module: "accounts" },
@@ -164,11 +171,11 @@ export const sidebarItems: NavGroup[] = [
           { title: "Refund History", url: "/dashboard/accounts/refund-history", module: "refund_history", comingSoon: true },
         ],
       },
-      { title: "Inventory", url: "/dashboard/inventory", icon: Archive, module: "inventory" },
+      { title: "Inventory", url: "/dashboard/inventory", icon: CirclePile, module: "inventory" },
       { title: "Slider", url: "/dashboard/slider", icon: SlidersHorizontal, module: "slider" },
       { title: "Banner", url: "/dashboard/banner", icon: Flag, module: "banner" },
       { title: "Discounts", url: "/dashboard/discounts", icon: BadgePercent, module: "discounts" },
-      { title: "Coupons", url: "/dashboard/coupons", icon: Ticket, module: "coupons" },
+      { title: "Coupons", url: "/dashboard/coupons", icon: Puzzle, module: "coupons" },
       { title: "Flash Sales", url: "/dashboard/flash-sales", icon: Zap, module: "flash_sales" },
       { title: "Reviews", url: "/dashboard/reviews", icon: Star, module: "reviews" },
       { title: "Testimonials", url: "/dashboard/testimonials", icon: MessageSquareQuote, module: "testimonials" },
@@ -183,7 +190,7 @@ export const sidebarItems: NavGroup[] = [
       {
         title: "Meta Marketing",
         url: "/dashboard/meta-marketing",
-        icon: TrendingUp,
+        icon: Link2,
         isNew: true,
         subItems: [
           { title: "Dashboard", url: "/dashboard/meta-marketing" },
@@ -192,9 +199,9 @@ export const sidebarItems: NavGroup[] = [
         ],
       },
       {
-        title: "Delivery Ops & Support",
+        title: "Ticket Support System",
         url: "/dashboard/delivery-support",
-        icon: Truck,
+        icon: Ticket,
         module: "delivery_support",
         isNew: true,
       },
