@@ -1,4 +1,5 @@
 "use client";
+import { HrmDocumentLink } from "@/components/hrm/hrm-document-link";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -36,7 +37,7 @@ import {
   essRequestAdvance,
   updateTaskStatus,
 } from "@/hooks/useHrm";
-import { hasSelfAttendanceAccess } from "@/hooks/useRoles";
+import { hasSelfAttendanceAccess, hasModuleAccess } from "@/hooks/useRoles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -787,6 +788,7 @@ export default function EmployeeSelfServicePortalPage() {
               {myDocs.length === 0 ? (
                 <div className="text-center py-8 text-xs text-muted-foreground">
                   No personal documents uploaded to your vault yet.
+                  {hasModuleAccess(user, "hrm_documents") && <Link href="/dashboard/hrm/documents" className="mt-3 block font-medium text-primary hover:underline">Upload / manage documents</Link>}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -804,14 +806,7 @@ export default function EmployeeSelfServicePortalPage() {
                           </p>
                         </div>
                       </div>
-                      <a
-                        href={doc.file_path}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline flex items-center gap-1 font-medium ml-2"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" /> View
-                      </a>
+                      <HrmDocumentLink document={doc} />
                     </div>
                   ))}
                 </div>

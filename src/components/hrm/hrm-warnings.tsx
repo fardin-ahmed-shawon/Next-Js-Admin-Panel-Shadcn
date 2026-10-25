@@ -18,7 +18,7 @@ import { HrmSummary } from "./hrm-summary";
 import styles from "./hrm-page.module.css";
 
 type Warning = {
-  id: number; user_id: number; subject: string; description: string; warning_date: string; severity: string;
+  termination_applied_at?: string | null; termination_exit_id?: number | null; id: number; user_id: number; subject: string; description: string; warning_date: string; severity: string;
   user?: { id: number; full_name: string; employee_detail?: { department?: { name: string } } };
   issuer?: { full_name: string };
 };
@@ -42,12 +42,13 @@ export function HrmWarnings() {
   const warnings = (data || []) as Warning[];
   const available = (recipients?.employees || []) as PickerEmployee[];
   const employees = Array.from(new Map([...available, ...warnings.flatMap(row => row.user ? [row.user] : [])].map(person => [person.id, person])).values());
+  const terminated = Boolean(warnings.find(row => row.id === editing)?.termination_applied_at);
   const rows = warnings.filter(row => (!severity || row.severity === severity) && (!employee || String(row.user_id) === employee)
     && [row.subject, row.description, row.user?.full_name, row.user?.employee_detail?.department?.name].join(" ").toLowerCase().includes(query.toLowerCase()));
 
   async function refresh() {
     await refetch();
-    await mutate(key => typeof key === "string" && key.includes("/self-service"));
+    await mutate(key => typeof key === "string" && ["/self-service", "/employees", "/exits", "/notices/recipients"].some(path => key.includes(path)));
   }
 
   async function save(event: React.FormEvent) {
@@ -93,12 +94,13 @@ export function HrmWarnings() {
     </div>
     <Dialog open={open} onOpenChange={value => { if (!saving) setOpen(value); }}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl"><DialogHeader><DialogTitle className="text-2xl font-bold">{editing ? "Edit Warning" : "Add Warning"}</DialogTitle><DialogDescription>This warning appears in the selected employee’s disciplinary records and the management list.</DialogDescription></DialogHeader>
       <form onSubmit={save} className="space-y-4">
-        <EmployeePicker key={String(editing)} employees={available.length ? available : employees} value={form.user_id} onChange={value => setForm({ ...form, user_id: value })} />
+        <EmployeePicker key={String(editing)} employees={employees} value={form.user_id} onChange={value => setForm({ ...form, user_id: value })} />
         <div className="space-y-2"><Label htmlFor="warning-subject">Subject</Label><Input id="warning-subject" required maxLength={200} value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} /></div>
         <div className="space-y-2"><Label htmlFor="warning-description">Description</Label><Textarea id="warning-description" required maxLength={10000} rows={5} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
         <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor="warning-date">Warning date</Label><Input id="warning-date" type="date" required value={form.warning_date} onChange={e => setForm({ ...form, warning_date: e.target.value })} /></div><div className="space-y-2"><Label htmlFor="warning-severity">Severity</Label><select id="warning-severity" className={selectClass + " w-full"} value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value })}>{["verbal", "written", "final"].map(level => <option key={level} value={level}>{level}</option>)}</select></div></div>
+        {(form.severity === "final" || terminated) && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{terminated ? "This warning has already terminated the employee. Editing or deleting it will not reactivate their account or remove the termination record." : "Saving a final warning immediately terminates this employee, makes their profile inactive, and signs them out. A termination record will be created; salary settlement remains pending."}</div>}
         {formError && <p role="alert" className="text-sm text-destructive">{formError}</p>}
-        <div className="flex justify-end gap-2"><Button type="button" variant="outline" disabled={saving} onClick={() => setOpen(false)}>Cancel</Button><Button disabled={saving}>{saving ? "Saving…" : editing ? "Save changes" : "Issue warning"}</Button></div>
+        <div className="flex justify-end gap-2"><Button type="button" variant="outline" disabled={saving} onClick={() => setOpen(false)}>Cancel</Button><Button disabled={saving}>{saving ? "Saving…" : form.severity === "final" && !terminated ? "Issue final warning & terminate" : editing ? "Save changes" : "Issue warning"}</Button></div>
       </form>
     </DialogContent></Dialog>
   </div>;

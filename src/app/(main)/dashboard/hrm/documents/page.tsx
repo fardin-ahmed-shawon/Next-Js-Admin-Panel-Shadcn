@@ -1,4 +1,5 @@
 "use client";
+import { HrmDocumentLink } from "@/components/hrm/hrm-document-link";
 
 import hrmStyles from "@/components/hrm/hrm-page.module.css";
 
@@ -365,14 +366,7 @@ export default function EmployeeDocumentsPage() {
                   {new Date(doc.created_at).toLocaleDateString()}
                 </span>
                 <div className="flex items-center gap-1">
-                  <a
-                    href={doc.file_path}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-primary hover:underline font-medium text-xs py-1 px-2 rounded hover:bg-primary/10 transition-colors"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" /> View / Download
-                  </a>
+                  <HrmDocumentLink document={doc} />
                   <Button
                     variant="ghost"
                     size="icon"
