@@ -1,5 +1,8 @@
 "use client";
 
+import { DiscountLimitsSheet } from "./_components/discount-limits-sheet";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { useState, useCallback } from "react";
 import { AddDiscountDialog } from "./_components/add-discount-dialog";
 import { DiscountsStats } from "./_components/discounts-stats";
@@ -25,6 +28,8 @@ export default function DiscountsPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button variant="outline" asChild><Link href="/dashboard/reports/discount">Discount Report</Link></Button>
+          <DiscountLimitsSheet />
           <AddDiscountDialog onDiscountAdded={handleDiscountAdded} />
         </div>
       </div>

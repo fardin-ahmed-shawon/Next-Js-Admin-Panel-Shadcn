@@ -210,6 +210,7 @@ export const sidebarItems: NavGroup[] = [
           { title: "Product Percent", url: "/dashboard/reports/product-percent", module: "product_percent" },
           { title: "Customer Report", url: "/dashboard/reports/customer", module: "customer_report" },
           { title: "Supplier Report", url: "/dashboard/reports/supplier", module: "supplier_report" },
+          { title: "Discount Report", url: "/dashboard/reports/discount", module: "discounts" },
           { title: "Employee Report", url: "/dashboard/reports/employee", module: "employee_report" },
           { title: "Upsell Report", url: "/dashboard/reports/upsell", module: "employee_report" },
           { title: "Payment Report", url: "/dashboard/reports/payment", module: "payment_report" },

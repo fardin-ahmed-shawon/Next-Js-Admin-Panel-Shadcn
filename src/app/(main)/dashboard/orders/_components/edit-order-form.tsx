@@ -1,4 +1,5 @@
 "use client";
+import { useCustomDiscount } from "@/hooks/useCustomDiscount";
 import {orderDisplayLines} from "@/lib/order-combos";
 
 import * as React from "react";
@@ -495,6 +496,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
   const [nextActionDate, setNextActionDate] = React.useState("");
   const [selectedDistrict, setSelectedDistrict] = React.useState("");
   const [shippingChargeInput, setShippingChargeInput] = React.useState<number>(0);
+  const discountPolicy = useCustomDiscount();
   const [discountAmountInput, setDiscountAmountInput] = React.useState<number>(0);
 
   const [cart, setCart] = React.useState<CartItem[]>([]);
@@ -874,11 +876,12 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
       }
     }
 
+    if (discountPolicy.canApply && discountAmountInput > Number(order?.discount_amount || 0) && discountAmountInput > discountPolicy.maxAmount(cartSubtotal, Number(order?.discount_amount || 0))) { toast.error("Discount exceeds the available limit for this order."); return; }
     setIsSavingAll(true);
     const toastId = toast.loading("Saving all changes...");
 
     const computedSubtotal = cartSubtotal;
-    const computedGrandTotal = Math.max(0, computedSubtotal - discountAmountInput + shippingChargeInput);
+    const computedGrandTotal = Math.max(0, computedSubtotal - (discountPolicy.canApply ? discountAmountInput : Number(order?.discount_amount || 0)) + shippingChargeInput);
 
     try {
       const promises = [];
@@ -886,7 +889,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
       // Primary order PATCH payload
       const payload: Record<string, any> = {
         shipping_charge: shippingChargeInput,
-        discount_amount: discountAmountInput,
+        discount_amount: discountPolicy.canApply ? discountAmountInput : Number(order?.discount_amount || 0),
         combo_quantities: comboQuantities,
         subtotal_amount: computedSubtotal,
         grand_total_amount: computedGrandTotal,
@@ -1409,6 +1412,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                         ৳{cartSubtotal.toLocaleString()}
                       </span>
                     </div>
+                    {discountPolicy.canApply ? <>
                     <div className="flex justify-between items-center h-9">
                       <span className="text-muted-foreground">Discount</span>
                       <div className="relative w-28">
@@ -1418,12 +1422,14 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                         <input
                           type="number"
                           min="0"
+                          max={discountPolicy.maxAmount(cartSubtotal, Number(order?.discount_amount || 0))}
                           value={discountAmountInput}
                           onChange={(e) => setDiscountAmountInput(Math.max(0, parseInt(e.target.value) || 0))}
                           className="w-full text-right pr-2 pl-6 h-8 text-sm rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       </div>
                     </div>
+                    </> : <div className="text-xs text-muted-foreground">{discountPolicy.message}{Number(order?.discount_amount)>0 && <span> Existing discount: ৳{order.discount_amount}</span>}</div>}
                     <div className="flex justify-between items-center h-9">
                       <span className="text-muted-foreground">Shipping</span>
                       <div className="relative w-28">
@@ -1446,7 +1452,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                         {Math.max(
                           0,
                           cartSubtotal -
-                          discountAmountInput +
+                          (discountPolicy.canApply ? discountAmountInput : Number(order?.discount_amount || 0)) +
                           shippingChargeInput,
                         ).toLocaleString()}
                       </span>

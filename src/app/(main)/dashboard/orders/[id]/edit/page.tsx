@@ -1,4 +1,5 @@
 "use client";
+import { useCustomDiscount } from "@/hooks/useCustomDiscount";
 
 import * as React from "react";
 
@@ -428,6 +429,7 @@ export default function EditOrderPage() {
   const [paymentStatus, setPaymentStatus] = React.useState("Unpaid");
   const [paidAmount, setPaidAmount] = React.useState<number | "">("");
 
+  const discountPolicy = useCustomDiscount();
   const [discountType, setDiscountType] = React.useState("fixed");
   const [discountValue, setDiscountValue] = React.useState("");
   const [orderNote, setOrderNote] = React.useState("");
@@ -586,7 +588,7 @@ export default function EditOrderPage() {
 
   const subtotal = cart.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
   const shippingCost = shippingMethod === "outside-dhaka" ? 150 : shippingMethod === "inside-dhaka" ? 70 : 0;
-  const discountAmount =
+  const discountAmount = !discountPolicy.canApply ? Number(order?.discount_amount || 0) :
     discountType === "percentage"
       ? Math.round((subtotal * (Number(discountValue) || 0)) / 100)
       : Number(discountValue) || 0;
@@ -614,6 +616,7 @@ export default function EditOrderPage() {
   }
 
   async function handleSaveOrder() {
+    if (discountAmount > Number(order?.discount_amount || 0) && (!discountPolicy.canApply || discountAmount > discountPolicy.maxAmount(subtotal, Number(order?.discount_amount || 0)))) { toast.error("Discount exceeds the available limit for this order."); return; }
     if (!customerName.trim()) {
       toast.error("Customer name is required.");
       return;
@@ -1090,6 +1093,7 @@ export default function EditOrderPage() {
             </CardContent>
           </Card>
 
+          {discountPolicy.enabled && discountPolicy.canApply && <>
           {/* Discount */}
           <Card>
             <CardHeader>
@@ -1114,7 +1118,9 @@ export default function EditOrderPage() {
                   <Input
                     type="number"
                     placeholder={discountType === "percentage" ? "e.g. 10" : "e.g. 200"}
-                    value={discountValue}
+                    min={0}
+                      max={discountType === "percentage" ? (subtotal > 0 ? discountPolicy.maxAmount(subtotal, Number(order?.discount_amount || 0)) / subtotal * 100 : 0) : discountPolicy.maxAmount(subtotal, Number(order?.discount_amount || 0))}
+                      value={discountValue}
                     onChange={(e) => setDiscountValue(e.target.value)}
                   />
                 </div>
@@ -1126,6 +1132,8 @@ export default function EditOrderPage() {
               )}
             </CardContent>
           </Card>
+          </>}
+          <p className="text-xs text-muted-foreground">{discountPolicy.message}{discountPolicy.canApply && <> · Maximum available for this order: ৳{discountPolicy.maxAmount(subtotal, Number(order?.discount_amount || 0)).toLocaleString()}</>}</p>
 
           {/* Order Status */}
           <Card>

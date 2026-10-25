@@ -1,4 +1,5 @@
 "use client";
+import { useCustomDiscount } from "@/hooks/useCustomDiscount";
 import { OrderPeopleFields, type OrderPeople } from "@/components/hrm/order-people-fields";
 import { manualOrderSources } from "@/lib/order-list-filters";
 import { fetchClient } from "@/lib/fetch-client";
@@ -495,6 +496,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
   const [paymentStatus, setPaymentStatus] = React.useState("Unpaid");
   const [paidAmount, setPaidAmount] = React.useState<number | "">("");
 
+  const discountPolicy = useCustomDiscount();
   const [discountType, setDiscountType] = React.useState("fixed");
   const [discountValue, setDiscountValue] = React.useState("");
   const [orderNote, setOrderNote] = React.useState("");
@@ -634,6 +636,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
     discountType === "percentage"
       ? Math.round((subtotal * (Number(discountValue) || 0)) / 100)
       : Number(discountValue) || 0;
+  React.useEffect(() => { if (discountPolicy.data && !discountPolicy.canApply) setDiscountValue(""); }, [discountPolicy.data, discountPolicy.canApply]);
   const total = Math.max(0, subtotal + shippingCost - discountAmount);
 
   React.useEffect(() => {
@@ -680,6 +683,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
     }
     if (orderPeople.owner==="employee" && !orderPeople.employeeId) { toast.error("Choose an employee"); return; }
     if (paymentMethod==="advance" && (!loanDate || Number(loanAmount)<=0 || Number(loanAmount)>total || Number(loanInstallments)<1)) {toast.error("Enter a valid advance amount, installments and date. The advance cannot exceed the order total.");return;}
+    if (discountAmount > 0 && (!discountPolicy.canApply || discountAmount > discountPolicy.maxAmount(subtotal, 0))) { toast.error("Discount exceeds the available limit for this order."); return; }
     if (!customerName.trim()) {
       toast.error("Customer name is required.");
       return;
@@ -1244,6 +1248,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
             </CardContent>
           </Card>
 
+          {discountPolicy.enabled && discountPolicy.canApply && <>
           {/* Discount */}
           <Card size="sm" className="gap-2">
             <CardHeader>
@@ -1276,8 +1281,9 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                       aria-label="Discount value"
                       className="pl-10"
                       type="number"
-                      min={0}
                       placeholder="0"
+                      min={0}
+                      max={discountType === "percentage" ? (subtotal > 0 ? discountPolicy.maxAmount(subtotal, 0) / subtotal * 100 : 0) : discountPolicy.maxAmount(subtotal, 0)}
                       value={discountValue}
                       onChange={(e) => setDiscountValue(e.target.value)}
                     />
@@ -1291,6 +1297,8 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
               )}
             </CardContent>
           </Card>
+          </>}
+          <p className="text-xs text-muted-foreground">{discountPolicy.message}{discountPolicy.canApply && <> · Maximum available for this order: ৳{discountPolicy.maxAmount(subtotal, 0).toLocaleString()}</>}</p>
 
           {/* Order Settings */}
           <Card size="sm" className="gap-2">
