@@ -29,7 +29,7 @@ export default function BundleForm({ bundleId }: { bundleId?: string }) {
   const router = useRouter();
   const [products, setProducts] = useState<any[]>([]),
     [categories, setCategories] = useState<any[]>([]);
-  const [form, setForm] = useState<any>({ name: "", price: "", short: "", long: "", free: false, status: "active" });
+  const [form, setForm] = useState<any>({ name: "", price: "", short: "", long: "", video: "", free: false, status: "active" });
   const [existingThumbnail, setExistingThumbnail] = useState("");
   const [existingGallery, setExistingGallery] = useState<any[]>([]);
   const [loadingBundle, setLoadingBundle] = useState(Boolean(bundleId));
@@ -83,6 +83,7 @@ export default function BundleForm({ bundleId }: { bundleId?: string }) {
         setForm({
           name: bundle.title,
           price: String(bundle.selling_price),
+          video: bundle.canonical_url || "",
           short: bundle.product_short_description || "",
           long: bundle.product_long_description || "",
           free: Boolean(bundle.has_free_shipping),
@@ -136,6 +137,7 @@ export default function BundleForm({ bundleId }: { bundleId?: string }) {
     d.append("selling_price", form.price);
     d.append("short_description", form.short);
     d.append("long_description", form.long);
+    d.append("video_url", (form.video || "").trim());
     d.append("has_free_shipping", form.free ? "1" : "0");
     d.append("status", form.status);
     if (thumbnail) d.append("thumbnail", thumbnail);
@@ -263,6 +265,11 @@ export default function BundleForm({ bundleId }: { bundleId?: string }) {
               <div className="space-y-2">
                 <Label>Name</Label>
                 <Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bundle-video">Video link (optional)</Label>
+                <Input id="bundle-video" type="url" placeholder="https://www.youtube.com/watch?v=..." value={form.video || ""} onChange={event => setForm({ ...form, video: event.target.value })} />
+                <p className="text-xs text-muted-foreground">Use a YouTube video or Shorts link to display a video on the bundle page.</p>
               </div>
               <div className="space-y-2">
                 <Label>Short Description</Label>
