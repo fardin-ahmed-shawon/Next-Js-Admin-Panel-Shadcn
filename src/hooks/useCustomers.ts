@@ -28,7 +28,7 @@ const fetcher = async ([url]: [string, number, string]) => {
   return res.json();
 };
 
-export function useCustomers(report = false, filters?: { order_date_from?: string; order_date_to?: string; created_date_from?: string; created_date_to?: string }) {
+export function useCustomers(report = false, filters?: { order_source?: string; order_date_from?: string; order_date_to?: string; created_date_from?: string; created_date_to?: string }) {
   const { user } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1/admin/";
   const customersEndpoint = report ? "reports/customers" : process.env.NEXT_PUBLIC_API_WEB_CUSTOMERS || "customers";

@@ -1,4 +1,5 @@
 "use client";
+import { manualOrderSources } from "@/lib/order-list-filters";
 import { HistoryDateFilter } from "@/components/history-date-filter";
 import { historyPeriods } from "@/lib/data-history";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,10 +27,13 @@ export default function CustomersPage() {
   const segmentRules = React.useMemo(() => [...(savedSegments.length ? savedSegments : DEFAULT_CUSTOMER_SEGMENTS)].sort((a, b) => a.priority - b.priority), [savedSegments]);
   const { user } = useAuth();
   const allowedPeriods = historyPeriods(user, "customers");
-  const [dateFilters, setDateFilters] = React.useState<{order_date_from?: string; order_date_to?: string; created_date_from?: string; created_date_to?: string}>({});
+  const [dateFilters, setDateFilters] = React.useState<{order_source?: string; order_date_from?: string; order_date_to?: string; created_date_from?: string; created_date_to?: string}>({});
   const { data: response, isLoading, error, mutate } = useCustomers(false, dateFilters);
 
-  if (isLoading && !response) {
+  const [hasLoaded, setHasLoaded] = React.useState(false);
+  React.useEffect(() => { if (response) setHasLoaded(true); }, [response]);
+
+  if (isLoading && !response && !hasLoaded) {
     return (
       <div className="flex h-[450px] w-full flex-col items-center justify-center gap-3">
         <Loader2 className="size-8 animate-spin text-primary" />
@@ -199,6 +203,13 @@ export default function CustomersPage() {
         </div>
 
         <div className="flex w-full flex-wrap items-end gap-3 xl:w-auto xl:justify-end">
+            <div className="space-y-1">
+              <Label htmlFor="customer-order-source" className="text-xs">Order Source</Label>
+              <select id="customer-order-source" className="h-9 min-w-40 rounded-md border bg-background px-3 text-sm" value={dateFilters.order_source || ""} onChange={event => setDateFilters(current => ({...current, order_source: event.target.value || undefined}))}>
+                <option value="">All Sources</option>
+                {["Website", ...manualOrderSources].map(source => <option key={source} value={source}>{source}</option>)}
+              </select>
+            </div>
             <HistoryDateFilter label="Customer Created Date" periods={allowedPeriods} onChange={dates => setDateFilters(current => ({...current, created_date_from: dates.from, created_date_to: dates.to}))} />
             <HistoryDateFilter label="Order Date" periods={allowedPeriods} onChange={dates => setDateFilters(current => ({...current, order_date_from: dates.from, order_date_to: dates.to}))} />
           <div ref={setExportContainer} />
@@ -211,7 +222,7 @@ export default function CustomersPage() {
       <CustomersStats data={mappedData} />
 
       {/* Advanced Data-Driven Customers Table */}
-      {isLoading ? <p className="text-sm text-muted-foreground">Loading customers for the selected order dates...</p>
+      {isLoading ? <p className="text-sm text-muted-foreground">Loading customers for the selected filters...</p>
         : !error && <CustomersTable segmentRules={segmentRules} exportContainer={exportContainer} data={mappedData} onRefresh={() => mutate()} />}
       <CustomerCreateSheet open={createOpen} onOpenChange={setCreateOpen} onCreated={() => { setDateFilters({}); mutate(); }} />
       <CustomerImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={() => { setDateFilters({}); mutate(); }} />
