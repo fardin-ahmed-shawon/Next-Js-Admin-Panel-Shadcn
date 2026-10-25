@@ -51,6 +51,7 @@ export function ConvertBulkInventory({ productId, stock, sku }: { productId: str
               sale_unit_code: v.sale_unit_code,
               regular_price: v.regularPrice || v.sellingPrice,
               selling_price: v.sellingPrice,
+              has_free_shipping: !!v.has_free_shipping,
             })),
           }),
         },

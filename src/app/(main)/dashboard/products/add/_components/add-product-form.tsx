@@ -459,6 +459,7 @@ export function AddProductForm({ isAiMode = false }: { isAiMode?: boolean }) {
           color: v.color || null,
           size: v.size || null,
           status: v.status || "active",
+          has_free_shipping: !!v.has_free_shipping,
           available_stock: !isBulk && v.stock ? Number(v.stock) : undefined,
           purchase_price: hasVariantWisePricing && v.purchasePrice ? Number(v.purchasePrice) : undefined,
           regular_price: hasVariantWisePricing && v.regularPrice ? Number(v.regularPrice) : undefined,

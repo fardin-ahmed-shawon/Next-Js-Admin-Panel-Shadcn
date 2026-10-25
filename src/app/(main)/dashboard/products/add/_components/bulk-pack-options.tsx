@@ -35,23 +35,13 @@ export function BulkPackOptions({
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">
         Each pack draws from the same bulk stock. For example, two 5 kg packs consume 10 kg. Set the selling price for
-        one pack using whole-number prices. To change a saved pack quantity, remove it and add a new option.
+        one pack using whole-number prices. To change a saved pack quantity, remove it and add a new option. Free shipping can be enabled per pack; product-wide free shipping applies to all packs.
       </p>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr>
-              {["Quantity", "Unit", "SKU", "Regular price", "Selling price", "Available packs", "Visibility", ""].map((label) => (
-                <th key={label} className="p-2 text-left">
-                  {label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {variants.map((v) => (
-              <tr key={v.id}>
-                <td className="p-2">
+      <div className="space-y-3">
+        {variants.map((v) => (
+          <div key={v.id} className="rounded-lg border p-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+<label className="min-w-0 space-y-2 text-sm"><span className="block font-medium">Quantity</span>
                   <Input
                     aria-label="Pack quantity"
                     disabled={/^\d+$/.test(v.id)}
@@ -61,12 +51,12 @@ export function BulkPackOptions({
                     value={v.sale_quantity || ""}
                     onChange={(e) => update(v.id, "sale_quantity", e.target.value)}
                   />
-                </td>
-                <td className="p-2">
+                </label>
+<label className="min-w-0 space-y-2 text-sm"><span className="block font-medium">Unit</span>
                   <select
                     aria-label="Pack unit"
                     disabled={/^\d+$/.test(v.id)}
-                    className="h-9 rounded-md border bg-background px-2"
+                    className="h-9 w-full rounded-md border bg-background px-2"
                     value={v.sale_unit_code || unit}
                     onChange={(e) => update(v.id, "sale_unit_code", e.target.value)}
                   >
@@ -76,11 +66,11 @@ export function BulkPackOptions({
                       </option>
                     ))}
                   </select>
-                </td>
-                <td className="p-2">
+                </label>
+<label className="min-w-0 space-y-2 text-sm"><span className="block font-medium">SKU</span>
                   <Input aria-label="Pack SKU" value={v.sku} onChange={(e) => update(v.id, "sku", e.target.value)} />
-                </td>
-                <td className="p-2">
+                </label>
+<label className="min-w-0 space-y-2 text-sm"><span className="block font-medium">Regular price</span>
                   <Input
                     aria-label="Pack regular price"
                     type="number"
@@ -89,8 +79,8 @@ export function BulkPackOptions({
                     value={v.regularPrice || ""}
                     onChange={(e) => update(v.id, "regularPrice", e.target.value)}
                   />
-                </td>
-                <td className="p-2">
+                </label>
+<label className="min-w-0 space-y-2 text-sm"><span className="block font-medium">Selling price</span>
                   <Input
                     aria-label="Pack selling price"
                     type="number"
@@ -99,12 +89,15 @@ export function BulkPackOptions({
                     value={v.sellingPrice || ""}
                     onChange={(e) => update(v.id, "sellingPrice", e.target.value)}
                   />
-                </td>
-                <td className="p-2">{v.stock || "Calculated after saving"}</td>
-                <td className="p-2">
+                </label>
+            </div>
+            <div className="grid grid-cols-2 items-end gap-4 lg:grid-cols-4">
+<div className="min-w-0 space-y-2 text-sm"><span className="block font-medium">Available packs</span>{v.stock || "Calculated after saving"}</div>
+<div className="min-w-0 space-y-2 text-sm"><span className="block font-medium">Free shipping</span><input type="checkbox" aria-label="Pack free shipping" checked={!!v.has_free_shipping} onChange={e => setVariants(rows => rows.map(row => row.id === v.id ? { ...row, has_free_shipping: e.target.checked } : row))} /></div>
+<div className="min-w-0 space-y-2 text-sm"><span className="block font-medium">Visibility</span>
                   <select
                     aria-label="Pack visibility"
-                    className="h-9 rounded-md border bg-background px-2 text-xs"
+                    className="h-9 w-full rounded-md border bg-background px-2 text-xs"
                     value={v.status || "active"}
                     onChange={(e) => update(v.id, "status" as any, e.target.value)}
                   >
@@ -112,8 +105,8 @@ export function BulkPackOptions({
                     <option value="hide_storefront">Hide from Store Front</option>
                     <option value="hidden">Hide from Full System</option>
                   </select>
-                </td>
-                <td className="p-2">
+                </div>
+<div className="min-w-0 space-y-2 text-sm"><span className="block font-medium"></span>
                   <Button
                     type="button"
                     variant="outline"
@@ -121,11 +114,10 @@ export function BulkPackOptions({
                   >
                     Remove
                   </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+            </div>
+          </div>
+        ))}
       </div>
       <Button
         type="button"

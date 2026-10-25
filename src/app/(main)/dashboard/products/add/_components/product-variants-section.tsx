@@ -33,6 +33,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import useAttributes from "@/hooks/useAttributes";
 
 export interface Variant {
+  has_free_shipping?: boolean;
   option_label?: string;
   sale_quantity?: string;
   sale_unit_code?: string;
@@ -72,6 +73,14 @@ export function ProductVariantsSection({
   const [selectedSizes, setSelectedSizes] = React.useState<string[]>([]);
   const [selectedColors, setSelectedColors] = React.useState<string[]>([]);
 
+  const optionsInitialized = React.useRef(false);
+  React.useEffect(() => {
+    if (optionsInitialized.current || variants.length === 0) return;
+    setSelectedSizes([...new Set(variants.map(v => v.size).filter(Boolean))]);
+    setSelectedColors([...new Set(variants.map(v => v.color).filter(Boolean))]);
+    optionsInitialized.current = true;
+  }, [variants]);
+
   // Bulk action states
   const [bulkPurchasePrice, setBulkPurchasePrice] = React.useState("");
   const [bulkRegularPrice, setBulkRegularPrice] = React.useState("");
@@ -86,11 +95,10 @@ export function ProductVariantsSection({
 
   // Derive combinations when selected sizes/colors change
   const handleGenerateCombinations = () => {
-    const newVariants: Variant[] = [];
+    const newVariants: Variant[] = [...variants];
     
     // If both empty, no variants
     if (selectedSizes.length === 0 && selectedColors.length === 0) {
-      setVariants([]);
       return;
     }
 
@@ -100,11 +108,9 @@ export function ProductVariantsSection({
     sizes.forEach((size) => {
       colors.forEach((color) => {
         // Try to find an existing variant to preserve data
-        const existing = variants.find((v) => v.size === size && v.color === color);
+        const existing = newVariants.find((v) => v.size === size && v.color === color);
         
-        if (existing) {
-          newVariants.push(existing);
-        } else {
+        if (!existing) {
           // Determine SKU prefix
           const skuPrefix = baseSku ? `${baseSku}-` : "SKU-";
           let skuSuffix = "";
@@ -129,7 +135,7 @@ export function ProductVariantsSection({
     });
 
     setVariants(newVariants);
-    toast.success(`${newVariants.length} combinations generated.`);
+    toast.success((newVariants.length - variants.length) + " new variants added. Existing variants preserved.");
   };
 
   // Matrix handlers
@@ -309,7 +315,7 @@ export function ProductVariantsSection({
           <h3 className="font-semibold text-lg flex items-center gap-2">
             Step 1: Define Options
           </h3>
-          <p className="text-sm text-muted-foreground">Add sizes, colors or other attributes.</p>
+          <p className="text-sm text-muted-foreground">Select sizes and colors to add missing combinations. Existing variants stay unchanged; use the variant table to remove an option.</p>
         </div>
         
         <div className="flex flex-col gap-3">
@@ -337,13 +343,13 @@ export function ProductVariantsSection({
                 {selectedSizes.length || 1} Sizes × {selectedColors.length || 1} Colors
               </p>
               <p className="text-xs text-muted-foreground">
-                {Math.max(selectedSizes.length, 1) * Math.max(selectedColors.length, 1)} Variants will be generated
+                {variants.length} existing variants · Only missing combinations will be added
               </p>
             </div>
           </div>
-          <Button onClick={handleGenerateCombinations} variant="default" className="shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white">
+          <Button type="button" disabled={!selectedSizes.length && !selectedColors.length} onClick={handleGenerateCombinations} variant="default" className="shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white">
             <Eye className="size-4 mr-2" />
-            Preview Combinations
+            Add Missing Combinations
           </Button>
         </div>
       </div>
@@ -541,7 +547,7 @@ export function ProductVariantsSection({
           <CardHeader className="bg-muted/20 border-b pb-4 pt-5 px-6 flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-lg">Variants ({variants.length})</CardTitle>
-              <CardDescription>View and edit variants in detail.</CardDescription>
+              <CardDescription>View and edit variants in detail. Free shipping can be enabled per option; product-wide free shipping applies to all options.</CardDescription>
             </div>
             <div className="flex items-center gap-3">
               <Button variant="outline" size="sm" className="bg-background">
@@ -576,6 +582,7 @@ export function ProductVariantsSection({
                     </>
                   )}
                   <th className="p-4 text-left font-medium">Stock</th>
+                  <th className="p-4 text-center font-medium">Free shipping</th>
                   <th className="p-4 text-center font-medium">Status</th>
                   <th className="p-4 text-right font-medium">Action</th>
                 </tr>
@@ -647,6 +654,7 @@ export function ProductVariantsSection({
                           disabled={disableStockEdit}
                         />
                       </td>
+                      <td className="p-4 text-center"><Checkbox aria-label="Variant free shipping" checked={!!v.has_free_shipping} onCheckedChange={(checked) => setVariants(rows => rows.map(row => row.id === v.id ? { ...row, has_free_shipping: checked === true } : row))} /></td>
                       <td className="p-4 text-center">
                         <select
                           aria-label="Variant visibility"
@@ -678,7 +686,7 @@ export function ProductVariantsSection({
                 })}
                 {paginatedVariants.length === 0 && (
                   <tr>
-                    <td colSpan={hasVariantWisePricing ? 10 : 7} className="p-8 text-center text-muted-foreground">
+                    <td colSpan={hasVariantWisePricing ? 11 : 8} className="p-8 text-center text-muted-foreground">
                       No variants found.
                     </td>
                   </tr>

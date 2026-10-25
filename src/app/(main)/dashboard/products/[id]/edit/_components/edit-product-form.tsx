@@ -153,8 +153,8 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
       if (product.variants && Array.isArray(product.variants)) {
         setVariants(
           product.variants.map((v: any) => {
-            const colorLabel = colors.find((c: any) => c.id == v.color_id)?.label || v.color?.name || v.color || "";
-            const sizeLabel = sizes.find((s: any) => s.id == v.size_id)?.label || v.size?.name || v.size || "";
+            const colorLabel = colors.find((c: any) => c.id == v.color_id)?.label || v.color?.label || v.color?.name || (typeof v.color === "string" ? v.color : "");
+            const sizeLabel = sizes.find((s: any) => s.id == v.size_id)?.label || v.size?.label || v.size?.name || (typeof v.size === "string" ? v.size : "");
 
             return {
               id: v.id.toString(),
@@ -170,6 +170,7 @@ export function EditProductForm({ productId, isAiMode = false }: { productId: st
               regularPrice: v.variant_pricing?.regular_price?.toString() || "",
               sellingPrice: v.variant_pricing?.selling_price?.toString() || "",
               status: v.status || "active",
+              has_free_shipping: !!Number(v.has_free_shipping),
             };
           }),
         );
