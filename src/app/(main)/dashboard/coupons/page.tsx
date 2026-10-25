@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { AddCouponDialog } from "./_components/add-coupon-dialog";
 import { CouponsStats } from "./_components/coupons-stats";
 import { CouponsTable } from "./_components/coupons-table";
@@ -25,6 +27,7 @@ export default function CouponsPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button variant="outline" asChild><Link href="/dashboard/spinner">Spin & Win</Link></Button>
           <AddCouponDialog onCouponAdded={handleCouponAdded} />
         </div>
       </div>
