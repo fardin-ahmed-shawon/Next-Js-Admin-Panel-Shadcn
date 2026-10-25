@@ -1,4 +1,5 @@
 "use client";
+import { OrderPeopleFields, type OrderPeople } from "@/components/hrm/order-people-fields";
 import { manualOrderSources } from "@/lib/order-list-filters";
 import { fetchClient } from "@/lib/fetch-client";
 
@@ -449,6 +450,11 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
 
   const [customerSearchQuery, setCustomerSearchQuery] = React.useState("");
   const [customerSearchFocused, setCustomerSearchFocused] = React.useState(false);
+  const [orderPeople,setOrderPeople] = React.useState<OrderPeople>({owner:"customer",employeeId:"",moderatorId:"",canAdvance:false});
+  const [loanAmount,setLoanAmount] = React.useState("");
+  const [loanInstallments,setLoanInstallments] = React.useState("1");
+  const [loanDate,setLoanDate] = React.useState(new Date().toLocaleDateString("en-CA"));
+  const [loanPurpose,setLoanPurpose] = React.useState("");
   const [customerId, setCustomerId] = React.useState<number>(0);
 
   const [customerName, setCustomerName] = React.useState("");
@@ -485,7 +491,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
   const [accountNumber, setAccountNumber] = React.useState("");
   const [transactionId, setTransactionId] = React.useState("");
   const transactionIdRef = React.useRef<HTMLInputElement>(null);
-  const requiresPaymentDetails = paymentMethod !== "cod";
+  const requiresPaymentDetails = paymentMethod !== "cod" && paymentMethod !== "advance";
   const [paymentStatus, setPaymentStatus] = React.useState("Unpaid");
   const [paidAmount, setPaidAmount] = React.useState<number | "">("");
 
@@ -630,6 +636,13 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
       : Number(discountValue) || 0;
   const total = Math.max(0, subtotal + shippingCost - discountAmount);
 
+  React.useEffect(() => {
+    if (paymentMethod === "advance") {
+      setLoanAmount(total.toFixed(2));
+    }
+  }, [paymentMethod, total]);
+
+
   function resetForm() {
     setCart([]);
     setSearchQuery("");
@@ -665,6 +678,8 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
       toast.error("Please add at least one product with a valid quantity.");
       return;
     }
+    if (orderPeople.owner==="employee" && !orderPeople.employeeId) { toast.error("Choose an employee"); return; }
+    if (paymentMethod==="advance" && (!loanDate || Number(loanAmount)<=0 || Number(loanAmount)>total || Number(loanInstallments)<1)) {toast.error("Enter a valid advance amount, installments and date. The advance cannot exceed the order total.");return;}
     if (!customerName.trim()) {
       toast.error("Customer name is required.");
       return;
@@ -695,7 +710,10 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
       .join(", ");
 
     const payload = {
-      customer_id: customerId || 0,
+      employee_owner_id: orderPeople.owner==="employee" ? Number(orderPeople.employeeId) : null,
+      moderator_id: orderPeople.moderatorId ? Number(orderPeople.moderatorId) : null,
+      ...(paymentMethod==="advance" ? {loan_amount:Number(loanAmount),loan_installments:Number(loanInstallments),loan_date:loanDate,loan_purpose:loanPurpose} : {}),
+      customer_id: orderPeople.owner==="employee" ? 0 : customerId || 0,
       customer_full_name: customerName,
       customer_phone: customerPhone,
       customer_email: customerEmail,
@@ -717,7 +735,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
       order_note: orderNote,
       employee_note: employeeNote,
       payment_method:
-        paymentMethod === "cod"
+        paymentMethod === "advance" ? "Loans / Advance" : paymentMethod === "cod"
           ? "Cash on Delivery"
           : paymentMethod === "bkash"
             ? "bKash"
@@ -731,8 +749,8 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
       ...(requiresPaymentDetails
         ? { acc_number: accountNumber.trim() || null, transaction_id: transactionId.trim() }
         : {}),
-      paid_amount: Number(paidAmount) || 0,
-      payment_status: paymentStatus,
+      paid_amount: paymentMethod==="advance" ? 0 : Number(paidAmount) || 0,
+      payment_status: paymentMethod==="advance" ? "Unpaid" : paymentStatus,
       source: isWholesale ? "Wholesale" : orderSource,
       products: validCart.map((item) => ({
         product_id: item.product.id,
@@ -949,7 +967,8 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
               <CardDescription>Enter the customer information for this order.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
-              <div ref={customerSearchRef} className="relative z-40">
+              <OrderPeopleFields value={orderPeople} onChange={value=>{setOrderPeople(value);if(paymentMethod==="advance")setPaymentMethod("cod");}} onEmployee={employee=>{setCustomerId(0);setCustomerName(employee?.full_name || "");setCustomerEmail(employee?.email || "");setCustomerPhone(employee?.phone || "");setShippingAddress("");}} />
+              {orderPeople.owner==="customer" && <div ref={customerSearchRef} className="relative z-40">
                 <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-9 bg-muted/50 border-dashed"
@@ -980,7 +999,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                     <p className="text-sm font-medium">No registered customers found</p>
                   </div>
                 )}
-              </div>
+              </div>}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
@@ -1159,6 +1178,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    {orderPeople.owner==="employee" && orderPeople.canAdvance && <SelectItem value="advance">Loans / Advance</SelectItem>}
                     <SelectItem value="cod">Cash on Delivery</SelectItem>
                     <SelectItem value="bkash">bKash</SelectItem>
                     <SelectItem value="nagad">Nagad</SelectItem>
@@ -1169,6 +1189,13 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                 </Select>
               </div>
 
+              {paymentMethod==="advance" && <div className="space-y-3 rounded-lg border p-3">
+                <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-1"><Label htmlFor="loan-amount">Advance Amount (৳) *</Label><Input id="loan-amount" type="number" min="0.01" max={total} step="0.01" value={loanAmount} onChange={e=>setLoanAmount(e.target.value)}/></div><div className="space-y-1"><Label htmlFor="loan-months">Installments (Months) *</Label><Input id="loan-months" type="number" min="1" max="120" value={loanInstallments} onChange={e=>setLoanInstallments(e.target.value)}/></div></div>
+                <div className="rounded-md bg-muted p-3 text-sm">Monthly Payroll Deduction: <strong>৳{(Number(loanAmount)/Math.max(1,Number(loanInstallments))).toFixed(2)}/month</strong></div>
+                <Label htmlFor="loan-date">Disbursement Date *</Label><Input id="loan-date" type="date" value={loanDate} onChange={e=>setLoanDate(e.target.value)}/>
+                <Label htmlFor="loan-purpose">Reason / Purpose</Label><Textarea id="loan-purpose" value={loanPurpose} onChange={e=>setLoanPurpose(e.target.value)}/>
+                <p className="text-xs text-muted-foreground">Creates a linked HRM advance under your existing approval permissions. This is not recorded as cash received.</p>
+              </div>}
               {requiresPaymentDetails && (
                 <div className="grid gap-3 border-t pt-3 sm:grid-cols-2 lg:grid-cols-1">
                   <div className="space-y-1.5">
@@ -1203,7 +1230,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                 </div>
               )}
 
-              <div>
+              {paymentMethod!=="advance" && <div>
                 <PartialPaymentForm
                   compact
                   orderTotal={total}
@@ -1213,7 +1240,7 @@ export function CreateOrderForm({ isWholesale = false }: { isWholesale?: boolean
                   onPaidAmountChange={setPaidAmount}
                   paymentMethod={paymentMethod}
                 />
-              </div>
+              </div>}
             </CardContent>
           </Card>
 

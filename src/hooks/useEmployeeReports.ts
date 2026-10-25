@@ -44,8 +44,8 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
-export function useEmployeeReports(startDate?: string, endDate?: string) {
-  let url = API_URL;
+export function useEmployeeReports(startDate?: string, endDate?: string, moderator = false) {
+  let url = moderator ? API_URL.replace(/employee-reports$/, "moderator-reports") : API_URL;
   const params = new URLSearchParams();
   if (startDate) params.append("start_date", startDate);
   if (endDate) params.append("end_date", endDate);

@@ -249,6 +249,7 @@ export const sidebarItems: NavGroup[] = [
           { title: "Peer Tasks", url: "/dashboard/hrm/tasks", module: "hrm_tasks" },
           { title: "Organization Tree", url: "/dashboard/hrm/organization", module: "hrm_org_tree" },
           { title: "Employees", url: "/dashboard/hrm/employees", module: "hrm_employees" },
+          { title: "Moderators", url: "/dashboard/hrm/moderators", module: "hrm_employees" },
           { title: "Notice & Warning", url: "/dashboard/hrm/notices", module: "hrm_notices" },
           { title: "Leave Management", url: "/dashboard/hrm/leaves", module: "hrm_leaves" },
           { title: "Holiday Calendar", url: "/dashboard/hrm/holidays", module: "hrm_holidays" },

@@ -206,6 +206,7 @@ export default function WholesaleOrdersPage() {
         return {
           id: order.order_no,
           customer: order.customer_full_name || "Unknown",
+          employeeOwnerId: order.employee_owner_id,
           phone: order.customer_phone || "",
           shippingAddress: order.customer_shipping_address || "",
           items: itemsCount,

@@ -874,7 +874,7 @@ export default function EditOrderPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <User className="size-5" />
-                Customer Details
+                Customer Details {order?.employee_owner_id && <Badge variant="secondary">Employee</Badge>}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">

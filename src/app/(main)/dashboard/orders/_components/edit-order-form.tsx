@@ -1112,6 +1112,7 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
               <span>{formatDate(order.created_at)}</span>
               <span>·</span>
               <span>{order.customer_full_name}</span>
+              {order.employee_owner_id && <Badge variant="secondary">Employee</Badge>}
               <span>·</span>
               <span>{order.shipping_area || "—"}</span>
               {(order.customer_ip_address || order.customerIpAddress) && (

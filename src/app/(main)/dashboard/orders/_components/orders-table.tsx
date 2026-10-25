@@ -119,6 +119,7 @@ type OrderStatus = (typeof orderStatuses)[number];
 type PaymentStatus = (typeof paymentStatuses)[number];
 
 export interface OrderRow {
+  employeeOwnerId?: number | null;
   id: string;
   customer: string;
   phone: string;
@@ -1096,7 +1097,7 @@ const columns: ColumnDef<OrderRow>[] = [
                 <Phone className="size-3" /> Call
               </a>
             </Button>
-            {row.original.previousOrdersCountByPhone && row.original.previousOrdersCountByPhone > 1 ? (
+            {row.original.employeeOwnerId ? <Badge variant="secondary" className="text-[9px] h-5 px-1.5">Employee</Badge> : row.original.previousOrdersCountByPhone && row.original.previousOrdersCountByPhone > 1 ? (
               <Badge
                 variant="secondary"
                 className="text-[9px] h-5 px-1.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 border-none font-semibold uppercase tracking-wider"

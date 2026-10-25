@@ -80,7 +80,7 @@ interface EmployeeReportAggregatedData {
   rawReport: EmployeeReportData;
 }
 
-export default function EmployeeReportsPage({ performanceControls, performanceContent, onDatesChange, employeeIds }: PerformanceLayoutProps = {}) {
+export default function EmployeeReportsPage({ performanceControls, performanceContent, onDatesChange, employeeIds, moderator = false }: PerformanceLayoutProps & { moderator?: boolean } = {}) {
   const [timeRange, setTimeRange] = React.useState<TimeRange>("alltime");
   const [customFrom, setCustomFrom] = React.useState("");
   const [customTo, setCustomTo] = React.useState("");
@@ -99,7 +99,7 @@ export default function EmployeeReportsPage({ performanceControls, performanceCo
 
   React.useEffect(() => { onDatesChange?.({ start: startDate, end: endDate }); }, [onDatesChange, startDate, endDate]);
 
-  const { data: rawReports, isLoading, error, mutate } = useEmployeeReports(startDate, endDate);
+  const { data: rawReports, isLoading, error, mutate } = useEmployeeReports(startDate, endDate, moderator);
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -202,7 +202,7 @@ export default function EmployeeReportsPage({ performanceControls, performanceCo
   const columns: ColumnDef<EmployeeReportAggregatedData>[] = [
     {
       accessorKey: "name",
-      header: "Employee",
+      header: moderator ? "Moderator" : "Employee",
       cell: ({ row }) => {
         const name = row.getValue("name") as string;
         const initials = name.substring(0, 2).toUpperCase();
@@ -490,7 +490,7 @@ export default function EmployeeReportsPage({ performanceControls, performanceCo
 
   const table = useReactTable({
     data: reportData,
-    columns,
+    columns: moderator ? columns.filter(column => column.id !== "actions") : columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -508,11 +508,11 @@ export default function EmployeeReportsPage({ performanceControls, performanceCo
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl tracking-tight flex items-center gap-2">
-            Employee Reports
+            {moderator ? "Moderator Reports" : "Employee Reports"}
             {isLoading && <Loader2 className="size-5 animate-spin text-muted-foreground" />}
           </h1>
           <p className="text-muted-foreground text-sm">
-            Performance metrics and order handling overview for your workforce.
+            {moderator ? "Order performance and revenue attributed to moderators within your report access." : "Performance metrics and order handling overview for your workforce."}
           </p>
         </div>
 
@@ -584,7 +584,7 @@ export default function EmployeeReportsPage({ performanceControls, performanceCo
       </div>
 
       {performanceControls}
-      {performanceContent ?? (error ? <Card><CardContent className="flex items-center justify-between py-6"><p role="alert" className="text-destructive">Unable to load sales report.</p><Button variant="outline" onClick={() => mutate()}>Retry</Button></CardContent></Card> : <>
+      {performanceContent ?? (error ? <Card><CardContent className="flex items-center justify-between py-6"><p role="alert" className="text-destructive">{moderator ? "Unable to load moderator report." : "Unable to load sales report."}</p><Button variant="outline" onClick={() => mutate()}>Retry</Button></CardContent></Card> : <>
       {/* Top Stats Overview */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card className="bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
@@ -615,7 +615,7 @@ export default function EmployeeReportsPage({ performanceControls, performanceCo
 
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium">Workforce Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">{moderator ? "Moderator Revenue" : "Workforce Revenue"}</CardTitle>
             <TrendingUp className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -626,7 +626,7 @@ export default function EmployeeReportsPage({ performanceControls, performanceCo
 
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium">Workforce Due</CardTitle>
+            <CardTitle className="text-sm font-medium">{moderator ? "Moderator Due" : "Workforce Due"}</CardTitle>
             <Coins className="size-4 text-red-500" />
           </CardHeader>
           <CardContent>
@@ -661,15 +661,15 @@ export default function EmployeeReportsPage({ performanceControls, performanceCo
       {/* Main Data Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Employee Breakdown</CardTitle>
-          <CardDescription>Detailed stats for each employee in the selected time period.</CardDescription>
+          <CardTitle>{moderator ? "Moderator Breakdown" : "Employee Breakdown"}</CardTitle>
+          <CardDescription>{moderator ? "Detailed stats for each moderator in the selected time period." : "Detailed stats for each employee in the selected time period."}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by Employee..."
+                placeholder={moderator ? "Search by Moderator..." : "Search by Employee..."}
                 value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
                 onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
                 className="h-8 w-64 pl-8"
