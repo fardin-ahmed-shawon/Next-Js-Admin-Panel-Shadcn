@@ -158,7 +158,7 @@ export function GtmTab() {
           >
             <div className="flex items-center justify-between">
               <span className="font-medium text-sm text-foreground flex items-center gap-1.5">
-                🛒 After Place Order
+                After Place Order
               </span>
               {purchaseEventSource === "storefront" && (
                 <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -180,7 +180,7 @@ export function GtmTab() {
           >
             <div className="flex items-center justify-between">
               <span className="font-medium text-sm text-foreground flex items-center gap-1.5">
-                ✅ After Order Confirmed
+                After Order Confirmed
               </span>
               {purchaseEventSource === "admin_confirmed" && (
                 <CheckCircle2 className="h-4 w-4 text-primary" />
