@@ -942,7 +942,7 @@ export default function EmployeeCashFlowPage() {
             </div>
             <div>
               <div className="text-xl font-bold text-red-600 dark:text-red-400">
-                -{formatCurrency((summary.total_loan_deduction || 0) + (summary.total_absent_deduction || 0) + (summary.total_fine_deduction || 0) + (summary.total_other_deduction || 0))}
+                -{formatCurrency((summary.total_loan_deduction || 0) + (summary.total_absent_deduction || 0) + (summary.total_fine_deduction || 0) + (summary.total_other_deduction || 0) + (summary.total_late_deduction || 0))}
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">
                 Fines: {formatCurrency(summary.total_fine_deduction || 0)} • Loans: {formatCurrency(summary.total_loan_deduction || 0)} • Absences: {formatCurrency(summary.total_absent_deduction || 0)}
@@ -1381,9 +1381,9 @@ export default function EmployeeCashFlowPage() {
 
                           {/* Other Deductions (Loan, Absent, Other) */}
                           <TableCell className="text-xs text-right text-muted-foreground">
-                            {(record.loan_deduction + record.absent_deduction + record.other_deduction) > 0 ? (
+                            {(record.loan_deduction + record.absent_deduction + record.other_deduction + (record.late_deduction || 0)) > 0 ? (
                               <span className="text-red-600 font-medium">
-                                -{formatCurrency(record.loan_deduction + record.absent_deduction + record.other_deduction)}
+                                -{formatCurrency(record.loan_deduction + record.absent_deduction + record.other_deduction + (record.late_deduction || 0))}
                               </span>
                             ) : (
                               "৳0.00"
@@ -1825,8 +1825,8 @@ export default function EmployeeCashFlowPage() {
                   </span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Other Deductions (Loan, Absent):</span>
-                  <span>-{formatCurrency(activeRecord.loan_deduction + activeRecord.absent_deduction + activeRecord.other_deduction)}</span>
+                  <span>Other Deductions (Loan, Late, Absent):</span>
+                  <span>-{formatCurrency(activeRecord.loan_deduction + activeRecord.absent_deduction + activeRecord.other_deduction + (activeRecord.late_deduction || 0))}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Total Deductions:</span>
@@ -1943,6 +1943,7 @@ export default function EmployeeCashFlowPage() {
                 </div>
               </div>
 
+              {Number((payslipData as any).late_deduction || 0) > 0 && <div className="flex justify-between text-sm text-rose-600"><span>Late Attendance Deduction:</span><span>৳{Number((payslipData as any).late_deduction).toLocaleString()}</span></div>}
               {/* Itemized Fines in Payslip */}
               {(() => {
                 const empFines = (payslipData.fines || (data?.fines || []).filter(

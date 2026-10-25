@@ -110,6 +110,9 @@ export interface AttendanceRecord {
 }
 
 export interface SalaryIncentiveRule {
+  holiday_overtime_enabled?: boolean;
+  overtime_rate_mode?: "manual" | "salary";
+  overtime_multiplier?: number;
   id: number;
   rule_name: string;
   department_id?: number | null;
@@ -162,6 +165,7 @@ export interface SalaryRecord {
   loan_deduction: number;
   absent_deduction: number;
   hour_deficit_deduction?: number;
+  late_deduction?: number;
   deficit_hours?: number;
   fine_deduction?: number;
   other_deduction: number;
@@ -843,6 +847,9 @@ export interface WorkHourPolicy {
   calculation_basis: "basic_salary" | "gross_salary";
   handle_absent_days: "hour_deficit_only" | "both_separate";
   hourly_rate_basis?: "weekdays" | "fixed_days";
+  late_deduction_enabled?: boolean;
+  late_days_threshold?: number;
+  late_deduction_days?: number;
   fixed_working_days?: number;
   status: "active" | "inactive";
   notes?: string | null;
@@ -856,10 +863,12 @@ export interface CashFlowSummary {
   total_commissions: number;
   total_bonus_overtime: number;
   total_hour_deficit_deduction: number;
+  late_deduction?: number;
   total_absent_deduction: number;
   total_loan_deduction: number;
   total_fine_deduction?: number;
   total_other_deduction: number;
+  total_late_deduction?: number;
   total_deductions: number;
   total_net_cash_outflow: number;
   paid_cash_outflow: number;
@@ -881,6 +890,7 @@ export interface CashFlowTimelineItem {
   basic_salary: number;
   commissions: number;
   hour_deficit_deduction: number;
+  late_deduction?: number;
   total_deductions: number;
   net_outflow: number;
   paid: number;
@@ -923,6 +933,7 @@ export interface CashFlowLedgerRecord {
   gross_salary: number;
   loan_deduction: number;
   hour_deficit_deduction: number;
+  late_deduction?: number;
   absent_deduction: number;
   fine_deduction?: number;
   other_deduction: number;
@@ -947,6 +958,7 @@ export interface CashFlowLedgerRecord {
     hourly_rate: number;
     enable_deficit_deduction: boolean;
     hour_deficit_deduction: number;
+  late_deduction?: number;
     absent_days: number;
     present_days: number;
     late_days: number;

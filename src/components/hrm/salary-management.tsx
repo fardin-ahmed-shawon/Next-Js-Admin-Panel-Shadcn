@@ -3,6 +3,7 @@
 import hrmStyles from "@/components/hrm/hrm-page.module.css";
 
 import * as React from "react";
+import { Switch } from "@/components/ui/switch";
 import {
   CreditCard,
   Calendar,
@@ -143,6 +144,7 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
     min_upsell_value: 0,
     upsell_commission_pct: 0,
     extra_hours_bonus_rate: 0,
+    holiday_overtime_enabled: true, overtime_rate_mode: "manual" as "manual" | "salary", overtime_multiplier: 1,
     extra_hours_min_threshold: 0,
     extra_hours_salary_pct: 0,
     status: "active" as "active" | "inactive",
@@ -237,6 +239,7 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
       min_upsell_value: 0,
       upsell_commission_pct: 0,
       extra_hours_bonus_rate: 0,
+    holiday_overtime_enabled: true, overtime_rate_mode: "manual" as "manual" | "salary", overtime_multiplier: 1,
       extra_hours_min_threshold: 0,
       extra_hours_salary_pct: 0,
       status: "active",
@@ -259,6 +262,7 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
       min_upsell_value: (r as any).min_upsell_value || 0,
       upsell_commission_pct: r.upsell_commission_pct || 0,
       extra_hours_bonus_rate: r.extra_hours_bonus_rate || 0,
+      holiday_overtime_enabled: r.holiday_overtime_enabled ?? true, overtime_rate_mode: r.overtime_rate_mode || "manual", overtime_multiplier: r.overtime_multiplier ?? 1,
       extra_hours_min_threshold: r.extra_hours_min_threshold || 0,
       extra_hours_salary_pct: 0,
       status: r.status,
@@ -288,6 +292,7 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
         min_upsell_value: Number(ruleForm.min_upsell_value) || 0,
         upsell_commission_pct: Number(ruleForm.upsell_commission_pct) || 0,
         extra_hours_bonus_rate: Number(ruleForm.extra_hours_bonus_rate) || 0,
+        holiday_overtime_enabled: ruleForm.holiday_overtime_enabled, overtime_rate_mode: ruleForm.overtime_rate_mode, overtime_multiplier: ruleForm.overtime_multiplier,
         extra_hours_min_threshold: Number(ruleForm.extra_hours_min_threshold) || 0,
         status: ruleForm.status,
         notes: ruleForm.notes.trim() || null,
@@ -677,7 +682,7 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
                             {sal.total_deduction > 0 ? `-৳${sal.total_deduction.toLocaleString()}` : "৳0"}
                           </td>
                           <td className="py-3 px-4 font-mono font-extrabold text-sm text-emerald-600 dark:text-emerald-400">
-                            ৳{sal.net_salary.toLocaleString()}<div className="text-[10px] font-normal text-muted-foreground">Paid ৳{(sal.paid_amount || 0).toLocaleString()} · Due ৳{(sal.remaining_payable ?? sal.net_salary).toLocaleString()}</div>{sal.overpaid_amount > 0 && <div className="text-xs text-destructive">Overpaid ৳{sal.overpaid_amount.toLocaleString()}</div>}
+                            {Number(sal.late_deduction || 0) > 0 && <div className="text-[10px] text-rose-600">Late deduction: ৳{Number(sal.late_deduction).toLocaleString()}</div>}৳{sal.net_salary.toLocaleString()}<div className="text-[10px] font-normal text-muted-foreground">Paid ৳{(sal.paid_amount || 0).toLocaleString()} · Due ৳{(sal.remaining_payable ?? sal.net_salary).toLocaleString()}</div>{sal.overpaid_amount > 0 && <div className="text-xs text-destructive">Overpaid ৳{sal.overpaid_amount.toLocaleString()}</div>}
                           </td>
                           <td className="py-3 px-4">
                             <Badge
@@ -885,9 +890,9 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
                           </div>
                           <div className="text-right">
                             <span className="font-bold text-blue-600">
-                              {rule.extra_hours_bonus_rate > 0
+                              {rule.overtime_rate_mode === "salary" ? `${rule.overtime_multiplier ?? 1}× salary hourly rate` : rule.extra_hours_bonus_rate > 0
                                 ? `৳${rule.extra_hours_bonus_rate}/hr`
-                                : "Overtime disabled Basic"}
+                                : "Overtime disabled"}
                             </span>
                             <span className="text-[11px] text-muted-foreground ml-1">
                               {rule.extra_hours_min_threshold > 0
@@ -1407,14 +1412,17 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
                   </div>
                 </div>
 
+                <div className="flex items-center justify-between gap-3"><Label htmlFor="holiday-overtime">Pay overtime for work on holidays / weekly days off</Label><Switch id="holiday-overtime" checked={ruleForm.holiday_overtime_enabled} onCheckedChange={value => setRuleForm({ ...ruleForm, holiday_overtime_enabled: value })} /></div>
+                <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><Label>Overtime Rate Basis</Label><Select value={ruleForm.overtime_rate_mode} onValueChange={(value: "manual" | "salary") => setRuleForm({ ...ruleForm, overtime_rate_mode: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Manual Rate Entry</SelectItem><SelectItem value="salary">According to Salary</SelectItem></SelectContent></Select></div>{ruleForm.overtime_rate_mode === "salary" && <div className="space-y-1"><Label>Hourly Rate Multiplier</Label><Input type="number" min={0.1} max={10} step={0.1} value={ruleForm.overtime_multiplier} onChange={e => setRuleForm({ ...ruleForm, overtime_multiplier: Number(e.target.value) })} /><p className="text-[10px] text-muted-foreground">1 = regular rate, 2 = 2×, 3 = 3×. Uses Work Hour Policy basic/gross basis and weekday/fixed-day divisor. Gross excludes overtime to avoid calculating overtime on itself.</p></div>}</div>
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <div className="space-y-1">
-                    <Label className="text-xs">Hourly Overtime Rate (৳)</Label>
+                    <Label className="text-xs">Manual Hourly Overtime Rate (৳)</Label>
                     <Input
                       type="number"
                       min={0}
                       step={1}
                       placeholder="0 disables overtime pay"
+                      disabled={ruleForm.overtime_rate_mode === "salary"}
                       value={ruleForm.extra_hours_bonus_rate || ""}
                       onChange={(e) =>
                         setRuleForm({
@@ -1799,6 +1807,7 @@ export default function SalaryManagementPage({ rulesOnly = false }: { rulesOnly?
                       <span className="font-mono">৳{payslipData.total_deduction.toLocaleString()}</span>
                     </div>
 
+              {Number((payslipData as any).late_deduction || 0) > 0 && <div className="flex justify-between text-sm text-rose-600"><span>Late Attendance Deduction:</span><span>৳{Number((payslipData as any).late_deduction).toLocaleString()}</span></div>}
                     {/* Itemized Fines List inside Payslip */}
                     {payslipData.fines && payslipData.fines.length > 0 && (
                       <div className="mt-3 p-2.5 rounded-lg border border-rose-500/30 bg-rose-500/5 space-y-2">
