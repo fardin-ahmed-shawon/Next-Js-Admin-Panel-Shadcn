@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { fetchClient } from "@/lib/fetch-client";
 
 export function GtmTab() {
+  const loadedSnippets = React.useRef({ head: "", body: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [gtmHead, setGtmHead] = useState("");
@@ -25,6 +26,7 @@ export function GtmTab() {
         if (response.ok) {
           const res = await response.json();
           if (res.success && res.data) {
+            loadedSnippets.current = { head: res.data.gtm_head || "", body: res.data.gtm_body || "" };
             setGtmHead(res.data.gtm_head || "");
             setGtmBody(res.data.gtm_body || "");
             setPurchaseEventSource(res.data.purchase_event_source === "admin_confirmed" ? "admin_confirmed" : "storefront");
@@ -61,7 +63,11 @@ export function GtmTab() {
 
       const res = await response.json();
       if (response.ok && res.success) {
-        toast.success("Google Tag Manager code updated successfully!");
+        const snippetsChanged = loadedSnippets.current.head !== gtmHead || loadedSnippets.current.body !== gtmBody;
+        toast.success(snippetsChanged ? "GTM saved. Reloading to apply the new head and body snippets…" : "Google Tag Manager settings saved!");
+        if (snippetsChanged) {
+          window.setTimeout(() => window.location.reload(), 500);
+        }
       } else {
         if (res.errors) {
           const firstError = Object.values(res.errors)[0];
