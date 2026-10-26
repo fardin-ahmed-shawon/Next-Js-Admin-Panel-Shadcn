@@ -207,7 +207,7 @@ export default function CustomersPage() {
               <Label htmlFor="customer-order-source" className="text-xs">Order Source</Label>
               <select id="customer-order-source" className="h-9 min-w-40 rounded-md border bg-background px-3 text-sm" value={dateFilters.order_source || ""} onChange={event => setDateFilters(current => ({...current, order_source: event.target.value || undefined}))}>
                 <option value="">All Sources</option>
-                {["Website", ...manualOrderSources].map(source => <option key={source} value={source}>{source}</option>)}
+                {["Website", "Landing-Page", ...manualOrderSources].map(source => <option key={source} value={source}>{source}</option>)}
               </select>
             </div>
             <HistoryDateFilter label="Customer Created Date" periods={allowedPeriods} onChange={dates => setDateFilters(current => ({...current, created_date_from: dates.from, created_date_to: dates.to}))} />

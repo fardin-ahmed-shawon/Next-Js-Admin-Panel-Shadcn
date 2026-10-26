@@ -49,6 +49,7 @@ export function OrderListFilterControls({
       items: [
         ...manualOrderSources.map((value) => ({ value, label: value })),
         { value: "Website", label: "Website" },
+        { value: "Landing-Page", label: "Landing Page" },
         { value: "Incomplete", label: "From Incomplete" },
       ],
     },
