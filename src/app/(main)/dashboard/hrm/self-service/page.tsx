@@ -1,7 +1,8 @@
 "use client";
 import { HrmDocumentLink } from "@/components/hrm/hrm-document-link";
 
-import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import {
   UserCheck,
@@ -61,7 +62,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function EmployeeSelfServicePortalPage() {
+function EmployeeSelfServicePortalPage() {
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState("attendance");
+  useEffect(() => { if (requestedTab === "notices" || requestedTab === "warnings") setActiveTab(requestedTab); }, [requestedTab]);
   const { portalData, loading, refetch } = useHrmSelfService();
   const [currentTime, setCurrentTime] = useState<string>("");
   const [isPunching, setIsPunching] = useState(false);
@@ -369,7 +374,7 @@ export default function EmployeeSelfServicePortalPage() {
       </div>
 
       {/* Main Tabs for ESS Portal */}
-      <Tabs defaultValue="attendance" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="bg-muted/60 p-1 flex flex-wrap h-auto gap-1 border border-border/50">
           <TabsTrigger value="attendance" className="text-xs flex items-center gap-1.5 px-3 py-2">
             <Clock className="h-3.5 w-3.5" /> Attendance
@@ -1051,4 +1056,8 @@ export default function EmployeeSelfServicePortalPage() {
       </Dialog>
     </div>
   );
+}
+
+export default function SelfServicePage() {
+  return <Suspense fallback={<div className="p-6" role="status">Loading self-service…</div>}><EmployeeSelfServicePortalPage /></Suspense>;
 }

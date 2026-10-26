@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import Link from "next/link";
-import { Bell, Megaphone, X } from "lucide-react";
+import { Bell, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -11,6 +12,7 @@ import { NotificationList } from "@/components/notifications/notification-list";
 import { useNotifications, useNotificationActions } from "@/hooks/useNotifications";
 
 export function NotificationButton() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [busy, setBusy] = useState<number | "all" | null>(null);
@@ -40,13 +42,20 @@ export function NotificationButton() {
         <Link href="/dashboard/notifications" onClick={() => setOpen(false)} className="block border-t p-3 text-center text-sm font-medium hover:bg-muted">See all notifications</Link>
       </PopoverContent>
     </Popover>
-    {mounted && !!data?.banners.length && createPortal(<aside aria-label="Announcements" className="pointer-events-none fixed bottom-4 right-4 z-50 w-[min(420px,calc(100vw-32px))] space-y-3">
-      {data.banners.slice(0, 1).map(item => <section key={item.id} className="pointer-events-auto rounded-xl border bg-background p-5 shadow-xl" role="status">
-        <div className="flex items-start gap-3"><Megaphone className="mt-1 size-5 shrink-0 text-primary" /><h2 className="flex-1 font-semibold break-words">{item.title}</h2>
-          <Button variant="ghost" size="icon" className="-mr-2 -mt-2 size-8 shrink-0" disabled={busy === item.id} aria-label="Dismiss announcement permanently" onClick={() => update(item.id)}><X className="size-4" /></Button></div>
-        <p className="mt-3 max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-sm text-muted-foreground">{item.body}</p>
-        <p className="mt-3 text-xs text-muted-foreground">Closing this announcement hides it permanently for your account.</p>
-      </section>)}
-    </aside>, document.body)}
+    <Dialog open={mounted && !!data?.banners.length}>
+      <DialogContent overlayClassName="backdrop-blur-md bg-black/30" showCloseButton={false} className="sm:max-w-2xl p-8 sm:p-10" onEscapeKeyDown={event => event.preventDefault()} onPointerDownOutside={event => event.preventDefault()} onInteractOutside={event => event.preventDefault()}>
+        {data?.banners.slice(0, 1).map(item => <div key={item.id} className="space-y-6">
+          <Megaphone className="size-10 text-primary" />
+          <DialogTitle className="text-2xl sm:text-3xl font-bold break-words">{item.title}</DialogTitle>
+          <DialogDescription className="max-h-[50vh] overflow-y-auto whitespace-pre-wrap break-words text-base leading-relaxed">{item.body}</DialogDescription>
+          <Button className="w-full h-12 text-base" disabled={busy !== null} onClick={async () => {
+            setBusy(item.id);
+            try { await act(item.id, "dismiss"); router.push("/dashboard/hrm/self-service?tab=" + (item.module === "warnings" ? "warnings" : "notices")); }
+            catch (error) { toast.error(error instanceof Error ? error.message : "Unable to open notice. Please retry."); }
+            finally { setBusy(null); }
+          }}>{busy === item.id ? "Opening…" : "See notice"}</Button>
+        </div>)}
+      </DialogContent>
+    </Dialog>
   </>;
 }
