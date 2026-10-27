@@ -341,7 +341,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart, updateCartItem, upd
 
       if (variant) {
         const price = getVariantSellingPrice(variant, item.product.selling_price || 0);
-        if (!item.isExisting || item.manualVariantChange || Number(item.unitPrice) === 0) {
+        if (!item.isExisting || item.manualVariantChange) {
           updateUnitPrice(item.lineId ?? item.product.id, price);
         }
       }
