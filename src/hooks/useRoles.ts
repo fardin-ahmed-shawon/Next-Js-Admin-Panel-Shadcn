@@ -73,6 +73,8 @@ export interface PageAccess extends Partial<Record<`orders_history_${import("@/l
   payment_report: number;
   parcel_report: number;
   courier_report: number;
+  cod_change_report: number;
+  cod_accounts_adjustment: number;
   inventory: number;
   roles_and_permission: number;
   users: number;
@@ -232,7 +234,7 @@ export const HRM_MODULE_KEYS: (keyof PageAccess)[] = [
 export function hasModuleAccess(user: any, module: string): boolean {
   if (!user || !user.role) return false;
 
-  if (module === "delivery_support" && user.status === "active" && user.role.role_name === "Admin") return true;
+  if (["delivery_support", "cod_change_report", "cod_accounts_adjustment"].includes(module) && user.status === "active" && user.role.role_name === "Admin") return true;
 
   const pageAccess = user.role.page_access || user.role.pageAccess;
 

@@ -225,6 +225,7 @@ export const sidebarItems: NavGroup[] = [
           { title: "Upsell Report", url: "/dashboard/reports/upsell", module: "employee_report" },
           { title: "Payment Report", url: "/dashboard/reports/payment", module: "payment_report" },
           { title: "Parcel Report", url: "/dashboard/reports/parcel", module: "parcel_report" },
+          { title: "COD Change Report", url: "/dashboard/reports/cod-change", module: "cod_change_report" },
           { title: "Courier Report", url: "/dashboard/reports/courier", module: "courier_report" },
           { title: "Incomplete Orders", url: "/dashboard/reports/incomplete", module: "incomplete_orders" },
           {

@@ -44,6 +44,7 @@ const routes: Record<string, string[]> = {
   "/dashboard/reports/employee": ["reports_employee"],
   "/dashboard/reports/payment": ["reports_payment"],
   "/dashboard/reports/parcel": ["reports_parcel"],
+  "/dashboard/reports/cod-change": ["reports_cod_change"],
   "/dashboard/reports/courier": ["reports_courier"],
   "/dashboard/reports/inventory": ["reports_inventory"],
   "/dashboard/fraud-checker": ["fraud_checker"],

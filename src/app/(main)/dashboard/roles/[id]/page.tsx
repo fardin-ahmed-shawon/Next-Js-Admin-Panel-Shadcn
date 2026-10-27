@@ -278,6 +278,8 @@ const PERMISSION_GROUPS: PermissionGroupType[] = [
       { id: "payment_report", label: "Payment Report", icon: CreditCard },
       { id: "parcel_report", label: "Parcel Report", icon: Box },
       { id: "courier_report", label: "Courier Report", icon: Truck },
+      { id: "cod_change_report", label: "COD Change Report", icon: Truck },
+      { id: "cod_accounts_adjustment", label: "COD Accounts Adjustment", icon: Truck },
     ],
   },
 ];

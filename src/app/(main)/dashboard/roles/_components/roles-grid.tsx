@@ -148,6 +148,8 @@ const ALL_PERMISSIONS = [
   { id: "user_behaviour_logs", label: "User Behaviour Logs", icon: History },
   { id: "settings", label: "Settings", icon: Settings },
   { id: "flash_sales", label: "Flash Sales", icon: Zap },
+  { id: "cod_change_report", label: "COD Change Report", icon: Truck },
+      { id: "cod_accounts_adjustment", label: "COD Accounts Adjustment", icon: Truck },
   { id: "reports_inventory", label: "Inventory Report", icon: Archive },
   { id: "supplier_report", label: "Supplier Report", icon: Truck },
   { id: "hrm_overview", label: "HRM Overview", icon: LayoutDashboard },
