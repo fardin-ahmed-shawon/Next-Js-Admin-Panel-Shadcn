@@ -117,18 +117,34 @@ export async function reconcileSteadfastPayment(
   action: "cod-changes" | "accounts-adjustment",
   rows: SteadfastPaymentComparisonRow[],
 ): Promise<{ message: string }> {
-  return readAdminApiResponse(
-    await fetchClient(adminApiUrl(`steadfast/payments/${encodeURIComponent(paymentId)}/${action}`), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        rows: rows.map(({ consignment_id, merchant_order_id, collectable_amount, grand_total_amount }) => ({
-          consignment_id,
-          merchant_order_id,
-          collectable_amount,
-          grand_total_amount,
-        })),
-      }),
-    }),
-  );
+  let processed = 0;
+  let skipped = 0;
+  for (let offset = 0; offset < rows.length; offset += 100) {
+    try {
+      const result = (await readAdminApiResponse(
+        await fetchClient(adminApiUrl(`steadfast/payments/${encodeURIComponent(paymentId)}/${action}`), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rows: rows
+              .slice(offset, offset + 100)
+              .map(({ consignment_id, merchant_order_id, collectable_amount, grand_total_amount }) => ({
+                consignment_id,
+                merchant_order_id,
+                collectable_amount,
+                grand_total_amount,
+              })),
+          }),
+        }),
+      )) as { data: { processed: number; skipped: number } };
+      processed += result.data.processed;
+      skipped += result.data.skipped;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to complete this action.";
+      throw new Error(`${processed} orders completed, ${skipped} already completed orders skipped. ${message}`);
+    }
+  }
+  return {
+    message: `${processed} orders ${action === "accounts-adjustment" ? "adjusted" : "marked as COD Changed"}. ${skipped} already completed orders skipped.`,
+  };
 }
