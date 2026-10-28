@@ -4,16 +4,18 @@ import { adminApiUrl, readAdminApiResponse } from "@/lib/admin-api";
 import { fetchClient } from "@/lib/fetch-client";
 
 export type ComparisonStatus = "matched" | "mismatch" | "not_found" | "invalid" | "duplicate_csv" | "ambiguous_order";
+export type CodCourier = "pathao" | "steadfast";
 export const comparisonLabels: Record<ComparisonStatus, string> = {
   matched: "Matched",
   mismatch: "Amount mismatch",
   not_found: "Order not found",
   invalid: "Invalid row",
-  duplicate_csv: "Duplicate CSV order",
+  duplicate_csv: "Duplicate file order",
   ambiguous_order: "Ambiguous system order",
 };
 export interface CodImport {
   id: number;
+  courier: CodCourier;
   filename: string;
   row_count: number;
   created_at: string;
@@ -56,10 +58,10 @@ interface ReportResponse {
 }
 const fetcher = async ([url]: [string, number]) => readAdminApiResponse(await fetchClient(url));
 
-export function useCodImports(page: number) {
+export function useCodImports(page: number, courier: CodCourier) {
   const user = useAuth((state) => state.user);
   return useSWR<HistoryResponse>(
-    user ? [adminApiUrl(`cod-change-reports?page=${page}&per_page=10`), user.id] : null,
+    user ? [adminApiUrl(`cod-change-reports?page=${page}&per_page=10&courier=${courier}`), user.id] : null,
     fetcher,
   );
 }
@@ -70,6 +72,7 @@ export function useCodReport(
   status: string,
   search: string,
   dates: { from: string; to: string },
+  courier: CodCourier,
 ) {
   const user = useAuth((state) => state.user);
   const query = new URLSearchParams({
@@ -79,6 +82,7 @@ export function useCodReport(
     search,
     start_date: dates.from,
     end_date: dates.to,
+    courier,
   });
   return useSWR<ReportResponse>(
     user && id ? [adminApiUrl(`cod-change-reports/${id}?${query}`), user.id] : null,
@@ -86,18 +90,27 @@ export function useCodReport(
   );
 }
 
-export async function adjustCodAccounts(importId: number, rowId: number): Promise<{ message: string }> {
+export async function adjustCodAccounts(
+  importId: number,
+  rowId: number,
+  courier: CodCourier,
+): Promise<{ message: string }> {
   return readAdminApiResponse(
-    await fetchClient(adminApiUrl(`cod-change-reports/${importId}/rows/${rowId}/accounts-adjustment`), {
-      method: "POST",
-    }),
+    await fetchClient(
+      adminApiUrl(`cod-change-reports/${importId}/rows/${rowId}/accounts-adjustment?courier=${courier}`),
+      {
+        method: "POST",
+      },
+    ),
   );
 }
 
 export async function uploadCodReport(
   file: File,
+  courier: CodCourier,
 ): Promise<{ data: { id: number; duplicate: boolean }; message: string }> {
   const body = new FormData();
   body.append("file", file);
+  body.append("courier", courier);
   return readAdminApiResponse(await fetchClient(adminApiUrl("cod-change-reports"), { method: "POST", body }));
 }

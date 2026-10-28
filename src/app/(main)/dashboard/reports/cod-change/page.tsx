@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { HistoryDateFilter } from "@/components/history-date-filter";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { historyPeriods } from "@/lib/data-history";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -16,6 +17,7 @@ import {
   uploadCodReport,
   useCodImports,
   useCodReport,
+  type CodCourier,
 } from "@/hooks/useCodChangeReports";
 
 const money = (value: string | number | null | undefined) =>
@@ -28,6 +30,33 @@ const date = (value: string) =>
   });
 
 export default function CodChangeReportPage() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl tracking-tight">COD Change Report</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Compare courier amounts with your order totals.</p>
+      </div>
+      <Tabs defaultValue="pathao">
+        <TabsList aria-label="Courier reports">
+          <TabsTrigger value="pathao">Pathao</TabsTrigger>
+          <TabsTrigger value="steadfast">Steadfast</TabsTrigger>
+        </TabsList>
+        <TabsContent value="pathao" className="mt-6">
+          <CourierCodReport courier="pathao" />
+        </TabsContent>
+        <TabsContent value="steadfast" className="mt-6">
+          <CourierCodReport courier="steadfast" />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function CourierCodReport({ courier }: { courier: CodCourier }) {
+  const isSteadfast = courier === "steadfast";
+  const courierName = isSteadfast ? "Steadfast" : "Pathao";
+  const orderLabel = isSteadfast ? "Invoice" : "Merchant order ID";
+  const amountLabel = isSteadfast ? "COD Amount" : "Collectable Amount";
   const [file, setFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -42,9 +71,9 @@ export default function CodChangeReportPage() {
   const [adjustingRow, setAdjustingRow] = useState<number | null>(null);
   const user = useAuth((state) => state.user);
   const allowedPeriods = historyPeriods(user, "orders");
-  const history = useCodImports(historyPage);
+  const history = useCodImports(historyPage, courier);
   const activeId = selectedId ?? history.data?.data.data[0]?.id ?? null;
-  const report = useCodReport(activeId, page, status, search, dateFilters);
+  const report = useCodReport(activeId, page, status, search, dateFilters, courier);
   const counts = report.data?.summary.counts;
   const reviewCount = ["not_found", "invalid", "duplicate_csv", "ambiguous_order"].reduce(
     (sum, key) => sum + Number(counts?.[key as keyof typeof comparisonLabels] || 0),
@@ -64,7 +93,7 @@ export default function CodChangeReportPage() {
     if (!activeId || adjustingRow !== null) return;
     setAdjustingRow(rowId);
     try {
-      const result = await adjustCodAccounts(activeId, rowId);
+      const result = await adjustCodAccounts(activeId, rowId, courier);
       toast.success(result.message);
       await report.mutate();
     } catch (error) {
@@ -77,13 +106,14 @@ export default function CodChangeReportPage() {
   async function upload() {
     if (!file) return;
     setUploadError("");
-    if (!file.name.toLowerCase().endsWith(".csv") || file.size > 5 * 1024 * 1024) {
-      setUploadError("Choose a CSV file no larger than 5 MB.");
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!(isSteadfast ? ["csv", "xlsx"] : ["csv"]).includes(extension ?? "") || file.size > 5 * 1024 * 1024) {
+      setUploadError(`Choose a ${isSteadfast ? "CSV or XLSX" : "CSV"} file no larger than 5 MB.`);
       return;
     }
     setUploading(true);
     try {
-      const result = await uploadCodReport(file);
+      const result = await uploadCodReport(file, courier);
       selectImport(result.data.id);
       setHistoryPage(1);
       setFile(null);
@@ -99,21 +129,16 @@ export default function CodChangeReportPage() {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
-      <div>
-        <h1 className="text-3xl tracking-tight">COD Change Report</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Compare courier collectable amounts with your order totals.
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="size-5" />
-            Upload courier CSV
+            Upload {courierName} report
           </CardTitle>
           <CardDescription>
-            Required columns: Merchant_Order_ID and Collectable_Amount. UTF-8 CSV, up to 5 MB and 10,000 rows.
+            {isSteadfast
+              ? "Required columns: Invoice and COD Amount. UTF-8 CSV or single-sheet XLSX, up to 5 MB and 10,000 rows."
+              : "Required columns: Merchant_Order_ID and Collectable_Amount. UTF-8 CSV, up to 5 MB and 10,000 rows."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -121,8 +146,12 @@ export default function CodChangeReportPage() {
             <Input
               ref={inputRef}
               type="file"
-              accept=".csv,text/csv"
-              aria-label="Courier CSV file"
+              accept={
+                isSteadfast
+                  ? ".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  : ".csv,text/csv"
+              }
+              aria-label={`${courierName} report file`}
               disabled={uploading}
               onChange={(event) => {
                 setFile(event.target.files?.[0] ?? null);
@@ -151,7 +180,7 @@ export default function CodChangeReportPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileSpreadsheet className="size-5" />
-            Upload history
+            {courierName} upload history
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -166,7 +195,7 @@ export default function CodChangeReportPage() {
             <p role="status">Loading uploads…</p>
           ) : !history.data?.data.total ? (
             <p className="text-sm text-muted-foreground">
-              No CSV uploads yet. Upload your first file to see the comparison.
+              No {courierName} uploads yet. Upload your first file to see the comparison.
             </p>
           ) : (
             <>
@@ -266,7 +295,7 @@ export default function CodChangeReportPage() {
                 </div>
                 <div className="flex flex-wrap gap-x-8 gap-y-2 rounded-lg border p-4 text-sm">
                   <span>
-                    CSV total: <strong>{money(report.data.summary.totals.collectable_total ?? 0)}</strong>
+                    {amountLabel} total: <strong>{money(report.data.summary.totals.collectable_total ?? 0)}</strong>
                   </span>
                   <span>
                     System total: <strong>{money(report.data.summary.totals.system_total ?? 0)}</strong>
@@ -284,8 +313,8 @@ export default function CodChangeReportPage() {
               <CardHeader>
                 <CardTitle>Data comparison{report.data ? ` — ${report.data.import.filename}` : ""}</CardTitle>
                 <CardDescription>
-                  COD Change Amount = CSV Collectable_Amount − system grand_total_amount. Negative means the courier
-                  amount is lower. Summary cards follow the order-date filter.
+                  COD Change Amount = {amountLabel} − system grand_total_amount. Negative means the courier amount is
+                  lower. Summary cards follow the order-date filter.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -299,11 +328,11 @@ export default function CodChangeReportPage() {
                   }}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Dates use the system order creation date, not the CSV upload date. Rows without a matched order date
+                  Dates use the system order creation date, not the file upload date. Rows without a matched order date
                   are excluded when a date range is selected.
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Accounts Adjustment sets the order’s total paid amount to its Collectable Amount, updating existing
+                  Accounts Adjustment sets the order’s total paid amount to its {amountLabel}, updating existing
                   payments or creating one. Previous payment values are retained in the adjustment history.
                 </p>
                 <div className="flex flex-col gap-3 sm:flex-row">
@@ -316,8 +345,8 @@ export default function CodChangeReportPage() {
                     }}
                   >
                     <Input
-                      placeholder="Search merchant order ID"
-                      aria-label="Search merchant order ID"
+                      placeholder={`Search ${orderLabel.toLowerCase()}`}
+                      aria-label={`Search ${orderLabel.toLowerCase()}`}
                       value={searchInput}
                       onChange={(event) => setSearchInput(event.target.value)}
                     />
@@ -350,10 +379,10 @@ export default function CodChangeReportPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>CSV row</TableHead>
-                          <TableHead>Merchant order ID</TableHead>
+                          <TableHead>File row</TableHead>
+                          <TableHead>{orderLabel}</TableHead>
                           <TableHead>Order date</TableHead>
-                          <TableHead className="text-right">Collectable amount</TableHead>
+                          <TableHead className="text-right">{amountLabel}</TableHead>
                           <TableHead className="text-right">System order total</TableHead>
                           <TableHead className="text-right">COD Change Amount</TableHead>
                           <TableHead>Status</TableHead>
@@ -388,7 +417,7 @@ export default function CodChangeReportPage() {
                             </TableCell>
                             <TableCell>
                               <details>
-                                <summary className="cursor-pointer text-sm">View CSV row</summary>
+                                <summary className="cursor-pointer text-sm">View source row</summary>
                                 <dl className="mt-2 max-h-72 w-72 space-y-2 overflow-auto whitespace-normal rounded border p-3">
                                   {Object.entries(row.raw_data).map(([key, value]) => (
                                     <div key={key}>
