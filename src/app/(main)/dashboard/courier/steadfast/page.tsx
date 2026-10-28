@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { ApiSetupDialog } from "./_components/api-setup-dialog";
-import { WebhookSetupDialog } from "./_components/webhook-setup-dialog";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { SteadfastStats } from "./_components/steadfast-stats";
 import { SteadfastTable } from "./_components/steadfast-table";
 import { ReturnsTable } from "./_components/returns-table";
-import { PaymentsTable } from "./_components/payments-table";
 import { ReturnedParcelsTable } from "./_components/returned-parcels-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -86,7 +86,7 @@ export default function SteadfastPage() {
             </div>
           )}
           <ApiSetupDialog />
-          <WebhookSetupDialog />
+          <Button variant="outline" asChild><Link href="/dashboard/courier/steadfast/payment-history">Payment History</Link></Button>
         </div>
       </div>
 
@@ -97,7 +97,6 @@ export default function SteadfastPage() {
           <TabsTrigger value="parcels">Parcels</TabsTrigger>
           <TabsTrigger value="returned-parcels">Returned Parcels</TabsTrigger>
           <TabsTrigger value="returns">Return Requests</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
         <TabsContent value="parcels" className="mt-0">
           <SteadfastTable />
@@ -107,9 +106,6 @@ export default function SteadfastPage() {
         </TabsContent>
         <TabsContent value="returns" className="mt-0">
           <ReturnsTable />
-        </TabsContent>
-        <TabsContent value="payments" className="mt-0">
-          <PaymentsTable />
         </TabsContent>
       </Tabs>
     </div>

@@ -439,7 +439,7 @@ function ProviderCard({
   );
 }
 
-export function ApiIntegrationsTab({ providerId }: { providerId?: string } = {}) {
+export function ApiIntegrationsTab({ mode = "api" }: { mode?: "api" | "webhooks" } = {}) {
   const [data, setData] = useState<{
     providers: Record<string, ProviderState>;
     webhook_urls: Record<string, string>;
@@ -480,10 +480,12 @@ export function ApiIntegrationsTab({ providerId }: { providerId?: string } = {})
       <div>
         <h2 className="flex items-center gap-2 text-xl font-semibold">
           <KeyRound className="size-5" />
-          API Integrations
+          {mode === "webhooks" ? "Webhook Integration" : "API Integrations"}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Manage payment, courier, fraud-checking and AI confirmation credentials.
+          {mode === "webhooks"
+            ? "Configure Pathao, RedX and Steadfast courier webhooks."
+            : "Manage payment, fraud-checking and AI confirmation credentials."}
         </p>
       </div>
       <div className="flex gap-3 rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
@@ -494,7 +496,7 @@ export function ApiIntegrationsTab({ providerId }: { providerId?: string } = {})
         </p>
       </div>
       {providers
-        .filter((provider) => !providerId || provider.id === providerId)
+        .filter((provider) => ["pathao", "redx", "steadfast"].includes(provider.id) === (mode === "webhooks"))
         .map((provider) => (
           <ModularFeature
             key={provider.id}

@@ -33,6 +33,7 @@ const PRODUCT_FEED_URL = `${(process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/+
 
 const TABS = [
   { id: "api-integrations", label: "API Integrations" },
+  { id: "webhook-integration", label: "Webhook Integration" },
   { id: "website-info", label: "Website Information" },
   { id: "gtm-settings", label: "Google Tag Manager" },
   { id: "change-logo", label: "Change Website Logo" },
@@ -127,6 +128,7 @@ export default function SettingsPage() {
         <div className="flex-1 lg:max-w-4xl">
           {displayTab === "website-info" && <WebsiteInfoTab />}
           {displayTab === "api-integrations" && <ApiIntegrationsTab />}
+          {displayTab === "webhook-integration" && <ApiIntegrationsTab mode="webhooks" />}
           {displayTab === "gtm-settings" && <GtmTab />}
           {displayTab === "change-logo" && <ChangeLogoTab />}
           {displayTab === "change-password" && <ChangePasswordTab />}
