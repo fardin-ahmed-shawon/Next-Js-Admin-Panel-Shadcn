@@ -8,6 +8,9 @@ import {
   Bot,
   Briefcase,
   ChartBar,
+  Wallet,
+  ChartNoAxesCombined,
+  Images,
   Flag,
   History,
   Layers,
@@ -158,7 +161,7 @@ export const sidebarItems: NavGroup[] = [
       {
         title: "Accounts",
         url: "/dashboard/accounts",
-        icon: WalletCards,
+        icon: Wallet,
         module: "accounts",
         subItems: [
           { title: "Dashboard", url: "/dashboard/accounts", module: "accounts" },
@@ -174,7 +177,7 @@ export const sidebarItems: NavGroup[] = [
       },
       { title: "Inventory", url: "/dashboard/inventory", icon: CirclePile, module: "inventory" },
       { title: "Slider", url: "/dashboard/slider", icon: SlidersHorizontal, module: "slider" },
-      { title: "Banner", url: "/dashboard/banner", icon: Flag, module: "banner" },
+      { title: "Banner", url: "/dashboard/banner", icon: Images, module: "banner" },
       { title: "Discounts", url: "/dashboard/discounts", icon: BadgePercent, module: "discounts" },
       { title: "Coupons", url: "/dashboard/coupons", icon: Puzzle, module: "coupons" },
       { title: "Spin & Win", url: "/dashboard/spinner", icon: FerrisWheel, module: "coupons" },
@@ -210,7 +213,7 @@ export const sidebarItems: NavGroup[] = [
       {
         title: "Reports",
         url: "/dashboard/reports",
-        icon: TrendingUp,
+        icon: ChartNoAxesCombined,
         module: "reports",
         subItems: [
           { title: "Dashboard", url: "/dashboard/reports/dashboard", module: "reports_dashboard" },
