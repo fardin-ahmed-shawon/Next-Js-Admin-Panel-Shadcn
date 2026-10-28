@@ -58,6 +58,15 @@ const providers: Provider[] = [
     fields: [{ key: "webhook_secret", label: "Webhook Secret", secret: true, generate: true }],
   },
   {
+    id: "steadfast",
+    title: "Steadfast Webhook",
+    description: "Manage the callback URL and optional auth token for order status updates.",
+    fields: [
+      { key: "callback_url", label: "Callback URL", placeholder: "https://your-api-domain.com/api/steadfast/webhook" },
+      { key: "webhook_secret", label: "Auth token (optional)", secret: true, generate: true },
+    ],
+  },
+  {
     id: "orderconfirm",
     title: "Order Confirmation IO",
     description: "Connect AI confirmation calls and receive call results and address updates.",
@@ -205,6 +214,52 @@ function SetupGuide({
               <code>Authorization: Bearer &lt;Webhook Secret&gt;</code>. Save the same secret here. The endpoint accepts{" "}
               <code>call.completed</code> and <code>address.changed</code> events.
             </p>
+          </>
+        )}
+        {provider === "steadfast" && (
+          <>
+            <CopyValue label="Steadfast callback URL" value={String(values.callback_url || webhookUrl || "")} />
+            <p>
+              Set the public HTTPS callback URL above, including your API installation subfolder if needed. It must end
+              with /api/steadfast/webhook and point to this Admin API. Leave it blank to use the URL shown.
+            </p>
+            <p>
+              Save here, then copy the callback URL and the same auth token into your Steadfast portal’s Webhook
+              settings and click Save webhook there. Saving here does not register the webhook with Steadfast.
+            </p>
+            <p>
+              With a token configured, incoming requests must pass both Bearer authentication and the X-Signature check.
+              Leave the token unset in both places to accept unsigned requests. To remove an existing token, choose
+              Remove saved value and save.
+            </p>
+            <p>
+              Enable Courier Order Automation - Steadfast in Feature Control → Courier to start processing updates.
+              Turning it off pauses updates and keeps your settings.
+            </p>
+            <div className="overflow-hidden rounded-md border">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="p-2">Steadfast status</th>
+                    <th className="p-2">Order status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["hold", "Hold"],
+                    ["delivered", "Delivered"],
+                    ["partial_delivered", "Pending Return"],
+                    ["cancelled", "Cancelled"],
+                  ].map(([source, target]) => (
+                    <tr key={source} className="border-b last:border-0">
+                      <td className="p-2">{source}</td>
+                      <td className="p-2">{target}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p>Only these four delivery statuses update orders. Payments and inventory are unchanged.</p>
           </>
         )}
         {provider !== "sslcommerz" && provider !== "fraud_checker" && (
@@ -384,7 +439,7 @@ function ProviderCard({
   );
 }
 
-export function ApiIntegrationsTab() {
+export function ApiIntegrationsTab({ providerId }: { providerId?: string } = {}) {
   const [data, setData] = useState<{
     providers: Record<string, ProviderState>;
     webhook_urls: Record<string, string>;
@@ -438,29 +493,32 @@ export function ApiIntegrationsTab() {
           to new requests after you save each configuration.
         </p>
       </div>
-      {providers.map((provider) => (
-        <ModularFeature
-          key={provider.id}
-          name={
-            (
-              {
-                sslcommerz: "sslcommerze",
-                pathao: "courier_pathao",
-                redx: "courier_redx",
-                orderconfirm: "ai_auto_calling",
-                fraud_checker: "fraud_checker",
-              } as Record<string, string>
-            )[provider.id]
-          }
-        >
-          <ProviderCard
+      {providers
+        .filter((provider) => !providerId || provider.id === providerId)
+        .map((provider) => (
+          <ModularFeature
             key={provider.id}
-            provider={provider}
-            initial={data.providers[provider.id]}
-            webhookUrl={data.webhook_urls[provider.id]}
-          />
-        </ModularFeature>
-      ))}
+            name={
+              (
+                {
+                  sslcommerz: "sslcommerze",
+                  pathao: "courier_pathao",
+                  redx: "courier_redx",
+                  steadfast: "courier_steadfast",
+                  orderconfirm: "ai_auto_calling",
+                  fraud_checker: "fraud_checker",
+                } as Record<string, string>
+              )[provider.id]
+            }
+          >
+            <ProviderCard
+              key={provider.id}
+              provider={provider}
+              initial={data.providers[provider.id]}
+              webhookUrl={data.webhook_urls[provider.id]}
+            />
+          </ModularFeature>
+        ))}
     </div>
   );
 }

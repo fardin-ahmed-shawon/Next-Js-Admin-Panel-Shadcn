@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { ApiSetupDialog } from "./_components/api-setup-dialog";
+import { WebhookSetupDialog } from "./_components/webhook-setup-dialog";
 import { SteadfastStats } from "./_components/steadfast-stats";
 import { SteadfastTable } from "./_components/steadfast-table";
 import { ReturnsTable } from "./_components/returns-table";
@@ -68,7 +69,7 @@ export default function SteadfastPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {isLoading ? (
             <Loader2 className="size-4 animate-spin text-muted-foreground" />
           ) : (
@@ -85,6 +86,7 @@ export default function SteadfastPage() {
             </div>
           )}
           <ApiSetupDialog />
+          <WebhookSetupDialog />
         </div>
       </div>
 
