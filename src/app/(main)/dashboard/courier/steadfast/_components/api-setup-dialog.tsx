@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { Loader2, Settings } from "lucide-react";
+import { Loader2, Pencil, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -17,22 +17,42 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 import { useSteadfastSetup } from "@/hooks/useSteadfastSetup";
 import { fetchClient } from "@/lib/fetch-client";
+
+const RECOMMENDED_API_URL = "https://portal.packzy.com/api/v1/create_order";
 
 export function ApiSetupDialog() {
   const [open, setOpen] = React.useState(false);
   const { data, isLoading, mutate } = useSteadfastSetup();
 
-  const [apiUrl, setApiUrl] = React.useState("");
+  const [apiUrl, setApiUrl] = React.useState(RECOMMENDED_API_URL);
+  const [editingApiUrl, setEditingApiUrl] = React.useState(false);
+  const [urlWarningOpen, setUrlWarningOpen] = React.useState(false);
   const [apiKey, setApiKey] = React.useState("");
   const [secretKey, setSecretKey] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
 
   React.useEffect(() => {
+    setEditingApiUrl(false);
+    setUrlWarningOpen(false);
+  }, [open]);
+
+  React.useEffect(() => {
     if (data && open) {
-      setApiUrl(data.api_url || "");
+      setApiUrl(data.api_url || RECOMMENDED_API_URL);
       setApiKey(data.api_key || "");
       setSecretKey(data.secret_key || "");
     }
@@ -50,7 +70,7 @@ export function ApiSetupDialog() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          api_url: apiUrl,
+          ...(editingApiUrl ? { api_url: apiUrl } : {}),
           api_key: apiKey,
           secret_key: secretKey,
         }),
@@ -92,13 +112,44 @@ export function ApiSetupDialog() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="apiUrl">API URL</Label>
-                <Input
-                  id="apiUrl"
-                  value={apiUrl}
-                  onChange={(e) => setApiUrl(e.target.value)}
-                  placeholder="https://portal.steadfast.com.bd/api/v1"
-                  required
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="apiUrl"
+                    type="url"
+                    value={apiUrl}
+                    onChange={(event) => setApiUrl(event.target.value)}
+                    readOnly={!editingApiUrl || isSaving}
+                    className={!editingApiUrl ? "bg-muted" : undefined}
+                    required
+                  />
+                  <AlertDialog open={urlWarningOpen} onOpenChange={setUrlWarningOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                        aria-label="Edit API URL"
+                        disabled={isSaving || editingApiUrl}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Change API URL?</AlertDialogTitle>
+                        <AlertDialogDescription className="break-words">
+                          We are recommending you to keep '{RECOMMENDED_API_URL}' this link as API URL according to our
+                          system structure.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Keep Current URL</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => setEditingApiUrl(true)}>Edit API URL</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="apiKey">API Key</Label>

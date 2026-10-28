@@ -102,19 +102,20 @@ export default function SettingsPage() {
 
 
 
-      <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0 mt-4">
+      <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start">
         {/* Navigation Sidebar */}
-        <aside className="lg:w-1/5 shrink-0">
-          <nav className="flex space-x-2 overflow-x-auto lg:flex-col lg:space-x-0 lg:space-y-1 pb-4 lg:pb-0">
+        <aside className="min-w-0 shrink-0 rounded-xl border bg-card p-3 text-card-foreground shadow-sm lg:w-64">
+          <nav className="flex gap-1 overflow-x-auto lg:flex-col">
             {allowedTabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
+                aria-pressed={displayTab === tab.id}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap",
                   displayTab === tab.id
-                    ? "bg-muted/60 text-foreground"
+                    ? "bg-black text-white"
                     : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
                 )}
               >
@@ -125,7 +126,7 @@ export default function SettingsPage() {
         </aside>
 
         {/* Dynamic Content Area */}
-        <div className="flex-1 lg:max-w-4xl">
+        <div className="min-w-0 flex-1 rounded-xl border bg-card p-4 text-card-foreground shadow-sm sm:p-6">
           {displayTab === "website-info" && <WebsiteInfoTab />}
           {displayTab === "api-integrations" && <ApiIntegrationsTab />}
           {displayTab === "webhook-integration" && <ApiIntegrationsTab mode="webhooks" />}

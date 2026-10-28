@@ -2,6 +2,7 @@
 
 import { ModularFeature } from "@/components/modular-feature";
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 
 import { Copy, KeyRound, Loader2, Save, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -60,11 +61,8 @@ const providers: Provider[] = [
   {
     id: "steadfast",
     title: "Steadfast Webhook",
-    description: "Manage the callback URL and optional auth token for order status updates.",
-    fields: [
-      { key: "callback_url", label: "Callback URL", placeholder: "https://your-api-domain.com/api/steadfast/webhook" },
-      { key: "webhook_secret", label: "Auth token (optional)", secret: true, generate: true },
-    ],
+    description: "Copy the system callback URL and manage the optional auth token for order status updates.",
+    fields: [{ key: "webhook_secret", label: "Auth token (optional)", secret: true, generate: true }],
   },
   {
     id: "orderconfirm",
@@ -218,24 +216,23 @@ function SetupGuide({
         )}
         {provider === "steadfast" && (
           <>
-            <CopyValue label="Steadfast callback URL" value={String(values.callback_url || webhookUrl || "")} />
-            <p>
-              Set the public HTTPS callback URL above, including your API installation subfolder if needed. It must end
-              with /api/steadfast/webhook and point to this Admin API. Leave it blank to use the URL shown.
-            </p>
-            <p>
-              Save here, then copy the callback URL and the same auth token into your Steadfast portal’s Webhook
-              settings and click Save webhook there. Saving here does not register the webhook with Steadfast.
-            </p>
-            <p>
-              With a token configured, incoming requests must pass both Bearer authentication and the X-Signature check.
-              Leave the token unset in both places to accept unsigned requests. To remove an existing token, choose
-              Remove saved value and save.
-            </p>
-            <p>
-              Enable Courier Order Automation - Steadfast in Feature Control → Courier to start processing updates.
-              Turning it off pauses updates and keeps your settings.
-            </p>
+            <CopyValue label="Steadfast callback URL" value={webhookUrl || ""} />
+            <a
+              href="/steadfast-webhook-guide.png"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+              aria-label="Open Steadfast webhook setup guide at full size"
+            >
+              <Image
+                src="/steadfast-webhook-guide.png"
+                alt="Steadfast portal Webhook settings showing Callback URL, optional Auth token, and Save webhook."
+                width={1278}
+                height={679}
+                className="h-auto w-full rounded-md border"
+                unoptimized
+              />
+            </a>
             <div className="overflow-hidden rounded-md border">
               <table className="w-full text-left text-sm">
                 <thead>
