@@ -4,7 +4,14 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, RefreshCw } from "lucide-react";
-import { useSteadfastPayment } from "@/hooks/useSteadfastPayments";
+import {
+  useSteadfastPayment,
+  reconcileSteadfastPayment,
+  type SteadfastPaymentComparisonRow,
+} from "@/hooks/useSteadfastPayments";
+import { comparisonLabels } from "@/hooks/useCodChangeReports";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +21,20 @@ import { paymentDate, paymentMoney, trackingLink } from "../_components/payment-
 
 export default function SteadfastPaymentDetailPage() {
   const { paymentId } = useParams<{ paymentId: string }>();
-  const { data: payment, error, isLoading, isValidating, mutate, canView, validId } = useSteadfastPayment(paymentId);
+  const {
+    data: payment,
+    comparison,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+    canView,
+    validId,
+  } = useSteadfastPayment(paymentId);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
   const consignments =
     payment?.consignments.filter((item) =>
       `${item.invoice ?? ""} ${item.tracking_code} ${item.consignment_id} ${item.recipient_name} ${item.recipient_phone}`
@@ -25,6 +43,31 @@ export default function SteadfastPaymentDetailPage() {
     ) ?? [];
   const pages = Math.max(1, Math.ceil(consignments.length / 25));
   const currentPage = Math.min(page, pages);
+  const visibleConsignments = consignments.slice((currentPage - 1) * 25, currentPage * 25);
+  const comparisons = new Map(comparison?.rows.map((row) => [row.consignment_id, row]));
+  const selectable = (row: SteadfastPaymentComparisonRow | undefined) =>
+    Boolean(comparison?.can_mark && row?.status === "mismatch" && !row.marked);
+  const visibleSelectable = visibleConsignments
+    .map((item) => String(item.consignment_id))
+    .filter((id) => selectable(comparisons.get(id)));
+  const selected = (comparison?.rows ?? []).filter(
+    (row) => selectedIds.includes(row.consignment_id) && selectable(row),
+  );
+
+  async function reconcile(action: "cod-changes" | "accounts-adjustment", rows: SteadfastPaymentComparisonRow[]) {
+    if (busy || !rows.length) return;
+    setBusy(action === "cod-changes" ? "mark" : rows[0].consignment_id);
+    try {
+      const response = await reconcileSteadfastPayment(paymentId, action, rows);
+      toast.success(response.message);
+      setSelectedIds([]);
+      await mutate();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save this adjustment.");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -39,7 +82,11 @@ export default function SteadfastPaymentDetailPage() {
           <h1 className="text-3xl tracking-tight">Payment {paymentId}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Steadfast payment breakdown and included consignments.</p>
         </div>
-        <Button variant="outline" disabled={!canView || !validId || isValidating} onClick={() => mutate()}>
+        <Button
+          variant="outline"
+          disabled={!canView || !validId || isValidating || busy !== null}
+          onClick={() => mutate()}
+        >
           <RefreshCw className={`mr-2 size-4 ${isValidating ? "animate-spin" : ""}`} />
           Refresh
         </Button>
@@ -114,10 +161,28 @@ export default function SteadfastPaymentDetailPage() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-wrap flex-row items-center justify-between gap-3">
               <CardTitle>Consignments ({payment.consignments.length})</CardTitle>
+              <Button
+                disabled={
+                  !comparison?.can_mark ||
+                  selected.length === 0 ||
+                  selected.length > 100 ||
+                  busy !== null ||
+                  isValidating
+                }
+                onClick={() => reconcile("cod-changes", selected)}
+              >
+                {busy === "mark" ? "Marking…" : "Marks as COD Change Order"}
+                {selected.length > 0 && ` (${selected.length})`}
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Select mismatched orders to mark them COD Changed. Accounts Adjustment sets the paid amount to COD
+                Amount, updating an existing payment or creating one. Matches become Full Paid; mismatches become
+                Partially Paid.
+              </p>
               <Input
                 aria-label="Search consignments"
                 placeholder="Search invoice, tracking code, recipient or phone"
@@ -131,21 +196,68 @@ export default function SteadfastPaymentDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {["Invoice / Consignment", "Tracking", "Recipient", "COD Amount", "Status", "Details"].map(
-                      (label) => (
-                        <TableHead key={label} className="whitespace-nowrap">
-                          {label}
-                        </TableHead>
-                      ),
-                    )}
+                    <TableHead>
+                      <Checkbox
+                        aria-label="Select mismatched orders on this page"
+                        checked={
+                          visibleSelectable.length > 0 && visibleSelectable.every((id) => selectedIds.includes(id))
+                        }
+                        disabled={visibleSelectable.length === 0 || busy !== null || isValidating}
+                        onCheckedChange={(checked) =>
+                          setSelectedIds((ids) =>
+                            checked
+                              ? [...new Set([...ids, ...visibleSelectable])].slice(0, 100)
+                              : ids.filter((id) => !visibleSelectable.includes(id)),
+                          )
+                        }
+                      />
+                    </TableHead>
+                    {[
+                      "Invoice / Consignment",
+                      "Tracking",
+                      "Recipient",
+                      "COD Amount",
+                      "System order total",
+                      "COD Change Amount",
+                      "Status",
+                      "Accounts Adjustment",
+                      "Delivery status",
+                      "Details",
+                    ].map((label) => (
+                      <TableHead key={label} className="whitespace-nowrap">
+                        {label}
+                      </TableHead>
+                    ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {consignments.length ? (
-                    consignments.slice((currentPage - 1) * 25, currentPage * 25).map((item) => {
+                    visibleConsignments.map((item) => {
                       const url = trackingLink(item.tracking_link);
+                      const row = comparisons.get(String(item.consignment_id));
                       return (
                         <TableRow key={item.consignment_id}>
+                          <TableCell className="align-top">
+                            <Checkbox
+                              aria-label={`Select ${item.invoice || item.consignment_id} as COD changed`}
+                              checked={Boolean(
+                                row && selected.some((selection) => selection.consignment_id === row.consignment_id),
+                              )}
+                              disabled={
+                                !selectable(row) ||
+                                busy !== null ||
+                                isValidating ||
+                                (selected.length >= 100 && !selectedIds.includes(String(item.consignment_id)))
+                              }
+                              onCheckedChange={(checked) =>
+                                setSelectedIds((ids) =>
+                                  checked
+                                    ? [...new Set([...ids, String(item.consignment_id)])]
+                                    : ids.filter((id) => id !== String(item.consignment_id)),
+                                )
+                              }
+                            />
+                          </TableCell>
                           <TableCell className="align-top">
                             {item.invoice ? (
                               <Link
@@ -182,6 +294,58 @@ export default function SteadfastPaymentDetailPage() {
                           <TableCell className="whitespace-nowrap align-top font-medium tabular-nums">
                             {paymentMoney(item.cod_amount)}
                           </TableCell>
+                          <TableCell className="whitespace-nowrap align-top text-right tabular-nums">
+                            {paymentMoney(row?.grand_total_amount)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap align-top text-right tabular-nums">
+                            {paymentMoney(row?.difference)}
+                          </TableCell>
+                          <TableCell className="align-top min-w-40 whitespace-normal">
+                            {row ? (
+                              <div className="space-y-2">
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    row.status === "mismatch"
+                                      ? "border-amber-200 bg-amber-50 text-amber-700"
+                                      : row.status === "matched"
+                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                        : ""
+                                  }
+                                >
+                                  {row.status === "duplicate_csv" ? "Duplicate invoice" : comparisonLabels[row.status]}
+                                </Badge>
+                                {row.marked && (
+                                  <span className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600">
+                                    COD Changed
+                                  </span>
+                                )}
+                                {row.message && <p className="text-xs text-muted-foreground">{row.message}</p>}
+                              </div>
+                            ) : (
+                              "—"
+                            )}
+                          </TableCell>
+                          <TableCell className="align-top">
+                            {row?.adjusted_at ? (
+                              <span className="text-sm font-medium text-emerald-700">Adjusted</span>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={
+                                  !comparison?.can_adjust ||
+                                  !row ||
+                                  !["matched", "mismatch"].includes(row.status) ||
+                                  busy !== null ||
+                                  isValidating
+                                }
+                                onClick={() => row && reconcile("accounts-adjustment", [row])}
+                              >
+                                {busy === String(item.consignment_id) ? "Adjusting…" : "Accounts Adjustment"}
+                              </Button>
+                            )}
+                          </TableCell>
                           <TableCell className="align-top">
                             <Badge variant="outline" className="capitalize">
                               {item.status?.replaceAll("_", " ") || "Unknown"}
@@ -213,7 +377,7 @@ export default function SteadfastPaymentDetailPage() {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                      <TableCell colSpan={11} className="py-10 text-center text-muted-foreground">
                         {payment.consignments.length
                           ? "No consignments match your search."
                           : "No consignments included in this payment."}

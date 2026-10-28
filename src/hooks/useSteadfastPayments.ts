@@ -3,6 +3,7 @@ import { fetchClient } from "@/lib/fetch-client";
 import { useAuth } from "@/hooks/useAuth";
 import { adminApiUrl, readAdminApiResponse } from "@/lib/admin-api";
 import { canUseAllOrdersToggle } from "@/hooks/useRoles";
+import type { ComparisonStatus } from "@/hooks/useCodChangeReports";
 
 export type CourierAmount = number | string | null;
 export interface SteadfastPayment {
@@ -39,6 +40,23 @@ export interface SteadfastConsignment {
 export interface SteadfastPaymentDetail extends SteadfastPayment {
   consignments: SteadfastConsignment[];
 }
+export interface SteadfastPaymentComparisonRow {
+  consignment_id: string;
+  merchant_order_id: string;
+  order_id: number | null;
+  collectable_amount: string | null;
+  grand_total_amount: string | null;
+  difference: string | null;
+  status: ComparisonStatus;
+  message: string | null;
+  marked: boolean;
+  adjusted_at: string | null;
+}
+interface SteadfastPaymentComparison {
+  rows: SteadfastPaymentComparisonRow[];
+  can_mark: boolean;
+  can_adjust: boolean;
+}
 const fetcher = async ([url]: [string, number]) => {
   const response = await fetchClient(url, { cache: "no-store" });
   if (response.status === 404 && url.includes("/steadfast/payments/"))
@@ -73,12 +91,44 @@ export function useSteadfastPayment(paymentId: string) {
   const { user } = useAuth();
   const canView = canUseAllOrdersToggle(user);
   const validId = /^SFC-\d{1,30}$/.test(paymentId);
-  const { data, error, isLoading, mutate, isValidating } = useSWR<{ data: { payment: SteadfastPaymentDetail } }>(
+  const { data, error, isLoading, mutate, isValidating } = useSWR<{
+    data: { payment: SteadfastPaymentDetail; comparison: SteadfastPaymentComparison };
+  }>(
     user?.id && canView && validId
       ? [adminApiUrl(`steadfast/payments/${encodeURIComponent(paymentId)}`), user.id]
       : null,
     fetcher,
     { revalidateOnFocus: false },
   );
-  return { data: data?.data.payment, error, isLoading, mutate, isValidating, canView, validId };
+  return {
+    data: data?.data.payment,
+    comparison: data?.data.comparison,
+    error,
+    isLoading,
+    mutate,
+    isValidating,
+    canView,
+    validId,
+  };
+}
+
+export async function reconcileSteadfastPayment(
+  paymentId: string,
+  action: "cod-changes" | "accounts-adjustment",
+  rows: SteadfastPaymentComparisonRow[],
+): Promise<{ message: string }> {
+  return readAdminApiResponse(
+    await fetchClient(adminApiUrl(`steadfast/payments/${encodeURIComponent(paymentId)}/${action}`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rows: rows.map(({ consignment_id, merchant_order_id, collectable_amount, grand_total_amount }) => ({
+          consignment_id,
+          merchant_order_id,
+          collectable_amount,
+          grand_total_amount,
+        })),
+      }),
+    }),
+  );
 }
