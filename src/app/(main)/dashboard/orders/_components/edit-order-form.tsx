@@ -1474,17 +1474,21 @@ export function EditOrderForm({ orderId, incompleteMode = false, onCompleted }: 
                       <span className="text-base font-medium tabular-nums">৳{grandTotal.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Paid</span>
+                      <span className="text-sm text-muted-foreground">Paid Amount</span>
                       <span className="text-base font-medium text-green-600 dark:text-green-400 tabular-nums">
                         ৳{paidAmount.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Due</span>
-                      <span className="text-base font-medium text-destructive tabular-nums">
-                        ৳{dueAmount.toLocaleString()}
-                      </span>
-                    </div>
+                    {order.is_cod_changed ? (
+                      <Badge variant="outline" className="w-fit border-indigo-500/20 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">COD Changed</Badge>
+                    ) : (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Due</span>
+                        <span className="text-base font-medium text-destructive tabular-nums">
+                          ৳{dueAmount.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Payment entries */}
                     {order.payments && order.payments.length > 0 && (

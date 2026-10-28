@@ -193,6 +193,7 @@ export function OrdersPageView({ workflow }: { workflow?: "packing" }) {
           items: itemsCount,
           total: order.grand_total_amount || 0,
           paid: paidAmount,
+          isCodChanged: !!order.is_cod_changed,
           due: (order.grand_total_amount || 0) - paidAmount,
           orderStatus: order.order_status || "Pending",
           paymentStatus: order.payment_status || "Unpaid",

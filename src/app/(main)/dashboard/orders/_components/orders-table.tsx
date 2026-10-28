@@ -141,6 +141,7 @@ export interface OrderRow {
   time: string;
   paid: number;
   due: number;
+  isCodChanged?: boolean;
   paymentMethod: string;
   productImages: string[];
   orderedProducts: any[];
@@ -1154,7 +1155,9 @@ const columns: ColumnDef<OrderRow>[] = [
           <p className="text-[11px] text-emerald-600">
             Paid: <span className="font-semibold tabular-nums">৳{row.original.paid.toLocaleString()}</span>
           </p>
-          {row.original.orderStatus !== "Cancelled" && row.original.orderStatus !== "Fake" && (
+          {row.original.isCodChanged ? (
+            <Badge variant="outline" className="border-indigo-500/20 bg-indigo-500/10 text-[10px] text-indigo-600 dark:text-indigo-400">COD Changed</Badge>
+          ) : row.original.orderStatus !== "Cancelled" && row.original.orderStatus !== "Fake" && (
             <p className="text-[11px] text-destructive">
               Due: <span className="font-semibold tabular-nums">৳{row.original.due.toLocaleString()}</span>
             </p>
